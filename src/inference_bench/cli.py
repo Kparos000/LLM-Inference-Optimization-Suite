@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -7,6 +8,7 @@ from rich.table import Table
 
 from inference_bench import __version__
 from inference_bench.config import load_project_config
+from inference_bench.quality import score_structured_output
 from inference_bench.reporting.plots import (
     plot_cost_by_optimization,
     plot_latency_by_optimization,
@@ -195,6 +197,72 @@ def report_summary(
             display_value = str(value)
         table.add_row(key, display_value)
 
+    console.print(table)
+
+
+@app.command()
+def score_structured_jsonl(
+    input_jsonl: Annotated[
+        str,
+        typer.Option(help="Path to a generation trace JSONL file."),
+    ],
+    required_fields: Annotated[
+        str,
+        typer.Option(help="Comma-separated required JSON fields."),
+    ] = "category,answer,confidence",
+) -> None:
+    """Score structured JSON validity for generated text traces."""
+
+    input_path = Path(input_jsonl)
+    if not input_path.exists():
+        console.print(f"Input JSONL not found: {input_path}", markup=False, soft_wrap=True)
+        raise typer.Exit(code=1)
+
+    required_field_names = [field.strip() for field in required_fields.split(",") if field.strip()]
+
+    total_records = 0
+    valid_json_count = 0
+    required_fields_count = 0
+
+    with input_path.open(encoding="utf-8") as file:
+        for line_number, line in enumerate(file, start=1):
+            stripped_line = line.strip()
+            if not stripped_line:
+                continue
+
+            try:
+                record = json.loads(stripped_line)
+            except json.JSONDecodeError as exc:
+                msg = f"Invalid JSONL record at line {line_number}: {exc.msg}"
+                raise typer.BadParameter(msg) from exc
+
+            if not isinstance(record, dict):
+                msg = f"Invalid JSONL record at line {line_number}: expected object"
+                raise typer.BadParameter(msg)
+
+            generated_text = record.get("generated_text")
+            score = score_structured_output(
+                generated_text if isinstance(generated_text, str) else "",
+                required_field_names,
+            )
+
+            total_records += 1
+            if score["is_valid_json"]:
+                valid_json_count += 1
+            if score["has_required_fields"]:
+                required_fields_count += 1
+
+    invalid_json_count = total_records - valid_json_count
+    required_fields_rate = required_fields_count / total_records if total_records > 0 else 0.0
+
+    table = Table(title="Structured JSON Score")
+    table.add_column("Metric")
+    table.add_column("Value")
+    table.add_row("total_records", str(total_records))
+    table.add_row("valid_json_count", str(valid_json_count))
+    table.add_row("required_fields_count", str(required_fields_count))
+    table.add_row("invalid_json_count", str(invalid_json_count))
+    table.add_row("required_fields_rate", f"{required_fields_rate:.3f}")
     console.print(table)
 
 

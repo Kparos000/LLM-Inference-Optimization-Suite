@@ -51,3 +51,13 @@ CSV files store benchmark metrics. JSONL generation files store generated text f
 Generation JSONL files now preserve full prompt-level traces, including prompt text, generated text, latency metrics, throughput, cost estimate, and success/error status.
 
 Generated result artifacts remain ignored by Git unless deliberately promoted into the repository later as selected reproducibility artifacts.
+
+## Controlled Local HF Baseline
+
+```text
+powershell -ExecutionPolicy Bypass -File scripts/run_hf_local_baseline.ps1
+```
+
+This workflow runs free-form and structured-output smoke workloads with the local Hugging Face runner. It captures system info, writes CSV metrics and JSONL prompt traces, prints summaries, and generates plots for both workloads.
+
+Generated artifacts are written under `results/` and remain ignored by Git unless deliberately promoted later.

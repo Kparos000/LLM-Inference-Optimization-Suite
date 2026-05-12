@@ -37,6 +37,18 @@ Preserve material that may later support a short technical paper, LinkedIn post,
 - Memory and cost trade-offs for each optimization
 - Workload sensitivity across short, long-context, and shared-prefix prompts
 
+## Controlled HF Baseline Artifacts
+
+Controlled Hugging Face baseline results should preserve:
+
+- `system_info.json`
+- `hf_smoke_results.csv`
+- `hf_smoke_generations.jsonl`
+- `hf_structured_output_results.csv`
+- `hf_structured_output_generations.jsonl`
+- Structured JSON validity score
+- Figures from both workloads
+
 ## Limitations To Track
 
 - Hardware differences across runs

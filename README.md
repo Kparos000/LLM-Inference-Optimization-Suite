@@ -34,6 +34,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Generation JSONL artifacts provide full prompt-level traces for later analysis.
 - Structured-output smoke workloads and JSON validation utilities are available for future quality checks.
 - Hardware and system metadata capture is available as a generated reproducibility artifact.
+- A controlled local Hugging Face baseline script is available for smoke runs with metrics, traces, system info, and plots.
 
 ## Documentation
 
