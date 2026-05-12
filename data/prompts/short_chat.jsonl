@@ -1,0 +1,5 @@
+{"prompt_id":"short-chat-001","workload_name":"short_chat","prompt":"Write a warm one-sentence greeting for a teammate joining a project kickoff call.","expected_output":null,"metadata":{"category":"greeting"}}
+{"prompt_id":"short-chat-002","workload_name":"short_chat","prompt":"Summarize this message in one sentence: \"The database migration finished overnight, but the analytics dashboard refresh is delayed until the cache rebuild completes.\"","expected_output":null,"metadata":{"category":"summarization"}}
+{"prompt_id":"short-chat-003","workload_name":"short_chat","prompt":"Rewrite this sentence professionally: \"We can't ship this today because the tests are still broken.\"","expected_output":null,"metadata":{"category":"rewrite"}}
+{"prompt_id":"short-chat-004","workload_name":"short_chat","prompt":"Briefly explain why teams use code reviews before merging changes.","expected_output":null,"metadata":{"category":"explanation"}}
+{"prompt_id":"short-chat-005","workload_name":"short_chat","prompt":"Draft a concise response confirming that a meeting has been moved from 2 PM to 3 PM.","expected_output":null,"metadata":{"category":"response"}}

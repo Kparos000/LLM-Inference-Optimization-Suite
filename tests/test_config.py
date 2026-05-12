@@ -26,8 +26,16 @@ def test_loads_default_project_config() -> None:
         config.workloads["structured_output_smoke"].path
         == "data/prompts/structured_output_smoke.jsonl"
     )
+    assert config.workloads["short_chat"].path == "data/prompts/short_chat.jsonl"
+    assert config.workloads["code_helpdesk"].path == "data/prompts/code_helpdesk.jsonl"
+    assert config.workloads["long_context"].path == "data/prompts/long_context.jsonl"
+    assert config.workloads["shared_prefix"].path == "data/prompts/shared_prefix.jsonl"
     assert config.experiments["mock_smoke"].backend == "mock"
     assert config.experiments["mock_structured_output_smoke"].workload == "structured_output_smoke"
+    assert config.experiments["mock_short_chat"].workload == "short_chat"
+    assert config.experiments["mock_code_helpdesk"].workload == "code_helpdesk"
+    assert config.experiments["mock_long_context"].workload == "long_context"
+    assert config.experiments["mock_shared_prefix"].workload == "shared_prefix"
 
 
 def test_model_config_rejects_empty_model_id() -> None:
@@ -83,7 +91,11 @@ def test_cli_validate_config_succeeds_with_default_config() -> None:
     assert result.exit_code == 0
     assert "Configuration valid" in result.output
     assert "Models loaded: 5" in result.output
-    assert "Workloads loaded: 2" in result.output
-    assert "Experiments loaded: 2" in result.output
+    assert "Workloads loaded: 6" in result.output
+    assert "Experiments loaded: 6" in result.output
     assert "mock_smoke" in result.output
     assert "mock_structured_output_smoke" in result.output
+    assert "mock_short_chat" in result.output
+    assert "mock_code_helpdesk" in result.output
+    assert "mock_long_context" in result.output
+    assert "mock_shared_prefix" in result.output

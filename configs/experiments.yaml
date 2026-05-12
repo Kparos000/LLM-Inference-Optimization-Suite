@@ -16,3 +16,35 @@ mock_structured_output_smoke:
   output_path: "results/raw/mock_structured_output_results.csv"
   max_prompts: 3
   concurrency: 1
+mock_short_chat:
+  name: "mock_short_chat"
+  backend: "mock"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "none"
+  workload: "short_chat"
+  output_path: "results/raw/mock_short_chat_results.csv"
+  concurrency: 1
+mock_code_helpdesk:
+  name: "mock_code_helpdesk"
+  backend: "mock"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "none"
+  workload: "code_helpdesk"
+  output_path: "results/raw/mock_code_helpdesk_results.csv"
+  concurrency: 1
+mock_long_context:
+  name: "mock_long_context"
+  backend: "mock"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "none"
+  workload: "long_context"
+  output_path: "results/raw/mock_long_context_results.csv"
+  concurrency: 1
+mock_shared_prefix:
+  name: "mock_shared_prefix"
+  backend: "mock"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "none"
+  workload: "shared_prefix"
+  output_path: "results/raw/mock_shared_prefix_results.csv"
+  concurrency: 1

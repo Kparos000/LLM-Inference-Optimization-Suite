@@ -6,3 +6,19 @@ structured_output_smoke:
   name: "structured_output_smoke"
   path: "data/prompts/structured_output_smoke.jsonl"
   description: "Small workload for validating JSON structured-output behavior."
+short_chat:
+  name: "short_chat"
+  path: "data/prompts/short_chat.jsonl"
+  description: "Short conversational workload for lightweight response testing."
+code_helpdesk:
+  name: "code_helpdesk"
+  path: "data/prompts/code_helpdesk.jsonl"
+  description: "Technical support workload for code and developer assistance tasks."
+long_context:
+  name: "long_context"
+  path: "data/prompts/long_context.jsonl"
+  description: "Moderate long-context workload for summarization and extraction tasks."
+shared_prefix:
+  name: "shared_prefix"
+  path: "data/prompts/shared_prefix.jsonl"
+  description: "Shared-prefix workload for repeated instruction-prefix testing."

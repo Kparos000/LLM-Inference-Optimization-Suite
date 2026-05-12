@@ -36,6 +36,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Hardware and system metadata capture is available as a generated reproducibility artifact.
 - A controlled local Hugging Face baseline script is available for smoke runs with metrics, traces, system info, and plots.
 - Curated sample artifact promotion rules are available for selected reviewed outputs.
+- Expanded workload categories are available for short chat, code/helpdesk, long context, and shared-prefix inference testing.
 
 ## Documentation
 

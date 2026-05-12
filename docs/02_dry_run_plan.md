@@ -51,6 +51,8 @@ The first real model run should use the smallest configured development model, t
 - long_context
 - shared_prefix
 
+The expanded workload files are checked in under `data/prompts` so mock runs can validate each inference pattern before adding additional serving backends.
+
 Structured-output quality checks will validate generated JSON and required-field completeness for workloads that declare JSON output expectations.
 
 ## Planned Optimization Progression
