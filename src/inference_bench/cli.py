@@ -1,9 +1,17 @@
+from pathlib import Path
 from typing import Annotated
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from inference_bench import __version__
+from inference_bench.reporting.plots import (
+    plot_cost_by_optimization,
+    plot_latency_by_optimization,
+    plot_throughput_by_optimization,
+)
+from inference_bench.reporting.summary import summarize_results
 from inference_bench.runners.mock_runner import run_mock_benchmark
 
 app = typer.Typer(
@@ -47,6 +55,65 @@ def mock_run(
     )
     console.print(f"Benchmark rows written: {len(results)}")
     console.print(f"Output path: {output_path}", soft_wrap=True)
+
+
+@app.command()
+def report_summary(
+    input_csv: Annotated[
+        str,
+        typer.Option(help="Path to a benchmark result CSV."),
+    ] = "results/raw/mock_results.csv",
+) -> None:
+    """Print a summary of benchmark results."""
+
+    summary = summarize_results(input_csv)
+    table = Table(title="Benchmark Result Summary")
+    table.add_column("Metric")
+    table.add_column("Value")
+
+    for key, value in summary.items():
+        if isinstance(value, list):
+            display_value = ", ".join(value) if value else ""
+        elif value is None:
+            display_value = ""
+        else:
+            display_value = str(value)
+        table.add_row(key, display_value)
+
+    console.print(table)
+
+
+@app.command()
+def make_plots(
+    input_csv: Annotated[
+        str,
+        typer.Option(help="Path to a benchmark result CSV."),
+    ] = "results/raw/mock_results.csv",
+    output_dir: Annotated[
+        str,
+        typer.Option(help="Directory where plot PNG files should be written."),
+    ] = "results/figures",
+) -> None:
+    """Generate basic benchmark plots."""
+
+    output_path = Path(output_dir)
+    written_paths = [
+        plot_latency_by_optimization(
+            input_csv,
+            output_path / "latency_by_optimization.png",
+        ),
+        plot_throughput_by_optimization(
+            input_csv,
+            output_path / "throughput_by_optimization.png",
+        ),
+        plot_cost_by_optimization(
+            input_csv,
+            output_path / "cost_by_optimization.png",
+        ),
+    ]
+
+    for path in written_paths:
+        console.print(f"Wrote plot: {path}", soft_wrap=True)
 
 
 @app.command()
