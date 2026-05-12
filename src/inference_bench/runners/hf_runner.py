@@ -9,6 +9,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
+from inference_bench.env import load_local_env
 from inference_bench.metrics import (
     calculate_end_to_end_latency_ms,
     calculate_tokens_per_second,
@@ -145,6 +146,7 @@ def run_hf_benchmark(
         model_id=model_id,
         max_new_tokens=max_new_tokens,
     )
+    load_local_env()
     require_hf_dependencies()
 
     torch = import_module("torch")

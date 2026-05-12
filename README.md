@@ -37,10 +37,11 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Dry-run plan](docs/02_dry_run_plan.md)
 - [Decision log](docs/03_decision_log.md)
 - [Publication notes](docs/04_publication_notes.md)
+- [Hugging Face smoke test](docs/05_hf_smoke_test.md)
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` for local secrets. Never commit `.env`. `HF_TOKEN` and `HUGGINGFACE_HUB_TOKEN` may be used for Hugging Face model access.
+Copy `.env.example` to `.env` for local secrets. Never commit `.env`. `HF_TOKEN` and `HUGGINGFACE_HUB_TOKEN` may be used for Hugging Face model access. Real Hugging Face execution requires installing the `hf` extra.
 
 ## Initial Development Model
 
