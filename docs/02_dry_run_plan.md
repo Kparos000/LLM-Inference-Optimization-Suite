@@ -42,6 +42,10 @@ The first real model run should use the smallest configured development model, t
 - vLLM after the Hugging Face baseline is stable
 - SGLang as an optional later extension after vLLM
 
+## Phase 4 vLLM Readiness
+
+Phase 4 prepares the vLLM baseline without installing or executing vLLM. The readiness plan is documented in [vLLM baseline preparation plan](07_vllm_baseline_plan.md), and planned command shapes are captured in `scripts/vllm_planned_commands.md` for review before execution.
+
 ## Planned Workload Progression
 
 - smoke

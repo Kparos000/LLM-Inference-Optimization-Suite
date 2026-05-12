@@ -37,6 +37,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - A controlled local Hugging Face baseline script is available for smoke runs with metrics, traces, system info, and plots.
 - Curated sample artifact promotion rules are available for selected reviewed outputs.
 - Expanded workload categories are available for short chat, code/helpdesk, long context, and shared-prefix inference testing.
+- vLLM baseline planning has started, with execution intentionally deferred until readiness checks are complete.
 
 ## Documentation
 
@@ -47,6 +48,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Publication notes](docs/04_publication_notes.md)
 - [Hugging Face smoke test](docs/05_hf_smoke_test.md)
 - [Result promotion policy](docs/06_result_promotion_policy.md)
+- [vLLM baseline preparation plan](docs/07_vllm_baseline_plan.md)
 
 ## Environment Variables
 

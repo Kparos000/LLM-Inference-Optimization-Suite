@@ -9,3 +9,4 @@
 | 2026-05-12 | Use Qwen small models first because they are easier to access on Hugging Face. | Small accessible models are suitable for smoke tests and integration validation. | Provides a practical path from local validation to first model runs. |
 | 2026-05-12 | Include larger model placeholders for future scale comparison. | Scale comparison is part of the project direction, but larger runs are not active yet. | Preserves future planning without adding runtime or cost. |
 | 2026-05-12 | Start with vLLM before adding SGLang. | vLLM is the first serving benchmark target after the Hugging Face baseline is stable. | Limits backend scope and leaves SGLang as a later extension. |
+| 2026-05-12 | Prepare vLLM baseline only after HF baseline and expanded workloads are stable. | Avoid wasting GPU resources and ensure fair baseline comparison. | vLLM is planned but not executed until readiness checklist is complete. |
