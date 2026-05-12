@@ -21,6 +21,7 @@ ENV/
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Large model/cache files
 models/

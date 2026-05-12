@@ -37,6 +37,10 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Decision log](docs/03_decision_log.md)
 - [Publication notes](docs/04_publication_notes.md)
 
+## Environment Variables
+
+Copy `.env.example` to `.env` for local secrets. Never commit `.env`. `HF_TOKEN` and `HUGGINGFACE_HUB_TOKEN` may be used for Hugging Face model access.
+
 ## Initial Development Model
 
 The default development model is:
