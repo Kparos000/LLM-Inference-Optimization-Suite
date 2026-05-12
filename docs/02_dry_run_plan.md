@@ -18,6 +18,7 @@ mypy src tests
 pytest
 inference-bench doctor
 inference-bench validate-config
+inference-bench system-info --output-path results/raw/system_info.json
 inference-bench mock-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/mock_results.csv
 inference-bench report-summary --input-csv results/raw/mock_results.csv
 inference-bench make-plots --input-csv results/raw/mock_results.csv --output-dir results/figures

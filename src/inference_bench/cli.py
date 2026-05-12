@@ -15,6 +15,7 @@ from inference_bench.reporting.plots import (
 from inference_bench.reporting.summary import summarize_results
 from inference_bench.runners.hf_runner import run_hf_benchmark
 from inference_bench.runners.mock_runner import run_mock_benchmark
+from inference_bench.system_info import collect_system_info, write_system_info_json
 
 app = typer.Typer(
     help="LLM Inference Optimization Suite command-line interface.",
@@ -36,6 +37,27 @@ def doctor() -> None:
     console.print("[bold green]Environment check passed.[/bold green]")
     console.print("No GPU is required for this check.")
     console.print("The benchmark harness scaffold is importable.")
+
+
+@app.command()
+def system_info(
+    output_path: Annotated[
+        str,
+        typer.Option(help="Path where system metadata JSON should be written."),
+    ] = "results/raw/system_info.json",
+) -> None:
+    """Capture lightweight hardware and system metadata."""
+
+    info = collect_system_info()
+    written_path = write_system_info_json(info, output_path)
+
+    console.print(f"Platform: {info.platform} {info.platform_release}".strip(), soft_wrap=True)
+    console.print(f"Python version: {info.python_version}")
+    if info.torch_version is not None:
+        console.print(f"Torch version: {info.torch_version}")
+    if info.cuda_available is not None:
+        console.print(f"CUDA available: {info.cuda_available}")
+    console.print(f"Output path: {written_path}", soft_wrap=True)
 
 
 @app.command()

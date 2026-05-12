@@ -32,6 +32,12 @@ This document defines the reproducibility expectations for benchmark runs in the
 - Estimated cost when available
 - Success status and error message when applicable
 
+## Hardware And System Metadata
+
+Hardware and system metadata should be captured for benchmark runs so result files have enough context for reproducibility checks. Metrics without hardware context should not be treated as portable across machines, runtimes, or library versions.
+
+System info artifacts remain generated outputs unless they are deliberately promoted for documentation, publication, or regression comparison.
+
 ## Raw Output Commit Policy
 
 Generated raw outputs are not all committed by default because benchmark CSVs, logs, and plots can be regenerated, can grow quickly, and may vary by hardware or backend version. The repository should prioritize source, configuration, workload definitions, selected representative outputs, and reproducibility notes.
