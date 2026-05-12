@@ -1,0 +1,3 @@
+{"prompt_id":"smoke-chat-001","workload_name":"smoke","prompt":"Write a concise greeting for a teammate joining a project.","expected_output":null,"metadata":{"category":"chat"}}
+{"prompt_id":"smoke-helpdesk-001","workload_name":"smoke","prompt":"A user reports that the CLI exits with code 2 after passing an unknown flag. Draft a short helpdesk response.","expected_output":null,"metadata":{"category":"code-helpdesk"}}
+{"prompt_id":"smoke-prefix-001","workload_name":"smoke","prompt":"Shared context: The benchmark measures latency, throughput, memory, and cost. Question: Which two metrics best describe response speed?","expected_output":null,"metadata":{"category":"shared-prefix"}}

@@ -20,6 +20,11 @@ Measure ? Understand ? Optimize ? Scale
 
 Paid GPU will not be used until the local harness, CI/CD, metrics, workload loader, and dry-run experiment plan are correct.
 
+## Current Status
+
+- Project scaffold and CI are complete.
+- Benchmark foundation schemas and workload/result utilities are being added.
+
 ## Initial Development Model
 
 The default development model is:
