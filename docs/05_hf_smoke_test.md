@@ -32,6 +32,14 @@ The same command is available in `scripts/install_hf_extra.ps1`.
 inference-bench hf-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/hf_smoke_results.csv --generation-output-path results/raw/hf_smoke_generations.jsonl --model-id Qwen/Qwen2.5-0.5B-Instruct --max-new-tokens 32 --max-prompts 1
 ```
 
+## Optional Streaming Smoke Test
+
+```text
+inference-bench hf-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/hf_streaming_smoke_results.csv --generation-output-path results/raw/hf_streaming_smoke_generations.jsonl --model-id Qwen/Qwen2.5-0.5B-Instruct --max-new-tokens 32 --max-prompts 1 --use-streaming
+```
+
+Non-streaming mode measures end-to-end latency but leaves TTFT blank. Streaming mode attempts to capture TTFT by recording when the first generated text chunk arrives.
+
 ## Follow-Up Reporting
 
 ```text

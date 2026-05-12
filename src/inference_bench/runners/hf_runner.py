@@ -7,14 +7,20 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib import import_module
 from pathlib import Path
+from threading import Thread
 from typing import Any
 
 from inference_bench.env import load_local_env
 from inference_bench.metrics import (
     calculate_end_to_end_latency_ms,
     calculate_tokens_per_second,
+    calculate_tpot_ms,
+    calculate_ttft_ms,
 )
-from inference_bench.output_records import GenerationRecord, write_generation_records_jsonl
+from inference_bench.output_records import (
+    GenerationRecord,
+    write_generation_records_jsonl,
+)
 from inference_bench.results import write_results_csv
 from inference_bench.schema import BenchmarkResult
 from inference_bench.workloads.loader import load_jsonl_workload
@@ -101,6 +107,13 @@ def _decode_generated_text(tokenizer: Any, generated_ids: Any, input_tokens: int
     return str(tokenizer.decode(generated_token_ids, skip_special_tokens=True))
 
 
+def _generated_text_token_count(tokenizer: Any, generated_text: str) -> int:
+    if not generated_text.strip():
+        return 0
+    generated_inputs = tokenizer(generated_text, return_tensors="pt")
+    return _input_token_count(generated_inputs)
+
+
 def _build_failure_result(
     *,
     run_id: str,
@@ -173,6 +186,7 @@ def run_hf_benchmark(
     max_new_tokens: int = 64,
     max_prompts: int | None = None,
     generation_output_path: str | Path | None = None,
+    use_streaming: bool = False,
 ) -> list[BenchmarkResult]:
     """Run a local Hugging Face causal language model benchmark."""
 
@@ -200,6 +214,11 @@ def run_hf_benchmark(
         model_kwargs["torch_dtype"] = torch_dtype
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(config.model_id)
+    streamer_class = getattr(transformers, "TextIteratorStreamer", None)
+    if use_streaming and streamer_class is None:
+        msg = "transformers.TextIteratorStreamer is required for streaming generation"
+        raise RuntimeError(msg)
+
     model = transformers.AutoModelForCausalLM.from_pretrained(
         config.model_id,
         **model_kwargs,
@@ -218,20 +237,70 @@ def run_hf_benchmark(
             input_tokens = _input_token_count(inputs)
             inputs = _move_inputs_to_device(inputs, device)
 
-            with torch.no_grad():
-                generated_ids = model.generate(
-                    **inputs,
-                    max_new_tokens=config.max_new_tokens,
-                    do_sample=config.do_sample,
+            first_token_s: float | None = None
+            if use_streaming:
+                if streamer_class is None:
+                    msg = "transformers.TextIteratorStreamer is required for streaming generation"
+                    raise RuntimeError(msg)
+                streamer = streamer_class(
+                    tokenizer,
+                    skip_prompt=True,
+                    skip_special_tokens=True,
                 )
+                generation_errors: list[Exception] = []
 
-            generated_text = _decode_generated_text(tokenizer, generated_ids, input_tokens)
-            generated_length = int(generated_ids.shape[-1])
-            output_tokens = max(0, generated_length - input_tokens)
+                def generate_with_streamer(
+                    generation_inputs: Any = inputs,
+                    generation_streamer: Any = streamer,
+                    captured_errors: list[Exception] = generation_errors,
+                ) -> None:
+                    try:
+                        with torch.no_grad():
+                            model.generate(
+                                **generation_inputs,
+                                max_new_tokens=config.max_new_tokens,
+                                do_sample=config.do_sample,
+                                streamer=generation_streamer,
+                            )
+                    except Exception as exc:  # noqa: BLE001
+                        captured_errors.append(exc)
+
+                generation_thread = Thread(target=generate_with_streamer)
+                generation_thread.start()
+
+                streamed_chunks: list[str] = []
+                for chunk in streamer:
+                    text_chunk = str(chunk)
+                    streamed_chunks.append(text_chunk)
+                    if first_token_s is None and text_chunk.strip():
+                        first_token_s = time.perf_counter()
+
+                generation_thread.join()
+                if generation_errors:
+                    raise generation_errors[0]
+
+                generated_text = "".join(streamed_chunks)
+                output_tokens = _generated_text_token_count(tokenizer, generated_text)
+            else:
+                with torch.no_grad():
+                    generated_ids = model.generate(
+                        **inputs,
+                        max_new_tokens=config.max_new_tokens,
+                        do_sample=config.do_sample,
+                    )
+
+                generated_text = _decode_generated_text(tokenizer, generated_ids, input_tokens)
+                generated_length = int(generated_ids.shape[-1])
+                output_tokens = max(0, generated_length - input_tokens)
             request_end_s = time.perf_counter()
             end_to_end_latency_ms = calculate_end_to_end_latency_ms(
                 request_start_s,
                 request_end_s,
+            )
+            ttft_ms = (
+                calculate_ttft_ms(request_start_s, first_token_s)
+                if first_token_s is not None
+                else None
             )
             elapsed_seconds = request_end_s - request_start_s
 
@@ -246,8 +315,12 @@ def run_hf_benchmark(
                     prompt_id=item.prompt_id,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
-                    ttft_ms=None,
-                    tpot_ms=(end_to_end_latency_ms / output_tokens if output_tokens > 0 else None),
+                    ttft_ms=ttft_ms,
+                    tpot_ms=(
+                        calculate_tpot_ms(first_token_s, request_end_s, output_tokens)
+                        if first_token_s is not None
+                        else (end_to_end_latency_ms / output_tokens if output_tokens > 0 else None)
+                    ),
                     end_to_end_latency_ms=end_to_end_latency_ms,
                     throughput_tokens_per_second=calculate_tokens_per_second(
                         input_tokens + output_tokens,

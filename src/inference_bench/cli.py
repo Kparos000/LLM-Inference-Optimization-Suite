@@ -120,6 +120,12 @@ def hf_run(
         int | None,
         typer.Option(help="Optional prompt limit for smoke runs."),
     ] = None,
+    use_streaming: Annotated[
+        bool,
+        typer.Option(
+            "--use-streaming/--no-use-streaming", help="Enable streaming TTFT measurement."
+        ),
+    ] = False,
 ) -> None:
     """Run the Hugging Face local inference benchmark."""
 
@@ -132,6 +138,7 @@ def hf_run(
             max_new_tokens=max_new_tokens,
             max_prompts=max_prompts,
             generation_output_path=generation_output_path,
+            use_streaming=use_streaming,
         )
     except RuntimeError as exc:
         console.print(str(exc), markup=False, soft_wrap=True)
@@ -140,6 +147,7 @@ def hf_run(
     console.print(f"Benchmark rows written: {len(results)}")
     console.print(f"Output path: {output_path}", soft_wrap=True)
     console.print(f"Generation output path: {generation_output_path}", soft_wrap=True)
+    console.print(f"Streaming used: {use_streaming}")
 
 
 @app.command()

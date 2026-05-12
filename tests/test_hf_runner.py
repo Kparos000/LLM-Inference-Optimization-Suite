@@ -1,3 +1,4 @@
+import inspect
 import types
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from inference_bench.runners.hf_runner import (
     HF_EXTRA_INSTALL_MESSAGE,
     HuggingFaceRunnerConfig,
     require_hf_dependencies,
+    run_hf_benchmark,
 )
 from inference_bench.schema import BenchmarkResult
 
@@ -98,3 +100,38 @@ def test_cli_hf_run_passes_generation_output_path(
     assert result.exit_code == 0
     assert captured_kwargs["generation_output_path"] == str(generation_output_path)
     assert str(generation_output_path) in result.output
+
+
+def test_run_hf_benchmark_accepts_use_streaming_parameter() -> None:
+    signature = inspect.signature(run_hf_benchmark)
+
+    assert "use_streaming" in signature.parameters
+    assert signature.parameters["use_streaming"].default is False
+
+
+def test_cli_hf_run_accepts_use_streaming(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured_kwargs: dict[str, object] = {}
+
+    def run_hf_benchmark_stub(*args: object, **kwargs: object) -> list[BenchmarkResult]:
+        captured_kwargs.update(kwargs)
+        return []
+
+    output_path = tmp_path / "results.csv"
+    monkeypatch.setattr(cli, "run_hf_benchmark", run_hf_benchmark_stub)
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "hf-run",
+            "--output-path",
+            str(output_path),
+            "--use-streaming",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_kwargs["use_streaming"] is True
+    assert "Streaming used: True" in result.output
