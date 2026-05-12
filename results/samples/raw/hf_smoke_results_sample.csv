@@ -1,0 +1,4 @@
+run_id,timestamp_utc,backend,model_name,optimization,workload_name,prompt_id,input_tokens,output_tokens,ttft_ms,tpot_ms,end_to_end_latency_ms,throughput_tokens_per_second,peak_memory_mb,estimated_cost_usd,success,error_message
+hf-run,2026-05-12T21:26:26.970431+00:00,huggingface,Qwen/Qwen2.5-0.5B-Instruct,hf_baseline,smoke,smoke-chat-001,11,32,2399.5334999926854,167.80717419404087,7601.555900007952,5.656736668864728,,0.0,True,
+hf-run,2026-05-12T21:26:33.758925+00:00,huggingface,Qwen/Qwen2.5-0.5B-Instruct,hf_baseline,smoke,smoke-helpdesk-001,24,32,2155.7188000006136,149.3472548383814,6785.483699990436,8.252912021596769,,0.0,True,
+hf-run,2026-05-12T21:26:40.400470+00:00,huggingface,Qwen/Qwen2.5-0.5B-Instruct,hf_baseline,smoke,smoke-prefix-001,25,32,1928.5540000128094,152.0202999996517,6641.183300002012,8.582807825825666,,0.0,True,

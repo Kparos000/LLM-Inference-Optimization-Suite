@@ -1,0 +1,15 @@
+{
+  "cpu_count_logical": 8,
+  "cpu_count_physical": 4,
+  "cuda_available": false,
+  "cuda_device_count": 0,
+  "cuda_device_names": [],
+  "platform": "Windows",
+  "platform_release": "11",
+  "processor": "Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
+  "python_version": "3.13.12",
+  "timestamp_utc": "2026-05-12T21:25:23.606021+00:00",
+  "torch_version": "2.11.0+cpu",
+  "total_ram_gb": 15.81,
+  "transformers_version": "5.8.0"
+}
