@@ -100,6 +100,10 @@ def hf_run(
         str,
         typer.Option(help="Path where the Hugging Face benchmark CSV should be written."),
     ] = "results/raw/hf_results.csv",
+    generation_output_path: Annotated[
+        str,
+        typer.Option(help="Path where generated text JSONL records should be written."),
+    ] = "results/raw/hf_generations.jsonl",
     model_id: Annotated[
         str,
         typer.Option(help="Hugging Face model identifier."),
@@ -127,6 +131,7 @@ def hf_run(
             run_id=run_id,
             max_new_tokens=max_new_tokens,
             max_prompts=max_prompts,
+            generation_output_path=generation_output_path,
         )
     except RuntimeError as exc:
         console.print(str(exc), markup=False, soft_wrap=True)
@@ -134,6 +139,7 @@ def hf_run(
 
     console.print(f"Benchmark rows written: {len(results)}")
     console.print(f"Output path: {output_path}", soft_wrap=True)
+    console.print(f"Generation output path: {generation_output_path}", soft_wrap=True)
 
 
 @app.command()

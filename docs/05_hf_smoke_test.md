@@ -29,7 +29,7 @@ The same command is available in `scripts/install_hf_extra.ps1`.
 ## Smoke Test Command
 
 ```text
-inference-bench hf-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/hf_smoke_results.csv --model-id Qwen/Qwen2.5-0.5B-Instruct --max-new-tokens 32 --max-prompts 1
+inference-bench hf-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/hf_smoke_results.csv --generation-output-path results/raw/hf_smoke_generations.jsonl --model-id Qwen/Qwen2.5-0.5B-Instruct --max-new-tokens 32 --max-prompts 1
 ```
 
 ## Follow-Up Reporting
@@ -38,4 +38,6 @@ inference-bench hf-run --workload-path data/prompts/smoke_workload.jsonl --outpu
 inference-bench report-summary --input-csv results/raw/hf_smoke_results.csv
 ```
 
-Generated result files remain ignored unless deliberately promoted into the repository later as selected reproducibility artifacts.
+CSV files store benchmark metrics. JSONL generation files store generated text for later qualitative review.
+
+Generated result artifacts remain ignored by Git unless deliberately promoted into the repository later as selected reproducibility artifacts.

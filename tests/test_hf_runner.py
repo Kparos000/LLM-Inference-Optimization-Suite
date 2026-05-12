@@ -1,4 +1,5 @@
 import types
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -11,6 +12,7 @@ from inference_bench.runners.hf_runner import (
     HuggingFaceRunnerConfig,
     require_hf_dependencies,
 )
+from inference_bench.schema import BenchmarkResult
 
 
 def test_hugging_face_runner_config_valid_case() -> None:
@@ -69,3 +71,30 @@ def test_cli_hf_run_surfaces_dependency_error_cleanly(
     assert result.exit_code == 1
     assert "Missing optional Hugging Face dependencies" in result.output
     assert HF_EXTRA_INSTALL_MESSAGE in result.output
+
+
+def test_cli_hf_run_passes_generation_output_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured_kwargs: dict[str, object] = {}
+
+    def run_hf_benchmark_stub(*args: object, **kwargs: object) -> list[BenchmarkResult]:
+        captured_kwargs.update(kwargs)
+        return []
+
+    generation_output_path = tmp_path / "generations.jsonl"
+    monkeypatch.setattr(cli, "run_hf_benchmark", run_hf_benchmark_stub)
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "hf-run",
+            "--generation-output-path",
+            str(generation_output_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_kwargs["generation_output_path"] == str(generation_output_path)
+    assert str(generation_output_path) in result.output

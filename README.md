@@ -29,6 +29,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Reporting utilities can summarize benchmark CSVs and generate basic plots.
 - YAML configuration files define models, workloads, and experiments.
 - The Hugging Face runner foundation is available; real model execution is optional and requires installing the `hf` extra.
+- Hugging Face runs can preserve generated text in JSONL artifacts for later quality analysis.
 
 ## Documentation
 

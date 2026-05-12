@@ -14,6 +14,7 @@ from inference_bench.metrics import (
     calculate_end_to_end_latency_ms,
     calculate_tokens_per_second,
 )
+from inference_bench.output_records import GenerationRecord, write_generation_records_jsonl
 from inference_bench.results import write_results_csv
 from inference_bench.schema import BenchmarkResult
 from inference_bench.workloads.loader import load_jsonl_workload
@@ -95,6 +96,11 @@ def _input_token_count(inputs: Any) -> int:
     return int(input_ids.shape[-1])
 
 
+def _decode_generated_text(tokenizer: Any, generated_ids: Any, input_tokens: int) -> str:
+    generated_token_ids = generated_ids[0][input_tokens:]
+    return str(tokenizer.decode(generated_token_ids, skip_special_tokens=True))
+
+
 def _build_failure_result(
     *,
     run_id: str,
@@ -131,6 +137,33 @@ def _build_failure_result(
     )
 
 
+def _build_failure_generation_record(
+    *,
+    run_id: str,
+    model_id: str,
+    optimization: str,
+    workload_name: str,
+    prompt_id: str,
+    prompt: str,
+    input_tokens: int,
+    error: Exception,
+) -> GenerationRecord:
+    return GenerationRecord(
+        run_id=run_id,
+        prompt_id=prompt_id,
+        workload_name=workload_name,
+        backend="huggingface",
+        model_name=model_id,
+        optimization=optimization,
+        prompt=prompt,
+        generated_text=None,
+        input_tokens=max(0, input_tokens),
+        output_tokens=0,
+        success=False,
+        error_message=str(error),
+    )
+
+
 def run_hf_benchmark(
     workload_path: str | Path,
     output_path: str | Path,
@@ -139,6 +172,7 @@ def run_hf_benchmark(
     optimization: str = "hf_baseline",
     max_new_tokens: int = 64,
     max_prompts: int | None = None,
+    generation_output_path: str | Path | None = None,
 ) -> list[BenchmarkResult]:
     """Run a local Hugging Face causal language model benchmark."""
 
@@ -175,6 +209,7 @@ def run_hf_benchmark(
     model.eval()
 
     results: list[BenchmarkResult] = []
+    generation_records: list[GenerationRecord] = []
     for item in workload_items:
         request_start_s = time.perf_counter()
         input_tokens = 0
@@ -190,7 +225,7 @@ def run_hf_benchmark(
                     do_sample=config.do_sample,
                 )
 
-            tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+            generated_text = _decode_generated_text(tokenizer, generated_ids, input_tokens)
             generated_length = int(generated_ids.shape[-1])
             output_tokens = max(0, generated_length - input_tokens)
             request_end_s = time.perf_counter()
@@ -224,6 +259,22 @@ def run_hf_benchmark(
                     error_message=None,
                 )
             )
+            generation_records.append(
+                GenerationRecord(
+                    run_id=run_id,
+                    prompt_id=item.prompt_id,
+                    workload_name=item.workload_name,
+                    backend="huggingface",
+                    model_name=config.model_id,
+                    optimization=optimization,
+                    prompt=item.prompt,
+                    generated_text=generated_text,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    success=True,
+                    error_message=None,
+                )
+            )
         except Exception as exc:  # noqa: BLE001
             results.append(
                 _build_failure_result(
@@ -237,6 +288,20 @@ def run_hf_benchmark(
                     error=exc,
                 )
             )
+            generation_records.append(
+                _build_failure_generation_record(
+                    run_id=run_id,
+                    model_id=config.model_id,
+                    optimization=optimization,
+                    workload_name=item.workload_name,
+                    prompt_id=item.prompt_id,
+                    prompt=item.prompt,
+                    input_tokens=input_tokens,
+                    error=exc,
+                )
+            )
 
     write_results_csv(results, output_path)
+    if generation_output_path is not None:
+        write_generation_records_jsonl(generation_records, generation_output_path)
     return results
