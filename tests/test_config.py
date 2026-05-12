@@ -1,0 +1,81 @@
+from pathlib import Path
+
+import pytest
+from typer.testing import CliRunner
+
+from inference_bench.cli import app
+from inference_bench.config import (
+    ExperimentConfig,
+    ModelConfig,
+    ProjectConfig,
+    WorkloadConfig,
+    load_project_config,
+    load_yaml_file,
+)
+
+
+def test_loads_default_project_config() -> None:
+    config = load_project_config()
+
+    assert "qwen2_5_0_5b_instruct" in config.models
+    assert "qwen2_5_7b_instruct" in config.models
+    assert "qwen2_5_32b_instruct" in config.models
+    assert "large_model_placeholder" in config.models
+    assert config.workloads["smoke"].path == "data/prompts/smoke_workload.jsonl"
+    assert config.experiments["mock_smoke"].backend == "mock"
+
+
+def test_model_config_rejects_empty_model_id() -> None:
+    with pytest.raises(ValueError, match="model_id"):
+        ModelConfig(name="Model", provider="provider", model_id="")
+
+
+def test_workload_config_rejects_empty_path() -> None:
+    with pytest.raises(ValueError, match="path"):
+        WorkloadConfig(name="smoke", path="")
+
+
+def test_experiment_config_rejects_non_positive_concurrency() -> None:
+    with pytest.raises(ValueError, match="concurrency"):
+        ExperimentConfig(
+            name="experiment",
+            backend="mock",
+            model="model",
+            optimization="none",
+            workload="smoke",
+            output_path="results/raw/results.csv",
+            concurrency=0,
+        )
+
+
+def test_project_config_rejects_unknown_model_reference() -> None:
+    workload = WorkloadConfig(name="smoke", path="data/prompts/smoke_workload.jsonl")
+    experiment = ExperimentConfig(
+        name="experiment",
+        backend="mock",
+        model="missing-model",
+        optimization="none",
+        workload="smoke",
+        output_path="results/raw/results.csv",
+    )
+
+    with pytest.raises(ValueError, match="unknown model"):
+        ProjectConfig(
+            models={},
+            workloads={"smoke": workload},
+            experiments={"experiment": experiment},
+        )
+
+
+def test_missing_config_file_raises_file_not_found_error(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        load_yaml_file(tmp_path / "missing.yaml")
+
+
+def test_cli_validate_config_succeeds_with_default_config() -> None:
+    result = CliRunner().invoke(app, ["validate-config"])
+
+    assert result.exit_code == 0
+    assert "Configuration valid" in result.output
+    assert "Models loaded: 5" in result.output
+    assert "mock_smoke" in result.output

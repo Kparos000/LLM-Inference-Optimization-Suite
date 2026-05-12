@@ -27,6 +27,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Metric utilities for latency, throughput, cost, and memory are part of the benchmark foundation.
 - A deterministic mock benchmark runner is available for validating the benchmark pipeline without model downloads or GPU.
 - Reporting utilities can summarize benchmark CSVs and generate basic plots.
+- YAML configuration files define models, workloads, and experiments.
 
 ## Initial Development Model
 

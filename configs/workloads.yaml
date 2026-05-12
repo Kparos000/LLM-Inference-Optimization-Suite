@@ -1,0 +1,4 @@
+smoke:
+  name: "smoke"
+  path: "data/prompts/smoke_workload.jsonl"
+  description: "Small workload for validating the benchmark pipeline."

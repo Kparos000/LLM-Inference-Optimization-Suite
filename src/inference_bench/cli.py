@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 
 from inference_bench import __version__
+from inference_bench.config import load_project_config
 from inference_bench.reporting.plots import (
     plot_cost_by_optimization,
     plot_latency_by_optimization,
@@ -34,6 +35,37 @@ def doctor() -> None:
     console.print("[bold green]Environment check passed.[/bold green]")
     console.print("No GPU is required for this check.")
     console.print("The benchmark harness scaffold is importable.")
+
+
+@app.command()
+def validate_config(
+    models_path: Annotated[
+        str,
+        typer.Option(help="Path to the models YAML config."),
+    ] = "configs/models.yaml",
+    workloads_path: Annotated[
+        str,
+        typer.Option(help="Path to the workloads YAML config."),
+    ] = "configs/workloads.yaml",
+    experiments_path: Annotated[
+        str,
+        typer.Option(help="Path to the experiments YAML config."),
+    ] = "configs/experiments.yaml",
+) -> None:
+    """Validate benchmark configuration files."""
+
+    project_config = load_project_config(
+        models_path=models_path,
+        workloads_path=workloads_path,
+        experiments_path=experiments_path,
+    )
+    experiment_names = sorted(project_config.experiments)
+
+    console.print("[bold green]Configuration valid.[/bold green]")
+    console.print(f"Models loaded: {len(project_config.models)}")
+    console.print(f"Workloads loaded: {len(project_config.workloads)}")
+    console.print(f"Experiments loaded: {len(project_config.experiments)}")
+    console.print("Experiments: " + (", ".join(experiment_names) if experiment_names else "none"))
 
 
 @app.command()

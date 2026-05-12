@@ -1,0 +1,39 @@
+qwen2_5_0_5b_instruct:
+  name: "Qwen2.5 0.5B Instruct"
+  provider: "huggingface"
+  model_id: "Qwen/Qwen2.5-0.5B-Instruct"
+  parameter_count: 500000000
+  default_dtype: "auto"
+  notes: "Default lightweight development model for local smoke tests."
+
+qwen2_5_1_5b_instruct:
+  name: "Qwen2.5 1.5B Instruct"
+  provider: "huggingface"
+  model_id: "Qwen/Qwen2.5-1.5B-Instruct"
+  parameter_count: 1500000000
+  default_dtype: "auto"
+  notes: "Candidate small benchmark model after smoke tests."
+
+qwen2_5_7b_instruct:
+  name: "Qwen2.5 7B Instruct"
+  provider: "huggingface"
+  model_id: "Qwen/Qwen2.5-7B-Instruct"
+  parameter_count: 7000000000
+  default_dtype: "auto"
+  notes: "Inactive placeholder for future model-scale benchmark comparison."
+
+qwen2_5_32b_instruct:
+  name: "Qwen2.5 32B Instruct"
+  provider: "huggingface"
+  model_id: "Qwen/Qwen2.5-32B-Instruct"
+  parameter_count: 32000000000
+  default_dtype: "auto"
+  notes: "Inactive placeholder for future model-scale benchmark comparison."
+
+large_model_placeholder:
+  name: "Large Model Placeholder"
+  provider: "placeholder"
+  model_id: "placeholder/large-model"
+  parameter_count: null
+  default_dtype: "auto"
+  notes: "Inactive placeholder for future large-model benchmark planning."

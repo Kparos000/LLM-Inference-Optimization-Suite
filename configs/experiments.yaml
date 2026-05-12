@@ -1,0 +1,9 @@
+mock_smoke:
+  name: "mock_smoke"
+  backend: "mock"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "none"
+  workload: "smoke"
+  output_path: "results/raw/mock_results.csv"
+  max_prompts: 3
+  concurrency: 1
