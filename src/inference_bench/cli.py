@@ -4,6 +4,7 @@ import typer
 from rich.console import Console
 
 from inference_bench import __version__
+from inference_bench.runners.mock_runner import run_mock_benchmark
 
 app = typer.Typer(
     help="LLM Inference Optimization Suite command-line interface.",
@@ -25,6 +26,27 @@ def doctor() -> None:
     console.print("[bold green]Environment check passed.[/bold green]")
     console.print("No GPU is required for this check.")
     console.print("The benchmark harness scaffold is importable.")
+
+
+@app.command()
+def mock_run(
+    workload_path: Annotated[
+        str,
+        typer.Option(help="Path to the JSONL workload file."),
+    ] = "data/prompts/smoke_workload.jsonl",
+    output_path: Annotated[
+        str,
+        typer.Option(help="Path where the mock benchmark CSV should be written."),
+    ] = "results/raw/mock_results.csv",
+) -> None:
+    """Run the deterministic mock benchmark pipeline."""
+
+    results = run_mock_benchmark(
+        workload_path=workload_path,
+        output_path=output_path,
+    )
+    console.print(f"Benchmark rows written: {len(results)}")
+    console.print(f"Output path: {output_path}", soft_wrap=True)
 
 
 @app.command()

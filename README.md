@@ -25,6 +25,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Project scaffold and CI are complete.
 - Benchmark foundation schemas and workload/result utilities are being added.
 - Metric utilities for latency, throughput, cost, and memory are part of the benchmark foundation.
+- A deterministic mock benchmark runner is available for validating the benchmark pipeline without model downloads or GPU.
 
 ## Initial Development Model
 
