@@ -13,6 +13,7 @@ from inference_bench.reporting.plots import (
     plot_throughput_by_optimization,
 )
 from inference_bench.reporting.summary import summarize_results
+from inference_bench.runners.hf_runner import run_hf_benchmark
 from inference_bench.runners.mock_runner import run_mock_benchmark
 
 app = typer.Typer(
@@ -85,6 +86,52 @@ def mock_run(
         workload_path=workload_path,
         output_path=output_path,
     )
+    console.print(f"Benchmark rows written: {len(results)}")
+    console.print(f"Output path: {output_path}", soft_wrap=True)
+
+
+@app.command()
+def hf_run(
+    workload_path: Annotated[
+        str,
+        typer.Option(help="Path to the JSONL workload file."),
+    ] = "data/prompts/smoke_workload.jsonl",
+    output_path: Annotated[
+        str,
+        typer.Option(help="Path where the Hugging Face benchmark CSV should be written."),
+    ] = "results/raw/hf_results.csv",
+    model_id: Annotated[
+        str,
+        typer.Option(help="Hugging Face model identifier."),
+    ] = "Qwen/Qwen2.5-0.5B-Instruct",
+    run_id: Annotated[
+        str,
+        typer.Option(help="Benchmark run identifier."),
+    ] = "hf-run",
+    max_new_tokens: Annotated[
+        int,
+        typer.Option(help="Maximum number of output tokens to generate."),
+    ] = 64,
+    max_prompts: Annotated[
+        int | None,
+        typer.Option(help="Optional prompt limit for smoke runs."),
+    ] = None,
+) -> None:
+    """Run the Hugging Face local inference benchmark."""
+
+    try:
+        results = run_hf_benchmark(
+            workload_path=workload_path,
+            output_path=output_path,
+            model_id=model_id,
+            run_id=run_id,
+            max_new_tokens=max_new_tokens,
+            max_prompts=max_prompts,
+        )
+    except RuntimeError as exc:
+        console.print(str(exc), markup=False, soft_wrap=True)
+        raise typer.Exit(code=1) from exc
+
     console.print(f"Benchmark rows written: {len(results)}")
     console.print(f"Output path: {output_path}", soft_wrap=True)
 

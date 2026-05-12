@@ -28,6 +28,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - A deterministic mock benchmark runner is available for validating the benchmark pipeline without model downloads or GPU.
 - Reporting utilities can summarize benchmark CSVs and generate basic plots.
 - YAML configuration files define models, workloads, and experiments.
+- The Hugging Face runner foundation is available; real model execution is optional and requires installing the `hf` extra.
 
 ## Documentation
 
