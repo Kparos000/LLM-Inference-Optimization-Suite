@@ -50,3 +50,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Python packaging metadata
+*.egg-info/
+src/*.egg-info/

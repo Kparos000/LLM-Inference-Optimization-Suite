@@ -1,2 +1,0 @@
-[console_scripts]
-inference-bench = inference_bench.cli:app
