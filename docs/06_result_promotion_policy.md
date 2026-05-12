@@ -1,0 +1,38 @@
+# Result Promotion Policy
+
+## Purpose
+
+This policy defines how selected benchmark artifacts may be promoted into version control while keeping generated outputs ignored by default.
+
+## Default Rule
+
+Generated artifacts under `results/raw`, `results/processed`, and `results/figures` are ignored by default. These files can vary by machine, dependency version, runtime, and workload settings, and they should not be committed unless deliberately reviewed and promoted.
+
+## When To Promote Selected Artifacts
+
+Promote only small, representative artifacts that support a README, report, paper note, reproducibility example, or regression comparison. Full raw runs and large benchmark datasets should be stored externally or summarized.
+
+## Promotion Workflow
+
+Run:
+
+```text
+powershell -ExecutionPolicy Bypass -File scripts/promote_sample_artifacts.ps1
+```
+
+The script copies a fixed allowlist of known benchmark outputs into `results/samples`. Missing files are reported without failing.
+
+## Review Checklist
+
+Before committing sample artifacts, verify:
+
+- No secrets
+- No tokens
+- No private data
+- No accidental local-only paths
+- Artifact supports a report, README, or paper note
+- Artifact is small enough for GitHub
+
+## Storage Note
+
+Large benchmark datasets, full raw runs, and bulky plot collections should be stored externally or summarized in documentation rather than committed to the repository.

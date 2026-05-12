@@ -49,6 +49,14 @@ Controlled Hugging Face baseline results should preserve:
 - Structured JSON validity score
 - Figures from both workloads
 
+## Candidate Sample Artifacts For Final Publication Package
+
+- System info sample
+- HF baseline metrics sample
+- Structured-output metrics sample
+- Structured-output generation trace sample
+- Latency and throughput plots
+
 ## Limitations To Track
 
 - Hardware differences across runs

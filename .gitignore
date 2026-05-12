@@ -42,6 +42,13 @@ results/figures/*
 !results/raw/.gitkeep
 !results/processed/.gitkeep
 !results/figures/.gitkeep
+!results/samples/
+!results/samples/.gitkeep
+!results/samples/README.md
+!results/samples/raw/
+!results/samples/raw/.gitkeep
+!results/samples/figures/
+!results/samples/figures/.gitkeep
 
 # OS/editor
 .DS_Store
