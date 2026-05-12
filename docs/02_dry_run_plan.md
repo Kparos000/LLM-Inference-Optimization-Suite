@@ -44,10 +44,13 @@ The first real model run should use the smallest configured development model, t
 ## Planned Workload Progression
 
 - smoke
+- structured_output_smoke
 - short_chat
 - code_helpdesk
 - long_context
 - shared_prefix
+
+Structured-output quality checks will validate generated JSON and required-field completeness for workloads that declare JSON output expectations.
 
 ## Planned Optimization Progression
 

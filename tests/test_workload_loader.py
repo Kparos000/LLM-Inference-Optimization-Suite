@@ -13,6 +13,15 @@ def test_loads_sample_workload() -> None:
     assert items[1].metadata["category"] == "code-helpdesk"
 
 
+def test_loads_structured_output_smoke_workload() -> None:
+    items = load_jsonl_workload(Path("data/prompts/structured_output_smoke.jsonl"))
+
+    assert len(items) == 3
+    assert items[0].workload_name == "structured_output_smoke"
+    assert items[0].metadata["output_format"] == "json"
+    assert items[0].metadata["required_fields"] == "category,answer,confidence"
+
+
 def test_ignores_blank_lines_in_jsonl(tmp_path: Path) -> None:
     workload_path = tmp_path / "workload.jsonl"
     workload_path.write_text(

@@ -2,3 +2,7 @@ smoke:
   name: "smoke"
   path: "data/prompts/smoke_workload.jsonl"
   description: "Small workload for validating the benchmark pipeline."
+structured_output_smoke:
+  name: "structured_output_smoke"
+  path: "data/prompts/structured_output_smoke.jsonl"
+  description: "Small workload for validating JSON structured-output behavior."

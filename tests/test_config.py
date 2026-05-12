@@ -22,7 +22,12 @@ def test_loads_default_project_config() -> None:
     assert "qwen2_5_32b_instruct" in config.models
     assert "large_model_placeholder" in config.models
     assert config.workloads["smoke"].path == "data/prompts/smoke_workload.jsonl"
+    assert (
+        config.workloads["structured_output_smoke"].path
+        == "data/prompts/structured_output_smoke.jsonl"
+    )
     assert config.experiments["mock_smoke"].backend == "mock"
+    assert config.experiments["mock_structured_output_smoke"].workload == "structured_output_smoke"
 
 
 def test_model_config_rejects_empty_model_id() -> None:
@@ -78,4 +83,7 @@ def test_cli_validate_config_succeeds_with_default_config() -> None:
     assert result.exit_code == 0
     assert "Configuration valid" in result.output
     assert "Models loaded: 5" in result.output
+    assert "Workloads loaded: 2" in result.output
+    assert "Experiments loaded: 2" in result.output
     assert "mock_smoke" in result.output
+    assert "mock_structured_output_smoke" in result.output

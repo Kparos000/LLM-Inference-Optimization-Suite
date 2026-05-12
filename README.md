@@ -32,6 +32,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Hugging Face runs can preserve generated text in JSONL artifacts for later quality analysis.
 - The Hugging Face runner supports optional streaming TTFT measurement.
 - Generation JSONL artifacts provide full prompt-level traces for later analysis.
+- Structured-output smoke workloads and JSON validation utilities are available for future quality checks.
 
 ## Documentation
 

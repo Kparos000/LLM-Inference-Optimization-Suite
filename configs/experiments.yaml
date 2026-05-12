@@ -7,3 +7,12 @@ mock_smoke:
   output_path: "results/raw/mock_results.csv"
   max_prompts: 3
   concurrency: 1
+mock_structured_output_smoke:
+  name: "mock_structured_output_smoke"
+  backend: "mock"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "none"
+  workload: "structured_output_smoke"
+  output_path: "results/raw/mock_structured_output_results.csv"
+  max_prompts: 3
+  concurrency: 1
