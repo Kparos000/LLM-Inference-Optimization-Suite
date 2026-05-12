@@ -150,7 +150,36 @@ def _build_failure_result(
     )
 
 
-def _build_failure_generation_record(
+def _build_generation_record_from_result(
+    *,
+    result: BenchmarkResult,
+    prompt: str,
+    generated_text: str | None,
+) -> GenerationRecord:
+    return GenerationRecord(
+        run_id=result.run_id,
+        timestamp_utc=result.timestamp_utc,
+        prompt_id=result.prompt_id,
+        workload_name=result.workload_name,
+        backend=result.backend,
+        model_name=result.model_name,
+        optimization=result.optimization,
+        prompt=prompt,
+        generated_text=generated_text,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        ttft_ms=result.ttft_ms,
+        tpot_ms=result.tpot_ms,
+        end_to_end_latency_ms=result.end_to_end_latency_ms,
+        throughput_tokens_per_second=result.throughput_tokens_per_second,
+        peak_memory_mb=result.peak_memory_mb,
+        estimated_cost_usd=result.estimated_cost_usd,
+        success=result.success,
+        error_message=result.error_message,
+    )
+
+
+def _build_failed_prompt_outputs(
     *,
     run_id: str,
     model_id: str,
@@ -159,22 +188,25 @@ def _build_failure_generation_record(
     prompt_id: str,
     prompt: str,
     input_tokens: int,
+    request_start_s: float,
     error: Exception,
-) -> GenerationRecord:
-    return GenerationRecord(
+) -> tuple[BenchmarkResult, GenerationRecord]:
+    failure_result = _build_failure_result(
         run_id=run_id,
-        prompt_id=prompt_id,
-        workload_name=workload_name,
-        backend="huggingface",
-        model_name=model_id,
+        model_id=model_id,
         optimization=optimization,
+        workload_name=workload_name,
+        prompt_id=prompt_id,
+        input_tokens=input_tokens,
+        request_start_s=request_start_s,
+        error=error,
+    )
+    failure_record = _build_generation_record_from_result(
+        result=failure_result,
         prompt=prompt,
         generated_text=None,
-        input_tokens=max(0, input_tokens),
-        output_tokens=0,
-        success=False,
-        error_message=str(error),
     )
+    return failure_result, failure_record
 
 
 def run_hf_benchmark(
@@ -302,77 +334,58 @@ def run_hf_benchmark(
                 if first_token_s is not None
                 else None
             )
-            elapsed_seconds = request_end_s - request_start_s
-
-            results.append(
-                BenchmarkResult(
-                    run_id=run_id,
-                    timestamp_utc=_utc_timestamp(),
-                    backend="huggingface",
-                    model_name=config.model_id,
-                    optimization=optimization,
-                    workload_name=item.workload_name,
-                    prompt_id=item.prompt_id,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                    ttft_ms=ttft_ms,
-                    tpot_ms=(
-                        calculate_tpot_ms(first_token_s, request_end_s, output_tokens)
-                        if first_token_s is not None
-                        else (end_to_end_latency_ms / output_tokens if output_tokens > 0 else None)
-                    ),
-                    end_to_end_latency_ms=end_to_end_latency_ms,
-                    throughput_tokens_per_second=calculate_tokens_per_second(
-                        input_tokens + output_tokens,
-                        elapsed_seconds,
-                    ),
-                    peak_memory_mb=None,
-                    estimated_cost_usd=0.0,
-                    success=True,
-                    error_message=None,
-                )
+            tpot_ms = (
+                calculate_tpot_ms(first_token_s, request_end_s, output_tokens)
+                if first_token_s is not None
+                else (end_to_end_latency_ms / output_tokens if output_tokens > 0 else None)
             )
+            elapsed_seconds = request_end_s - request_start_s
+            throughput_tokens_per_second = calculate_tokens_per_second(
+                input_tokens + output_tokens,
+                elapsed_seconds,
+            )
+
+            result = BenchmarkResult(
+                run_id=run_id,
+                timestamp_utc=_utc_timestamp(),
+                backend="huggingface",
+                model_name=config.model_id,
+                optimization=optimization,
+                workload_name=item.workload_name,
+                prompt_id=item.prompt_id,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                ttft_ms=ttft_ms,
+                tpot_ms=tpot_ms,
+                end_to_end_latency_ms=end_to_end_latency_ms,
+                throughput_tokens_per_second=throughput_tokens_per_second,
+                peak_memory_mb=None,
+                estimated_cost_usd=0.0,
+                success=True,
+                error_message=None,
+            )
+            results.append(result)
             generation_records.append(
-                GenerationRecord(
-                    run_id=run_id,
-                    prompt_id=item.prompt_id,
-                    workload_name=item.workload_name,
-                    backend="huggingface",
-                    model_name=config.model_id,
-                    optimization=optimization,
+                _build_generation_record_from_result(
+                    result=result,
                     prompt=item.prompt,
                     generated_text=generated_text,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                    success=True,
-                    error_message=None,
                 )
             )
         except Exception as exc:  # noqa: BLE001
-            results.append(
-                _build_failure_result(
-                    run_id=run_id,
-                    model_id=config.model_id,
-                    optimization=optimization,
-                    workload_name=item.workload_name,
-                    prompt_id=item.prompt_id,
-                    input_tokens=input_tokens,
-                    request_start_s=request_start_s,
-                    error=exc,
-                )
+            result, generation_record = _build_failed_prompt_outputs(
+                run_id=run_id,
+                model_id=config.model_id,
+                optimization=optimization,
+                workload_name=item.workload_name,
+                prompt_id=item.prompt_id,
+                prompt=item.prompt,
+                input_tokens=input_tokens,
+                request_start_s=request_start_s,
+                error=exc,
             )
-            generation_records.append(
-                _build_failure_generation_record(
-                    run_id=run_id,
-                    model_id=config.model_id,
-                    optimization=optimization,
-                    workload_name=item.workload_name,
-                    prompt_id=item.prompt_id,
-                    prompt=item.prompt,
-                    input_tokens=input_tokens,
-                    error=exc,
-                )
-            )
+            results.append(result)
+            generation_records.append(generation_record)
 
     write_results_csv(results, output_path)
     if generation_output_path is not None:

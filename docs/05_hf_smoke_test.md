@@ -48,4 +48,6 @@ inference-bench report-summary --input-csv results/raw/hf_smoke_results.csv
 
 CSV files store benchmark metrics. JSONL generation files store generated text for later qualitative review.
 
+Generation JSONL files now preserve full prompt-level traces, including prompt text, generated text, latency metrics, throughput, cost estimate, and success/error status.
+
 Generated result artifacts remain ignored by Git unless deliberately promoted into the repository later as selected reproducibility artifacts.

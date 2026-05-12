@@ -31,6 +31,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The Hugging Face runner foundation is available; real model execution is optional and requires installing the `hf` extra.
 - Hugging Face runs can preserve generated text in JSONL artifacts for later quality analysis.
 - The Hugging Face runner supports optional streaming TTFT measurement.
+- Generation JSONL artifacts provide full prompt-level traces for later analysis.
 
 ## Documentation
 

@@ -20,11 +20,18 @@ def _validate_non_negative_int(value: int, field_name: str) -> None:
         raise ValueError(msg)
 
 
+def _validate_non_negative_float(value: float | None, field_name: str) -> None:
+    if value is not None and value < 0:
+        msg = f"{field_name} must be >= 0"
+        raise ValueError(msg)
+
+
 @dataclass(frozen=True)
 class GenerationRecord:
     """Generated text and prompt trace for one benchmark item."""
 
     run_id: str
+    timestamp_utc: str
     prompt_id: str
     workload_name: str
     backend: str
@@ -34,12 +41,19 @@ class GenerationRecord:
     generated_text: str | None
     input_tokens: int
     output_tokens: int
+    ttft_ms: float | None
+    tpot_ms: float | None
+    end_to_end_latency_ms: float
+    throughput_tokens_per_second: float | None
+    peak_memory_mb: float | None
+    estimated_cost_usd: float | None
     success: bool
     error_message: str | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
             "run_id",
+            "timestamp_utc",
             "prompt_id",
             "workload_name",
             "backend",
@@ -51,6 +65,18 @@ class GenerationRecord:
 
         _validate_non_negative_int(self.input_tokens, "input_tokens")
         _validate_non_negative_int(self.output_tokens, "output_tokens")
+        _validate_non_negative_float(self.ttft_ms, "ttft_ms")
+        _validate_non_negative_float(self.tpot_ms, "tpot_ms")
+        _validate_non_negative_float(
+            self.end_to_end_latency_ms,
+            "end_to_end_latency_ms",
+        )
+        _validate_non_negative_float(
+            self.throughput_tokens_per_second,
+            "throughput_tokens_per_second",
+        )
+        _validate_non_negative_float(self.peak_memory_mb, "peak_memory_mb")
+        _validate_non_negative_float(self.estimated_cost_usd, "estimated_cost_usd")
 
         if self.success and self.generated_text is None:
             msg = "generated_text must not be None when success is True"
