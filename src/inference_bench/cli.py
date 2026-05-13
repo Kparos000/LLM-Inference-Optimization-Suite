@@ -9,6 +9,7 @@ from rich.table import Table
 from inference_bench import __version__
 from inference_bench.config import load_project_config
 from inference_bench.quality import score_structured_output
+from inference_bench.reporting.compare import compare_result_files, write_comparison_csv
 from inference_bench.reporting.plots import (
     plot_cost_by_optimization,
     plot_latency_by_optimization,
@@ -264,6 +265,65 @@ def score_structured_jsonl(
     table.add_row("invalid_json_count", str(invalid_json_count))
     table.add_row("required_fields_rate", f"{required_fields_rate:.3f}")
     console.print(table)
+
+
+@app.command()
+def compare_results(
+    input_csv: Annotated[
+        list[str] | None,
+        typer.Option(help="Path to a benchmark result CSV. May be provided multiple times."),
+    ] = None,
+    output_csv: Annotated[
+        str,
+        typer.Option(help="Path where the comparison CSV should be written."),
+    ] = "results/processed/comparison.csv",
+) -> None:
+    """Compare multiple benchmark result CSV files."""
+
+    if not input_csv:
+        console.print("At least one --input-csv value is required.", markup=False)
+        raise typer.Exit(code=1)
+
+    try:
+        rows = compare_result_files(input_csv)
+    except FileNotFoundError as exc:
+        console.print(f"Input CSV not found: {exc.filename or exc}", markup=False, soft_wrap=True)
+        raise typer.Exit(code=1) from exc
+
+    written_path = write_comparison_csv(rows, output_csv)
+
+    display_fields = (
+        "source_file",
+        "row_count",
+        "success_count",
+        "failure_count",
+        "backends",
+        "models",
+        "optimizations",
+        "workloads",
+        "avg_end_to_end_latency_ms",
+        "avg_ttft_ms",
+        "avg_tpot_ms",
+        "avg_throughput_tokens_per_second",
+        "total_estimated_cost_usd",
+    )
+
+    table = Table(title="Benchmark Result Comparison")
+    for column_name in display_fields:
+        table.add_column(column_name)
+
+    for row in rows:
+        table.add_row(
+            *[
+                ", ".join(str(item) for item in value)
+                if isinstance(value := row.get(column_name), list)
+                else ("" if value is None else str(value))
+                for column_name in display_fields
+            ]
+        )
+
+    console.print(table)
+    console.print(f"Output path: {written_path}", soft_wrap=True)
 
 
 @app.command()

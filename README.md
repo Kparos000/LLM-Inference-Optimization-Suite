@@ -38,6 +38,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Curated sample artifact promotion rules are available for selected reviewed outputs.
 - Expanded workload categories are available for short chat, code/helpdesk, long context, and shared-prefix inference testing.
 - vLLM baseline planning has started, with execution intentionally deferred until readiness checks are complete.
+- Multiple benchmark CSV files can be compared in one summary table.
 
 ## Documentation
 

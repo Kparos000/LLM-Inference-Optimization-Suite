@@ -28,6 +28,7 @@ Preserve material that may later support a short technical paper, LinkedIn post,
 - Stable workload definitions
 - Separate latency, throughput, memory, and cost metrics
 - Raw CSV outputs and report-ready plots
+- Comparison CSVs for paper and social-summary preparation
 - Clear distinction between mock, smoke, and performance benchmark runs
 
 ## Result Points To Preserve Later
