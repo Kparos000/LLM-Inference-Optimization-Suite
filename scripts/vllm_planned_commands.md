@@ -23,6 +23,28 @@ These commands are placeholders for review before execution. They are not an exe
 # inference-bench vllm-run --workload-path data/prompts/short_chat.jsonl --output-path results/raw/vllm_short_chat_results.csv --generation-output-path results/raw/vllm_short_chat_generations.jsonl
 ```
 
+## Future OpenAI-Compatible Client Workflow
+
+These commands are planned placeholders and should be reviewed before execution.
+
+Install OpenAI client extra:
+
+```text
+python -m pip install -e ".[openai,dev]"
+```
+
+Future vLLM server placeholder:
+
+```text
+python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --host 0.0.0.0 --port 8000
+```
+
+Future benchmark client placeholder:
+
+```text
+inference-bench openai-compatible-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/vllm_smoke_results.csv --generation-output-path results/raw/vllm_smoke_generations.jsonl --model Qwen/Qwen2.5-0.5B-Instruct --base-url http://localhost:8000/v1 --api-key EMPTY --max-new-tokens 32 --max-prompts 1 --stream
+```
+
 ## Report Summary Placeholder
 
 ```text

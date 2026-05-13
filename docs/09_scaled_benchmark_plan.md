@@ -49,6 +49,8 @@ Phase C: vLLM optimization variants.
 
 Phase D: Optional SGLang comparison after vLLM is stable.
 
+The OpenAI-compatible runner will be used for vLLM concurrency and backend comparison experiments once a reviewed vLLM server environment is available.
+
 ## Optimization Comparison Plan
 
 - Hugging Face baseline: establishes the local model-execution reference point.

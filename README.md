@@ -42,6 +42,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Initial Hugging Face baseline findings have been documented across expanded workloads.
 - Benchmark methodology and experimental design are documented.
 - Scaled workload and concurrency stress-test planning is documented before vLLM execution.
+- An OpenAI-compatible runner foundation is available for future vLLM server benchmarking; vLLM execution is still intentionally deferred.
 
 ## Documentation
 
