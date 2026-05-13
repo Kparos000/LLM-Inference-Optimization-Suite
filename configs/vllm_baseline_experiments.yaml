@@ -1,0 +1,54 @@
+vllm_smoke:
+  name: "vllm_smoke"
+  backend: "openai_compatible"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "vllm_baseline"
+  workload: "smoke"
+  output_path: "results/raw/vllm_smoke_results.csv"
+  max_prompts: 1
+  concurrency: 1
+vllm_short_chat:
+  name: "vllm_short_chat"
+  backend: "openai_compatible"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "vllm_baseline"
+  workload: "short_chat"
+  output_path: "results/raw/vllm_short_chat_results.csv"
+  max_prompts: 5
+  concurrency: 1
+vllm_code_helpdesk:
+  name: "vllm_code_helpdesk"
+  backend: "openai_compatible"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "vllm_baseline"
+  workload: "code_helpdesk"
+  output_path: "results/raw/vllm_code_helpdesk_results.csv"
+  max_prompts: 5
+  concurrency: 1
+vllm_long_context:
+  name: "vllm_long_context"
+  backend: "openai_compatible"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "vllm_baseline"
+  workload: "long_context"
+  output_path: "results/raw/vllm_long_context_results.csv"
+  max_prompts: 3
+  concurrency: 1
+vllm_shared_prefix:
+  name: "vllm_shared_prefix"
+  backend: "openai_compatible"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "vllm_baseline"
+  workload: "shared_prefix"
+  output_path: "results/raw/vllm_shared_prefix_results.csv"
+  max_prompts: 5
+  concurrency: 1
+vllm_structured_output:
+  name: "vllm_structured_output"
+  backend: "openai_compatible"
+  model: "qwen2_5_0_5b_instruct"
+  optimization: "vllm_baseline"
+  workload: "structured_output_smoke"
+  output_path: "results/raw/vllm_structured_output_results.csv"
+  max_prompts: 3
+  concurrency: 1

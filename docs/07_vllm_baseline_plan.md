@@ -57,6 +57,10 @@ The project will use an OpenAI-compatible runner to benchmark a running vLLM ser
 
 The first vLLM smoke-test procedure is documented in [vLLM smoke-test procedure](11_vllm_smoke_test.md). It should be executed only after the environment decision and readiness checklist are satisfied.
 
+## Client Workflow Scripts
+
+Expanded vLLM baseline client workflows are available for smoke and expanded workload runs. They require a running OpenAI-compatible vLLM server and do not start the server.
+
 ## No Paid GPU Rule
 
 vLLM should not be run on paid GPU until configs, commands, baseline expectations, and artifact policies are documented. The purpose of this phase is readiness, not execution.

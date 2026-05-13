@@ -80,6 +80,15 @@ Report summary command:
 inference-bench report-summary --input-csv results/raw/vllm_smoke_results.csv
 ```
 
+## Client Workflow Scripts
+
+These scripts require a running vLLM OpenAI-compatible server. They do not start the server.
+
+```text
+powershell -ExecutionPolicy Bypass -File scripts/run_vllm_smoke_client.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_vllm_expanded_baseline_client.ps1
+```
+
 ## Report Summary Placeholder
 
 ```text

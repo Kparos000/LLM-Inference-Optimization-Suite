@@ -73,6 +73,10 @@ The endpoint should return the served model before running the benchmark client.
 inference-bench openai-compatible-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/vllm_smoke_results.csv --generation-output-path results/raw/vllm_smoke_generations.jsonl --model Qwen/Qwen2.5-0.5B-Instruct --base-url http://localhost:8000/v1 --api-key EMPTY --max-new-tokens 32 --max-prompts 1 --stream
 ```
 
+## Smoke Client Workflow Script
+
+The smoke client workflow is available at `scripts/run_vllm_smoke_client.ps1`. It assumes a vLLM OpenAI-compatible server is already running and does not start the server.
+
 ## Expected Artifacts
 
 - `results/raw/system_info.json`

@@ -45,6 +45,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - An OpenAI-compatible runner foundation is available for future vLLM server benchmarking; vLLM execution is still intentionally deferred.
 - The vLLM execution environment decision is documented.
 - The vLLM smoke-test procedure is documented but not executed.
+- vLLM client workflow scripts are available for smoke and expanded workload baselines, with execution deferred until the environment/server is ready.
 
 ## Documentation
 
