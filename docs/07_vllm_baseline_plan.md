@@ -53,6 +53,10 @@ The vLLM execution environment decision is documented in [vLLM execution environ
 
 The project will use an OpenAI-compatible runner to benchmark a running vLLM server through the server/client workflow. vLLM execution remains deferred until the environment decision is made. The runner can support streaming TTFT measurement when the server streams responses.
 
+## Smoke-Test Procedure
+
+The first vLLM smoke-test procedure is documented in [vLLM smoke-test procedure](11_vllm_smoke_test.md). It should be executed only after the environment decision and readiness checklist are satisfied.
+
 ## No Paid GPU Rule
 
 vLLM should not be run on paid GPU until configs, commands, baseline expectations, and artifact policies are documented. The purpose of this phase is readiness, not execution.

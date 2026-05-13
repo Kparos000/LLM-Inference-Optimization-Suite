@@ -71,3 +71,5 @@ The first serious benchmark candidate remains `Qwen/Qwen2.5-7B-Instruct`. Larger
 ## Next Execution Step
 
 The next execution step is to rehearse the OpenAI-compatible client command against a reviewed vLLM server plan, then run the smallest vLLM smoke benchmark only after the readiness checklist is satisfied.
+
+The smoke-test sequence is documented in [vLLM smoke-test procedure](11_vllm_smoke_test.md).

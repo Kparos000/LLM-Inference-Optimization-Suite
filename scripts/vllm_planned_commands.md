@@ -15,7 +15,7 @@ These commands are intended for Linux, WSL2, or cloud GPU review. Do not run the
 
 ```text
 # Example shape only:
-# python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --host 127.0.0.1 --port 8000
+# vllm serve Qwen/Qwen2.5-0.5B-Instruct --host 0.0.0.0 --port 8000 --dtype auto --api-key EMPTY
 ```
 
 ## Benchmark Client Placeholder
@@ -38,13 +38,46 @@ python -m pip install -e ".[openai,dev]"
 Future vLLM server placeholder:
 
 ```text
-python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --host 0.0.0.0 --port 8000
+vllm serve Qwen/Qwen2.5-0.5B-Instruct --host 0.0.0.0 --port 8000 --dtype auto --api-key EMPTY
 ```
 
 Future benchmark client placeholder:
 
 ```text
 inference-bench openai-compatible-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/vllm_smoke_results.csv --generation-output-path results/raw/vllm_smoke_generations.jsonl --model Qwen/Qwen2.5-0.5B-Instruct --base-url http://localhost:8000/v1 --api-key EMPTY --max-new-tokens 32 --max-prompts 1 --stream
+```
+
+## Smoke Test Sequence
+
+Install commands:
+
+```text
+python -m pip install -e ".[openai,dev]"
+python -m pip install vllm
+```
+
+Server command:
+
+```text
+vllm serve Qwen/Qwen2.5-0.5B-Instruct --host 0.0.0.0 --port 8000 --dtype auto --api-key EMPTY
+```
+
+Health check:
+
+```text
+curl http://localhost:8000/v1/models
+```
+
+Client command:
+
+```text
+inference-bench openai-compatible-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/vllm_smoke_results.csv --generation-output-path results/raw/vllm_smoke_generations.jsonl --model Qwen/Qwen2.5-0.5B-Instruct --base-url http://localhost:8000/v1 --api-key EMPTY --max-new-tokens 32 --max-prompts 1 --stream
+```
+
+Report summary command:
+
+```text
+inference-bench report-summary --input-csv results/raw/vllm_smoke_results.csv
 ```
 
 ## Report Summary Placeholder
