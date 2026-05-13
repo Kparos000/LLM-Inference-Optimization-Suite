@@ -59,6 +59,10 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 
 Copy `.env.example` to `.env` for local secrets. Never commit `.env`. `HF_TOKEN` and `HUGGINGFACE_HUB_TOKEN` may be used for Hugging Face model access. Real Hugging Face execution requires installing the `hf` extra.
 
+## Quality Checks
+
+The repository includes `scripts/audit_repo_public_content.py` for lightweight public-content and secrets review.
+
 ## Initial Development Model
 
 The default development model is:

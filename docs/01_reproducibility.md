@@ -46,6 +46,8 @@ Generated raw outputs are not all committed by default because benchmark CSVs, l
 
 Selected final or sample outputs may later be promoted into the repository when they support documentation, publication, or regression comparison. Promoted outputs should be small, clearly named, and tied to documented commands and configuration files.
 
+Public artifacts should be reviewed for secrets, private data, and accidental local-only paths before promotion.
+
 ## CI/CD Expectations
 
 CI should remain lightweight and should validate formatting, linting, typing, tests, config loading, and no-GPU benchmark pipeline behavior. CI must not require model downloads, GPU access, or paid services at this stage.
