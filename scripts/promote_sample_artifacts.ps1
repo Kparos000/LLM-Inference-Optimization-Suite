@@ -24,6 +24,42 @@ $artifacts = @(
         Destination = "results/samples/raw/hf_structured_output_generations_sample.jsonl"
     },
     @{
+        Source = "results/raw/hf_short_chat_results.csv"
+        Destination = "results/samples/raw/hf_short_chat_results_sample.csv"
+    },
+    @{
+        Source = "results/raw/hf_code_helpdesk_results.csv"
+        Destination = "results/samples/raw/hf_code_helpdesk_results_sample.csv"
+    },
+    @{
+        Source = "results/raw/hf_long_context_results.csv"
+        Destination = "results/samples/raw/hf_long_context_results_sample.csv"
+    },
+    @{
+        Source = "results/raw/hf_shared_prefix_results.csv"
+        Destination = "results/samples/raw/hf_shared_prefix_results_sample.csv"
+    },
+    @{
+        Source = "results/raw/hf_short_chat_generations.jsonl"
+        Destination = "results/samples/raw/hf_short_chat_generations_sample.jsonl"
+    },
+    @{
+        Source = "results/raw/hf_code_helpdesk_generations.jsonl"
+        Destination = "results/samples/raw/hf_code_helpdesk_generations_sample.jsonl"
+    },
+    @{
+        Source = "results/raw/hf_long_context_generations.jsonl"
+        Destination = "results/samples/raw/hf_long_context_generations_sample.jsonl"
+    },
+    @{
+        Source = "results/raw/hf_shared_prefix_generations.jsonl"
+        Destination = "results/samples/raw/hf_shared_prefix_generations_sample.jsonl"
+    },
+    @{
+        Source = "results/processed/hf_workload_comparison.csv"
+        Destination = "results/samples/raw/hf_workload_comparison_sample.csv"
+    },
+    @{
         Source = "results/figures/hf_smoke/latency_by_optimization.png"
         Destination = "results/samples/figures/hf_smoke_latency_by_optimization.png"
     },

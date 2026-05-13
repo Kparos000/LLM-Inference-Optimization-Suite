@@ -56,6 +56,8 @@ Controlled Hugging Face baseline results should preserve:
 - HF baseline metrics sample
 - Structured-output metrics sample
 - Structured-output generation trace sample
+- Expanded workload comparison CSV
+- Workload-specific trace samples
 - Latency and throughput plots
 
 ## Limitations To Track
