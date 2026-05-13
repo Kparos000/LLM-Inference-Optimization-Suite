@@ -10,7 +10,7 @@ Generated artifacts under `results/raw`, `results/processed`, and `results/figur
 
 ## When To Promote Selected Artifacts
 
-Promote only small, representative artifacts that support a README, report, paper note, reproducibility example, or regression comparison. Expanded workload comparison CSVs are good candidates when they summarize reviewed Hugging Face baseline runs. Full raw runs and large benchmark datasets should be stored externally or summarized.
+Promote only small, representative artifacts that support a README, report, paper note, reproducibility example, or regression comparison. Expanded workload comparison CSVs and workload-specific prompt traces are good candidates when they summarize reviewed Hugging Face baseline runs. Full raw runs and large benchmark datasets should be stored externally or summarized.
 
 ## Promotion Workflow
 

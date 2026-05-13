@@ -9,6 +9,10 @@ This directory stores selected benchmark artifacts that have been reviewed and i
 - Small representative CSV metric samples.
 - Small representative JSONL trace samples.
 - Expanded workload metric, trace, and comparison samples for reviewed Hugging Face baseline runs.
+- Workload-specific HF result CSVs.
+- Workload-specific generation JSONL traces.
+- Workload comparison CSVs.
+- Comparison plots when available.
 - Selected figures used in README, reports, or paper notes.
 - System metadata samples that support reproducibility context.
 
