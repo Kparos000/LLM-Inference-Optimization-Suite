@@ -9,6 +9,7 @@ Preserve material that may later support a short technical paper, LinkedIn post,
 - Frame the project as a controlled benchmark of inference optimization trade-offs.
 - Emphasize methodology, reproducibility, and staged validation before GPU spending.
 - Preserve exact model, backend, workload, and optimization configurations for any reported result.
+- Use the benchmark methodology document to guide the technical paper structure and experimental framing.
 
 ## LinkedIn Notes
 
