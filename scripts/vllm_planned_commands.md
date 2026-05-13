@@ -2,6 +2,8 @@
 
 These commands are placeholders for review before execution. They are not an executable script and should not be run until the vLLM readiness checklist is complete.
 
+These commands are intended for Linux, WSL2, or cloud GPU review. Do not run them on the local Windows base environment unless the environment has been intentionally prepared.
+
 ## Environment Setup Placeholder
 
 ```text

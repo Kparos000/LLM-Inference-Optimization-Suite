@@ -45,6 +45,10 @@ The Hugging Face runner validates local model loading, prompt execution, metric 
 
 The Windows local environment may not be ideal for vLLM. vLLM is usually Linux/GPU-oriented, so the first vLLM run may require WSL2, Linux, or cloud GPU infrastructure.
 
+## Execution Environment Decision
+
+The vLLM execution environment decision is documented in [vLLM execution environment decision](10_vllm_environment_decision.md). vLLM execution is deferred until the environment checklist is satisfied.
+
 ## OpenAI-Compatible Runner Plan
 
 The project will use an OpenAI-compatible runner to benchmark a running vLLM server through the server/client workflow. vLLM execution remains deferred until the environment decision is made. The runner can support streaming TTFT measurement when the server streams responses.

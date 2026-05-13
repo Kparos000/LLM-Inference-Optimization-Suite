@@ -43,6 +43,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Benchmark methodology and experimental design are documented.
 - Scaled workload and concurrency stress-test planning is documented before vLLM execution.
 - An OpenAI-compatible runner foundation is available for future vLLM server benchmarking; vLLM execution is still intentionally deferred.
+- The vLLM execution environment decision is documented.
 
 ## Documentation
 
@@ -57,6 +58,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Benchmark methodology](docs/08_benchmark_methodology.md)
 - [Hugging Face baseline findings](docs/08_hf_baseline_findings.md)
 - [Scaled benchmark plan](docs/09_scaled_benchmark_plan.md)
+- [vLLM execution environment decision](docs/10_vllm_environment_decision.md)
 
 ## Environment Variables
 
