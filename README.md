@@ -39,6 +39,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Expanded workload categories are available for short chat, code/helpdesk, long context, and shared-prefix inference testing.
 - vLLM baseline planning has started, with execution intentionally deferred until readiness checks are complete.
 - Multiple benchmark CSV files can be compared in one summary table.
+- Initial Hugging Face baseline findings have been documented across expanded workloads.
 
 ## Documentation
 
@@ -50,6 +51,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Hugging Face smoke test](docs/05_hf_smoke_test.md)
 - [Result promotion policy](docs/06_result_promotion_policy.md)
 - [vLLM baseline preparation plan](docs/07_vllm_baseline_plan.md)
+- [Hugging Face baseline findings](docs/08_hf_baseline_findings.md)
 
 ## Environment Variables
 

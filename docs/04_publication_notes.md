@@ -38,6 +38,13 @@ Preserve material that may later support a short technical paper, LinkedIn post,
 - Memory and cost trade-offs for each optimization
 - Workload sensitivity across short, long-context, and shared-prefix prompts
 
+## HF Baseline Findings To Preserve
+
+- `long_context` increased TTFT materially compared with `short_chat`.
+- TPOT remained relatively stable across workloads.
+- The HF baseline establishes the reference point before vLLM.
+- The `shared_prefix` workload will support prefix caching evaluation later.
+
 ## Controlled HF Baseline Artifacts
 
 Controlled Hugging Face baseline results should preserve:
