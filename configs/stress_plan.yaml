@@ -1,0 +1,32 @@
+workload_scales:
+  calibration: 5
+  small: 50
+  medium: 100
+  large: 1000
+
+concurrency_levels:
+  - 1
+  - 4
+  - 8
+  - 16
+  - 32
+
+planned_backends:
+  - huggingface
+  - vllm
+  - sglang_optional
+
+planned_optimizations:
+  - hf_baseline
+  - vllm_baseline
+  - quantization
+  - prefix_caching
+  - speculative_decoding
+  - combined_optimized
+
+planned_models:
+  local_smoke: qwen2_5_0_5b_instruct
+  small_baseline: qwen2_5_1_5b_instruct
+  first_gpu_benchmark: qwen2_5_7b_instruct
+  scale_comparison: qwen2_5_32b_instruct
+  large_placeholder: large_model_placeholder

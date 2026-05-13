@@ -46,6 +46,10 @@ The first real model run should use the smallest configured development model, t
 
 Phase 4 prepares the vLLM baseline without installing or executing vLLM. The readiness plan is documented in [vLLM baseline preparation plan](07_vllm_baseline_plan.md), and planned command shapes are captured in `scripts/vllm_planned_commands.md` for review before execution.
 
+## Scaled Benchmark Planning
+
+The scaled benchmark and concurrency stress plan is documented in [scaled benchmark plan](09_scaled_benchmark_plan.md). Smoke tests validate instrumentation, while final conclusions require scaled workload and concurrency experiments.
+
 ## Planned Workload Progression
 
 - smoke

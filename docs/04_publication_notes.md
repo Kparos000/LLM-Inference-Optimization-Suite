@@ -68,6 +68,15 @@ Controlled Hugging Face baseline results should preserve:
 - Workload-specific trace samples
 - Latency and throughput plots
 
+## Scaled Benchmark Evidence To Preserve
+
+- `stress_plan.yaml`
+- Concurrency results
+- Workload-scale comparisons
+- Tail latency summaries
+- Throughput vs concurrency plots
+- Memory/cost trade-off tables
+
 ## Limitations To Track
 
 - Hardware differences across runs

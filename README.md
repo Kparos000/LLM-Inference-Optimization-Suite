@@ -41,6 +41,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Multiple benchmark CSV files can be compared in one summary table.
 - Initial Hugging Face baseline findings have been documented across expanded workloads.
 - Benchmark methodology and experimental design are documented.
+- Scaled workload and concurrency stress-test planning is documented before vLLM execution.
 
 ## Documentation
 
@@ -54,6 +55,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [vLLM baseline preparation plan](docs/07_vllm_baseline_plan.md)
 - [Benchmark methodology](docs/08_benchmark_methodology.md)
 - [Hugging Face baseline findings](docs/08_hf_baseline_findings.md)
+- [Scaled benchmark plan](docs/09_scaled_benchmark_plan.md)
 
 ## Environment Variables
 
