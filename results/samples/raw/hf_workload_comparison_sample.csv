@@ -1,0 +1,5 @@
+source_file,row_count,success_count,failure_count,backends,models,optimizations,workloads,avg_end_to_end_latency_ms,avg_ttft_ms,avg_tpot_ms,avg_throughput_tokens_per_second,total_estimated_cost_usd
+results/raw/hf_short_chat_results.csv,5,5,0,huggingface,Qwen/Qwen2.5-0.5B-Instruct,hf_baseline,short_chat,8087.572400009958,1697.433420008747,135.960403829813,8.410177951775477,0.0
+results/raw/hf_code_helpdesk_results.csv,5,5,0,huggingface,Qwen/Qwen2.5-0.5B-Instruct,hf_baseline,code_helpdesk,12217.495600000257,1655.6134799961,133.69471037979946,8.350872306054928,0.0
+results/raw/hf_long_context_results.csv,3,3,0,huggingface,Qwen/Qwen2.5-0.5B-Instruct,hf_baseline,long_context,16375.985999999102,5995.481399993878,129.11337248030773,10.458831481919695,0.0
+results/raw/hf_shared_prefix_results.csv,5,5,0,huggingface,Qwen/Qwen2.5-0.5B-Instruct,hf_baseline,shared_prefix,12854.00912000332,2696.970560000045,128.57010835447184,9.576799925949576,0.0
