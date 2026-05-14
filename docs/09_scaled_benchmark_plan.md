@@ -31,6 +31,8 @@ Serious results require larger prompt sets, repeated runs, documented hardware, 
 
 Deterministic synthetic workloads can be generated with `inference-bench generate-workloads`. The 100-prompt files are intended for first concurrency validation, while 1,000-prompt files are intended for serious GPU benchmark runs. Larger generated files may be produced on RunPod and should not be committed unless they are intentionally curated. See [scaled workload generation](14_scaled_workload_generation.md) for methodology and example commands.
 
+Large runs should use the [resumable benchmarking plan](15_resumable_benchmarking_plan.md) for chunking, checkpoints, progress feedback, logs, and persistent storage.
+
 ## Concurrency Targets
 
 - Concurrency 1

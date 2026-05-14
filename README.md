@@ -71,6 +71,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Experiment log](docs/12_experiment_log.md)
 - [HF vs vLLM calibration comparison](docs/13_hf_vs_vllm_calibration_comparison.md)
 - [Scaled workload generation](docs/14_scaled_workload_generation.md)
+- [Resumable benchmarking plan](docs/15_resumable_benchmarking_plan.md)
 
 ## Environment Variables
 
