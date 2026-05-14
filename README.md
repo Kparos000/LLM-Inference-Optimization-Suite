@@ -87,6 +87,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 
 - [Phase 1 experiment inventory](docs/19_phase1_experiment_inventory.md)
 - [Phase 1 project report](docs/20_phase1_project_report.md)
+- [Phase 1 plot interpretation](docs/21_phase1_plot_interpretation.md)
 
 ### Phase 2 planning
 

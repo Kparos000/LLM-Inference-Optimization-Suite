@@ -207,17 +207,56 @@ Phase 2 should add deterministic correctness evaluation and real-world benchmark
 
 The optimization loop should then compare before/after changes under the same workload and metric framework. Priority areas include memory measurement, model sweep support, prefix caching, quantization, and speculative decoding.
 
-## Plot Placeholders
+## Generated Plot Artifacts
 
-- [TODO: Insert plot - latency by concurrency for the 5,000-prompt Qwen 0.5B run]
-- [TODO: Insert plot - TTFT by concurrency for the 5,000-prompt Qwen 0.5B run]
-- [TODO: Insert plot - p95/p99 latency by concurrency]
-- [TODO: Insert plot - aggregate requests/sec by concurrency]
-- [TODO: Insert plot - aggregate output tokens/sec by concurrency]
-- [TODO: Insert plot - workload comparison at concurrency 32]
-- [TODO: Insert plot - 1,000 vs 5,000 prompt comparison]
-- [TODO: Insert plot - future quality vs latency chart]
-- [TODO: Insert plot - future model size vs throughput chart]
+Phase 1 plot artifacts are generated from the committed 5,000-prompt Qwen 0.5B vLLM comparison sample and written under `results/samples/figures/phase1`.
+
+Aggregate throughput plots:
+
+- `results/samples/figures/phase1/aggregate_requests_per_second_by_concurrency.png`
+- `results/samples/figures/phase1/aggregate_output_tokens_per_second_by_concurrency.png`
+
+Latency plots:
+
+- `results/samples/figures/phase1/avg_latency_by_concurrency.png`
+- `results/samples/figures/phase1/p95_latency_by_concurrency.png`
+- `results/samples/figures/phase1/p99_latency_by_concurrency.png`
+
+TTFT plots:
+
+- `results/samples/figures/phase1/avg_ttft_by_concurrency.png`
+- `results/samples/figures/phase1/p95_ttft_by_concurrency.png`
+- `results/samples/figures/phase1/p99_ttft_by_concurrency.png`
+
+TPOT plots:
+
+- `results/samples/figures/phase1/avg_tpot_by_concurrency.png`
+- `results/samples/figures/phase1/p95_tpot_by_concurrency.png`
+- `results/samples/figures/phase1/p99_tpot_by_concurrency.png`
+
+Workload comparison plots:
+
+- `results/samples/figures/phase1/workload_avg_latency_at_conc32.png`
+- `results/samples/figures/phase1/workload_aggregate_requests_at_conc32.png`
+- `results/samples/figures/phase1/workload_p99_latency_at_conc32.png`
+- `results/samples/figures/phase1/workload_p99_ttft_at_conc32.png`
+
+Trade-off and reliability plots:
+
+- `results/samples/figures/phase1/throughput_vs_avg_latency.png`
+- `results/samples/figures/phase1/throughput_vs_p99_latency.png`
+- `results/samples/figures/phase1/aggregate_requests_vs_p99_ttft.png`
+- `results/samples/figures/phase1/failure_count_by_workload_concurrency.png`
+- `results/samples/figures/phase1/success_count_by_workload_concurrency.png`
+
+Manifest:
+
+- `results/samples/figures/phase1/plot_manifest.json`
+
+Future plot needs:
+
+- Future quality vs latency chart.
+- Future model size vs throughput chart.
 
 ## Interview Talking Points
 

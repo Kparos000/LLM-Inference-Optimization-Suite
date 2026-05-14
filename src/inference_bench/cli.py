@@ -10,6 +10,12 @@ from inference_bench import __version__
 from inference_bench.config import load_project_config
 from inference_bench.quality import score_structured_output
 from inference_bench.reporting.compare import compare_result_files, write_comparison_csv
+from inference_bench.reporting.phase1_plots import (
+    DEFAULT_INPUT_CSV,
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_TITLE_PREFIX,
+    generate_phase1_plots,
+)
 from inference_bench.reporting.plots import (
     plot_cost_by_optimization,
     plot_latency_by_optimization,
@@ -614,6 +620,40 @@ def make_plots(
 
     for path in written_paths:
         console.print(f"Wrote plot: {path}", soft_wrap=True)
+
+
+@app.command("make-phase1-plots")
+def make_phase1_plots(
+    input_csv: Annotated[
+        str,
+        typer.Option(help="Path to the Phase 1 comparison CSV."),
+    ] = DEFAULT_INPUT_CSV,
+    output_dir: Annotated[
+        str,
+        typer.Option(help="Directory where Phase 1 plot PNG files should be written."),
+    ] = DEFAULT_OUTPUT_DIR,
+    title_prefix: Annotated[
+        str,
+        typer.Option(help="Title prefix for generated figures."),
+    ] = DEFAULT_TITLE_PREFIX,
+) -> None:
+    """Generate report-ready Phase 1 plots from curated sample artifacts."""
+
+    try:
+        manifest = generate_phase1_plots(
+            input_csv=input_csv,
+            output_dir=output_dir,
+            title_prefix=title_prefix,
+        )
+    except FileNotFoundError as exc:
+        console.print(f"Input CSV not found: {exc.filename or exc}", markup=False, soft_wrap=True)
+        raise typer.Exit(code=1) from exc
+
+    for path in manifest["generated_plots"]:
+        console.print(f"Wrote plot: {path}", soft_wrap=True)
+    for skipped_plot in manifest["skipped_plots"]:
+        console.print(f"Skipped plot: {skipped_plot}", soft_wrap=True)
+    console.print(f"Manifest: {Path(output_dir) / 'plot_manifest.json'}", soft_wrap=True)
 
 
 @app.command()
