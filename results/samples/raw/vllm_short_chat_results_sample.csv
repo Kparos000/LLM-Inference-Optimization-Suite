@@ -1,0 +1,6 @@
+run_id,timestamp_utc,backend,model_name,optimization,workload_name,prompt_id,input_tokens,output_tokens,ttft_ms,tpot_ms,end_to_end_latency_ms,throughput_tokens_per_second,peak_memory_mb,estimated_cost_usd,success,error_message
+vllm-short-chat,2026-05-14T15:12:09.498796+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,short_chat,short-chat-001,13,17,215.34119546413422,2.4636276066303253,254.75923717021942,117.75824238300439,,0.0,True,
+vllm-short-chat,2026-05-14T15:12:09.569846+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,short_chat,short-chat-002,23,25,11.966772377490997,2.458798699080944,70.97794115543365,676.2664458649967,,0.0,True,
+vllm-short-chat,2026-05-14T15:12:09.610535+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,short_chat,short-chat-003,15,11,11.201292276382446,2.9426738619804382,40.62803089618683,639.9522552898385,,0.0,True,
+vllm-short-chat,2026-05-14T15:12:09.720764+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,short_chat,short-chat-004,10,42,11.23521476984024,2.4128956038777423,110.16393452882767,472.0238090842031,,0.0,True,
+vllm-short-chat,2026-05-14T15:12:09.815919+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,short_chat,short-chat-005,17,34,12.890294194221497,2.4909645770535325,95.09212523698807,536.3220127102858,,0.0,True,

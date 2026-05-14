@@ -1,0 +1,6 @@
+source_file,row_count,success_count,failure_count,backends,models,optimizations,workloads,avg_end_to_end_latency_ms,avg_ttft_ms,avg_tpot_ms,avg_throughput_tokens_per_second,total_estimated_cost_usd
+results/raw/vllm_short_chat_results.csv,5,5,0,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,short_chat,114.32425379753113,52.52695381641388,2.5537920697245964,488.46455306646567,0.0
+results/raw/vllm_code_helpdesk_results.csv,5,5,0,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,code_helpdesk,225.97302794456482,59.08531695604324,2.795873829934286,385.06890337780806,0.0
+results/raw/vllm_long_context_results.csv,3,3,0,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,long_context,218.22953472534815,79.88282789786656,2.4505180534687034,656.5486556889427,0.0
+results/raw/vllm_shared_prefix_results.csv,5,5,0,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,shared_prefix,210.597725212574,54.20749932527542,2.6119617313716423,484.1874717439605,0.0
+results/raw/vllm_structured_output_results.csv,3,3,0,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,structured_output_smoke,168.08830698331198,74.47966436545055,4.396690310895518,419.93856794599,0.0

@@ -1,0 +1,4 @@
+run_id,timestamp_utc,backend,model_name,optimization,workload_name,prompt_id,input_tokens,output_tokens,ttft_ms,tpot_ms,end_to_end_latency_ms,throughput_tokens_per_second,peak_memory_mb,estimated_cost_usd,success,error_message
+vllm-structured-output,2026-05-14T15:13:10.955591+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,structured_output_smoke,structured-output-greeting-001,33,15,200.94767957925797,5.393980869225094,276.46341174840927,173.6215280584093,,0.0,True,
+vllm-structured-output,2026-05-14T15:13:11.055803+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,structured_output_smoke,structured-output-helpdesk-001,34,23,11.239662766456604,4.040955142541365,100.14067590236664,569.1992737853382,,0.0,True,
+vllm-structured-output,2026-05-14T15:13:11.183522+00:00,vllm,Qwen/Qwen2.5-0.5B-Instruct,vllm_baseline,structured_output_smoke,structured-output-code-001,34,32,11.251650750637054,3.7551349209200953,127.66083329916,516.9949019942225,,0.0,True,
