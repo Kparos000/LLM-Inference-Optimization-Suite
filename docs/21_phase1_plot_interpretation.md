@@ -61,3 +61,9 @@ Failure and success plots confirm reliability. A high-throughput run is not usef
 ## Interpretation Boundaries
 
 These plots summarize a synthetic benchmark for one model size, one serving backend, and one GPU environment. They support Phase 1 engineering analysis, but they do not yet prove real-world data performance, answer correctness, larger-model behavior, or optimization wins from prefix caching, quantization, or speculative decoding.
+
+## Phase 1 Reading Summary
+
+In the committed synthetic Qwen 0.5B vLLM benchmark, aggregate throughput increases from concurrency 8 to 32, while average latency, p99 latency, average TTFT, and p99 TTFT also increase. The figures should therefore be read as evidence of a throughput/tail-latency trade-off, not as proof that the highest concurrency is always the best serving configuration.
+
+The workload plots at concurrency 32 suggest that workload family matters. `long_context` is most sensitive on average latency in the committed comparison, while `code_helpdesk` has the highest p99 latency. `structured_output` and `short_chat` show the strongest aggregate requests/sec at concurrency 32 in the committed metadata-backed samples. These observations should be re-tested with real-world data and correctness scoring before drawing larger deployment conclusions.

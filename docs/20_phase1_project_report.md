@@ -148,6 +148,67 @@ The largest committed Phase 1 sample is `results/samples/processed/vllm_qwen0_5b
 
 This is a stronger synthetic baseline than the smoke tests because it covers multiple workload families, substantially more prompts, higher concurrency, run-level metadata, chunked logs, and checkpoints. It still should not be treated as a real-world data benchmark or a final model-scale conclusion.
 
+## Phase 1 Plot-Based Analysis
+
+The Phase 1 plots are generated from the committed synthetic Qwen 0.5B vLLM benchmark artifacts. The manifest is `results/samples/figures/phase1/plot_manifest.json`, and the source comparison CSV is `results/samples/processed/vllm_qwen0_5b_all_workloads_5000_concurrency_comparison_sample.csv`.
+
+Aggregate throughput plots:
+
+- `results/samples/figures/phase1/aggregate_requests_per_second_by_concurrency.png`
+- `results/samples/figures/phase1/aggregate_output_tokens_per_second_by_concurrency.png`
+
+In the committed synthetic Qwen 0.5B vLLM benchmark, aggregate requests/sec improved as concurrency increased: average aggregate requests/sec rose from 34.12 at concurrency 8 to 59.22 at concurrency 16 and 87.44 at concurrency 32. Average aggregate output tokens/sec also increased from 2,152.78 to 3,737.48 and then 5,589.52. These plots suggest that higher concurrency improved system-level serving capacity for this setup.
+
+Latency plots:
+
+- `results/samples/figures/phase1/avg_latency_by_concurrency.png`
+- `results/samples/figures/phase1/p95_latency_by_concurrency.png`
+- `results/samples/figures/phase1/p99_latency_by_concurrency.png`
+
+Average latency worsened as concurrency increased. Across workloads, average request latency rose from 227.86 ms at concurrency 8 to 245.46 ms at concurrency 16 and 298.07 ms at concurrency 32. Tail latency also widened: the maximum p99 latency across workloads rose from 284.41 ms at concurrency 8 to 349.48 ms at concurrency 16 and 410.49 ms at concurrency 32. This is the core Phase 1 throughput vs latency trade-off.
+
+TTFT plots:
+
+- `results/samples/figures/phase1/avg_ttft_by_concurrency.png`
+- `results/samples/figures/phase1/p95_ttft_by_concurrency.png`
+- `results/samples/figures/phase1/p99_ttft_by_concurrency.png`
+
+TTFT was especially sensitive to concurrency. Average TTFT increased from 20.20 ms at concurrency 8 to 33.39 ms at concurrency 16 and 65.68 ms at concurrency 32. The maximum p99 TTFT increased from 37.57 ms to 108.99 ms and then 162.41 ms. The plots suggest that queueing and first-token pressure became more visible as concurrency increased.
+
+TPOT plots:
+
+- `results/samples/figures/phase1/avg_tpot_by_concurrency.png`
+- `results/samples/figures/phase1/p95_tpot_by_concurrency.png`
+- `results/samples/figures/phase1/p99_tpot_by_concurrency.png`
+
+TPOT also worsened with higher concurrency, but less sharply than TTFT. Average TPOT increased from 3.36 ms at concurrency 8 to 3.44 ms at concurrency 16 and 3.78 ms at concurrency 32. The maximum p99 TPOT increased from 5.20 ms to 5.48 ms and then 6.57 ms. This suggests that decode behavior was affected by load, but the first-token path showed the larger relative increase.
+
+Workload comparison plots at concurrency 32:
+
+- `results/samples/figures/phase1/workload_avg_latency_at_conc32.png`
+- `results/samples/figures/phase1/workload_aggregate_requests_at_conc32.png`
+- `results/samples/figures/phase1/workload_p99_latency_at_conc32.png`
+- `results/samples/figures/phase1/workload_p99_ttft_at_conc32.png`
+
+At concurrency 32, `long_context` had the highest average latency in the committed comparison sample at 328.83 ms and the highest p95 latency at 387.99 ms. `code_helpdesk` had the highest p99 latency at 410.49 ms. On aggregate requests/sec, `structured_output` appeared most throughput-friendly at concurrency 32 with 102.57 aggregate requests/sec, with `short_chat` close behind at 100.47 aggregate requests/sec. These workload differences suggest that serving configuration should be evaluated by workload family rather than by a single aggregate number.
+
+Trade-off plots:
+
+- `results/samples/figures/phase1/throughput_vs_avg_latency.png`
+- `results/samples/figures/phase1/throughput_vs_p99_latency.png`
+- `results/samples/figures/phase1/aggregate_requests_vs_p99_ttft.png`
+
+The trade-off plots show why choosing only concurrency 32 is not always correct. Concurrency 32 produced the highest aggregate throughput in this synthetic benchmark, but it also had the highest average latency, p99 latency, average TTFT, and p99 TTFT. A production serving configuration would need to choose a concurrency target based on both capacity and latency objectives, not throughput alone.
+
+Failure and success plots:
+
+- `results/samples/figures/phase1/failure_count_by_workload_concurrency.png`
+- `results/samples/figures/phase1/success_count_by_workload_concurrency.png`
+
+The committed comparison sample records 5,000 successful requests and 0 failures for each of the 15 workload/concurrency configurations. That confirms the Phase 1 throughput and latency plots are not masking failed requests. It does not prove answer correctness, which still requires deterministic evaluation before larger model or optimization claims.
+
+Overall, the plots suggest that concurrency scaling improved throughput while increasing latency pressure, especially TTFT and p99 latency. This should be validated on real-world data in Phase 2 with correctness scoring, repeated runs, memory profiling, and larger model sweeps.
+
 ## Bottleneck Analysis
 
 ### TTFT Bottlenecks
@@ -206,6 +267,10 @@ It also proves that the benchmark can distinguish request-level and run-level be
 Phase 2 should add deterministic correctness evaluation and real-world benchmark data. The next benchmark layer should define a real-world corpus schema, dataset provenance and licensing records, and prompt builders for practical domains such as customer support, airline operations, developer support, and finance-style analysis.
 
 The optimization loop should then compare before/after changes under the same workload and metric framework. Priority areas include memory measurement, model sweep support, prefix caching, quantization, and speculative decoding.
+
+## How Phase 1 Results Inform Phase 2
+
+Phase 1 shows that the benchmark can expose serving bottlenecks, but it also shows what is still missing. The next phase should add correctness evaluation so speed improvements can be weighed against answer quality. Memory profiling should be integrated so throughput and latency can be connected to GPU resource pressure. A model sweep should test whether the Qwen 0.5B patterns hold for larger models. Real-world datasets should replace or complement synthetic prompts so conclusions map better to operational workloads. Finally, the optimization loop should compare baseline runs against prefix caching, quantization, speculative decoding, and other serving changes using the same metrics and artifact policy.
 
 ## Generated Plot Artifacts
 

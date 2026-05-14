@@ -20,3 +20,8 @@ def test_phase1_project_report_doc_contains_required_terms() -> None:
     assert "real-world data" in content
     assert "Phase 2" in content
     assert "bottleneck" in content
+    assert "Phase 1 Plot-Based Analysis" in content
+    assert "aggregate requests/sec" in content
+    assert "p99" in content
+    assert "plot" in content
+    assert "throughput vs latency" in content
