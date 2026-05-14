@@ -1,0 +1,21 @@
+{
+  "aggregate_output_tokens_per_second": 2269.8628669324876,
+  "aggregate_requests_per_second": 30.01606507839675,
+  "backend": "vllm",
+  "concurrency": 8,
+  "ended_at_utc": "2026-05-14T20:07:32.440435+00:00",
+  "failure_count": 0,
+  "max_new_tokens": 96,
+  "max_prompts": 5000,
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "optimization": "vllm_baseline",
+  "run_id": "vllm-qwen0-5b-code_helpdesk-5000-conc8-chunked",
+  "started_at_utc": "2026-05-14T20:04:45.862658+00:00",
+  "stream": true,
+  "success_count": 5000,
+  "total_input_tokens": 121741,
+  "total_output_tokens": 378108,
+  "total_requests": 5000,
+  "wall_clock_seconds": 166.5774639993906,
+  "workload_path": "data/prompts/scaled/code_helpdesk_5000.jsonl"
+}
