@@ -40,6 +40,7 @@ Preserve material that may later support a technical report, reproducibility app
 - Prompt-level traces revealed quality and truncation issues.
 - Future public writeups should discuss speed and quality together.
 - Curated vLLM sample artifacts are source material for the final technical report, reproducibility appendix, benchmark result discussion, and methodology and limitations section.
+- The HF-vs-vLLM calibration comparison is an early result section candidate for the technical report, with limitations clearly stated.
 
 ## Controlled HF Baseline Artifacts
 

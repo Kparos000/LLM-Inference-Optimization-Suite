@@ -48,6 +48,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - vLLM client workflow scripts are available for smoke and expanded workload baselines, with execution deferred until the environment/server is ready.
 - Linux/RunPod workflow scripts are available for vLLM smoke, expanded baseline, and curated sample promotion workflows.
 - The first vLLM baseline experiment log is documented for the RunPod L40S calibration run.
+- An early HF-vs-vLLM calibration comparison is documented with scope and limitations.
 
 ## Documentation
 
@@ -65,6 +66,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [vLLM execution environment decision](docs/10_vllm_environment_decision.md)
 - [vLLM smoke-test procedure](docs/11_vllm_smoke_test.md)
 - [Experiment log](docs/12_experiment_log.md)
+- [HF vs vLLM calibration comparison](docs/13_hf_vs_vllm_calibration_comparison.md)
 
 ## Environment Variables
 
