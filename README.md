@@ -74,6 +74,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Scaled workload generation](docs/14_scaled_workload_generation.md)
 - [Resumable benchmarking plan](docs/15_resumable_benchmarking_plan.md)
 - [Phase 1 experiment inventory](docs/19_phase1_experiment_inventory.md)
+- [Phase 1 project report](docs/20_phase1_project_report.md)
 
 ## Environment Variables
 
