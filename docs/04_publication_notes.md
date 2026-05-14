@@ -46,6 +46,12 @@ Preserve material that may later support a short technical paper, LinkedIn post,
 - The HF baseline establishes the reference point before vLLM.
 - The `shared_prefix` workload will support prefix caching evaluation later.
 
+## vLLM Baseline Learning Preserved
+
+- The vLLM RunPod L40S baseline showed fast TPOT.
+- Prompt-level traces revealed quality and truncation issues.
+- Future public writeups should discuss speed and quality together.
+
 ## Controlled HF Baseline Artifacts
 
 Controlled Hugging Face baseline results should preserve:
