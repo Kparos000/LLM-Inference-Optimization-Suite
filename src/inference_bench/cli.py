@@ -19,6 +19,7 @@ from inference_bench.reporting.summary import summarize_results
 from inference_bench.runners.hf_runner import run_hf_benchmark
 from inference_bench.runners.mock_runner import run_mock_benchmark
 from inference_bench.runners.openai_compatible_runner import run_openai_compatible_benchmark
+from inference_bench.runners.openai_load_runner import run_openai_compatible_load_benchmark
 from inference_bench.system_info import collect_system_info, write_system_info_json
 
 app = typer.Typer(
@@ -257,6 +258,96 @@ def openai_compatible_run(
     console.print(f"Output path: {output_path}", soft_wrap=True)
     console.print(f"Generation output path: {generation_output_path}", soft_wrap=True)
     console.print(f"Base URL: {base_url}", soft_wrap=True)
+    console.print(f"Streaming used: {stream}")
+
+
+@app.command()
+def openai_load_run(
+    workload_path: Annotated[
+        str,
+        typer.Option(help="Path to the JSONL workload file."),
+    ] = "data/prompts/smoke_workload.jsonl",
+    output_path: Annotated[
+        str,
+        typer.Option(help="Path where the benchmark CSV should be written."),
+    ] = "results/raw/openai_load_results.csv",
+    generation_output_path: Annotated[
+        str,
+        typer.Option(help="Path where generated text JSONL records should be written."),
+    ] = "results/raw/openai_load_generations.jsonl",
+    model: Annotated[
+        str,
+        typer.Option(help="Model name served by the OpenAI-compatible endpoint."),
+    ] = "Qwen/Qwen2.5-0.5B-Instruct",
+    base_url: Annotated[
+        str,
+        typer.Option(help="OpenAI-compatible API base URL."),
+    ] = "http://localhost:8000/v1",
+    api_key: Annotated[
+        str,
+        typer.Option(help="API key for the OpenAI-compatible endpoint."),
+    ] = "EMPTY",
+    run_id: Annotated[
+        str,
+        typer.Option(help="Benchmark run identifier."),
+    ] = "openai-load-run",
+    backend: Annotated[
+        str,
+        typer.Option(help="Backend label to store in result rows."),
+    ] = "vllm",
+    optimization: Annotated[
+        str,
+        typer.Option(help="Optimization label to store in result rows."),
+    ] = "vllm_baseline",
+    concurrency: Annotated[
+        int,
+        typer.Option(help="Maximum number of concurrent requests."),
+    ] = 1,
+    max_new_tokens: Annotated[
+        int,
+        typer.Option(help="Maximum number of output tokens to request."),
+    ] = 64,
+    max_prompts: Annotated[
+        int | None,
+        typer.Option(help="Optional prompt limit for calibration runs."),
+    ] = None,
+    stream: Annotated[
+        bool,
+        typer.Option("--stream/--no-stream", help="Enable streaming TTFT measurement."),
+    ] = True,
+    timeout_seconds: Annotated[
+        float,
+        typer.Option(help="Request timeout in seconds."),
+    ] = 120.0,
+) -> None:
+    """Run a concurrent benchmark against an OpenAI-compatible endpoint."""
+
+    try:
+        results = run_openai_compatible_load_benchmark(
+            workload_path=workload_path,
+            output_path=output_path,
+            generation_output_path=generation_output_path,
+            model=model,
+            base_url=base_url,
+            api_key=api_key,
+            run_id=run_id,
+            backend=backend,
+            optimization=optimization,
+            concurrency=concurrency,
+            max_new_tokens=max_new_tokens,
+            max_prompts=max_prompts,
+            stream=stream,
+            timeout_seconds=timeout_seconds,
+        )
+    except RuntimeError as exc:
+        console.print(str(exc), markup=False, soft_wrap=True)
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"Benchmark rows written: {len(results)}")
+    console.print(f"Output path: {output_path}", soft_wrap=True)
+    console.print(f"Generation output path: {generation_output_path}", soft_wrap=True)
+    console.print(f"Base URL: {base_url}", soft_wrap=True)
+    console.print(f"Concurrency: {concurrency}")
     console.print(f"Streaming used: {stream}")
 
 

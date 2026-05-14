@@ -49,6 +49,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Linux/RunPod workflow scripts are available for vLLM smoke, expanded baseline, and curated sample promotion workflows.
 - The first vLLM baseline experiment log is documented for the RunPod L40S calibration run.
 - An early HF-vs-vLLM calibration comparison is documented with scope and limitations.
+- An OpenAI-compatible concurrency load runner foundation is available for future vLLM load testing.
 
 ## Documentation
 

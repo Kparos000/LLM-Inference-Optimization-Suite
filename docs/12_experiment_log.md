@@ -98,6 +98,7 @@ This run established the first GPU-backed vLLM baseline for the benchmark harnes
 
 - Use the Linux `.sh` workflow scripts for future RunPod executions instead of manually pasted benchmark client commands.
 - Compare HF baseline vs vLLM baseline.
+- Use the OpenAI-compatible concurrency runner as the next measurement layer after the single-request vLLM baseline.
 - Add concurrency/load testing.
 - Add latency distribution metrics.
 - Add quality scoring/truncation detection.

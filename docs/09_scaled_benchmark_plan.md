@@ -39,6 +39,8 @@ Serious results require larger prompt sets, repeated runs, documented hardware, 
 
 Concurrency stress is especially important for vLLM because serving engines are designed to improve throughput under concurrent load. Single-request latency and multi-request throughput are different evaluation problems. Tail latency should be tracked during concurrency tests.
 
+Concurrency testing will use the `openai-load-run` command against an OpenAI-compatible endpoint. For vLLM, this provides the next measurement layer after single-request baseline runs while keeping the benchmark client independent from the server startup workflow.
+
 ## Backend Comparison Plan
 
 Phase A: Hugging Face baseline.
@@ -49,7 +51,7 @@ Phase C: vLLM optimization variants.
 
 Phase D: Optional SGLang comparison after vLLM is stable.
 
-The OpenAI-compatible runner will be used for vLLM concurrency and backend comparison experiments once a reviewed vLLM server environment is available.
+The OpenAI-compatible runner and `openai-load-run` will be used for vLLM concurrency and backend comparison experiments once a reviewed vLLM server environment is available.
 
 ## Optimization Comparison Plan
 
