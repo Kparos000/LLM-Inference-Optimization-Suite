@@ -1,0 +1,10 @@
+processed=100/1000 chunk=1/10 success=100 failure=0 elapsed_seconds=2.1 aggregate_requests_per_second=47.1 checkpoint_saved=true
+processed=200/1000 chunk=2/10 success=200 failure=0 elapsed_seconds=4.1 aggregate_requests_per_second=48.5 checkpoint_saved=true
+processed=300/1000 chunk=3/10 success=300 failure=0 elapsed_seconds=6.1 aggregate_requests_per_second=49.5 checkpoint_saved=true
+processed=400/1000 chunk=4/10 success=400 failure=0 elapsed_seconds=8.0 aggregate_requests_per_second=50.1 checkpoint_saved=true
+processed=500/1000 chunk=5/10 success=500 failure=0 elapsed_seconds=9.9 aggregate_requests_per_second=50.5 checkpoint_saved=true
+processed=600/1000 chunk=6/10 success=600 failure=0 elapsed_seconds=11.8 aggregate_requests_per_second=50.8 checkpoint_saved=true
+processed=700/1000 chunk=7/10 success=700 failure=0 elapsed_seconds=13.8 aggregate_requests_per_second=50.8 checkpoint_saved=true
+processed=800/1000 chunk=8/10 success=800 failure=0 elapsed_seconds=15.7 aggregate_requests_per_second=51.0 checkpoint_saved=true
+processed=900/1000 chunk=9/10 success=900 failure=0 elapsed_seconds=17.6 aggregate_requests_per_second=51.1 checkpoint_saved=true
+processed=1000/1000 chunk=10/10 success=1000 failure=0 elapsed_seconds=19.5 aggregate_requests_per_second=51.2 checkpoint_saved=true
