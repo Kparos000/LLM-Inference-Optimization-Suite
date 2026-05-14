@@ -21,6 +21,7 @@ from inference_bench.runners.mock_runner import run_mock_benchmark
 from inference_bench.runners.openai_compatible_runner import run_openai_compatible_benchmark
 from inference_bench.runners.openai_load_runner import run_openai_compatible_load_benchmark
 from inference_bench.system_info import collect_system_info, write_system_info_json
+from inference_bench.workloads.scaled_generator import generate_scaled_workloads
 
 app = typer.Typer(
     help="LLM Inference Optimization Suite command-line interface.",
@@ -94,6 +95,38 @@ def validate_config(
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")
     console.print("Experiments: " + (", ".join(experiment_names) if experiment_names else "none"))
+
+
+@app.command("generate-workloads")
+def generate_workloads_command(
+    output_dir: Annotated[
+        str,
+        typer.Option(help="Directory where scaled workload JSONL files should be written."),
+    ] = "data/prompts/scaled",
+    count: Annotated[
+        int,
+        typer.Option(help="Number of prompts to generate per workload."),
+    ] = 100,
+    seed: Annotated[
+        int,
+        typer.Option(help="Deterministic generation seed."),
+    ] = 42,
+    workloads: Annotated[
+        list[str] | None,
+        typer.Option(help="Workload names to generate. May be provided multiple times."),
+    ] = None,
+) -> None:
+    """Generate deterministic synthetic scaled workload files."""
+
+    written_paths = generate_scaled_workloads(
+        output_dir=output_dir,
+        count=count,
+        seed=seed,
+        workloads=workloads,
+    )
+
+    for path in written_paths:
+        console.print(f"Wrote {path}", soft_wrap=True)
 
 
 @app.command()

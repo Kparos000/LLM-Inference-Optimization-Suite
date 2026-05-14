@@ -44,6 +44,9 @@ huggingface/
 results/raw/*
 results/processed/*
 results/figures/*
+data/prompts/scaled/*_1000.jsonl
+data/prompts/scaled/*_5000.jsonl
+data/prompts/scaled/*_10000.jsonl
 
 # Keep result folders
 !results/raw/.gitkeep

@@ -1,0 +1,13 @@
+counts:
+  smoke: 5
+  small: 100
+  medium: 1000
+
+default_seed: 42
+
+workloads:
+  - short_chat
+  - code_helpdesk
+  - long_context
+  - shared_prefix
+  - structured_output

@@ -50,6 +50,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The first vLLM baseline experiment log is documented for the RunPod L40S calibration run.
 - An early HF-vs-vLLM calibration comparison is documented with scope and limitations.
 - An OpenAI-compatible concurrency load runner foundation is available for future vLLM load testing.
+- Scaled synthetic workloads can be generated with `inference-bench generate-workloads --count 100`.
 
 ## Documentation
 
