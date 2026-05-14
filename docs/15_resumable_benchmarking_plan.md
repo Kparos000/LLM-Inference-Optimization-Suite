@@ -23,6 +23,8 @@ For serious GPU runs, the benchmark runner should treat result persistence as pa
 
 ## Required Runner Features
 
+Implemented in the OpenAI-compatible load runner foundation:
+
 - `chunk-size` option
 - Checkpoint path
 - Resume mode
@@ -31,6 +33,8 @@ For serious GPU runs, the benchmark runner should treat result persistence as pa
 - Append-safe CSV writing
 - Append-safe JSONL generation writing
 - Metadata update after each chunk
+
+Future work should add stricter checkpoint configuration validation and dedicated retry mode for failed prompt IDs.
 
 ## Chunking Strategy
 
@@ -109,10 +113,10 @@ With 5 concurrency levels, this creates 100 benchmark configurations. With chunk
 
 ## Implementation Roadmap
 
-1. Add append-safe CSV and JSONL writers.
-2. Add checkpoint read/write utilities with configuration validation.
-3. Add chunk-size, checkpoint path, resume mode, log path, and progress interval options to load runners.
-4. Update run metadata after each completed chunk.
-5. Add resume tests for completed prompt skipping and configuration mismatch handling.
-6. Add large-run workflow scripts that target persistent storage paths.
-7. Promote only reviewed sample outputs after the run completes.
+1. Completed: add append-safe CSV and JSONL writing in the OpenAI-compatible load runner.
+2. Completed: add checkpoint writing, progress logging, chunking, and resume support in the runner foundation.
+3. Completed: update run metadata after each completed chunk when metadata output is requested.
+4. Next: add stricter checkpoint configuration validation.
+5. Next: add dedicated retry mode for failed prompt IDs.
+6. Next: add large-run workflow scripts that target persistent storage paths.
+7. Ongoing: promote only reviewed sample outputs after the run completes.

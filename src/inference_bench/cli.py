@@ -356,6 +356,26 @@ def openai_load_run(
         float,
         typer.Option(help="Request timeout in seconds."),
     ] = 120.0,
+    chunk_size: Annotated[
+        int | None,
+        typer.Option(help="Optional number of prompts to process before flushing outputs."),
+    ] = None,
+    checkpoint_path: Annotated[
+        str | None,
+        typer.Option(help="Optional checkpoint JSON path for chunked runs."),
+    ] = None,
+    resume: Annotated[
+        bool,
+        typer.Option("--resume/--no-resume", help="Resume from checkpoint when available."),
+    ] = False,
+    log_path: Annotated[
+        str | None,
+        typer.Option(help="Optional progress log path for chunked runs."),
+    ] = None,
+    progress_interval: Annotated[
+        int,
+        typer.Option(help="Progress reporting interval in prompts."),
+    ] = 100,
 ) -> None:
     """Run a concurrent benchmark against an OpenAI-compatible endpoint."""
 
@@ -376,6 +396,11 @@ def openai_load_run(
             max_prompts=max_prompts,
             stream=stream,
             timeout_seconds=timeout_seconds,
+            chunk_size=chunk_size,
+            checkpoint_path=checkpoint_path,
+            resume=resume,
+            log_path=log_path,
+            progress_interval=progress_interval,
         )
     except RuntimeError as exc:
         console.print(str(exc), markup=False, soft_wrap=True)
@@ -386,8 +411,15 @@ def openai_load_run(
     console.print(f"Generation output path: {generation_output_path}", soft_wrap=True)
     if run_metadata_path is not None:
         console.print(f"Run metadata path: {run_metadata_path}", soft_wrap=True)
+    if checkpoint_path is not None:
+        console.print(f"Checkpoint path: {checkpoint_path}", soft_wrap=True)
+    if log_path is not None:
+        console.print(f"Log path: {log_path}", soft_wrap=True)
     console.print(f"Base URL: {base_url}", soft_wrap=True)
     console.print(f"Concurrency: {concurrency}")
+    if chunk_size is not None:
+        console.print(f"Chunk size: {chunk_size}")
+    console.print(f"Resume used: {resume}")
     console.print(f"Streaming used: {stream}")
 
 
