@@ -96,7 +96,7 @@ This run established the first GPU-backed vLLM baseline for the benchmark harnes
 
 ## Next Actions
 
-- Add Linux shell workflow scripts for RunPod.
+- Use the Linux `.sh` workflow scripts for future RunPod executions instead of manually pasted benchmark client commands.
 - Compare HF baseline vs vLLM baseline.
 - Add concurrency/load testing.
 - Add latency distribution metrics.

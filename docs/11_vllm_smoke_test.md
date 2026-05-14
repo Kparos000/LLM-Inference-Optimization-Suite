@@ -75,7 +75,19 @@ inference-bench openai-compatible-run --workload-path data/prompts/smoke_workloa
 
 ## Smoke Client Workflow Script
 
-The smoke client workflow is available at `scripts/run_vllm_smoke_client.ps1`. It assumes a vLLM OpenAI-compatible server is already running and does not start the server.
+The preferred RunPod execution path is the Linux shell workflow:
+
+```text
+bash scripts/run_vllm_smoke_client.sh
+```
+
+The expanded baseline client workflow is available at:
+
+```text
+bash scripts/run_vllm_expanded_baseline_client.sh
+```
+
+Both scripts assume a vLLM OpenAI-compatible server is already running and do not start the server. PowerShell equivalents remain available for compatible local client workflows.
 
 ## Expected Artifacts
 

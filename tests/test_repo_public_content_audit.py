@@ -54,6 +54,7 @@ def _repo_text_files() -> list[Path]:
         ".csv",
         ".toml",
         ".ps1",
+        ".sh",
         ".txt",
     }
     text_names = {".gitignore", ".env.example"}

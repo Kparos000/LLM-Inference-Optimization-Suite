@@ -33,6 +33,7 @@ TEXT_SUFFIXES = {
     ".csv",
     ".toml",
     ".ps1",
+    ".sh",
     ".txt",
 }
 
