@@ -15,6 +15,7 @@ def _result(
     run_id: str,
     workload_name: str,
     latency_ms: float,
+    ttft_ms: float = 20.0,
     success: bool = True,
 ) -> BenchmarkResult:
     return BenchmarkResult(
@@ -27,7 +28,7 @@ def _result(
         prompt_id=f"{workload_name}-001",
         input_tokens=10,
         output_tokens=8,
-        ttft_ms=20.0,
+        ttft_ms=ttft_ms,
         tpot_ms=10.0,
         end_to_end_latency_ms=latency_ms,
         throughput_tokens_per_second=120.0,
@@ -57,6 +58,7 @@ def test_compare_result_files_returns_one_summary_per_csv(tmp_path: Path) -> Non
     assert rows[0]["workloads"] == ["short_chat"]
     assert rows[1]["source_file"] == str(second_csv)
     assert rows[1]["avg_end_to_end_latency_ms"] == 200.0
+    assert rows[1]["p95_end_to_end_latency_ms"] == 200.0
 
 
 def test_write_comparison_csv_writes_output(tmp_path: Path) -> None:
@@ -72,7 +74,13 @@ def test_write_comparison_csv_writes_output(tmp_path: Path) -> None:
             "optimizations": ["none"],
             "workloads": ["short_chat"],
             "avg_end_to_end_latency_ms": 100.0,
+            "p50_end_to_end_latency_ms": 100.0,
+            "p95_end_to_end_latency_ms": 100.0,
+            "p99_end_to_end_latency_ms": 100.0,
             "avg_ttft_ms": 20.0,
+            "p50_ttft_ms": 20.0,
+            "p95_ttft_ms": 20.0,
+            "p99_ttft_ms": 20.0,
             "avg_tpot_ms": 10.0,
             "avg_throughput_tokens_per_second": 120.0,
             "total_estimated_cost_usd": 0.0,
@@ -87,6 +95,29 @@ def test_write_comparison_csv_writes_output(tmp_path: Path) -> None:
     assert row["source_file"] == "first.csv"
     assert row["backends"] == "mock"
     assert row["avg_end_to_end_latency_ms"] == "100.0"
+    assert row["p95_end_to_end_latency_ms"] == "100.0"
+
+
+def test_compare_result_files_includes_latency_percentiles(tmp_path: Path) -> None:
+    input_csv = tmp_path / "results.csv"
+    write_results_csv(
+        [
+            _result(run_id="run-1", workload_name="short_chat", latency_ms=10.0, ttft_ms=1.0),
+            _result(run_id="run-1", workload_name="short_chat", latency_ms=20.0, ttft_ms=2.0),
+            _result(run_id="run-1", workload_name="short_chat", latency_ms=30.0, ttft_ms=3.0),
+            _result(run_id="run-1", workload_name="short_chat", latency_ms=40.0, ttft_ms=4.0),
+        ],
+        input_csv,
+    )
+
+    [row] = compare_result_files([input_csv])
+
+    assert row["p50_end_to_end_latency_ms"] == 25.0
+    assert row["p95_end_to_end_latency_ms"] == pytest.approx(38.5)
+    assert row["p99_end_to_end_latency_ms"] == pytest.approx(39.7)
+    assert row["p50_ttft_ms"] == 2.5
+    assert row["p95_ttft_ms"] == pytest.approx(3.85)
+    assert row["p99_ttft_ms"] == pytest.approx(3.97)
 
 
 def test_empty_comparison_csv_writes_standard_header(tmp_path: Path) -> None:
@@ -109,7 +140,13 @@ def test_empty_comparison_csv_writes_standard_header(tmp_path: Path) -> None:
         "optimizations",
         "workloads",
         "avg_end_to_end_latency_ms",
+        "p50_end_to_end_latency_ms",
+        "p95_end_to_end_latency_ms",
+        "p99_end_to_end_latency_ms",
         "avg_ttft_ms",
+        "p50_ttft_ms",
+        "p95_ttft_ms",
+        "p99_ttft_ms",
         "avg_tpot_ms",
         "avg_throughput_tokens_per_second",
         "total_estimated_cost_usd",

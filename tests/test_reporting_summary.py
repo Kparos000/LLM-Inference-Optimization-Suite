@@ -60,10 +60,64 @@ def test_summarizes_results_csv(tmp_path: Path) -> None:
     assert summary["optimizations"] == ["baseline", "none"]
     assert summary["workloads"] == ["smoke"]
     assert summary["avg_end_to_end_latency_ms"] == 150.0
+    assert summary["p50_end_to_end_latency_ms"] == 150.0
+    assert summary["p90_end_to_end_latency_ms"] == 190.0
+    assert summary["p95_end_to_end_latency_ms"] == 195.0
+    assert summary["p99_end_to_end_latency_ms"] == 199.0
     assert summary["avg_ttft_ms"] == 20.0
     assert summary["avg_tpot_ms"] == 10.0
     assert summary["avg_throughput_tokens_per_second"] == 120.0
     assert summary["total_estimated_cost_usd"] == pytest.approx(0.03)
+
+
+def test_summarizes_percentiles_from_known_csv_values(tmp_path: Path) -> None:
+    csv_path = tmp_path / "results.csv"
+    write_results_csv(
+        [
+            _result(
+                prompt_id="prompt-1",
+                latency_ms=10.0,
+                ttft_ms=1.0,
+                tpot_ms=2.0,
+                throughput=100.0,
+            ),
+            _result(
+                prompt_id="prompt-2",
+                latency_ms=20.0,
+                ttft_ms=2.0,
+                tpot_ms=4.0,
+                throughput=200.0,
+            ),
+            _result(
+                prompt_id="prompt-3",
+                latency_ms=30.0,
+                ttft_ms=3.0,
+                tpot_ms=None,
+                throughput=300.0,
+            ),
+            _result(
+                prompt_id="prompt-4",
+                latency_ms=40.0,
+                ttft_ms=None,
+                tpot_ms=8.0,
+                throughput=400.0,
+            ),
+        ],
+        csv_path,
+    )
+
+    summary = summarize_results(csv_path)
+
+    assert summary["p50_end_to_end_latency_ms"] == 25.0
+    assert summary["p90_end_to_end_latency_ms"] == pytest.approx(37.0)
+    assert summary["p95_end_to_end_latency_ms"] == pytest.approx(38.5)
+    assert summary["p99_end_to_end_latency_ms"] == pytest.approx(39.7)
+    assert summary["p50_ttft_ms"] == 2.0
+    assert summary["p95_ttft_ms"] == pytest.approx(2.9)
+    assert summary["p50_tpot_ms"] == 4.0
+    assert summary["p95_tpot_ms"] == pytest.approx(7.6)
+    assert summary["p50_throughput_tokens_per_second"] == 250.0
+    assert summary["p99_throughput_tokens_per_second"] == pytest.approx(397.0)
 
 
 def test_summarizes_empty_results_csv(tmp_path: Path) -> None:
@@ -77,6 +131,8 @@ def test_summarizes_empty_results_csv(tmp_path: Path) -> None:
     assert summary["failure_count"] == 0
     assert summary["backends"] == []
     assert summary["avg_end_to_end_latency_ms"] is None
+    assert summary["p50_end_to_end_latency_ms"] is None
+    assert summary["p99_ttft_ms"] is None
     assert summary["total_estimated_cost_usd"] is None
 
 
