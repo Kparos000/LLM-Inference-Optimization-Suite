@@ -41,7 +41,7 @@ Deterministic synthetic workloads can be generated with `inference-bench generat
 
 Concurrency stress is especially important for vLLM because serving engines are designed to improve throughput under concurrent load. Single-request latency and multi-request throughput are different evaluation problems. Concurrency results should be interpreted with averages and tail latency percentiles, including p50, p90, p95, and p99.
 
-Concurrency testing will use the `openai-load-run` command against an OpenAI-compatible endpoint. For vLLM, this provides the next measurement layer after single-request baseline runs while keeping the benchmark client independent from the server startup workflow.
+Concurrency testing will use the `openai-load-run` command against an OpenAI-compatible endpoint. For vLLM, this provides the next measurement layer after single-request baseline runs while keeping the benchmark client independent from the server startup workflow. Concurrency reports should combine per-request metrics with aggregate run-level throughput, including requests per second and output tokens per second across the full run.
 
 ## Backend Comparison Plan
 

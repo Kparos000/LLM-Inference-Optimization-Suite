@@ -26,6 +26,9 @@ STANDARD_COMPARISON_FIELDS = [
     "p95_ttft_ms",
     "p99_ttft_ms",
     "avg_tpot_ms",
+    "p50_tpot_ms",
+    "p95_tpot_ms",
+    "p99_tpot_ms",
     "avg_throughput_tokens_per_second",
     "total_estimated_cost_usd",
 ]

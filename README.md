@@ -51,6 +51,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - An early HF-vs-vLLM calibration comparison is documented with scope and limitations.
 - An OpenAI-compatible concurrency load runner foundation is available for future vLLM load testing.
 - Scaled synthetic workloads can be generated with `inference-bench generate-workloads --count 100`.
+- Reporting includes latency percentiles and aggregate throughput metadata for concurrency runs.
 
 ## Documentation
 

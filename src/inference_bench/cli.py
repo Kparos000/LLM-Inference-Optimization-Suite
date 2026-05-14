@@ -308,6 +308,10 @@ def openai_load_run(
         str,
         typer.Option(help="Path where generated text JSONL records should be written."),
     ] = "results/raw/openai_load_generations.jsonl",
+    run_metadata_path: Annotated[
+        str | None,
+        typer.Option(help="Optional path where run-level metadata JSON should be written."),
+    ] = None,
     model: Annotated[
         str,
         typer.Option(help="Model name served by the OpenAI-compatible endpoint."),
@@ -360,6 +364,7 @@ def openai_load_run(
             workload_path=workload_path,
             output_path=output_path,
             generation_output_path=generation_output_path,
+            run_metadata_path=run_metadata_path,
             model=model,
             base_url=base_url,
             api_key=api_key,
@@ -379,6 +384,8 @@ def openai_load_run(
     console.print(f"Benchmark rows written: {len(results)}")
     console.print(f"Output path: {output_path}", soft_wrap=True)
     console.print(f"Generation output path: {generation_output_path}", soft_wrap=True)
+    if run_metadata_path is not None:
+        console.print(f"Run metadata path: {run_metadata_path}", soft_wrap=True)
     console.print(f"Base URL: {base_url}", soft_wrap=True)
     console.print(f"Concurrency: {concurrency}")
     console.print(f"Streaming used: {stream}")
@@ -519,6 +526,9 @@ def compare_results(
         "p95_ttft_ms",
         "p99_ttft_ms",
         "avg_tpot_ms",
+        "p50_tpot_ms",
+        "p95_tpot_ms",
+        "p99_tpot_ms",
         "avg_throughput_tokens_per_second",
         "total_estimated_cost_usd",
     )

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from importlib import import_module
 from pathlib import Path
 from typing import Any, cast
@@ -65,6 +67,71 @@ def require_openai_dependency() -> None:
     except ImportError as exc:
         msg = f"Missing optional OpenAI dependency. {OPENAI_EXTRA_INSTALL_MESSAGE}"
         raise RuntimeError(msg) from exc
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def build_run_metadata(
+    *,
+    results: list[BenchmarkResult],
+    run_id: str,
+    workload_path: str | Path,
+    model: str,
+    backend: str,
+    optimization: str,
+    concurrency: int,
+    max_prompts: int | None,
+    max_new_tokens: int,
+    stream: bool,
+    started_at_utc: str,
+    ended_at_utc: str,
+    wall_clock_seconds: float,
+) -> dict[str, object]:
+    """Build run-level metadata for a concurrent benchmark."""
+
+    success_count = sum(1 for result in results if result.success)
+    total_input_tokens = sum(result.input_tokens for result in results)
+    total_output_tokens = sum(result.output_tokens for result in results)
+
+    return {
+        "run_id": run_id,
+        "workload_path": str(workload_path),
+        "model": model,
+        "backend": backend,
+        "optimization": optimization,
+        "concurrency": concurrency,
+        "max_prompts": max_prompts,
+        "max_new_tokens": max_new_tokens,
+        "stream": stream,
+        "started_at_utc": started_at_utc,
+        "ended_at_utc": ended_at_utc,
+        "wall_clock_seconds": wall_clock_seconds,
+        "total_requests": len(results),
+        "success_count": success_count,
+        "failure_count": len(results) - success_count,
+        "total_input_tokens": total_input_tokens,
+        "total_output_tokens": total_output_tokens,
+        "aggregate_requests_per_second": (
+            len(results) / wall_clock_seconds if wall_clock_seconds > 0 else None
+        ),
+        "aggregate_output_tokens_per_second": (
+            total_output_tokens / wall_clock_seconds if wall_clock_seconds > 0 else None
+        ),
+    }
+
+
+def write_run_metadata(metadata: dict[str, object], output_path: str | Path) -> Path:
+    """Write run-level metadata JSON and return the output path."""
+
+    metadata_path = Path(output_path)
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return metadata_path
 
 
 async def _run_one_prompt(
@@ -189,6 +256,7 @@ def run_openai_compatible_load_benchmark(
     output_path: str | Path,
     generation_output_path: str | Path | None,
     model: str,
+    run_metadata_path: str | Path | None = None,
     base_url: str = "http://localhost:8000/v1",
     api_key: str = "EMPTY",
     run_id: str = "openai-load-run",
@@ -218,6 +286,8 @@ def run_openai_compatible_load_benchmark(
     if config.max_prompts is not None:
         workload_items = workload_items[: config.max_prompts]
 
+    started_at_utc = _utc_now()
+    wall_clock_start_s = time.perf_counter()
     results, generation_records = asyncio.run(
         _run_load_benchmark_async(
             workload_items=workload_items,
@@ -227,8 +297,27 @@ def run_openai_compatible_load_benchmark(
             optimization=optimization,
         )
     )
+    wall_clock_seconds = time.perf_counter() - wall_clock_start_s
+    ended_at_utc = _utc_now()
 
     write_results_csv(results, output_path)
     if generation_output_path is not None:
         write_generation_records_jsonl(generation_records, generation_output_path)
+    if run_metadata_path is not None:
+        metadata = build_run_metadata(
+            results=results,
+            run_id=run_id,
+            workload_path=workload_path,
+            model=config.model,
+            backend=backend,
+            optimization=optimization,
+            concurrency=config.concurrency,
+            max_prompts=config.max_prompts,
+            max_new_tokens=config.max_new_tokens,
+            stream=config.stream,
+            started_at_utc=started_at_utc,
+            ended_at_utc=ended_at_utc,
+            wall_clock_seconds=wall_clock_seconds,
+        )
+        write_run_metadata(metadata, run_metadata_path)
     return results
