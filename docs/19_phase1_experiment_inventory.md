@@ -18,8 +18,8 @@ This inventory records the experiments represented by committed documentation, c
 | EXP-006 | vLLM expanded baseline | vLLM OpenAI-compatible | `Qwen/Qwen2.5-0.5B-Instruct` | Five calibration workloads | 3 to 5 per workload | 1 | `results/samples/raw/vllm_workload_comparison_sample.csv`, `docs/12_experiment_log.md` | vLLM produced much lower TPOT than local HF calibration, while traces showed quality and truncation still need review. |
 | EXP-007 | HF vs vLLM calibration | Hugging Face and vLLM | `Qwen/Qwen2.5-0.5B-Instruct` | Five workload families where available | 3 to 5 per workload | 1 | `docs/13_hf_vs_vllm_calibration_comparison.md` | The comparison is useful as an architecture baseline, not as a hardware-equal benchmark. |
 | EXP-008 | Long-context concurrency sweep | vLLM OpenAI-compatible | `Qwen/Qwen2.5-0.5B-Instruct` | `long_context` synthetic scaled workload | 1,000 per concurrency level | 1, 4, 8, 16, 32 | `results/samples/processed/vllm_long_context_1000_concurrency_comparison_sample.csv`, metadata samples | Aggregate throughput increased with concurrency, while TTFT and p99 latency increased at higher concurrency. |
-| EXP-009 | Chunked/resumable runner validation | vLLM-compatible runner foundation | `Qwen/Qwen2.5-0.5B-Instruct` configured | Test workloads | test-sized | configurable | `src/inference_bench/runners/openai_load_runner.py`, `tests/test_openai_load_runner_resumable.py`, `docs/15_resumable_benchmarking_plan.md` | Chunking, checkpoints, logs, and resume behavior are implemented in the runner foundation and tested without real server calls. |
-| EXP-010 | 5,000-prompt all-workloads concurrency run | vLLM OpenAI-compatible | `Qwen/Qwen2.5-0.5B-Instruct` | Five synthetic workload families | 5,000 per workload/configuration planned | 8, 16, 32 planned | Expected comparison path: `results/samples/processed/vllm_qwen0_5b_all_workloads_5000_concurrency_comparison_sample.csv`; not present in repo | Inventory records this as pending/unavailable because the curated comparison artifact is not committed. |
+| EXP-009 | Chunked/resumable long-context run | vLLM OpenAI-compatible | `Qwen/Qwen2.5-0.5B-Instruct` | `long_context` synthetic scaled workload | 1,000 represented by curated sample | 32 sample plus broader checkpoint/log artifacts | `results/samples/logs/vllm_long_context_1000_conc32_chunked_sample.log`, `results/samples/checkpoints/vllm_long_context_1000_conc32_chunked_checkpoint_sample.json`, `docs/15_resumable_benchmarking_plan.md` | Chunking, checkpoints, logs, and resume behavior are represented by curated run artifacts and tested without real server calls. |
+| EXP-010 | 5,000-prompt all-workloads concurrency run | vLLM OpenAI-compatible | `Qwen/Qwen2.5-0.5B-Instruct` | Five synthetic workload families | 5,000 per workload/configuration; 75,000 total requests represented | 8, 16, 32 | `results/samples/processed/vllm_qwen0_5b_all_workloads_5000_concurrency_comparison_sample.csv`, 5,000-prompt metadata, logs, checkpoints | Aggregate throughput increased with concurrency while TTFT and p99 latency rose, showing the throughput/tail-latency tradeoff. |
 
 ## EXP-001: Mock Smoke Benchmark
 
@@ -315,16 +315,26 @@ Make long-running OpenAI-compatible load benchmarks safer through chunking, chec
 ### Configuration
 
 - Runner: `openai-load-run`
+- Backend: vLLM OpenAI-compatible
+- Model: `Qwen/Qwen2.5-0.5B-Instruct`
+- Workload represented by curated sample: `long_context`
+- Prompt count represented by curated sample: 1,000
+- Concurrency represented by curated sample: 32
 - Support: chunking, append-safe writes, checkpoint file, progress log, resume mode
 - Test coverage: `tests/test_openai_load_runner_resumable.py`
 
 ### What Was Measured
 
-The committed test suite validates behavior rather than a live server metric run: checkpoint writing, resume skipping, append-safe CSV behavior, JSONL append behavior, and log writing.
+Checkpoint writing, progress logging, resume skipping, append-safe CSV behavior, JSONL append behavior, and run completion metadata.
 
 ### Result Summary
 
-Curated runtime checkpoint/log samples are not present in `results/samples/logs` or `results/samples/checkpoints`. The implemented runner foundation is represented by source code, docs, and tests.
+Curated checkpoint and log samples are present for the 1,000-prompt long-context concurrency 32 run:
+
+- `results/samples/logs/vllm_long_context_1000_conc32_chunked_sample.log`
+- `results/samples/checkpoints/vllm_long_context_1000_conc32_chunked_checkpoint_sample.json`
+
+Additional committed checkpoint and log artifacts cover 1,000-prompt workload/concurrency combinations. The implemented runner foundation is represented by source code, docs, tests, and curated samples.
 
 ### Key Learning
 
@@ -348,39 +358,39 @@ Run a larger synthetic workload baseline across five workload families and concu
 
 - Backend: vLLM
 - Model: `Qwen/Qwen2.5-0.5B-Instruct`
-- Workloads intended: `short_chat`, `code_helpdesk`, `long_context`, `shared_prefix`, `structured_output`
-- Concurrency levels intended: 8, 16, 32
-- Prompt count intended: 5,000 per workload/configuration
+- Workloads: `short_chat`, `code_helpdesk`, `long_context`, `shared_prefix`, `structured_output`
+- Concurrency levels: 8, 16, 32
+- Prompt count: 5,000 per workload/configuration
+- Total benchmark configurations represented: 15
+- Total requests represented: 75,000
 
 ### What Was Measured
 
-The requested curated comparison CSV is `results/samples/processed/vllm_qwen0_5b_all_workloads_5000_concurrency_comparison_sample.csv`.
+Per-request latency, TTFT, TPOT, throughput, success/failure counts, aggregate run-level throughput metadata, chunked progress logs, and checkpoints.
 
 ### Result Summary
 
-That file is not present in the committed repository. Therefore:
+The curated comparison CSV `results/samples/processed/vllm_qwen0_5b_all_workloads_5000_concurrency_comparison_sample.csv` is present. It represents 15 benchmark configurations across five workloads and three concurrency levels. Each configuration contains 5,000 successful requests and 0 recorded failures.
 
-- Total benchmark configurations represented by committed artifact: unavailable.
-- Workloads covered by committed artifact: unavailable.
-- Concurrency levels covered by committed artifact: unavailable.
-- Total requests represented by committed artifact: unavailable.
-- Success/failure pattern: unavailable.
-- Aggregate throughput change with concurrency: unavailable.
-- TTFT/p99 latency change with concurrency: unavailable.
+| concurrency | configs | total requests | failures | avg aggregate req/s | avg aggregate output tok/s | avg request latency ms | max p99 latency ms | avg TTFT ms | max p99 TTFT ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 | 5 | 25,000 | 0 | 34.12 | 2,152.78 | 227.86 | 284.41 | 20.20 | 37.57 |
+| 16 | 5 | 25,000 | 0 | 59.22 | 3,737.48 | 245.46 | 349.48 | 33.39 | 108.99 |
+| 32 | 5 | 25,000 | 0 | 87.44 | 5,589.52 | 298.07 | 410.49 | 65.68 | 162.41 |
 
-If the intended run is later promoted with 5 workloads and 3 concurrency levels, it would represent 15 benchmark configurations and up to 75,000 requests. That is a run design statement, not a reported result.
+Aggregate throughput increased from concurrency 8 to 32, while average request latency, p99 latency, average TTFT, and p99 TTFT also rose. This matters because it shows the benchmark can expose an inference bottleneck tradeoff: higher concurrent load improves total served work, but the tail of first-token and end-to-end latency becomes materially worse.
 
 ### Key Learning
 
-No committed curated result is available for this inventory. The absence of the comparison artifact means bottleneck conclusions for the 5,000-prompt all-workloads run are pending.
+The 5,000-prompt run shows why concurrency sweeps need both aggregate throughput and latency percentiles. Throughput improved as concurrency increased, but the p99 latency and TTFT growth indicate that a deployment decision cannot be based on throughput alone.
 
 ### Limitations
 
-No committed sample artifact is available for this run. It remains a synthetic workload baseline target, not a real-world-data benchmark.
+This remains a synthetic workload baseline, not a real-world-data benchmark. Results are tied to the specific RunPod/L40S conditions, small Qwen 0.5B model, selected prompt templates, and single-run sample artifacts.
 
 ### Follow-up Action
 
-Promote a reviewed comparison CSV and metadata samples if the 5,000-prompt run is completed and cleared for public artifact inclusion.
+Use this run as source material for Phase 1 reporting, then add correctness evaluation, memory profiling, repeated runs, and real-world workloads before drawing broader model-serving conclusions.
 
 ## Cross-Experiment Lessons
 
@@ -413,6 +423,6 @@ Promote a reviewed comparison CSV and metadata samples if the 5,000-prompt run i
 ## Artifact Coverage Notes
 
 - Curated raw samples are stored under `results/samples/raw`.
-- Curated processed samples currently include the 1,000-prompt long-context concurrency comparison.
+- Curated processed samples include 1,000-prompt concurrency comparisons and the 5,000-prompt Qwen 0.5B all-workloads concurrency comparison.
 - Curated figure samples include HF smoke and structured-output latency/throughput plots.
-- `results/samples/logs` and `results/samples/checkpoints` are not present in the committed repository at the time of this inventory.
+- Curated logs and checkpoints are present for chunked 1,000-prompt and 5,000-prompt vLLM runs.
