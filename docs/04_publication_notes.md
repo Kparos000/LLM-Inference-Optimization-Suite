@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Preserve material that may later support a short technical paper, LinkedIn post, and Twitter/X thread.
+Preserve material that may later support a technical report, reproducibility appendix, benchmark result discussion, and methodology review.
 
 ## Paper Notes
 
@@ -10,18 +10,6 @@ Preserve material that may later support a short technical paper, LinkedIn post,
 - Emphasize methodology, reproducibility, and staged validation before GPU spending.
 - Preserve exact model, backend, workload, and optimization configurations for any reported result.
 - Use the benchmark methodology document to guide the technical paper structure and experimental framing.
-
-## LinkedIn Notes
-
-- Focus on the engineering workflow: validate locally, measure carefully, then scale.
-- Highlight the benchmark pipeline components once real inference results are available.
-- Keep claims tied to measured results and documented limitations.
-
-## Twitter/X Thread Notes
-
-- Potential structure: problem, benchmark design, no-GPU harness, first model baseline, optimization comparison, key takeaway.
-- Use concise charts only after representative results are available.
-- Avoid overstating early smoke-test outcomes.
 
 ## Methodology Points To Preserve
 
@@ -51,6 +39,7 @@ Preserve material that may later support a short technical paper, LinkedIn post,
 - The vLLM RunPod L40S baseline showed fast TPOT.
 - Prompt-level traces revealed quality and truncation issues.
 - Future public writeups should discuss speed and quality together.
+- Curated vLLM sample artifacts are source material for the final technical report, reproducibility appendix, benchmark result discussion, and methodology and limitations section.
 
 ## Controlled HF Baseline Artifacts
 

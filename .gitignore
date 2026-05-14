@@ -23,6 +23,13 @@ ENV/
 .env.*
 !.env.example
 
+# Private/local notes and drafts
+private_notes/
+local_notes/
+personal_notes/
+drafts/private/
+*.private.md
+
 # Large model/cache files
 models/
 .cache/

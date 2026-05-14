@@ -10,7 +10,7 @@ Generated artifacts under `results/raw`, `results/processed`, and `results/figur
 
 ## When To Promote Selected Artifacts
 
-Promote only small, representative artifacts that support a README, report, paper note, reproducibility example, or regression comparison. Expanded workload comparison CSVs and workload-specific prompt traces are good candidates when they summarize reviewed Hugging Face baseline runs. Full raw runs and large benchmark datasets should be stored externally or summarized.
+Promote only small, representative artifacts that support a README, report, paper note, reproducibility example, or regression comparison. Expanded workload comparison CSVs and workload-specific prompt traces are good candidates when they summarize reviewed Hugging Face or vLLM baseline runs. Full raw runs and large benchmark datasets should be stored externally or summarized.
 
 ## Promotion Workflow
 
@@ -30,8 +30,13 @@ Before committing sample artifacts, verify:
 - No tokens
 - No private data
 - No accidental local-only paths
+- No accidental host identifiers
+- No unsafe generated content
+- No personal notes or drafts
 - Artifact supports a report, README, or paper note
 - Artifact is small enough for GitHub
+
+vLLM baseline artifacts should be promoted only after review for secrets, private paths, token values, accidental host identifiers, unsafe generated content, excessive file size, and personal notes or drafts.
 
 ## Storage Note
 

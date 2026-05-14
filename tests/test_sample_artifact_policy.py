@@ -19,6 +19,15 @@ def test_gitignore_contains_results_samples_exceptions() -> None:
     assert "!results/samples/figures/.gitkeep" in gitignore
 
 
+def test_gitignore_contains_private_note_exclusions() -> None:
+    gitignore = Path(".gitignore").read_text(encoding="utf-8")
+
+    assert "private_notes/" in gitignore
+    assert "local_notes/" in gitignore
+    assert "personal_notes/" in gitignore
+    assert "*.private.md" in gitignore
+
+
 def test_promotion_script_references_expanded_hf_artifacts() -> None:
     script = Path("scripts/promote_sample_artifacts.ps1").read_text(encoding="utf-8")
 
@@ -27,3 +36,14 @@ def test_promotion_script_references_expanded_hf_artifacts() -> None:
     assert "hf_long_context_results.csv" in script
     assert "hf_shared_prefix_results.csv" in script
     assert "hf_workload_comparison.csv" in script
+
+
+def test_promotion_script_references_vllm_artifacts() -> None:
+    script = Path("scripts/promote_sample_artifacts.ps1").read_text(encoding="utf-8")
+
+    assert "vllm_short_chat_results.csv" in script
+    assert "vllm_code_helpdesk_results.csv" in script
+    assert "vllm_long_context_results.csv" in script
+    assert "vllm_shared_prefix_results.csv" in script
+    assert "vllm_structured_output_results.csv" in script
+    assert "vllm_workload_comparison.csv" in script

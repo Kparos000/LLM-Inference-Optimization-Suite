@@ -12,6 +12,10 @@ This directory stores selected benchmark artifacts that have been reviewed and i
 - Workload-specific HF result CSVs.
 - Workload-specific generation JSONL traces.
 - Workload comparison CSVs.
+- Curated vLLM workload comparison CSVs.
+- Curated vLLM prompt-level JSONL traces.
+- Curated vLLM structured-output result samples.
+- Curated vLLM smoke-test samples.
 - Comparison plots when available.
 - Selected figures used in README, reports, or paper notes.
 - System metadata samples that support reproducibility context.

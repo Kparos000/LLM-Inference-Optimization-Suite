@@ -1,5 +1,8 @@
+import importlib.util
 import re
+import sys
 from pathlib import Path
+from types import ModuleType
 
 TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{20,}\b")
 OPENAI_TOKEN_RE = re.compile(r"\bsk-[A-Za-z0-9]{20,}\b")
@@ -7,6 +10,24 @@ TUTORIAL_PHRASES = (
     "explain to a 6th" + " grader",
     "explain like I am in 6th" + " grade",
 )
+PRIVATE_DRAFT_PHRASES = (
+    "LinkedIn" + " draft",
+    "Twitter" + " draft",
+    "X thread" + " draft",
+    "resume" + " bullet",
+    "personal learning" + " note",
+)
+
+
+def _load_audit_module() -> ModuleType:
+    module_path = Path("scripts/audit_repo_public_content.py")
+    spec = importlib.util.spec_from_file_location("audit_repo_public_content", module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _repo_text_files() -> list[Path]:
@@ -74,6 +95,15 @@ def test_committed_docs_do_not_contain_tutorial_style_phrases() -> None:
         content = path.read_text(encoding="utf-8")
         for phrase in TUTORIAL_PHRASES:
             assert phrase not in content
+
+
+def test_public_content_audit_flags_private_draft_phrases() -> None:
+    audit_module = _load_audit_module()
+
+    for phrase in (*TUTORIAL_PHRASES, *PRIVATE_DRAFT_PHRASES):
+        findings = audit_module._scan_line(Path("docs/example.md"), 1, phrase)
+
+        assert findings
 
 
 def test_curated_samples_do_not_contain_token_references_or_values() -> None:
