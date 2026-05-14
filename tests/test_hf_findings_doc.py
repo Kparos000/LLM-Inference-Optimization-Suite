@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def test_hf_baseline_findings_doc_exists_and_contains_key_terms() -> None:
-    findings_path = Path("docs/08_hf_baseline_findings.md")
+    findings_path = Path("docs/16_hf_baseline_findings.md")
 
     assert findings_path.exists()
 

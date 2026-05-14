@@ -56,25 +56,42 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 
 ## Documentation
 
+### Project setup and reproducibility
+
 - [Project scope](docs/00_project_scope.md)
 - [Reproducibility](docs/01_reproducibility.md)
 - [Dry-run plan](docs/02_dry_run_plan.md)
 - [Decision log](docs/03_decision_log.md)
-- [Publication notes](docs/04_publication_notes.md)
-- [Hugging Face smoke test](docs/05_hf_smoke_test.md)
 - [Result promotion policy](docs/06_result_promotion_policy.md)
-- [vLLM baseline preparation plan](docs/07_vllm_baseline_plan.md)
+
+### Benchmark methodology
+
 - [Benchmark methodology](docs/08_benchmark_methodology.md)
-- [Hugging Face baseline findings](docs/08_hf_baseline_findings.md)
-- [Scaled benchmark plan](docs/09_scaled_benchmark_plan.md)
+- [Scaled workload generation](docs/14_scaled_workload_generation.md)
+
+### vLLM/GPU execution
+
+- [Hugging Face smoke test](docs/05_hf_smoke_test.md)
+- [vLLM baseline preparation plan](docs/07_vllm_baseline_plan.md)
 - [vLLM execution environment decision](docs/10_vllm_environment_decision.md)
 - [vLLM smoke-test procedure](docs/11_vllm_smoke_test.md)
+- [Resumable benchmarking plan](docs/15_resumable_benchmarking_plan.md)
+
+### Experiment results
+
 - [Experiment log](docs/12_experiment_log.md)
 - [HF vs vLLM calibration comparison](docs/13_hf_vs_vllm_calibration_comparison.md)
-- [Scaled workload generation](docs/14_scaled_workload_generation.md)
-- [Resumable benchmarking plan](docs/15_resumable_benchmarking_plan.md)
+- [Hugging Face baseline findings](docs/16_hf_baseline_findings.md)
+
+### Phase 1 reporting
+
 - [Phase 1 experiment inventory](docs/19_phase1_experiment_inventory.md)
 - [Phase 1 project report](docs/20_phase1_project_report.md)
+
+### Phase 2 planning
+
+- [Publication notes](docs/04_publication_notes.md)
+- [Scaled benchmark plan](docs/09_scaled_benchmark_plan.md)
 
 ## Environment Variables
 
