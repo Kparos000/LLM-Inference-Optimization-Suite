@@ -69,6 +69,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [vLLM smoke-test procedure](docs/11_vllm_smoke_test.md)
 - [Experiment log](docs/12_experiment_log.md)
 - [HF vs vLLM calibration comparison](docs/13_hf_vs_vllm_calibration_comparison.md)
+- [Scaled workload generation](docs/14_scaled_workload_generation.md)
 
 ## Environment Variables
 
