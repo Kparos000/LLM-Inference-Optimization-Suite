@@ -1,0 +1,21 @@
+{
+  "aggregate_output_tokens_per_second": 1307.583991664409,
+  "aggregate_requests_per_second": 20.771127075619663,
+  "backend": "vllm",
+  "concurrency": 4,
+  "ended_at_utc": "2026-05-14T19:03:51.110588+00:00",
+  "failure_count": 0,
+  "max_new_tokens": 96,
+  "max_prompts": 1000,
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "optimization": "vllm_baseline",
+  "run_id": "vllm-short_chat-1000-conc4-chunked",
+  "started_at_utc": "2026-05-14T19:03:02.966680+00:00",
+  "stream": true,
+  "success_count": 1000,
+  "total_input_tokens": 15336,
+  "total_output_tokens": 62952,
+  "total_requests": 1000,
+  "wall_clock_seconds": 48.143752448260784,
+  "workload_path": "data/prompts/scaled/short_chat_1000.jsonl"
+}

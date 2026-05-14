@@ -1,0 +1,21 @@
+{
+  "aggregate_output_tokens_per_second": 2219.830557480663,
+  "aggregate_requests_per_second": 29.34381892002093,
+  "backend": "vllm",
+  "concurrency": 8,
+  "ended_at_utc": "2026-05-14T19:15:25.048054+00:00",
+  "failure_count": 0,
+  "max_new_tokens": 96,
+  "max_prompts": 1000,
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "optimization": "vllm_baseline",
+  "run_id": "vllm-shared_prefix-1000-conc8-chunked",
+  "started_at_utc": "2026-05-14T19:14:50.969181+00:00",
+  "stream": true,
+  "success_count": 1000,
+  "total_input_tokens": 31844,
+  "total_output_tokens": 75649,
+  "total_requests": 1000,
+  "wall_clock_seconds": 34.07872720062733,
+  "workload_path": "data/prompts/scaled/shared_prefix_1000.jsonl"
+}
