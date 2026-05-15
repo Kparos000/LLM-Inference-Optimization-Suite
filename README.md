@@ -93,6 +93,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 
 - [Publication notes](docs/04_publication_notes.md)
 - [Scaled benchmark plan](docs/09_scaled_benchmark_plan.md)
+- [Project handover source pack](docs/24_project_handover_source_pack.md)
 
 ## Environment Variables
 
