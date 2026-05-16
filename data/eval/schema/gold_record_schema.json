@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/llm-inference-optimization-suite/gold_record_schema.json",
+  "title": "Phase 2 Gold Evaluation Record",
+  "description": "Shared schema for deterministic Phase 2 gold/evaluation records.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "prompt_id",
+    "vertical",
+    "task_type",
+    "expected_status",
+    "must_include",
+    "must_not_include"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vertical": {
+      "type": "string",
+      "enum": [
+        "finance",
+        "airline",
+        "retail",
+        "research_ai",
+        "healthcare_admin"
+      ]
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "classify",
+        "answer_short",
+        "answer_grounded",
+        "extract_structured",
+        "recommend_action",
+        "long_context_analysis",
+        "calculation_answer",
+        "escalation_response",
+        "boundary_response",
+        "literature_table",
+        "compare_papers",
+        "risk_summary",
+        "trend_summary",
+        "review_summary",
+        "product_support",
+        "policy_lookup"
+      ]
+    },
+    "expected_status": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "escalate",
+        "boundary_response",
+        "spam_or_fraud",
+        "insufficient_evidence"
+      ]
+    },
+    "must_include": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "must_not_include": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reference_answer": {
+      "type": "string"
+    },
+    "expected_category": {
+      "type": "string"
+    },
+    "expected_queue": {
+      "type": "string"
+    },
+    "expected_action": {
+      "type": "string"
+    },
+    "required_doc_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_chunk_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_citations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expected_escalation": {
+      "type": "boolean"
+    },
+    "escalation_reason": {
+      "type": "string"
+    },
+    "risk_level": {
+      "type": "string"
+    },
+    "safety_boundary": {
+      "type": "boolean"
+    },
+    "privacy_sensitive": {
+      "type": "boolean"
+    },
+    "formula": {
+      "type": "string"
+    },
+    "numeric_answer": {
+      "type": "number"
+    },
+    "tolerance": {
+      "type": "number",
+      "minimum": 0
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

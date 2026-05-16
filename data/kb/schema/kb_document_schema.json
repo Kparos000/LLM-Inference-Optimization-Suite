@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/llm-inference-optimization-suite/kb_document_schema.json",
+  "title": "Phase 2 KB Document",
+  "description": "Shared schema for Phase 2 knowledge-base, policy, and context documents.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "doc_id",
+    "vertical",
+    "title",
+    "document_type",
+    "source_type",
+    "body",
+    "version",
+    "tags"
+  ],
+  "properties": {
+    "doc_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vertical": {
+      "type": "string",
+      "enum": [
+        "finance",
+        "airline",
+        "retail",
+        "research_ai",
+        "healthcare_admin"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "policy",
+        "procedure",
+        "faq",
+        "troubleshooting_guide",
+        "compliance_note",
+        "product_metadata",
+        "review_summary",
+        "sec_filing_section",
+        "xbrl_fact_table",
+        "research_paper_section",
+        "healthcare_admin_policy"
+      ]
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "real_public",
+        "synthetic",
+        "synthetic_public_inspired",
+        "user_provided",
+        "derived"
+      ]
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "effective_date": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "provenance_url": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "allowed_to_commit": {
+      "type": "boolean"
+    },
+    "related_record_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

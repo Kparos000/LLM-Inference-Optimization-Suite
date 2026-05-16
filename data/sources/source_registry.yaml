@@ -1,0 +1,95 @@
+sources:
+  - source_id: finance_sec_edgar_xbrl
+    vertical: finance
+    source_name: "SEC EDGAR filings and XBRL company facts"
+    source_type: real_public
+    data_type: "public company filings and structured financial facts"
+    source_format:
+      - "SEC HTML/TXT filings"
+      - "XBRL JSON facts"
+      - "derived filing-section text"
+      - "derived manifest rows"
+    access_method: "SEC APIs/downloads in a later pilot"
+    license: "public SEC filings; confirm reuse and attribution rules during pilot"
+    provenance_url: "https://www.sec.gov/edgar"
+    local_raw_path: "data/raw/finance/sec/"
+    local_processed_path: "data/processed/finance/"
+    expected_prompt_count: 10000
+    allowed_to_commit: false
+    status: "approved_for_first_pilot"
+    notes: "Do not claim filings have been downloaded. Commit only schemas, manifests, and tiny curated samples unless a later review approves more."
+  - source_id: airline_canada_air_synthetic
+    vertical: airline
+    source_name: "Canada Air synthetic support tickets"
+    source_type: synthetic_public_inspired
+    data_type: "synthetic support tickets and synthetic/public-inspired policy KB"
+    source_format:
+      - "generated JSONL support records"
+      - "JSONL policy KB records"
+      - "JSONL gold/eval records"
+    access_method: "generated locally"
+    license: "project-generated synthetic content"
+    provenance_url: "repo-generated"
+    local_raw_path: "data/generated/airline/"
+    local_processed_path: "data/generated/airline/"
+    expected_prompt_count: 10000
+    allowed_to_commit: true
+    status: "approved_synthetic_vertical"
+    notes: "Only tiny synthetic samples should be committed by default; generated full-size corpora remain local unless explicitly curated."
+  - source_id: retail_amazon_reviews_2023
+    vertical: retail
+    source_name: "McAuley-Lab Amazon Reviews 2023"
+    source_type: real_public
+    data_type: "public review and product metadata records with synthetic support-policy overlay"
+    source_format:
+      - "Hugging Face dataset records"
+      - "derived JSONL metadata/review samples"
+      - "JSONL policy KB records"
+      - "JSONL gold/eval records"
+    access_method: "Hugging Face datasets in a later exploration pilot"
+    license: "confirm dataset license and commit constraints during pilot"
+    provenance_url: "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023"
+    local_raw_path: "data/raw/retail/amazon_reviews_2023/"
+    local_processed_path: "data/processed/retail/"
+    expected_prompt_count: 10000
+    allowed_to_commit: false
+    status: "approved_for_exploration_pilot"
+    notes: "Start with All_Beauty and validate timestamps/categories before deriving prompts. Do not commit full dataset dumps."
+  - source_id: research_ai_papers
+    vertical: research_ai
+    source_name: "AI research paper corpus"
+    source_type: real_public
+    data_type: "research papers and parsed paper sections"
+    source_format:
+      - "PDF"
+      - "HTML"
+      - "metadata JSON"
+      - "parsed text sections"
+      - "section/chunk JSONL"
+    access_method: "user-provided PDFs or later source acquisition"
+    license: "confirm paper license and local-storage constraints per paper"
+    provenance_url: "https://arxiv.org/"
+    local_raw_path: "data/raw/research_ai/"
+    local_processed_path: "data/processed/research_ai/"
+    expected_prompt_count: 10000
+    allowed_to_commit: false
+    status: "approved_real_document_vertical"
+    notes: "The first pilot should create a registry and tiny sample manifest before adding paper parsing or retrieval."
+  - source_id: healthcare_admin_synthetic
+    vertical: healthcare_admin
+    source_name: "Healthcare administrative synthetic support tickets"
+    source_type: synthetic_public_inspired
+    data_type: "synthetic non-clinical administrative support tickets and policy KB"
+    source_format:
+      - "generated JSONL support tickets"
+      - "JSONL policy KB records"
+      - "JSONL gold/eval records"
+    access_method: "generated locally"
+    license: "project-generated synthetic content"
+    provenance_url: "repo-generated"
+    local_raw_path: "data/generated/healthcare_admin/"
+    local_processed_path: "data/generated/healthcare_admin/"
+    expected_prompt_count: 10000
+    allowed_to_commit: true
+    status: "approved_synthetic_vertical"
+    notes: "This vertical is administrative only and must not include clinical diagnosis, treatment, or private patient records."
