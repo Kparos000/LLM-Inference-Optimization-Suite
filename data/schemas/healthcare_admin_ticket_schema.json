@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/llm-inference-optimization-suite/healthcare_admin_ticket_schema.json",
+  "title": "Healthcare Administrative Ticket",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "prompt_id",
+    "ticket_id",
+    "vertical",
+    "support_type",
+    "issue",
+    "expected_status",
+    "expected_queue",
+    "required_policy_ids",
+    "safety_boundary"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ticket_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vertical": {
+      "const": "healthcare_admin"
+    },
+    "support_type": {
+      "type": "string",
+      "enum": [
+        "appointment_booking",
+        "appointment_reschedule",
+        "appointment_cancellation",
+        "referral_status",
+        "insurance_verification",
+        "billing_question",
+        "payment_plan_request",
+        "medical_records_request",
+        "portal_access",
+        "telehealth_setup",
+        "provider_schedule_change",
+        "prior_authorization_status",
+        "prescription_refill_routing",
+        "lab_result_availability",
+        "transportation_or_accessibility_request",
+        "language_interpreter_request",
+        "new_patient_registration",
+        "clinic_location_hours",
+        "complaint_or_grievance",
+        "privacy_request"
+      ]
+    },
+    "issue": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_status": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "escalate",
+        "boundary_response",
+        "spam_or_fraud"
+      ]
+    },
+    "expected_queue": {
+      "type": "string",
+      "enum": [
+        "scheduling",
+        "referrals",
+        "insurance",
+        "billing",
+        "records",
+        "portal_support",
+        "clinical_staff_review",
+        "privacy_office",
+        "general_admin"
+      ]
+    },
+    "required_policy_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "safety_boundary": {
+      "type": "string",
+      "enum": [
+        "administrative_only",
+        "urgent_clinical_redirect",
+        "privacy_sensitive"
+      ]
+    },
+    "patient_type": {
+      "type": "string"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "expected_action": {
+      "type": "string"
+    },
+    "escalation_reason": {
+      "type": "string"
+    },
+    "privacy_sensitive": {
+      "type": "boolean"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

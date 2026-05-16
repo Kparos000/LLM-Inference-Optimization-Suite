@@ -98,6 +98,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Project handover: Phase 2 start](docs/28_project_handover_phase2.md)
 - [Phase 2 data strategy](docs/29_phase2_data_strategy.md)
 - [Phase 2 data source validation matrix](docs/30_phase2_data_source_validation_matrix.md)
+- [Phase 2 vertical data contracts](docs/31_phase2_vertical_data_contracts.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

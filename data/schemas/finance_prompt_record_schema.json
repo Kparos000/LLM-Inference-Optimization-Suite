@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/llm-inference-optimization-suite/finance_prompt_record_schema.json",
+  "title": "Finance Prompt Record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "prompt_id",
+    "vertical",
+    "company",
+    "ticker",
+    "source_doc_ids",
+    "task_type",
+    "question",
+    "expected_output_format",
+    "expected_status"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vertical": {
+      "const": "finance"
+    },
+    "company": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ticker": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_doc_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "answer_short",
+        "answer_grounded",
+        "calculation_answer",
+        "extract_structured",
+        "risk_summary",
+        "trend_summary",
+        "compare_companies",
+        "escalation_response"
+      ]
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_output_format": {
+      "type": "string",
+      "enum": [
+        "text",
+        "json",
+        "markdown_table"
+      ]
+    },
+    "expected_status": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "escalate",
+        "insufficient_evidence"
+      ]
+    },
+    "filing_form": {
+      "type": "string"
+    },
+    "fiscal_period": {
+      "type": "string"
+    },
+    "fiscal_year": {
+      "type": "integer"
+    },
+    "required_facts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_sections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

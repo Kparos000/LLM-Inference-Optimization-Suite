@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/llm-inference-optimization-suite/research_ai_prompt_record_schema.json",
+  "title": "AI Research Prompt Record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "prompt_id",
+    "vertical",
+    "topic",
+    "task_type",
+    "question",
+    "required_paper_ids",
+    "expected_status"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vertical": {
+      "const": "research_ai"
+    },
+    "topic": {
+      "type": "string",
+      "enum": [
+        "inference_optimization",
+        "reinforcement_learning",
+        "llms_agents"
+      ]
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "answer_short",
+        "answer_grounded",
+        "long_context_analysis",
+        "compare_papers",
+        "extract_structured",
+        "literature_table",
+        "method_classification",
+        "limitation_extraction",
+        "research_gap_identification",
+        "escalation_response"
+      ]
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_paper_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expected_status": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "escalate",
+        "insufficient_evidence"
+      ]
+    },
+    "required_chunk_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_citations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expected_output_format": {
+      "type": "string"
+    },
+    "escalation_reason": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

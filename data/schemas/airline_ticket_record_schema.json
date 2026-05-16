@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/llm-inference-optimization-suite/airline_ticket_record_schema.json",
+  "title": "Airline Ticket Record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "prompt_id",
+    "ticket_id",
+    "vertical",
+    "airline",
+    "support_type",
+    "issue",
+    "expected_status",
+    "required_policy_ids"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ticket_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vertical": {
+      "const": "airline"
+    },
+    "airline": {
+      "type": "string",
+      "description": "Sample fixtures use Canada Air."
+    },
+    "support_type": {
+      "type": "string",
+      "enum": [
+        "ticket_purchase",
+        "ticket_change",
+        "cancellation_refund",
+        "missed_flight",
+        "baggage_delay",
+        "baggage_damage",
+        "partner_airline",
+        "codeshare",
+        "visa_passport",
+        "accessibility",
+        "disruption",
+        "loyalty",
+        "fraud_or_chargeback"
+      ]
+    },
+    "issue": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_status": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "escalate",
+        "spam_or_fraud"
+      ]
+    },
+    "required_policy_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "route": {
+      "type": "string"
+    },
+    "travel_type": {
+      "type": "string"
+    },
+    "partner_airline_involved": {
+      "type": "boolean"
+    },
+    "expected_action": {
+      "type": "string"
+    },
+    "required_follow_up_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "escalation_reason": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

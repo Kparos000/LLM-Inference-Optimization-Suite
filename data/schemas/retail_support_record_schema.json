@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/llm-inference-optimization-suite/retail_support_record_schema.json",
+  "title": "Retail Support Record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "prompt_id",
+    "vertical",
+    "product_id",
+    "product_title",
+    "issue_type",
+    "question",
+    "expected_status",
+    "expected_action"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vertical": {
+      "const": "retail"
+    },
+    "product_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "product_title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "issue_type": {
+      "type": "string",
+      "enum": [
+        "product_question",
+        "return_refund",
+        "shipping",
+        "warranty",
+        "review_summary",
+        "quality_complaint",
+        "recommendation",
+        "catalog_metadata",
+        "suspicious_review"
+      ]
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_status": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "escalate",
+        "spam_or_fraud",
+        "insufficient_evidence"
+      ]
+    },
+    "expected_action": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "refund",
+        "replace",
+        "ask_for_more_info",
+        "escalate",
+        "ignore"
+      ]
+    },
+    "category": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "review_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_product_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
