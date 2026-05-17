@@ -1,0 +1,165 @@
+# Phase 2 Finance SEC/XBRL Pilot
+
+## Purpose
+
+This pilot is the first real-data engineering step for Phase 2A. The finance
+vertical simulates an equity analyst or finance company researching large
+technology stocks using public SEC data.
+
+This pilot does not yet generate prompts, run RAG, run GPU inference, or create
+benchmark claims. The current step is limited to a ticker registry, URL/path
+planning, and dry-run acquisition output.
+
+## Finance Data Assets
+
+The finance vertical needs three data assets:
+
+1. Main documents / KB context:
+   - SEC 10-K filings.
+   - SEC 10-Q filings.
+   - Earnings-related 8-K filings.
+   - Extracted filing sections.
+   - Filing tables where feasible.
+
+2. Prompt/source records:
+   - Finance question records derived later from company, filing, period,
+     concept, and task templates.
+
+3. Gold/eval records:
+   - XBRL companyfacts.
+   - Required document IDs.
+   - Required citations.
+   - Formulas.
+   - Numeric answers.
+   - Tolerances.
+   - Evidence spans where available.
+
+## Approved Company Universe
+
+| Company | Ticker | CIK | Fiscal Year End | SEC Submissions URL | SEC Companyfacts URL |
+| --- | --- | --- | --- | --- | --- |
+| Apple Inc. | AAPL | 0000320193 | 0926 | https://data.sec.gov/submissions/CIK0000320193.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json |
+| Microsoft Corporation | MSFT | 0000789019 | 0630 | https://data.sec.gov/submissions/CIK0000789019.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json |
+| NVIDIA Corporation | NVDA | 0001045810 | 0126 | https://data.sec.gov/submissions/CIK0001045810.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json |
+| Amazon.com, Inc. | AMZN | 0001018724 | 1231 | https://data.sec.gov/submissions/CIK0001018724.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0001018724.json |
+| Alphabet Inc. | GOOGL | 0001652044 | 1231 | https://data.sec.gov/submissions/CIK0001652044.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0001652044.json |
+| Meta Platforms, Inc. | META | 0001326801 | 1231 | https://data.sec.gov/submissions/CIK0001326801.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0001326801.json |
+| Tesla, Inc. | TSLA | 0001318605 | 1231 | https://data.sec.gov/submissions/CIK0001318605.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0001318605.json |
+| Advanced Micro Devices, Inc. | AMD | 0000002488 | 1228 | https://data.sec.gov/submissions/CIK0000002488.json | https://data.sec.gov/api/xbrl/companyfacts/CIK0000002488.json |
+
+## Why Fiscal Period Consistency Matters
+
+Companies may have different fiscal year ends, so the benchmark must preserve:
+
+- `filing_date`
+- `report_date`
+- `fiscal_year`
+- `fiscal_period`
+- `form`
+- `accession_number`
+- `primary_document`
+
+Cross-company comparisons should not blindly assume that FY2025 means the same
+calendar period for every company.
+
+## Target Filing Selection Rules
+
+10-K:
+
+- Form equals `10-K`.
+- Filing date or report date from 2024 onward.
+- Include FY2024 and FY2025 where available.
+
+10-Q:
+
+- Form equals `10-Q`.
+- Filing date or report date from 2024 onward.
+- Prioritize 2026 quarterlies for current-period analysis.
+- Keep 2024 and 2025 quarterlies available for trends.
+
+8-K:
+
+- Form equals `8-K`.
+- Filing date from 2024 onward.
+- Prioritize items containing 2.02 and/or 9.01.
+- 2.02 means Results of Operations and Financial Condition.
+- 9.01 means Financial Statements and Exhibits.
+
+## SEC URL Derivation
+
+Filing document URLs are derived from:
+
+- CIK without leading zeros.
+- Accession number without dashes.
+- `primaryDocument`.
+
+Use this pattern:
+
+```text
+https://www.sec.gov/Archives/edgar/data/{cik_without_leading_zeros}/{accession_without_dashes}/{primary_document}
+```
+
+Microsoft example:
+
+```text
+CIK: 0000789019
+Accession number: 0001193125-26-191507
+Primary document: msft-20260331.htm
+Derived URL:
+https://www.sec.gov/Archives/edgar/data/789019/000119312526191507/msft-20260331.htm
+```
+
+## SEC Access Rules
+
+Automated SEC access must:
+
+- Use a declared User-Agent header.
+- Avoid excessive requests.
+- Respect SEC fair-access rules.
+- Default to dry-run before download.
+- Keep large raw files local/ignored unless curated.
+
+Use a placeholder contact in documentation and examples:
+
+```text
+User-Agent: LLM-Inference-Optimization-Suite research-contact@example.com
+```
+
+## Pilot Stages
+
+2A-3A:
+
+- Ticker registry.
+- SEC URL planner.
+- Dry-run acquisition script.
+- No downloads.
+
+2A-3B:
+
+- Download submissions JSON.
+- Download companyfacts JSON.
+- Build selected filings manifest.
+- Build XBRL inventory.
+- Produce exploration report.
+
+2A-3C:
+
+- Download selected filing HTML documents.
+- Create selected filing document manifest.
+
+2A-3D:
+
+- Extract text and sections.
+- Create finance KB samples.
+- Create finance gold/eval samples.
+- Still no 10,000-prompt generation.
+
+## Current Step Completion Criteria
+
+2A-3A is complete only when:
+
+- Finance ticker registry exists.
+- Dry-run planner script exists.
+- Dry-run output can be produced without network calls.
+- Tests pass.
+- No raw SEC files are committed.
