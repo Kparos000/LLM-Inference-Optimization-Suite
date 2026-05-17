@@ -33,6 +33,9 @@ DEFAULT_SECTIONS_MANIFEST_PATH = Path("data/processed/finance/sec/filing_section
 DEFAULT_TEXT_EXTRACTION_REPORT_PATH = Path(
     "data/processed/finance/sec/finance_text_extraction_report.json"
 )
+DEFAULT_SECTION_QUALITY_REPORT_PATH = Path(
+    "data/processed/finance/sec/finance_section_quality_report.json"
+)
 ALLOWED_COMPANY_FILTERS = ("all", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AMD")
 ALLOWED_FORM_FILTERS = ("all", "10-K", "10-Q", "8-K")
 DEFAULT_FORMS = "10-K,10-Q,8-K"
@@ -265,11 +268,14 @@ def download_json(
     return parsed_json
 
 
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
+def read_jsonl(
+    path: Path,
+    missing_label: str = "selected filings manifest",
+) -> list[dict[str, Any]]:
     """Read a newline-delimited JSON file into row dictionaries."""
 
     if not path.exists():
-        msg = f"Missing selected filings manifest: {path}"
+        msg = f"Missing {missing_label}: {path}"
         raise RuntimeError(msg)
 
     rows: list[dict[str, Any]] = []
@@ -971,6 +977,10 @@ SECTION_PATTERNS_BY_FORM: dict[str, tuple[tuple[str, str], ...]] = {
                 r"controls and procedures\b)"
             ),
         ),
+        (
+            "management_discussion_and_analysis",
+            r"(?im)^\s*(?:item\s+7\.?\s+management.+discussion and analysis\b|md&a\b)",
+        ),
         ("liquidity_and_capital_resources", r"(?im)^.*liquidity and capital resources.*$"),
         ("results_of_operations", r"(?im)^.*results of operations.*$"),
         ("segment_information", r"(?im)^.*segment information.*$"),
@@ -1001,6 +1011,10 @@ SECTION_PATTERNS_BY_FORM: dict[str, tuple[tuple[str, str], ...]] = {
                 r"(?im)^\s*(?:item\s+4\.?\s+controls and procedures\b|"
                 r"controls and procedures\b)"
             ),
+        ),
+        (
+            "management_discussion_and_analysis",
+            r"(?im)^\s*(?:item\s+2\.?\s+management.+discussion and analysis\b|md&a\b)",
         ),
         ("risk_factors", r"(?im)^\s*(?:item\s+1a\.?\s+risk factors\b|risk factors\s*$)"),
         ("legal_proceedings", r"(?im)^\s*(?:item\s+1\.?\s+legal proceedings\b)"),
@@ -1035,7 +1049,112 @@ def _section_patterns_for_form(form: str) -> tuple[tuple[str, str], ...]:
 
 def _section_title_from_text(text: str, start: int, end: int) -> str:
     candidate = text[start : min(end, start + 240)].splitlines()[0].strip()
-    return re.sub(r"\s+", " ", candidate)
+    return normalize_section_title(candidate)
+
+
+def normalize_section_title(candidate: str, max_title_chars: int = 160) -> str:
+    """Normalize a candidate section heading without turning paragraphs into titles."""
+
+    normalized = re.sub(r"\s+", " ", str(candidate or "")).strip()
+    normalized = re.sub(r"[:;,\s]+$", "", normalized)
+    normalized = re.sub(r"\.{2,}$", "", normalized).strip()
+    if len(normalized) > max_title_chars:
+        return normalized[:max_title_chars].rstrip()
+    return normalized
+
+
+def _is_sec_item_heading(title: str) -> bool:
+    return bool(
+        re.match(
+            r"(?i)^\s*(?:item\s+\d+[a-z]?\s*\.?(?:\s+.{0,120})?|"
+            r"part\s+[ivx]+(?:\s+.{0,120})?)$",
+            title,
+        )
+    )
+
+
+def _matches_known_finance_heading(title: str) -> bool:
+    known_heading_pattern = (
+        r"(?i)^\s*(?:"
+        r"risk factors|"
+        r"management['\u2019]?s discussion and analysis|"
+        r"md&a|"
+        r"results of operations|"
+        r"liquidity and capital resources|"
+        r"financial statements|"
+        r"notes to financial statements|"
+        r"segment information|"
+        r"controls and procedures|"
+        r"results of operations and financial condition|"
+        r"financial statements and exhibits|"
+        r"exhibit\s+99|"
+        r"ex-99|"
+        r"earnings release|"
+        r"press release|"
+        r"financial results|"
+        r"condensed consolidated statements"
+        r")\s*$"
+    )
+    return bool(re.match(known_heading_pattern, title))
+
+
+def is_probable_section_heading(candidate: str, max_title_chars: int = 160) -> bool:
+    """Return whether a candidate line looks like a section heading."""
+
+    title = normalize_section_title(candidate, max_title_chars=max_title_chars + 1)
+    if not title:
+        return False
+    if len(title) > max_title_chars:
+        return False
+
+    words = re.findall(r"\b\w+\b", title)
+    if len(words) > 18:
+        return False
+
+    if _is_sec_item_heading(title) or _matches_known_finance_heading(title):
+        return True
+
+    if title.endswith((".", "!", "?")):
+        return False
+
+    punctuation_count = title.count(",") + title.count(";")
+    if punctuation_count >= 2:
+        return False
+
+    paragraph_markers = (
+        " this ",
+        " these ",
+        " those ",
+        " our ",
+        " we ",
+        " includes ",
+        " estimates ",
+        " projections ",
+        " statements ",
+        " relating ",
+        " expected ",
+        " operating results ",
+    )
+    lowered = f" {title.lower()} "
+    if len(words) > 8 and any(marker in lowered for marker in paragraph_markers):
+        return False
+
+    return False
+
+
+def is_suspicious_section_title(title: str, max_title_chars: int = 160) -> bool:
+    """Return whether an extracted section title looks noisy or paragraph-like."""
+
+    normalized = normalize_section_title(title, max_title_chars=max_title_chars + 1)
+    if not normalized:
+        return True
+    if len(normalized) > max_title_chars:
+        return True
+    if len(re.findall(r"\b\w+\b", normalized)) > 18:
+        return True
+    if normalized.count(",") + normalized.count(";") >= 2:
+        return True
+    return not is_probable_section_heading(normalized, max_title_chars=max_title_chars)
 
 
 def detect_finance_sections(
@@ -1047,18 +1166,21 @@ def detect_finance_sections(
 
     form = str(document_row.get("form") or "").upper()
     matches: list[dict[str, Any]] = []
-    seen_matches: set[tuple[str, int]] = set()
+    seen_starts: set[int] = set()
     for section_type, pattern in _section_patterns_for_form(form):
         for match in re.finditer(pattern, text):
-            key = (section_type, match.start())
-            if key in seen_matches:
+            start = match.start()
+            if start in seen_starts:
                 continue
-            seen_matches.add(key)
+            title = _section_title_from_text(text, start, match.end())
+            if not is_probable_section_heading(title):
+                continue
+            seen_starts.add(start)
             matches.append(
                 {
                     "section_type": section_type,
-                    "start": match.start(),
-                    "title": _section_title_from_text(text, match.start(), match.end()),
+                    "start": start,
+                    "title": title,
                 }
             )
 
@@ -1108,10 +1230,49 @@ def detect_finance_sections(
                 "section_end_char": end,
                 "char_count": char_count,
                 "word_count": len(re.findall(r"\S+", section_text)),
-                "extraction_method": "standard_library_heading_heuristic_v1",
+                "extraction_method": "standard_library_heading_heuristic_v2",
                 "local_text_path": local_text_path,
             }
         )
+
+    if not section_rows and form == "8-K":
+        fallback_title = ""
+        fallback_type = ""
+        if re.search(r"(?i)results of operations and financial condition|item\s+2\.02", text):
+            fallback_title = "Results of Operations and Financial Condition"
+            fallback_type = "results_of_operations"
+        elif re.search(r"(?i)exhibit\s+99|ex-99", text):
+            fallback_title = "Exhibit 99"
+            fallback_type = "exhibit_99"
+
+        if fallback_type:
+            section_record_id = (
+                f"finance_section_{ticker}_{form_normalized}_{accession_without_dashes}_"
+                f"{fallback_type}_1"
+            )
+            stripped_text = text.strip()
+            section_rows.append(
+                {
+                    "section_record_id": section_record_id,
+                    "document_record_id": document_record_id,
+                    "source_manifest_record_id": source_manifest_record_id,
+                    "ticker": ticker,
+                    "company_name": document_row.get("company_name"),
+                    "form": form,
+                    "filing_date": document_row.get("filing_date"),
+                    "report_date": document_row.get("report_date"),
+                    "accession_number": accession_number,
+                    "primary_document": document_row.get("primary_document"),
+                    "section_type": fallback_type,
+                    "section_title": fallback_title,
+                    "section_start_char": 0,
+                    "section_end_char": len(text),
+                    "char_count": len(stripped_text),
+                    "word_count": len(re.findall(r"\S+", stripped_text)),
+                    "extraction_method": "standard_library_heading_heuristic_v2_fallback",
+                    "local_text_path": local_text_path,
+                }
+            )
 
     return section_rows
 
@@ -1187,6 +1348,10 @@ def build_text_extraction_report(
         "sections_by_type": dict(Counter(str(row.get("section_type")) for row in section_rows)),
         "documents_with_zero_sections": documents_with_zero_sections,
         "output_files": output_paths,
+        "section_quality_note": (
+            "Run --audit-sections to inspect section quality before curated finance "
+            "sample generation."
+        ),
         "warnings": [
             "This report summarizes local SEC filing text extraction only.",
             "Section extraction is heuristic and will be refined before RAG/context engineering.",
@@ -1198,6 +1363,154 @@ def build_text_extraction_report(
         "next_step": (
             "Phase 2A-3E should create curated finance source, KB, and gold/eval "
             "samples from extracted text and XBRL facts."
+        ),
+    }
+
+
+def _section_count_summary(section_counts: list[int]) -> dict[str, int | float]:
+    if not section_counts:
+        return {"min": 0, "max": 0, "mean": 0.0, "median": 0.0}
+
+    sorted_counts = sorted(section_counts)
+    count = len(sorted_counts)
+    midpoint = count // 2
+    if count % 2:
+        median_value: float = float(sorted_counts[midpoint])
+    else:
+        median_value = (sorted_counts[midpoint - 1] + sorted_counts[midpoint]) / 2
+
+    return {
+        "min": min(sorted_counts),
+        "max": max(sorted_counts),
+        "mean": sum(sorted_counts) / count,
+        "median": median_value,
+    }
+
+
+def build_section_quality_report(
+    text_manifest_rows: list[dict[str, Any]],
+    section_rows: list[dict[str, Any]],
+    company_filter: str = "all",
+    form_filter: str = "all",
+    max_title_chars: int = 160,
+) -> dict[str, Any]:
+    """Build a local QA report for extracted finance section candidates."""
+
+    filtered_text_rows = filter_manifest_rows(text_manifest_rows, company_filter, form_filter, 0)
+    allowed_document_ids = {
+        str(row.get("document_record_id"))
+        for row in filtered_text_rows
+        if row.get("document_record_id")
+    }
+    filtered_section_rows = [
+        row
+        for row in section_rows
+        if (not allowed_document_ids or str(row.get("document_record_id")) in allowed_document_ids)
+        and (
+            company_filter.upper() == "ALL"
+            or str(row.get("ticker", "")).upper() == company_filter.upper()
+        )
+        and (
+            form_filter.upper() == "ALL" or str(row.get("form", "")).upper() == form_filter.upper()
+        )
+    ]
+
+    section_counts_by_document = Counter(
+        str(row.get("document_record_id")) for row in filtered_section_rows
+    )
+    section_counts = [
+        int(section_counts_by_document.get(str(row.get("document_record_id")), 0))
+        for row in filtered_text_rows
+    ]
+
+    documents_with_zero_sections = [
+        {
+            "document_record_id": row.get("document_record_id"),
+            "ticker": row.get("ticker"),
+            "form": row.get("form"),
+            "accession_number": row.get("accession_number"),
+        }
+        for row in filtered_text_rows
+        if int(section_counts_by_document.get(str(row.get("document_record_id")), 0)) == 0
+    ]
+    documents_with_high_section_counts = [
+        {
+            "document_record_id": row.get("document_record_id"),
+            "ticker": row.get("ticker"),
+            "form": row.get("form"),
+            "accession_number": row.get("accession_number"),
+            "section_count": int(
+                section_counts_by_document.get(str(row.get("document_record_id")), 0)
+            ),
+        }
+        for row in filtered_text_rows
+        if int(section_counts_by_document.get(str(row.get("document_record_id")), 0)) >= 40
+    ]
+
+    suspicious_rows = [
+        row
+        for row in filtered_section_rows
+        if is_suspicious_section_title(
+            str(row.get("section_title") or ""),
+            max_title_chars=max_title_chars,
+        )
+    ]
+    long_title_rows = [
+        row
+        for row in filtered_section_rows
+        if len(str(row.get("section_title") or "")) > max_title_chars
+    ]
+    short_section_rows = [
+        row
+        for row in filtered_section_rows
+        if str(row.get("form")) != "8-K" and int(row.get("char_count") or 0) < 500
+    ]
+
+    def _example(row: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "section_record_id": row.get("section_record_id"),
+            "ticker": row.get("ticker"),
+            "form": row.get("form"),
+            "section_type": row.get("section_type"),
+            "section_title": row.get("section_title"),
+            "char_count": row.get("char_count"),
+        }
+
+    sections_by_type = Counter(str(row.get("section_type")) for row in filtered_section_rows)
+    quality_warnings: list[str] = []
+    if suspicious_rows:
+        quality_warnings.append("Suspicious section titles remain and should be reviewed.")
+    if documents_with_high_section_counts:
+        quality_warnings.append("Some documents have high section counts and may need review.")
+    if documents_with_zero_sections:
+        quality_warnings.append("Some documents have zero detected sections.")
+    if filtered_section_rows:
+        results_count = sections_by_type.get("results_of_operations", 0)
+        if results_count / len(filtered_section_rows) > 0.5 and len(filtered_section_rows) >= 10:
+            quality_warnings.append(
+                "results_of_operations dominates extracted sections; review heading heuristics."
+            )
+
+    return {
+        "phase": "2A-3D-QA",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "total_text_rows": len(filtered_text_rows),
+        "total_section_rows": len(filtered_section_rows),
+        "counts_by_company": dict(Counter(str(row.get("ticker")) for row in filtered_text_rows)),
+        "counts_by_form": dict(Counter(str(row.get("form")) for row in filtered_text_rows)),
+        "sections_by_type": dict(sections_by_type),
+        "sections_per_document_summary": _section_count_summary(section_counts),
+        "documents_with_zero_sections": documents_with_zero_sections,
+        "documents_with_high_section_counts": documents_with_high_section_counts,
+        "suspicious_section_title_count": len(suspicious_rows),
+        "suspicious_section_title_examples": [_example(row) for row in suspicious_rows[:20]],
+        "long_section_title_examples": [_example(row) for row in long_title_rows[:20]],
+        "short_section_examples": [_example(row) for row in short_section_rows[:20]],
+        "quality_warnings": quality_warnings,
+        "recommended_next_step": (
+            "If section quality is acceptable, proceed to Phase 2A-3E curated finance "
+            "source/KB/gold sample creation. If suspicious titles remain high, refine "
+            "section heuristics again before curation."
         ),
     }
 
@@ -1598,6 +1911,68 @@ def build_extract_text_summary(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def build_audit_sections_summary(args: argparse.Namespace) -> dict[str, Any]:
+    """Build a local section quality audit report from extracted manifests."""
+
+    text_manifest_path = Path(str(args.text_manifest_path))
+    sections_manifest_path = Path(str(args.sections_manifest_path))
+    text_rows = read_jsonl(text_manifest_path, missing_label="filing text manifest")
+    section_rows = read_jsonl(sections_manifest_path, missing_label="filing sections manifest")
+
+    filtered_text_rows = filter_manifest_rows(
+        rows=text_rows,
+        company_filter=str(args.company),
+        form_filter=str(args.form),
+        limit=int(args.limit),
+    )
+    if not filtered_text_rows:
+        msg = (
+            "No filing text manifest rows matched the requested company/form/limit "
+            f"filters from {text_manifest_path}"
+        )
+        raise ValueError(msg)
+
+    allowed_document_ids = {
+        str(row.get("document_record_id"))
+        for row in filtered_text_rows
+        if row.get("document_record_id")
+    }
+    filtered_section_rows = [
+        row for row in section_rows if str(row.get("document_record_id")) in allowed_document_ids
+    ]
+    report = build_section_quality_report(
+        text_manifest_rows=filtered_text_rows,
+        section_rows=filtered_section_rows,
+        company_filter="all",
+        form_filter="all",
+        max_title_chars=int(args.max_title_chars),
+    )
+    text_extraction_report_path = Path(str(args.text_extraction_report_path))
+    if text_extraction_report_path.exists():
+        source_report = _read_json_file(text_extraction_report_path)
+        report["source_text_extraction_report_path"] = str(text_extraction_report_path)
+        report["source_text_extraction_phase"] = source_report.get("phase")
+
+    section_quality_report_path = Path(str(args.section_quality_report_path))
+    _write_json(report, section_quality_report_path)
+
+    return {
+        "mode": "audit_sections",
+        "phase": "2A-3D-QA",
+        "company_filter": str(args.company),
+        "form_filter": str(args.form),
+        "total_text_rows": report["total_text_rows"],
+        "total_section_rows": report["total_section_rows"],
+        "suspicious_section_title_count": report["suspicious_section_title_count"],
+        "documents_with_zero_sections_count": len(report["documents_with_zero_sections"]),
+        "documents_with_high_section_counts_count": len(
+            report["documents_with_high_section_counts"]
+        ),
+        "section_quality_report_path": str(section_quality_report_path),
+        "warnings": report["quality_warnings"],
+    }
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Plan or run Phase 2A finance SEC/XBRL JSON acquisition."
@@ -1656,6 +2031,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Extract readable text and finance section candidates from local filing HTML.",
     )
     parser.add_argument(
+        "--audit-sections",
+        action="store_true",
+        help="Audit local extracted finance section candidates for noisy headings.",
+    )
+    parser.add_argument(
         "--output-dir",
         default=str(DEFAULT_OUTPUT_DIR),
         help="Directory where processed finance exploration outputs should be written.",
@@ -1701,6 +2081,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Path for the text extraction report JSON.",
     )
     parser.add_argument(
+        "--section-quality-report-path",
+        default=str(DEFAULT_SECTION_QUALITY_REPORT_PATH),
+        help="Path for the section quality audit report JSON.",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=0,
@@ -1722,6 +2107,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=500,
         help="Minimum section candidate length for extracted finance sections.",
+    )
+    parser.add_argument(
+        "--max-title-chars",
+        type=int,
+        default=160,
+        help="Maximum probable section-title length for section QA.",
     )
     parser.add_argument(
         "--user-agent",
@@ -1752,6 +2143,7 @@ def _selected_mode_count(args: argparse.Namespace) -> int:
             args.summarize_local,
             args.download_filings,
             args.extract_text,
+            args.audit_sections,
         )
     )
 
@@ -1765,9 +2157,9 @@ def main(argv: list[str] | None = None) -> int:
     if _selected_mode_count(args) != 1:
         print(
             "Exactly one mode must be selected: --dry-run, --download-json, "
-            "--summarize-local, --download-filings, or --extract-text. Download "
-            "mode is not implemented in Phase 2A-3A unless an explicit download "
-            "mode is selected.",
+            "--summarize-local, --download-filings, --extract-text, or "
+            "--audit-sections. Download mode is not implemented in Phase 2A-3A "
+            "unless an explicit download mode is selected.",
             file=sys.stderr,
         )
         return 2
@@ -1782,6 +2174,9 @@ def main(argv: list[str] | None = None) -> int:
         if int(args.min_section_chars) < 0:
             msg = "min_section_chars must be >= 0"
             raise ValueError(msg)
+        if int(args.max_title_chars) <= 0:
+            msg = "max_title_chars must be > 0"
+            raise ValueError(msg)
 
         if args.dry_run:
             payload = build_dry_run_plan(args)
@@ -1791,8 +2186,10 @@ def main(argv: list[str] | None = None) -> int:
             payload = build_summarize_local_summary(args)
         elif args.download_filings:
             payload = build_download_filings_summary(args)
-        else:
+        elif args.extract_text:
             payload = build_extract_text_summary(args)
+        else:
+            payload = build_audit_sections_summary(args)
     except (FileNotFoundError, RuntimeError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 2

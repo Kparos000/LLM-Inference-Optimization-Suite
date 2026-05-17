@@ -659,6 +659,66 @@ def test_write_extracted_text() -> None:
         assert metadata["sha256"]
 
 
+def test_is_probable_section_heading() -> None:
+    module = _load_script_module()
+    is_probable_section_heading = cast(
+        Callable[[str], bool],
+        module.__dict__["is_probable_section_heading"],
+    )
+
+    true_cases = [
+        "Item 1A.",
+        "Item 7.",
+        "Risk Factors",
+        "Management\u2019s Discussion and Analysis",
+        "Results of Operations",
+        "Liquidity and Capital Resources",
+        "Financial Statements",
+        "Exhibit 99",
+    ]
+    for candidate in true_cases:
+        assert is_probable_section_heading(candidate)
+
+    long_paragraph = (
+        "This report includes estimates, projections, statements relating to our business "
+        "plans, objectives, and expected operating results that should not be treated as "
+        "a clean section heading by the finance extractor."
+    )
+    assert not is_probable_section_heading(long_paragraph)
+    assert not is_probable_section_heading(
+        "This report includes estimates, projections, statements relating to our business "
+        "plans, objectives, and expected operating results"
+    )
+    assert not is_probable_section_heading("")
+
+
+def test_normalize_section_title() -> None:
+    module = _load_script_module()
+    normalize_section_title = cast(
+        Callable[[str], str],
+        module.__dict__["normalize_section_title"],
+    )
+
+    assert normalize_section_title("  Risk    Factors  ") == "Risk Factors"
+    assert normalize_section_title("\nFinancial\tStatements: ") == "Financial Statements"
+
+
+def test_is_suspicious_section_title() -> None:
+    module = _load_script_module()
+    is_suspicious_section_title = cast(
+        Callable[[str], bool],
+        module.__dict__["is_suspicious_section_title"],
+    )
+    paragraph = (
+        "This report includes estimates, projections, statements relating to our business "
+        "plans, objectives, and expected operating results"
+    )
+
+    assert is_suspicious_section_title(paragraph)
+    assert not is_suspicious_section_title("Risk Factors")
+    assert not is_suspicious_section_title("Item 1A.")
+
+
 def test_detect_finance_sections_10k_or_10q() -> None:
     module = _load_script_module()
     detect_finance_sections = cast(
@@ -709,6 +769,36 @@ def test_detect_finance_sections_8k() -> None:
     section_types = {section["section_type"] for section in sections}
 
     assert {"results_of_operations", "exhibit_99"} & section_types
+
+
+def test_detect_finance_sections_rejects_paragraph_fragments() -> None:
+    module = _load_script_module()
+    detect_finance_sections = cast(
+        Callable[[str, dict[str, Any], int], list[dict[str, Any]]],
+        module.__dict__["detect_finance_sections"],
+    )
+    paragraph = (
+        "This paragraph discusses results of operations, expected operating results, "
+        "and projected demand in a sentence-like format that should not become a heading."
+    )
+    body_text = "The company provides detailed analysis of revenue and operating expenses. " * 10
+    text = "\n".join(
+        [
+            paragraph,
+            "Item 2. Management's Discussion and Analysis",
+            body_text,
+        ]
+    )
+    document_row = {**_fake_document_row("10-Q"), "local_text_path": "extracted.txt"}
+
+    sections = detect_finance_sections(text, document_row, 50)
+    section_titles = {section["section_title"] for section in sections}
+
+    assert paragraph not in section_titles
+    assert any(
+        section["section_title"] == "Item 2. Management's Discussion and Analysis"
+        for section in sections
+    )
 
 
 def test_rows_from_recent_filings_transforms_column_arrays() -> None:
@@ -1061,6 +1151,62 @@ def test_build_text_extraction_report() -> None:
     assert "Phase 2A-3E" in report["next_step"]
 
 
+def test_build_section_quality_report() -> None:
+    module = _load_script_module()
+    build_section_quality_report = cast(
+        Callable[
+            [list[dict[str, Any]], list[dict[str, Any]], str, str, int],
+            dict[str, Any],
+        ],
+        module.__dict__["build_section_quality_report"],
+    )
+    text_rows = [
+        {
+            "document_record_id": "finance_doc_MSFT_10Q_000119312526191507",
+            "ticker": "MSFT",
+            "form": "10-Q",
+            "accession_number": "0001193125-26-191507",
+            "section_count": 2,
+        }
+    ]
+    long_title = (
+        "This report includes estimates, projections, statements relating to our business "
+        "plans, objectives, and expected operating results"
+    )
+    section_rows = [
+        {
+            "section_record_id": "section_1",
+            "document_record_id": "finance_doc_MSFT_10Q_000119312526191507",
+            "ticker": "MSFT",
+            "form": "10-Q",
+            "accession_number": "0001193125-26-191507",
+            "section_type": "results_of_operations",
+            "section_title": long_title,
+            "char_count": 300,
+        },
+        {
+            "section_record_id": "section_2",
+            "document_record_id": "finance_doc_MSFT_10Q_000119312526191507",
+            "ticker": "MSFT",
+            "form": "10-Q",
+            "accession_number": "0001193125-26-191507",
+            "section_type": "risk_factors",
+            "section_title": "Risk Factors",
+            "char_count": 600,
+        },
+    ]
+
+    report = build_section_quality_report(text_rows, section_rows, "all", "all", 80)
+
+    assert report["phase"] == "2A-3D-QA"
+    assert report["total_text_rows"] == 1
+    assert report["total_section_rows"] == 2
+    assert report["suspicious_section_title_count"] == 1
+    assert report["suspicious_section_title_examples"]
+    assert "sections_per_document_summary" in report
+    assert "recommended_next_step" in report
+
+
 def test_finance_sec_acquisition_cli_dry_run_msft() -> None:
     completed_process = subprocess.run(
         [
@@ -1187,6 +1333,47 @@ def test_finance_sec_acquisition_cli_extract_text_missing_documents_manifest() -
 
     assert completed_process.returncode != 0
     assert "Missing selected filing documents manifest" in combined_output
+
+
+def test_finance_sec_acquisition_cli_audit_sections_missing_manifest() -> None:
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        missing_manifest_path = Path(temporary_directory) / "missing_text_manifest.jsonl"
+        completed_process = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--audit-sections",
+                "--text-manifest-path",
+                str(missing_manifest_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    combined_output = completed_process.stdout + completed_process.stderr
+
+    assert completed_process.returncode != 0
+    assert "Missing filing text manifest" in combined_output
+
+
+def test_finance_sec_acquisition_cli_rejects_extract_audit_mode_conflict() -> None:
+    completed_process = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--extract-text",
+            "--audit-sections",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    combined_output = completed_process.stdout + completed_process.stderr
+
+    assert completed_process.returncode != 0
+    assert "Exactly one mode must be selected" in combined_output
 
 
 def test_finance_sec_acquisition_cli_rejects_mode_conflict() -> None:

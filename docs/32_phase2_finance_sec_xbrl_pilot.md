@@ -282,3 +282,35 @@ python scripts/phase2/finance_sec_acquisition.py --extract-text --company all
 Phase 2A-3E is responsible for creating curated finance source, KB, and
 gold/eval samples. Full context engineering and RAG remain deferred until all
 five Phase 2A verticals have their data assets ready.
+
+## Phase 2A-3D-QA Section Quality Audit
+
+Phase 2A-3D-QA audits extracted finance section candidates before curated
+finance sample creation. It is still part of data preparation, not RAG or
+context engineering.
+
+The audit checks for noisy section titles, high section counts, zero-section
+documents, suspicious heading candidates, long section titles, and short
+non-8-K sections. The tightened section heuristics reduce paragraph fragments
+being treated as section headings by requiring candidate titles to look like SEC
+item headings or clear finance headings.
+
+The generated QA report is written locally to:
+
+- `data/processed/finance/sec/finance_section_quality_report.json`
+
+Generated reports remain local/ignored unless later curated.
+
+Example commands:
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --audit-sections --company MSFT
+```
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --audit-sections --company all
+```
+
+Phase 2A-3E should only proceed after section quality is acceptable for curated
+sample generation. Full RAG and context engineering remain deferred until all
+five Phase 2A vertical datasets are prepared.
