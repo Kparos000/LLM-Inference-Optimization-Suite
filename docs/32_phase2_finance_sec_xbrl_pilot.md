@@ -314,3 +314,37 @@ python scripts/phase2/finance_sec_acquisition.py --audit-sections --company all
 Phase 2A-3E should only proceed after section quality is acceptable for curated
 sample generation. Full RAG and context engineering remain deferred until all
 five Phase 2A vertical datasets are prepared.
+
+## Phase 2A-3E Curated Finance Seed Samples
+
+Phase 2A-3E creates curated Finance source/prompt, KB/context, and gold/eval
+seed samples. It uses local SEC filing text, cleaned section candidates,
+selected filing metadata, and XBRL companyfacts.
+
+This step creates 40 curated prompt/source records, 40 matching gold/eval
+records, and at least 25 KB/context records. It does not create the full
+10,000-prompt dataset, run RAG, build retrieval indexes, run inference, or
+assemble prompts for model runs. It is the final Finance data-preparation step
+before moving to the next Phase 2A verticals.
+
+| Prompt Type | Count | Expected Response |
+|---|---:|---|
+| Direct numeric fact Q&A | 8 | Short answer |
+| Single-document grounded Q&A | 6 | Short/medium answer |
+| Structured JSON extraction | 6 | JSON |
+| Trend analysis | 5 | Medium explanation |
+| Cross-company comparison | 4 | Markdown table + short explanation |
+| Summarization / risk / MD&A | 4 | Medium summary |
+| Calculation questions | 3 | Short answer + formula |
+| Evidence/citation lookup | 2 | Citation/document IDs |
+| Escalation / insufficient evidence | 2 | Escalation response |
+
+Example command:
+
+```text
+python scripts/phase2/finance_curate_samples.py --build-curated-samples
+```
+
+After Finance 2A-3E, the project should continue to Phase 2A-4 for Airline and
+Healthcare synthetic data generation. Full RAG/context engineering remains
+deferred until all five verticals have data, KB/context, and gold/eval assets.

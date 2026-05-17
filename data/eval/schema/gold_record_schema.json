@@ -42,6 +42,7 @@
         "boundary_response",
         "literature_table",
         "compare_papers",
+        "compare_companies",
         "risk_summary",
         "trend_summary",
         "review_summary",
