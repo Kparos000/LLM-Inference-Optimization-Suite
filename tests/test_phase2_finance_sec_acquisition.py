@@ -246,6 +246,38 @@ def _fake_selected_filing_rows() -> list[dict[str, Any]]:
     ]
 
 
+def _fake_document_row(form: str = "10-Q") -> dict[str, Any]:
+    accession_number = "0001193125-26-191507"
+    form_normalized = form.replace("-", "")
+    return {
+        "document_record_id": f"finance_doc_MSFT_{form_normalized}_000119312526191507",
+        "source_manifest_record_id": "finance_sec_MSFT_10Q_000119312526191507",
+        "source_id": "finance_sec_edgar_xbrl",
+        "vertical": "finance",
+        "ticker": "MSFT",
+        "company_name": "Microsoft Corporation",
+        "cik": "0000789019",
+        "cik_no_leading_zeros": "789019",
+        "fiscal_year_end": "0630",
+        "form": form,
+        "filing_date": "2026-04-25",
+        "report_date": "2026-03-31",
+        "accession_number": accession_number,
+        "items": "2.02,9.01" if form == "8-K" else "",
+        "primary_document": "msft-20260331.htm",
+        "primary_doc_description": form,
+        "derived_filing_url": (
+            "https://www.sec.gov/Archives/edgar/data/789019/000119312526191507/msft-20260331.htm"
+        ),
+        "local_html_path": "data/raw/finance/sec/filings/MSFT/10-Q/test.htm",
+        "download_status": "downloaded",
+        "file_size_bytes": 100,
+        "sha256": "abc123",
+        "selection_reason": "Selected quarterly filing candidate from target year range.",
+        "downloaded_at_utc": "2026-05-17T00:00:00+00:00",
+    }
+
+
 def test_finance_sec_xbrl_pilot_doc_contains_required_terms() -> None:
     doc_path = Path("docs/32_phase2_finance_sec_xbrl_pilot.md")
 
@@ -567,6 +599,118 @@ def test_download_binary_gzip_html_mocked() -> None:
         assert metadata["sha256"]
 
 
+def test_strip_html_to_text() -> None:
+    module = _load_script_module()
+    strip_html_to_text = cast(Callable[[str], str], module.__dict__["strip_html_to_text"])
+    html_content = """
+    <html>
+      <head>
+        <title>Sample Filing</title>
+        <style>.hidden { display: none; }</style>
+        <script>var secret = "remove me";</script>
+      </head>
+      <body><p>Revenue &amp; margin improved.</p></body>
+    </html>
+    """
+
+    text = strip_html_to_text(html_content)
+
+    assert "remove me" not in text
+    assert "display: none" not in text
+    assert "Revenue & margin improved." in text
+    assert "<p>" not in text
+
+
+def test_build_extracted_text_path() -> None:
+    module = _load_script_module()
+    build_extracted_text_path = cast(
+        Callable[[dict[str, Any], Path], Path],
+        module.__dict__["build_extracted_text_path"],
+    )
+    row = {
+        "ticker": "MSFT",
+        "form": "10-Q",
+        "accession_number": "0001193125-26-191507",
+    }
+
+    path = build_extracted_text_path(row, Path("data/processed/finance/sec/extracted_text"))
+
+    assert path.parts[-3:] == (
+        "MSFT",
+        "10-Q",
+        "000119312526191507.txt",
+    )
+
+
+def test_write_extracted_text() -> None:
+    module = _load_script_module()
+    write_extracted_text = cast(
+        Callable[[str, Path], dict[str, Any]],
+        module.__dict__["write_extracted_text"],
+    )
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_path = Path(temporary_directory) / "extracted.txt"
+        metadata = write_extracted_text("Revenue increased during the period.", output_path)
+
+        assert output_path.read_text(encoding="utf-8") == "Revenue increased during the period."
+        assert metadata["char_count"] > 0
+        assert metadata["word_count"] > 0
+        assert metadata["sha256"]
+
+
+def test_detect_finance_sections_10k_or_10q() -> None:
+    module = _load_script_module()
+    detect_finance_sections = cast(
+        Callable[[str, dict[str, Any], int], list[dict[str, Any]]],
+        module.__dict__["detect_finance_sections"],
+    )
+    repeated_text = "The company describes material financial matters. " * 8
+    text = "\n".join(
+        [
+            "Item 1A. Risk Factors",
+            repeated_text,
+            "Item 2. Management's Discussion and Analysis",
+            repeated_text,
+            "Item 8. Financial Statements",
+            repeated_text,
+        ]
+    )
+    document_row = {**_fake_document_row("10-Q"), "local_text_path": "extracted.txt"}
+
+    sections = detect_finance_sections(text, document_row, 5)
+    section_types = {section["section_type"] for section in sections}
+
+    assert {"risk_factors", "management_discussion_and_analysis"} & section_types
+    for section in sections:
+        assert "section_type" in section
+        assert "section_title" in section
+        assert section["char_count"] > 0
+
+
+def test_detect_finance_sections_8k() -> None:
+    module = _load_script_module()
+    detect_finance_sections = cast(
+        Callable[[str, dict[str, Any], int], list[dict[str, Any]]],
+        module.__dict__["detect_finance_sections"],
+    )
+    repeated_text = "Financial results and management commentary are summarized. " * 8
+    text = "\n".join(
+        [
+            "Results of Operations and Financial Condition",
+            repeated_text,
+            "Exhibit 99",
+            repeated_text,
+        ]
+    )
+    document_row = {**_fake_document_row("8-K"), "local_text_path": "extracted.txt"}
+
+    sections = detect_finance_sections(text, document_row, 5)
+    section_types = {section["section_type"] for section in sections}
+
+    assert {"results_of_operations", "exhibit_99"} & section_types
+
+
 def test_rows_from_recent_filings_transforms_column_arrays() -> None:
     module = _load_script_module()
     rows_from_recent_filings = cast(
@@ -850,6 +994,73 @@ def test_build_filing_download_report() -> None:
     assert "Phase 2A-3D" in report["next_step"]
 
 
+def test_build_text_manifest_row() -> None:
+    module = _load_script_module()
+    build_text_manifest_row = cast(
+        Callable[..., dict[str, Any]],
+        module.__dict__["build_text_manifest_row"],
+    )
+    metadata = {
+        "path": "data/processed/finance/sec/extracted_text/MSFT/10-Q/test.txt",
+        "char_count": 100,
+        "word_count": 16,
+        "sha256": "abc123",
+        "section_count": 2,
+    }
+
+    row = build_text_manifest_row(_fake_document_row("10-Q"), metadata, "extracted")
+
+    assert row["text_record_id"] == "finance_text_MSFT_10Q_000119312526191507"
+    assert row["document_record_id"] == "finance_doc_MSFT_10Q_000119312526191507"
+    assert row["local_text_path"] == metadata["path"]
+    assert row["extraction_status"] == "extracted"
+    assert row["text_char_count"] == 100
+    assert row["text_word_count"] == 16
+    assert row["section_count"] == 2
+
+
+def test_build_text_extraction_report() -> None:
+    module = _load_script_module()
+    build_text_extraction_report = cast(
+        Callable[[list[dict[str, Any]], list[dict[str, Any]], int, dict[str, str]], dict[str, Any]],
+        module.__dict__["build_text_extraction_report"],
+    )
+    text_rows = [
+        {
+            "document_record_id": "finance_doc_MSFT_10Q_000119312526191507",
+            "ticker": "MSFT",
+            "form": "10-Q",
+            "extraction_status": "extracted",
+            "section_count": 1,
+        }
+    ]
+    section_rows = [
+        {
+            "ticker": "MSFT",
+            "form": "10-Q",
+            "section_type": "risk_factors",
+        }
+    ]
+
+    report = build_text_extraction_report(
+        text_rows,
+        section_rows,
+        3,
+        {
+            "text_manifest_path": "text.jsonl",
+            "sections_manifest_path": "sections.jsonl",
+            "text_extraction_report_path": "report.json",
+        },
+    )
+
+    assert report["phase"] == "2A-3D"
+    assert report["total_documents_attempted"] == 1
+    assert report["total_documents_extracted"] == 1
+    assert report["total_sections_extracted"] == 1
+    assert report["sections_by_type"] == {"risk_factors": 1}
+    assert "Phase 2A-3E" in report["next_step"]
+
+
 def test_finance_sec_acquisition_cli_dry_run_msft() -> None:
     completed_process = subprocess.run(
         [
@@ -954,6 +1165,28 @@ def test_finance_sec_acquisition_cli_download_filings_missing_manifest() -> None
 
     assert completed_process.returncode != 0
     assert "Missing selected filings manifest" in combined_output
+
+
+def test_finance_sec_acquisition_cli_extract_text_missing_documents_manifest() -> None:
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        missing_manifest_path = Path(temporary_directory) / "missing_documents.jsonl"
+        completed_process = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--extract-text",
+                "--documents-manifest-path",
+                str(missing_manifest_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    combined_output = completed_process.stdout + completed_process.stderr
+
+    assert completed_process.returncode != 0
+    assert "Missing selected filing documents manifest" in combined_output
 
 
 def test_finance_sec_acquisition_cli_rejects_mode_conflict() -> None:

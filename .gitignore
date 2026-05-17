@@ -48,8 +48,12 @@ data/prompts/scaled/*_1000.jsonl
 data/prompts/scaled/*_5000.jsonl
 data/prompts/scaled/*_10000.jsonl
 data/raw/finance/sec/
+data/processed/finance/sec/extracted_text/
 data/processed/finance/sec/*.json
 data/processed/finance/sec/*.jsonl
+data/processed/finance/sec/filing_text_manifest.jsonl
+data/processed/finance/sec/filing_sections_manifest.jsonl
+data/processed/finance/sec/finance_text_extraction_report.json
 
 # Keep result folders
 !results/raw/.gitkeep

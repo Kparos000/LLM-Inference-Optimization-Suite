@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import hashlib
+import html
 import json
 import re
 import sys
@@ -26,6 +27,12 @@ DEFAULT_DOCUMENTS_MANIFEST_PATH = Path(
     "data/processed/finance/sec/selected_filing_documents_manifest.jsonl"
 )
 DEFAULT_DOWNLOAD_REPORT_PATH = Path("data/processed/finance/sec/filing_download_report.json")
+DEFAULT_EXTRACTED_TEXT_DIR = Path("data/processed/finance/sec/extracted_text/")
+DEFAULT_TEXT_MANIFEST_PATH = Path("data/processed/finance/sec/filing_text_manifest.jsonl")
+DEFAULT_SECTIONS_MANIFEST_PATH = Path("data/processed/finance/sec/filing_sections_manifest.jsonl")
+DEFAULT_TEXT_EXTRACTION_REPORT_PATH = Path(
+    "data/processed/finance/sec/finance_text_extraction_report.json"
+)
 ALLOWED_COMPANY_FILTERS = ("all", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AMD")
 ALLOWED_FORM_FILTERS = ("all", "10-K", "10-Q", "8-K")
 DEFAULT_FORMS = "10-K,10-Q,8-K"
@@ -864,6 +871,337 @@ def build_filing_download_report(
     }
 
 
+def strip_html_to_text(html_content: str) -> str:
+    """Extract deterministic readable text from filing HTML using standard library tools."""
+
+    text = re.sub(
+        r"(?is)<\s*(script|style)\b[^>]*>.*?<\s*/\s*\1\s*>",
+        " ",
+        html_content,
+    )
+    text = re.sub(
+        r"(?i)<\s*(br|p|div|tr|table|section|article|h[1-6]|li)\b[^>]*>",
+        "\n",
+        text,
+    )
+    text = re.sub(
+        r"(?i)<\s*/\s*(p|div|tr|table|section|article|h[1-6]|li)\s*>",
+        "\n",
+        text,
+    )
+    text = re.sub(r"(?is)<[^>]+>", " ", text)
+    text = html.unescape(text).replace("\xa0", " ")
+
+    normalized_lines = []
+    for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        stripped_line = re.sub(r"[ \t\f\v]+", " ", line).strip()
+        if stripped_line:
+            normalized_lines.append(stripped_line)
+    return "\n".join(normalized_lines)
+
+
+def read_text_file(path: Path) -> str:
+    """Read a local filing text/HTML file with clear missing-file errors."""
+
+    if not path.exists():
+        msg = f"Missing local SEC filing HTML file: {path}"
+        raise RuntimeError(msg)
+
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return path.read_text(encoding="utf-8", errors="replace")
+
+
+def write_extracted_text(text: str, destination: Path) -> dict[str, Any]:
+    """Write extracted filing text and return text-level metadata."""
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(text, encoding="utf-8")
+    encoded_text = text.encode("utf-8")
+    return {
+        "path": str(destination),
+        "char_count": len(text),
+        "word_count": len(re.findall(r"\S+", text)),
+        "sha256": hashlib.sha256(encoded_text).hexdigest(),
+    }
+
+
+def build_extracted_text_path(document_row: dict[str, Any], extracted_text_dir: Path) -> Path:
+    """Build the local path for extracted filing plain text."""
+
+    ticker = safe_filename(str(document_row.get("ticker") or "unknown").upper())
+    form = safe_filename(str(document_row.get("form") or "unknown").upper())
+    accession_without_dashes = safe_filename(
+        str(document_row.get("accession_number") or "unknown").replace("-", "")
+    )
+    return extracted_text_dir / ticker / form / f"{accession_without_dashes}.txt"
+
+
+SECTION_PATTERNS_BY_FORM: dict[str, tuple[tuple[str, str], ...]] = {
+    "10-K": (
+        ("business", r"(?im)^\s*(?:item\s+1\.?\s+business\b|business\s*$)"),
+        ("risk_factors", r"(?im)^\s*(?:item\s+1a\.?\s+risk factors\b|risk factors\s*$)"),
+        (
+            "legal_proceedings",
+            r"(?im)^\s*(?:item\s+3\.?\s+legal proceedings\b|legal proceedings\s*$)",
+        ),
+        (
+            "management_discussion_and_analysis",
+            (
+                r"(?im)^\s*(?:item\s+7\.?\s+management[’']?s discussion and analysis\b|"
+                r"management[’']?s discussion and analysis\b)"
+            ),
+        ),
+        (
+            "quantitative_and_qualitative_disclosures",
+            (
+                r"(?im)^\s*(?:item\s+7a\.?\s+quantitative and qualitative disclosures\b|"
+                r"quantitative and qualitative disclosures\b)"
+            ),
+        ),
+        (
+            "financial_statements",
+            r"(?im)^\s*(?:item\s+8\.?\s+financial statements\b|financial statements\b)",
+        ),
+        (
+            "controls_and_procedures",
+            (
+                r"(?im)^\s*(?:item\s+9a\.?\s+controls and procedures\b|"
+                r"controls and procedures\b)"
+            ),
+        ),
+        ("liquidity_and_capital_resources", r"(?im)^.*liquidity and capital resources.*$"),
+        ("results_of_operations", r"(?im)^.*results of operations.*$"),
+        ("segment_information", r"(?im)^.*segment information.*$"),
+        ("notes_to_financial_statements", r"(?im)^.*notes to financial statements.*$"),
+    ),
+    "10-Q": (
+        (
+            "financial_statements",
+            r"(?im)^\s*(?:item\s+1\.?\s+financial statements\b|financial statements\b)",
+        ),
+        (
+            "management_discussion_and_analysis",
+            (
+                r"(?im)^\s*(?:item\s+2\.?\s+management[’']?s discussion and analysis\b|"
+                r"management[’']?s discussion and analysis\b)"
+            ),
+        ),
+        (
+            "quantitative_and_qualitative_disclosures",
+            (
+                r"(?im)^\s*(?:item\s+3\.?\s+quantitative and qualitative disclosures\b|"
+                r"quantitative and qualitative disclosures\b)"
+            ),
+        ),
+        (
+            "controls_and_procedures",
+            (
+                r"(?im)^\s*(?:item\s+4\.?\s+controls and procedures\b|"
+                r"controls and procedures\b)"
+            ),
+        ),
+        ("risk_factors", r"(?im)^\s*(?:item\s+1a\.?\s+risk factors\b|risk factors\s*$)"),
+        ("legal_proceedings", r"(?im)^\s*(?:item\s+1\.?\s+legal proceedings\b)"),
+        ("liquidity_and_capital_resources", r"(?im)^.*liquidity and capital resources.*$"),
+        ("results_of_operations", r"(?im)^.*results of operations.*$"),
+        ("segment_information", r"(?im)^.*segment information.*$"),
+        ("notes_to_financial_statements", r"(?im)^.*notes to financial statements.*$"),
+    ),
+    "8-K": (
+        (
+            "results_of_operations",
+            r"(?im)^.*results of operations and financial condition.*$|^.*results of operations.*$",
+        ),
+        ("financial_statements_and_exhibits", r"(?im)^.*financial statements and exhibits.*$"),
+        ("exhibit_99", r"(?im)^.*(?:exhibit\s+99|ex-99).*?$"),
+        ("earnings_release", r"(?im)^.*(?:earnings release|press release).*?$"),
+        ("management_commentary", r"(?im)^.*management commentary.*$"),
+        (
+            "financial_tables",
+            r"(?im)^.*(?:financial results|consolidated statements|condensed consolidated).*$",
+        ),
+    ),
+}
+
+
+def _section_patterns_for_form(form: str) -> tuple[tuple[str, str], ...]:
+    normalized_form = form.upper()
+    if normalized_form in {"10-K", "10-Q", "8-K"}:
+        return SECTION_PATTERNS_BY_FORM[normalized_form]
+    return ()
+
+
+def _section_title_from_text(text: str, start: int, end: int) -> str:
+    candidate = text[start : min(end, start + 240)].splitlines()[0].strip()
+    return re.sub(r"\s+", " ", candidate)
+
+
+def detect_finance_sections(
+    text: str,
+    document_row: dict[str, Any],
+    min_section_chars: int = 500,
+) -> list[dict[str, Any]]:
+    """Detect deterministic finance-relevant section candidates in filing text."""
+
+    form = str(document_row.get("form") or "").upper()
+    matches: list[dict[str, Any]] = []
+    seen_matches: set[tuple[str, int]] = set()
+    for section_type, pattern in _section_patterns_for_form(form):
+        for match in re.finditer(pattern, text):
+            key = (section_type, match.start())
+            if key in seen_matches:
+                continue
+            seen_matches.add(key)
+            matches.append(
+                {
+                    "section_type": section_type,
+                    "start": match.start(),
+                    "title": _section_title_from_text(text, match.start(), match.end()),
+                }
+            )
+
+    matches.sort(key=lambda item: int(item["start"]))
+    section_rows: list[dict[str, Any]] = []
+    ticker = str(document_row.get("ticker") or "")
+    form_normalized = form.replace("-", "")
+    accession_number = str(document_row.get("accession_number") or "")
+    accession_without_dashes = accession_number.replace("-", "")
+    document_record_id = str(document_row.get("document_record_id") or "")
+    source_manifest_record_id = str(document_row.get("source_manifest_record_id") or "")
+    local_text_path = str(document_row.get("local_text_path") or "")
+
+    for match_index, section_match in enumerate(matches):
+        start = int(section_match["start"])
+        if match_index + 1 < len(matches):
+            end = int(matches[match_index + 1]["start"])
+        else:
+            end = len(text)
+        section_text = text[start:end].strip()
+        char_count = len(section_text)
+        allow_short_8k = form == "8-K" and len(text.strip()) <= min_section_chars
+        if char_count < min_section_chars and not allow_short_8k:
+            continue
+
+        section_type = str(section_match["section_type"])
+        section_index = len(section_rows) + 1
+        section_record_id = (
+            f"finance_section_{ticker}_{form_normalized}_{accession_without_dashes}_"
+            f"{section_type}_{section_index}"
+        )
+        section_rows.append(
+            {
+                "section_record_id": section_record_id,
+                "document_record_id": document_record_id,
+                "source_manifest_record_id": source_manifest_record_id,
+                "ticker": ticker,
+                "company_name": document_row.get("company_name"),
+                "form": form,
+                "filing_date": document_row.get("filing_date"),
+                "report_date": document_row.get("report_date"),
+                "accession_number": accession_number,
+                "primary_document": document_row.get("primary_document"),
+                "section_type": section_type,
+                "section_title": str(section_match["title"]),
+                "section_start_char": start,
+                "section_end_char": end,
+                "char_count": char_count,
+                "word_count": len(re.findall(r"\S+", section_text)),
+                "extraction_method": "standard_library_heading_heuristic_v1",
+                "local_text_path": local_text_path,
+            }
+        )
+
+    return section_rows
+
+
+def build_text_manifest_row(
+    document_row: dict[str, Any],
+    extracted_text_metadata: dict[str, Any],
+    extraction_status: str,
+    error_message: str | None = None,
+) -> dict[str, Any]:
+    """Build one extracted-text manifest row."""
+
+    ticker = str(document_row.get("ticker") or "")
+    form = str(document_row.get("form") or "")
+    form_normalized = form.replace("-", "")
+    accession_number = str(document_row.get("accession_number") or "")
+    accession_without_dashes = accession_number.replace("-", "")
+    text_record_id = f"finance_text_{ticker}_{form_normalized}_{accession_without_dashes}"
+
+    return {
+        "text_record_id": text_record_id,
+        "document_record_id": document_row.get("document_record_id"),
+        "source_manifest_record_id": document_row.get("source_manifest_record_id"),
+        "source_id": document_row.get("source_id"),
+        "vertical": document_row.get("vertical"),
+        "ticker": ticker,
+        "company_name": document_row.get("company_name"),
+        "cik": document_row.get("cik"),
+        "cik_no_leading_zeros": document_row.get("cik_no_leading_zeros"),
+        "fiscal_year_end": document_row.get("fiscal_year_end"),
+        "form": form,
+        "filing_date": document_row.get("filing_date"),
+        "report_date": document_row.get("report_date"),
+        "accession_number": accession_number,
+        "primary_document": document_row.get("primary_document"),
+        "local_html_path": document_row.get("local_html_path"),
+        "local_text_path": extracted_text_metadata.get("path"),
+        "extraction_status": extraction_status,
+        "file_size_bytes": document_row.get("file_size_bytes", 0),
+        "text_char_count": extracted_text_metadata.get("char_count", 0),
+        "text_word_count": extracted_text_metadata.get("word_count", 0),
+        "text_sha256": extracted_text_metadata.get("sha256"),
+        "section_count": extracted_text_metadata.get("section_count", 0),
+        "error_message": error_message,
+        "extracted_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def build_text_extraction_report(
+    text_manifest_rows: list[dict[str, Any]],
+    section_rows: list[dict[str, Any]],
+    total_document_rows_available: int,
+    output_paths: dict[str, str],
+) -> dict[str, Any]:
+    """Build a Phase 2A-3D text extraction report."""
+
+    status_counts = Counter(str(row.get("extraction_status")) for row in text_manifest_rows)
+    documents_with_zero_sections = [
+        row.get("document_record_id")
+        for row in text_manifest_rows
+        if int(row.get("section_count") or 0) == 0
+    ]
+    return {
+        "phase": "2A-3D",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "total_document_rows_available": total_document_rows_available,
+        "total_documents_attempted": len(text_manifest_rows),
+        "total_documents_extracted": status_counts.get("extracted", 0),
+        "total_documents_failed": status_counts.get("failed", 0),
+        "total_sections_extracted": len(section_rows),
+        "counts_by_company": dict(Counter(str(row.get("ticker")) for row in text_manifest_rows)),
+        "counts_by_form": dict(Counter(str(row.get("form")) for row in text_manifest_rows)),
+        "sections_by_type": dict(Counter(str(row.get("section_type")) for row in section_rows)),
+        "documents_with_zero_sections": documents_with_zero_sections,
+        "output_files": output_paths,
+        "warnings": [
+            "This report summarizes local SEC filing text extraction only.",
+            "Section extraction is heuristic and will be refined before RAG/context engineering.",
+            (
+                "Prompt generation, RAG, retrieval, and inference are deferred until all "
+                "Phase 2A vertical data is prepared."
+            ),
+        ],
+        "next_step": (
+            "Phase 2A-3E should create curated finance source, KB, and gold/eval "
+            "samples from extracted text and XBRL facts."
+        ),
+    }
+
+
 def _max_or_min_iso_date(values: list[Any], *, minimum: bool) -> str | None:
     dates = [value for value in values if isinstance(value, str) and value]
     if not dates:
@@ -1158,6 +1496,108 @@ def build_download_filings_summary(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def build_extract_text_summary(args: argparse.Namespace) -> dict[str, Any]:
+    """Extract readable text and finance section candidates from local filing HTML."""
+
+    documents_manifest_path = Path(str(args.documents_manifest_path))
+    if not documents_manifest_path.exists():
+        msg = f"Missing selected filing documents manifest: {documents_manifest_path}"
+        raise RuntimeError(msg)
+
+    document_rows = read_jsonl(documents_manifest_path)
+    selected_rows = filter_manifest_rows(
+        rows=document_rows,
+        company_filter=str(args.company),
+        form_filter=str(args.form),
+        limit=int(args.limit),
+    )
+    if not selected_rows:
+        msg = (
+            "No selected filing document rows matched the requested company/form/limit "
+            f"filters from {documents_manifest_path}"
+        )
+        raise ValueError(msg)
+
+    extracted_text_dir = Path(str(args.extracted_text_dir))
+    text_manifest_rows: list[dict[str, Any]] = []
+    section_rows: list[dict[str, Any]] = []
+    for row in selected_rows:
+        local_text_path = build_extracted_text_path(row, extracted_text_dir)
+        row_with_text_path = {**row, "local_text_path": str(local_text_path)}
+        try:
+            html_content = read_text_file(Path(str(row.get("local_html_path") or "")))
+            extracted_text = strip_html_to_text(html_content)
+            extracted_metadata = write_extracted_text(extracted_text, local_text_path)
+            document_section_rows = detect_finance_sections(
+                extracted_text,
+                row_with_text_path,
+                min_section_chars=int(args.min_section_chars),
+            )
+            extracted_metadata["section_count"] = len(document_section_rows)
+            text_manifest_rows.append(build_text_manifest_row(row, extracted_metadata, "extracted"))
+            section_rows.extend(document_section_rows)
+        except (OSError, RuntimeError, ValueError) as exc:
+            failed_metadata = {
+                "path": str(local_text_path),
+                "char_count": 0,
+                "word_count": 0,
+                "sha256": None,
+                "section_count": 0,
+            }
+            text_manifest_rows.append(
+                build_text_manifest_row(
+                    row,
+                    failed_metadata,
+                    "failed",
+                    error_message=str(exc),
+                )
+            )
+
+    text_manifest_path = Path(str(args.text_manifest_path))
+    sections_manifest_path = Path(str(args.sections_manifest_path))
+    text_extraction_report_path = Path(str(args.text_extraction_report_path))
+    output_paths = {
+        "text_manifest_path": str(text_manifest_path),
+        "sections_manifest_path": str(sections_manifest_path),
+        "text_extraction_report_path": str(text_extraction_report_path),
+    }
+    report = build_text_extraction_report(
+        text_manifest_rows=text_manifest_rows,
+        section_rows=section_rows,
+        total_document_rows_available=len(document_rows),
+        output_paths=output_paths,
+    )
+
+    _write_jsonl(text_manifest_rows, text_manifest_path)
+    _write_jsonl(section_rows, sections_manifest_path)
+    _write_json(report, text_extraction_report_path)
+
+    total_extracted = int(report["total_documents_extracted"])
+    total_failed = int(report["total_documents_failed"])
+    all_attempted_extractions_failed = (
+        len(text_manifest_rows) > 0
+        and total_failed == len(text_manifest_rows)
+        and total_extracted == 0
+    )
+
+    return {
+        "mode": "extract_text",
+        "phase": "2A-3D",
+        "company_filter": str(args.company),
+        "form_filter": str(args.form),
+        "limit": int(args.limit),
+        "text_manifest_path": str(text_manifest_path),
+        "sections_manifest_path": str(sections_manifest_path),
+        "text_extraction_report_path": str(text_extraction_report_path),
+        "total_documents_attempted": int(report["total_documents_attempted"]),
+        "total_documents_extracted": total_extracted,
+        "total_documents_failed": total_failed,
+        "total_sections_extracted": int(report["total_sections_extracted"]),
+        "warnings": report["warnings"],
+        "all_attempted_extractions_failed": all_attempted_extractions_failed,
+    }
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Plan or run Phase 2A finance SEC/XBRL JSON acquisition."
@@ -1211,6 +1651,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Download selected SEC filing HTML documents from a local manifest.",
     )
     parser.add_argument(
+        "--extract-text",
+        action="store_true",
+        help="Extract readable text and finance section candidates from local filing HTML.",
+    )
+    parser.add_argument(
         "--output-dir",
         default=str(DEFAULT_OUTPUT_DIR),
         help="Directory where processed finance exploration outputs should be written.",
@@ -1236,6 +1681,26 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Path for the filing download report JSON.",
     )
     parser.add_argument(
+        "--extracted-text-dir",
+        default=str(DEFAULT_EXTRACTED_TEXT_DIR),
+        help="Directory where extracted filing text files should be written.",
+    )
+    parser.add_argument(
+        "--text-manifest-path",
+        default=str(DEFAULT_TEXT_MANIFEST_PATH),
+        help="Path for the filing text manifest JSONL.",
+    )
+    parser.add_argument(
+        "--sections-manifest-path",
+        default=str(DEFAULT_SECTIONS_MANIFEST_PATH),
+        help="Path for the filing sections manifest JSONL.",
+    )
+    parser.add_argument(
+        "--text-extraction-report-path",
+        default=str(DEFAULT_TEXT_EXTRACTION_REPORT_PATH),
+        help="Path for the text extraction report JSON.",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=0,
@@ -1250,7 +1715,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--form",
         default="all",
         choices=ALLOWED_FORM_FILTERS,
-        help="Filing form to download, or all.",
+        help="Filing form to process, or all.",
+    )
+    parser.add_argument(
+        "--min-section-chars",
+        type=int,
+        default=500,
+        help="Minimum section candidate length for extracted finance sections.",
     )
     parser.add_argument(
         "--user-agent",
@@ -1280,6 +1751,7 @@ def _selected_mode_count(args: argparse.Namespace) -> int:
             args.download_json,
             args.summarize_local,
             args.download_filings,
+            args.extract_text,
         )
     )
 
@@ -1293,8 +1765,9 @@ def main(argv: list[str] | None = None) -> int:
     if _selected_mode_count(args) != 1:
         print(
             "Exactly one mode must be selected: --dry-run, --download-json, "
-            "--summarize-local, or --download-filings. Download mode is not "
-            "implemented in Phase 2A-3A unless an explicit download mode is selected.",
+            "--summarize-local, --download-filings, or --extract-text. Download "
+            "mode is not implemented in Phase 2A-3A unless an explicit download "
+            "mode is selected.",
             file=sys.stderr,
         )
         return 2
@@ -1306,6 +1779,9 @@ def main(argv: list[str] | None = None) -> int:
         if int(args.limit) < 0:
             msg = "limit must be >= 0"
             raise ValueError(msg)
+        if int(args.min_section_chars) < 0:
+            msg = "min_section_chars must be >= 0"
+            raise ValueError(msg)
 
         if args.dry_run:
             payload = build_dry_run_plan(args)
@@ -1313,14 +1789,18 @@ def main(argv: list[str] | None = None) -> int:
             payload = build_download_json_summary(args)
         elif args.summarize_local:
             payload = build_summarize_local_summary(args)
-        else:
+        elif args.download_filings:
             payload = build_download_filings_summary(args)
+        else:
+            payload = build_extract_text_summary(args)
     except (FileNotFoundError, RuntimeError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
     print(json.dumps(payload, indent=2, sort_keys=True))
-    if payload.get("all_attempted_downloads_failed"):
+    if payload.get("all_attempted_downloads_failed") or payload.get(
+        "all_attempted_extractions_failed"
+    ):
         return 2
     return 0
 

@@ -7,8 +7,9 @@ vertical simulates an equity analyst or finance company researching large
 technology stocks using public SEC data.
 
 This pilot does not yet generate prompts, run RAG, run GPU inference, or create
-benchmark claims. The current step is limited to a ticker registry, URL/path
-planning, and dry-run acquisition output.
+benchmark claims. The current finance pilot stages are limited to source
+planning, SEC JSON exploration, selected filing document acquisition, local text
+extraction, and section-candidate manifests.
 
 ## Finance Data Assets
 
@@ -153,6 +154,11 @@ User-Agent: LLM-Inference-Optimization-Suite research-contact@example.com
 2A-3D:
 
 - Extract text and sections.
+- Build local extraction manifests and report.
+- Still no prompt generation, RAG, retrieval indexing, or inference.
+
+2A-3E:
+
 - Create finance KB samples.
 - Create finance gold/eval samples.
 - Still no 10,000-prompt generation.
@@ -241,3 +247,38 @@ python scripts/phase2/finance_sec_acquisition.py --download-filings --company MS
 ```text
 python scripts/phase2/finance_sec_acquisition.py --download-filings --company all --skip-existing
 ```
+
+## Phase 2A-3D Text Extraction and Section Parsing
+
+Phase 2A-3D reads downloaded SEC filing HTML documents from 2A-3C. It extracts
+readable plain text and creates section candidates for finance-relevant parts of
+10-K, 10-Q, and earnings 8-K documents.
+
+This step does not create retrieval chunks, run RAG, generate prompts, build
+retrieval indexes, run inference, or create final gold/eval records. Section
+extraction is heuristic and will be refined before Phase 2B context engineering.
+
+Generated local outputs are:
+
+- `data/processed/finance/sec/extracted_text/`
+- `data/processed/finance/sec/filing_text_manifest.jsonl`
+- `data/processed/finance/sec/filing_sections_manifest.jsonl`
+- `data/processed/finance/sec/finance_text_extraction_report.json`
+
+Example commands:
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --extract-text --company MSFT --limit 5
+```
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --extract-text --company MSFT --form 10-K --limit 2
+```
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --extract-text --company all
+```
+
+Phase 2A-3E is responsible for creating curated finance source, KB, and
+gold/eval samples. Full context engineering and RAG remain deferred until all
+five Phase 2A verticals have their data assets ready.
