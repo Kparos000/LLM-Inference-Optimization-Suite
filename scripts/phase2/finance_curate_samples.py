@@ -49,6 +49,34 @@ IMPORTANT_CONCEPTS = (
     "CashAndCashEquivalentsAtCarryingValue",
     "NetCashProvidedByUsedInOperatingActivities",
 )
+HUMANIZED_CONCEPT_LABELS = {
+    "RevenueFromContractWithCustomerExcludingAssessedTax": (
+        "revenue from contracts with customers, excluding assessed tax"
+    ),
+    "Revenues": "revenue",
+    "SalesRevenueNet": "net sales",
+    "NetIncomeLoss": "net income",
+    "Assets": "total assets",
+    "Liabilities": "total liabilities",
+    "StockholdersEquity": "stockholders' equity",
+    "OperatingIncomeLoss": "operating income",
+    "ResearchAndDevelopmentExpense": "research and development expense",
+    "EarningsPerShareDiluted": "diluted earnings per share",
+    "CashAndCashEquivalentsAtCarryingValue": "cash and cash equivalents",
+    "NetCashProvidedByUsedInOperatingActivities": ("net cash provided by operating activities"),
+    "CostOfRevenue": "cost of revenue",
+    "GrossProfit": "gross profit",
+}
+
+
+def humanize_concept(concept: str) -> str:
+    """Return a reader-facing label while keeping raw XBRL concepts elsewhere."""
+
+    if concept in HUMANIZED_CONCEPT_LABELS:
+        return HUMANIZED_CONCEPT_LABELS[concept]
+    readable = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", concept.replace("_", " "))
+    readable = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", " ", readable)
+    return re.sub(r"\s+", " ", readable).strip().lower()
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -543,12 +571,14 @@ def build_finance_prompt_records(
         fact = select_latest_annual_fact(companyfacts_by_ticker[ticker], list(REVENUE_CONCEPTS))
         if fact is None:
             continue
+        raw_concept = str(fact["concept"])
+        concept_label = humanize_concept(raw_concept)
         add_prompt(
             prompt_category="direct_numeric_fact",
             task_type="answer_short",
             question=(
-                f"What {fact['concept']} value did {company_names[ticker]} report "
-                f"for fiscal year {fact.get('fy')}?"
+                f"What {concept_label} did {company_names[ticker]} report for "
+                f"fiscal year {fact.get('fy')}?"
             ),
             expected_output_format="text",
             expected_status="answer",
@@ -558,8 +588,12 @@ def build_finance_prompt_records(
             filing_form=str(fact.get("form") or ""),
             fiscal_year=int(fact.get("fy") or 0),
             fiscal_period=str(fact.get("fp") or ""),
-            required_facts=[str(fact["concept"])],
-            metadata={"fact": fact},
+            required_facts=[raw_concept],
+            metadata={
+                "fact": fact,
+                "raw_xbrl_concept": raw_concept,
+                "humanized_concept_label": concept_label,
+            },
         )
 
     grounded_tickers = TICKER_ORDER[:6]
@@ -690,20 +724,34 @@ def build_finance_prompt_records(
             companyfacts_by_ticker[ticker],
             list(NET_INCOME_CONCEPTS),
         )
+        revenue_concept = str(revenue.get("concept") if revenue else "Revenue")
+        net_income_concept = str(net_income.get("concept") if net_income else "NetIncomeLoss")
+        revenue_label = humanize_concept(revenue_concept)
+        net_income_label = humanize_concept(net_income_concept)
+        calculation_fy = revenue.get("fy") if revenue else "latest annual period"
         add_prompt(
             prompt_category="calculation",
             task_type="calculation_answer",
             question=(
-                f"Calculate latest annual net margin for {company_names[ticker]} using "
-                "net income divided by revenue. Show the formula."
+                f"Using {net_income_label} and {revenue_label}, calculate "
+                f"{company_names[ticker]}'s net margin for fiscal year {calculation_fy}. "
+                "Show the formula."
             ),
             expected_output_format="text",
             expected_status="answer",
             company=company_names[ticker],
             ticker=ticker,
             source_doc_ids=[_xbrl_kb_doc_id(ticker)],
-            required_facts=["NetIncomeLoss", "Revenue"],
-            metadata={"revenue_fact": revenue, "net_income_fact": net_income},
+            required_facts=[net_income_concept, revenue_concept],
+            metadata={
+                "revenue_fact": revenue,
+                "net_income_fact": net_income,
+                "raw_xbrl_concepts": [net_income_concept, revenue_concept],
+                "humanized_concept_labels": {
+                    net_income_concept: net_income_label,
+                    revenue_concept: revenue_label,
+                },
+            },
         )
 
     for ticker, section_type in (("META", "risk_factors"), ("TSLA", "results_of_operations")):
@@ -800,22 +848,29 @@ def build_finance_gold_records(
             if fact is None:
                 msg = f"Missing numeric fact metadata for prompt {prompt['prompt_id']}"
                 raise RuntimeError(msg)
+            raw_concept = str(fact.get("concept") or "")
+            concept_label = humanize_concept(raw_concept)
             numeric_value = float(fact["value"]) if fact.get("value") is not None else 0.0
             gold.update(
                 {
                     "reference_answer": (
-                        f"{prompt['company']} reported {fact.get('concept')} of "
+                        f"{prompt['company']} reported {concept_label} of "
                         f"{fact.get('value')} {fact.get('unit')} for FY {fact.get('fy')}."
                     ),
                     "must_include": [
-                        str(fact.get("concept")),
+                        raw_concept,
                         str(fact.get("fy")),
                         str(fact.get("value")),
                     ],
                     "numeric_answer": numeric_value,
                     "tolerance": 0,
                     "required_citations": [str(fact.get("accn") or prompt["source_doc_ids"][0])],
-                    "metadata": {**gold["metadata"], "fact": fact},
+                    "metadata": {
+                        **gold["metadata"],
+                        "fact": fact,
+                        "raw_xbrl_concept": raw_concept,
+                        "humanized_concept_label": concept_label,
+                    },
                 }
             )
         elif category == "calculation":
@@ -834,11 +889,15 @@ def build_finance_gold_records(
                 float(net_income["value"]) if net_income and net_income.get("value") else 0.0
             )
             net_margin = net_income_value / revenue_value if revenue_value else 0.0
+            revenue_concept = str(revenue.get("concept") if revenue else "Revenue")
+            net_income_concept = str(net_income.get("concept") if net_income else "NetIncomeLoss")
+            revenue_label = humanize_concept(revenue_concept)
+            net_income_label = humanize_concept(net_income_concept)
             gold.update(
                 {
                     "reference_answer": (
-                        f"Net margin = net income / revenue = {net_income_value} / "
-                        f"{revenue_value} = {net_margin:.4f}."
+                        f"Net margin = {net_income_label} / {revenue_label} = "
+                        f"{net_income_value} / {revenue_value} = {net_margin:.4f}."
                     ),
                     "must_include": ["Net margin", "net income", "revenue"],
                     "formula": "Net margin = Net income / revenue",
@@ -848,6 +907,11 @@ def build_finance_gold_records(
                         **gold["metadata"],
                         "revenue_fact": revenue,
                         "net_income_fact": net_income,
+                        "raw_xbrl_concepts": [net_income_concept, revenue_concept],
+                        "humanized_concept_labels": {
+                            net_income_concept: net_income_label,
+                            revenue_concept: revenue_label,
+                        },
                     },
                 }
             )

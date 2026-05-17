@@ -327,6 +327,9 @@ records, and at least 25 KB/context records. It does not create the full
 assemble prompts for model runs. It is the final Finance data-preparation step
 before moving to the next Phase 2A verticals.
 
+User-facing Finance prompts use human-readable metric names while preserving
+exact XBRL concepts in metadata for deterministic evaluation.
+
 | Prompt Type | Count | Expected Response |
 |---|---:|---|
 | Direct numeric fact Q&A | 8 | Short answer |

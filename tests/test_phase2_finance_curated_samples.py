@@ -6,6 +6,8 @@ from typing import Any
 PROMPT_PATH = Path("data/real_world_samples/finance_sample.jsonl")
 KB_PATH = Path("data/kb/finance/kb_sample.jsonl")
 GOLD_PATH = Path("data/eval/gold/finance_gold_sample.jsonl")
+RAW_REVENUE_CONCEPT = "RevenueFromContractWithCustomerExcludingAssessedTax"
+HUMANIZED_REVENUE_LABEL = "revenue from contracts with customers, excluding assessed tax"
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -161,6 +163,46 @@ def test_finance_structured_json_prompts_have_json_output() -> None:
         assert prompt["expected_output_format"] == "json"
         gold = gold_by_prompt[prompt["prompt_id"]]
         assert expected_json_keys & set(gold["must_include"])
+
+
+def test_finance_prompts_use_humanized_concept_labels() -> None:
+    prompts = _read_jsonl(PROMPT_PATH)
+    questions = [str(record["question"]) for record in prompts]
+
+    assert all(RAW_REVENUE_CONCEPT not in question for question in questions)
+    assert any(HUMANIZED_REVENUE_LABEL in question for question in questions)
+
+
+def test_finance_gold_reference_answers_use_humanized_concept_labels() -> None:
+    gold_records = _read_jsonl(GOLD_PATH)
+    reference_answers = [
+        str(record.get("reference_answer") or "")
+        for record in gold_records
+        if record.get("reference_answer")
+    ]
+
+    assert all(RAW_REVENUE_CONCEPT not in answer for answer in reference_answers)
+    assert any(HUMANIZED_REVENUE_LABEL in answer for answer in reference_answers)
+
+
+def test_finance_records_preserve_raw_xbrl_concepts_in_metadata() -> None:
+    prompts = _read_jsonl(PROMPT_PATH)
+    gold_records = _read_jsonl(GOLD_PATH)
+
+    prompt_preserves_raw_concept = any(
+        RAW_REVENUE_CONCEPT in record.get("required_facts", [])
+        or record.get("metadata", {}).get("fact", {}).get("concept") == RAW_REVENUE_CONCEPT
+        or record.get("metadata", {}).get("raw_xbrl_concept") == RAW_REVENUE_CONCEPT
+        for record in prompts
+    )
+    gold_preserves_raw_concept = any(
+        record.get("metadata", {}).get("fact", {}).get("concept") == RAW_REVENUE_CONCEPT
+        or record.get("metadata", {}).get("raw_xbrl_concept") == RAW_REVENUE_CONCEPT
+        for record in gold_records
+    )
+
+    assert prompt_preserves_raw_concept
+    assert gold_preserves_raw_concept
 
 
 def test_finance_curated_samples_do_not_reference_private_paths() -> None:
