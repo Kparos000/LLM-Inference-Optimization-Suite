@@ -176,6 +176,76 @@ def _fake_companyfacts() -> dict[str, Any]:
     }
 
 
+def _fake_selected_filing_rows() -> list[dict[str, Any]]:
+    return [
+        {
+            "record_id": "finance_sec_MSFT_10Q_000119312526191507",
+            "source_id": "finance_sec_edgar_xbrl",
+            "vertical": "finance",
+            "ticker": "MSFT",
+            "company_name": "Microsoft Corporation",
+            "cik": "0000789019",
+            "cik_no_leading_zeros": "789019",
+            "fiscal_year_end": "0630",
+            "form": "10-Q",
+            "filing_date": "2026-04-25",
+            "report_date": "2026-03-31",
+            "accession_number": "0001193125-26-191507",
+            "items": "",
+            "primary_document": "msft-20260331.htm",
+            "primary_doc_description": "10-Q",
+            "derived_filing_url": (
+                "https://www.sec.gov/Archives/edgar/data/"
+                "789019/000119312526191507/msft-20260331.htm"
+            ),
+            "selection_reason": "Selected quarterly filing candidate from target year range.",
+        },
+        {
+            "record_id": "finance_sec_MSFT_8K_000119312526200000",
+            "source_id": "finance_sec_edgar_xbrl",
+            "vertical": "finance",
+            "ticker": "MSFT",
+            "company_name": "Microsoft Corporation",
+            "cik": "0000789019",
+            "cik_no_leading_zeros": "789019",
+            "fiscal_year_end": "0630",
+            "form": "8-K",
+            "filing_date": "2026-04-26",
+            "report_date": "2026-04-26",
+            "accession_number": "0001193125-26-200000",
+            "items": "2.02,9.01",
+            "primary_document": "msft-8k.htm",
+            "primary_doc_description": "8-K",
+            "derived_filing_url": (
+                "https://www.sec.gov/Archives/edgar/data/789019/000119312526200000/msft-8k.htm"
+            ),
+            "selection_reason": "Selected earnings/results 8-K because item 2.02 is present.",
+        },
+        {
+            "record_id": "finance_sec_AAPL_10K_000032019325000001",
+            "source_id": "finance_sec_edgar_xbrl",
+            "vertical": "finance",
+            "ticker": "AAPL",
+            "company_name": "Apple Inc.",
+            "cik": "0000320193",
+            "cik_no_leading_zeros": "320193",
+            "fiscal_year_end": "0926",
+            "form": "10-K",
+            "filing_date": "2025-11-01",
+            "report_date": "2025-09-27",
+            "accession_number": "0000320193-25-000001",
+            "items": "",
+            "primary_document": "aapl-20250927.htm",
+            "primary_doc_description": "10-K",
+            "derived_filing_url": (
+                "https://www.sec.gov/Archives/edgar/data/"
+                "320193/000032019325000001/aapl-20250927.htm"
+            ),
+            "selection_reason": "Selected annual filing candidate from target year range.",
+        },
+    ]
+
+
 def test_finance_sec_xbrl_pilot_doc_contains_required_terms() -> None:
     doc_path = Path("docs/32_phase2_finance_sec_xbrl_pilot.md")
 
@@ -375,6 +445,126 @@ def test_download_json_handles_gzip_response_without_header_magic_bytes() -> Non
 
         assert parsed == {"ok": True}
         assert json.loads(output_path.read_text(encoding="utf-8")) == parsed
+
+
+def test_read_jsonl() -> None:
+    module = _load_script_module()
+    read_jsonl = cast(Callable[[Path], list[dict[str, Any]]], module.__dict__["read_jsonl"])
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        jsonl_path = Path(temporary_directory) / "rows.jsonl"
+        jsonl_path.write_text('{"a": 1}\n\n{"b": 2}\n', encoding="utf-8")
+
+        assert read_jsonl(jsonl_path) == [{"a": 1}, {"b": 2}]
+
+        invalid_path = Path(temporary_directory) / "invalid.jsonl"
+        invalid_path.write_text('{"a": 1}\n{bad json}\n', encoding="utf-8")
+
+        try:
+            read_jsonl(invalid_path)
+        except RuntimeError as exc:
+            assert "line 2" in str(exc)
+        else:
+            msg = "Expected invalid JSONL to raise RuntimeError"
+            raise AssertionError(msg)
+
+
+def test_filter_manifest_rows() -> None:
+    module = _load_script_module()
+    filter_manifest_rows = cast(
+        Callable[[list[dict[str, Any]], str, str, int], list[dict[str, Any]]],
+        module.__dict__["filter_manifest_rows"],
+    )
+    rows = _fake_selected_filing_rows()
+
+    assert [row["ticker"] for row in filter_manifest_rows(rows, "MSFT", "all", 0)] == [
+        "MSFT",
+        "MSFT",
+    ]
+    assert [row["form"] for row in filter_manifest_rows(rows, "all", "10-K", 0)] == ["10-K"]
+    assert len(filter_manifest_rows(rows, "all", "all", 2)) == 2
+    assert filter_manifest_rows(rows, "all", "all", 0) == rows
+
+
+def test_build_local_filing_path() -> None:
+    module = _load_script_module()
+    build_local_filing_path = cast(
+        Callable[[dict[str, Any], Path], Path],
+        module.__dict__["build_local_filing_path"],
+    )
+    row = {
+        "ticker": "MSFT",
+        "form": "10-Q",
+        "accession_number": "0001193125-26-191507",
+        "primary_document": "msft-20260331.htm",
+    }
+
+    path = build_local_filing_path(row, Path("data/raw/finance/sec/filings"))
+
+    assert path.parts[-4:] == (
+        "MSFT",
+        "10-Q",
+        "000119312526191507",
+        "msft-20260331.htm",
+    )
+
+
+def test_download_binary_plain_html_mocked() -> None:
+    module = _load_script_module()
+    download_binary = cast(
+        Callable[[str, Path, str, float], dict[str, Any]],
+        module.__dict__["download_binary"],
+    )
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_path = Path(temporary_directory) / "filing.htm"
+        with patch(
+            "urllib.request.urlopen",
+            return_value=FakeUrlopenResponse(
+                b"<html><body>ok</body></html>",
+                {"Content-Type": "text/html"},
+            ),
+        ):
+            metadata = download_binary(
+                "https://www.sec.gov/Archives/edgar/data/789019/test/filing.htm",
+                output_path,
+                "test-agent",
+                0,
+            )
+
+        assert output_path.read_bytes() == b"<html><body>ok</body></html>"
+        assert metadata["status"] == "downloaded"
+        assert metadata["bytes_written"] > 0
+        assert metadata["sha256"]
+
+
+def test_download_binary_gzip_html_mocked() -> None:
+    module = _load_script_module()
+    download_binary = cast(
+        Callable[[str, Path, str, float], dict[str, Any]],
+        module.__dict__["download_binary"],
+    )
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_path = Path(temporary_directory) / "filing.htm"
+        with patch(
+            "urllib.request.urlopen",
+            return_value=FakeUrlopenResponse(
+                gzip.compress(b"<html><body>ok</body></html>"),
+                {"Content-Encoding": "gzip", "Content-Type": "text/html"},
+            ),
+        ):
+            metadata = download_binary(
+                "https://www.sec.gov/Archives/edgar/data/789019/test/filing.htm",
+                output_path,
+                "test-agent",
+                0,
+            )
+
+        assert output_path.read_bytes() == b"<html><body>ok</body></html>"
+        assert metadata["status"] == "downloaded"
+        assert metadata["bytes_written"] > 0
+        assert metadata["sha256"]
 
 
 def test_rows_from_recent_filings_transforms_column_arrays() -> None:
@@ -593,6 +783,73 @@ def test_build_exploration_report_from_fake_manifest_and_inventory() -> None:
     )
 
 
+def test_build_document_manifest_rows() -> None:
+    module = _load_script_module()
+    build_document_manifest_rows = cast(
+        Callable[[list[dict[str, Any]], list[dict[str, Any]]], list[dict[str, Any]]],
+        module.__dict__["build_document_manifest_rows"],
+    )
+    selected_rows = [_fake_selected_filing_rows()[0]]
+    download_results = [
+        {
+            "destination": "data/raw/finance/sec/filings/MSFT/10-Q/test.htm",
+            "status": "downloaded",
+            "content_type": "text/html",
+            "content_encoding": "",
+            "bytes_written": 28,
+            "sha256": "abc123",
+            "downloaded_at_utc": "2026-05-17T00:00:00+00:00",
+        }
+    ]
+
+    document_rows = build_document_manifest_rows(selected_rows, download_results)
+    row = document_rows[0]
+
+    assert row["document_record_id"] == "finance_doc_MSFT_10Q_000119312526191507"
+    assert row["source_manifest_record_id"] == "finance_sec_MSFT_10Q_000119312526191507"
+    assert row["ticker"] == "MSFT"
+    assert row["form"] == "10-Q"
+    assert row["local_html_path"] == "data/raw/finance/sec/filings/MSFT/10-Q/test.htm"
+    assert row["download_status"] == "downloaded"
+    assert row["sha256"] == "abc123"
+
+
+def test_build_filing_download_report() -> None:
+    module = _load_script_module()
+    build_filing_download_report = cast(
+        Callable[[list[dict[str, Any]], list[dict[str, Any]], dict[str, str]], dict[str, Any]],
+        module.__dict__["build_filing_download_report"],
+    )
+    document_rows = [
+        {
+            "ticker": "MSFT",
+            "form": "10-Q",
+            "download_status": "downloaded",
+        },
+        {
+            "ticker": "AAPL",
+            "form": "10-K",
+            "download_status": "skipped_existing",
+        },
+    ]
+
+    report = build_filing_download_report(
+        document_rows,
+        _fake_selected_filing_rows(),
+        {
+            "documents_manifest_path": "documents.jsonl",
+            "download_report_path": "report.json",
+        },
+    )
+
+    assert report["phase"] == "2A-3C"
+    assert report["total_documents_attempted"] == 2
+    assert report["total_documents_downloaded"] == 1
+    assert report["counts_by_company"] == {"MSFT": 1, "AAPL": 1}
+    assert report["counts_by_form"] == {"10-Q": 1, "10-K": 1}
+    assert "Phase 2A-3D" in report["next_step"]
+
+
 def test_finance_sec_acquisition_cli_dry_run_msft() -> None:
     completed_process = subprocess.run(
         [
@@ -673,6 +930,30 @@ def test_finance_sec_acquisition_cli_summarize_local_missing_files() -> None:
 
     assert completed_process.returncode != 0
     assert "--download-json first" in combined_output
+
+
+def test_finance_sec_acquisition_cli_download_filings_missing_manifest() -> None:
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        missing_manifest_path = Path(temporary_directory) / "missing_manifest.jsonl"
+        completed_process = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--download-filings",
+                "--company",
+                "MSFT",
+                "--manifest-path",
+                str(missing_manifest_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    combined_output = completed_process.stdout + completed_process.stderr
+
+    assert completed_process.returncode != 0
+    assert "Missing selected filings manifest" in combined_output
 
 
 def test_finance_sec_acquisition_cli_rejects_mode_conflict() -> None:

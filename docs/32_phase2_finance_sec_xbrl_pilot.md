@@ -207,3 +207,37 @@ python scripts/phase2/finance_sec_acquisition.py --summarize-local --company all
 
 Do not use these JSON files to make benchmark claims yet. They are source
 acquisition and exploration artifacts only.
+
+## Phase 2A-3C Filing Document Acquisition
+
+Phase 2A-3C downloads selected SEC filing HTML documents using
+`selected_filings_manifest.jsonl`. It only downloads documents already selected
+in 2A-3B: 10-K annual filings, 10-Q quarterly filings, and earnings-related
+8-K filings where item 2.02 is present.
+
+This step does not parse text, chunk documents, create prompts, run RAG, or run
+inference. Raw filing HTML is stored locally under:
+
+- `data/raw/finance/sec/filings/`
+
+Document download metadata is written locally to:
+
+- `data/processed/finance/sec/selected_filing_documents_manifest.jsonl`
+- `data/processed/finance/sec/filing_download_report.json`
+
+Raw filing documents and generated manifests remain local/ignored unless later
+curated. Phase 2A-3D is responsible for text extraction and section parsing.
+
+Example commands:
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --download-filings --company MSFT --limit 5 --skip-existing
+```
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --download-filings --company MSFT --form 10-K --limit 2 --skip-existing
+```
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --download-filings --company all --skip-existing
+```

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -16,7 +18,16 @@ from typing import Any
 
 DEFAULT_REGISTRY_PATH = Path("data/sources/finance_ticker_registry.json")
 DEFAULT_OUTPUT_DIR = Path("data/processed/finance/sec/")
+DEFAULT_SELECTED_FILINGS_MANIFEST_PATH = Path(
+    "data/processed/finance/sec/selected_filings_manifest.jsonl"
+)
+DEFAULT_FILINGS_OUTPUT_DIR = Path("data/raw/finance/sec/filings/")
+DEFAULT_DOCUMENTS_MANIFEST_PATH = Path(
+    "data/processed/finance/sec/selected_filing_documents_manifest.jsonl"
+)
+DEFAULT_DOWNLOAD_REPORT_PATH = Path("data/processed/finance/sec/filing_download_report.json")
 ALLOWED_COMPANY_FILTERS = ("all", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AMD")
+ALLOWED_FORM_FILTERS = ("all", "10-K", "10-Q", "8-K")
 DEFAULT_FORMS = "10-K,10-Q,8-K"
 DEFAULT_USER_AGENT = "LLM-Inference-Optimization-Suite research-contact@example.com"
 IMPORTANT_CONCEPTS = (
@@ -176,6 +187,19 @@ def build_dry_run_plan(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _maybe_decompress_gzip(raw_payload: bytes, content_encoding: str, source_label: str) -> bytes:
+    # SEC responses may be gzip-compressed when Accept-Encoding is requested, so
+    # handle both explicit gzip headers and gzip magic bytes.
+    if "gzip" not in content_encoding.lower() and not raw_payload.startswith(b"\x1f\x8b"):
+        return raw_payload
+
+    try:
+        return gzip.decompress(raw_payload)
+    except OSError as exc:
+        msg = f"SEC endpoint returned invalid gzip data: {source_label}"
+        raise RuntimeError(msg) from exc
+
+
 def download_json(
     url: str,
     destination: Path,
@@ -210,14 +234,7 @@ def download_json(
         msg = f"Failed to download SEC JSON from {url}: {exc.reason}"
         raise RuntimeError(msg) from exc
 
-    # SEC responses may be gzip-compressed when Accept-Encoding is requested, so
-    # handle both explicit gzip headers and gzip magic bytes.
-    if "gzip" in content_encoding.lower() or raw_payload.startswith(b"\x1f\x8b"):
-        try:
-            raw_payload = gzip.decompress(raw_payload)
-        except OSError as exc:
-            msg = f"SEC endpoint returned invalid gzip data: {url}"
-            raise RuntimeError(msg) from exc
+    raw_payload = _maybe_decompress_gzip(raw_payload, content_encoding, url)
 
     try:
         response_text = raw_payload.decode("utf-8")
@@ -239,6 +256,146 @@ def download_json(
         encoding="utf-8",
     )
     return parsed_json
+
+
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Read a newline-delimited JSON file into row dictionaries."""
+
+    if not path.exists():
+        msg = f"Missing selected filings manifest: {path}"
+        raise RuntimeError(msg)
+
+    rows: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as file:
+        for line_number, line in enumerate(file, start=1):
+            stripped_line = line.strip()
+            if not stripped_line:
+                continue
+            try:
+                row = json.loads(stripped_line)
+            except json.JSONDecodeError as exc:
+                msg = f"Invalid JSON in {path} on line {line_number}: {exc.msg}"
+                raise RuntimeError(msg) from exc
+            if not isinstance(row, dict):
+                msg = f"Expected JSON object in {path} on line {line_number}"
+                raise RuntimeError(msg)
+            rows.append(row)
+    return rows
+
+
+def filter_manifest_rows(
+    rows: list[dict[str, Any]],
+    company_filter: str,
+    form_filter: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Filter selected filings by ticker, form, and optional total limit."""
+
+    normalized_company = company_filter.strip().upper()
+    if normalized_company not in {company.upper() for company in ALLOWED_COMPANY_FILTERS}:
+        msg = f"Unknown company filter: {company_filter}"
+        raise ValueError(msg)
+
+    normalized_form = form_filter.strip().upper()
+    if normalized_form not in {form.upper() for form in ALLOWED_FORM_FILTERS}:
+        msg = f"Unknown form filter: {form_filter}"
+        raise ValueError(msg)
+
+    if limit < 0:
+        msg = "limit must be >= 0"
+        raise ValueError(msg)
+
+    filtered_rows = [
+        row
+        for row in rows
+        if (normalized_company == "ALL" or str(row.get("ticker", "")).upper() == normalized_company)
+        and (normalized_form == "ALL" or str(row.get("form", "")).upper() == normalized_form)
+    ]
+
+    if limit > 0:
+        return filtered_rows[:limit]
+    return filtered_rows
+
+
+def safe_filename(value: str) -> str:
+    """Return a readable filename segment without path separators."""
+
+    sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", value.replace("\\", "_").replace("/", "_"))
+    sanitized = sanitized.strip("._")
+    return sanitized or "unknown"
+
+
+def build_local_filing_path(row: dict[str, Any], filings_output_dir: Path) -> Path:
+    """Build the local path for a downloaded filing document."""
+
+    ticker = safe_filename(str(row.get("ticker") or "unknown").upper())
+    form = safe_filename(str(row.get("form") or "unknown").upper())
+    accession_without_dashes = safe_filename(
+        str(row.get("accession_number") or "unknown").replace("-", "")
+    )
+    primary_document = safe_filename(str(row.get("primary_document") or "filing.html"))
+    return filings_output_dir / ticker / form / accession_without_dashes / primary_document
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def download_binary(
+    url: str,
+    destination: Path,
+    user_agent: str,
+    delay_seconds: float,
+) -> dict[str, Any]:
+    """Download one selected SEC filing document as bytes without parsing HTML."""
+
+    if delay_seconds > 0:
+        time.sleep(delay_seconds)
+
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": user_agent,
+            "Accept": "text/html,application/xhtml+xml,application/xml,text/plain,*/*",
+            "Accept-Encoding": "gzip, deflate",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            raw_payload = response.read()
+            content_type = response.headers.get("Content-Type", "")
+            content_encoding = response.headers.get("Content-Encoding", "")
+    except urllib.error.HTTPError as exc:
+        msg = f"Failed to download SEC filing document from {url}: HTTP {exc.code} {exc.reason}"
+        raise RuntimeError(msg) from exc
+    except urllib.error.URLError as exc:
+        msg = f"Failed to download SEC filing document from {url}: {exc.reason}"
+        raise RuntimeError(msg) from exc
+
+    final_payload = _maybe_decompress_gzip(raw_payload, content_encoding, url)
+
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(final_payload)
+    except OSError as exc:
+        msg = f"Failed to write SEC filing document to {destination}: {exc}"
+        raise RuntimeError(msg) from exc
+
+    return {
+        "url": url,
+        "destination": str(destination),
+        "status": "downloaded",
+        "content_type": content_type,
+        "content_encoding": content_encoding,
+        "bytes_written": len(final_payload),
+        "sha256": hashlib.sha256(final_payload).hexdigest(),
+        "downloaded_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def rows_from_recent_filings(submissions: dict[str, Any]) -> list[dict[str, Any]]:
@@ -623,6 +780,90 @@ def build_exploration_report(
     }
 
 
+def build_document_manifest_rows(
+    selected_rows: list[dict[str, Any]],
+    download_results: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build document-level manifest rows from selected filing rows and downloads."""
+
+    if len(selected_rows) != len(download_results):
+        msg = "selected_rows and download_results must have the same length"
+        raise ValueError(msg)
+
+    document_rows: list[dict[str, Any]] = []
+    for selected_row, download_result in zip(selected_rows, download_results, strict=True):
+        ticker = str(selected_row.get("ticker") or "")
+        form = str(selected_row.get("form") or "")
+        accession_number = str(selected_row.get("accession_number") or "")
+        accession_without_dashes = accession_number.replace("-", "")
+        form_normalized = form.replace("-", "")
+        document_record_id = f"finance_doc_{ticker}_{form_normalized}_{accession_without_dashes}"
+        document_row = {
+            "document_record_id": document_record_id,
+            "source_manifest_record_id": selected_row.get("record_id"),
+            "source_id": selected_row.get("source_id"),
+            "vertical": selected_row.get("vertical"),
+            "ticker": ticker,
+            "company_name": selected_row.get("company_name"),
+            "cik": selected_row.get("cik"),
+            "cik_no_leading_zeros": selected_row.get("cik_no_leading_zeros"),
+            "fiscal_year_end": selected_row.get("fiscal_year_end"),
+            "form": form,
+            "filing_date": selected_row.get("filing_date"),
+            "report_date": selected_row.get("report_date"),
+            "accession_number": accession_number,
+            "items": selected_row.get("items"),
+            "primary_document": selected_row.get("primary_document"),
+            "primary_doc_description": selected_row.get("primary_doc_description"),
+            "derived_filing_url": selected_row.get("derived_filing_url"),
+            "local_html_path": download_result.get("destination"),
+            "download_status": download_result.get("status"),
+            "content_type": download_result.get("content_type"),
+            "content_encoding": download_result.get("content_encoding"),
+            "file_size_bytes": download_result.get("bytes_written", 0),
+            "sha256": download_result.get("sha256"),
+            "selection_reason": selected_row.get("selection_reason"),
+            "downloaded_at_utc": download_result.get("downloaded_at_utc"),
+        }
+        if download_result.get("error_message"):
+            document_row["error_message"] = download_result.get("error_message")
+        document_rows.append(document_row)
+    return document_rows
+
+
+def build_filing_download_report(
+    document_manifest_rows: list[dict[str, Any]],
+    selected_rows: list[dict[str, Any]],
+    output_paths: dict[str, str],
+) -> dict[str, Any]:
+    """Build a Phase 2A-3C filing-document acquisition report."""
+
+    status_counts = Counter(str(row.get("download_status")) for row in document_manifest_rows)
+    return {
+        "phase": "2A-3C",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "total_manifest_rows_available": len(selected_rows),
+        "total_documents_attempted": len(document_manifest_rows),
+        "total_documents_downloaded": status_counts.get("downloaded", 0),
+        "total_documents_skipped_existing": status_counts.get("skipped_existing", 0),
+        "total_documents_failed": status_counts.get("failed", 0),
+        "counts_by_company": dict(
+            Counter(str(row.get("ticker")) for row in document_manifest_rows)
+        ),
+        "counts_by_form": dict(Counter(str(row.get("form")) for row in document_manifest_rows)),
+        "output_files": output_paths,
+        "warnings": [
+            "This report summarizes SEC filing document acquisition only.",
+            "Text extraction and section parsing are deferred to Phase 2A-3D.",
+            "Do not use these artifacts to make benchmark performance claims.",
+        ],
+        "next_step": (
+            "Phase 2A-3D should extract readable text and finance-relevant sections "
+            "from downloaded filing HTML documents."
+        ),
+    }
+
+
 def _max_or_min_iso_date(values: list[Any], *, minimum: bool) -> str | None:
     dates = [value for value in values if isinstance(value, str) and value]
     if not dates:
@@ -803,6 +1044,120 @@ def build_summarize_local_summary(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def build_download_filings_summary(args: argparse.Namespace) -> dict[str, Any]:
+    """Download selected SEC filing HTML documents from a local filing manifest."""
+
+    manifest_path = Path(str(args.manifest_path))
+    manifest_rows = read_jsonl(manifest_path)
+    selected_rows = filter_manifest_rows(
+        rows=manifest_rows,
+        company_filter=str(args.company),
+        form_filter=str(args.form),
+        limit=int(args.limit),
+    )
+    if not selected_rows:
+        msg = (
+            "No selected filing rows matched the requested company/form/limit filters "
+            f"from {manifest_path}"
+        )
+        raise ValueError(msg)
+
+    filings_output_dir = Path(str(args.filings_output_dir))
+    download_results: list[dict[str, Any]] = []
+    for row in selected_rows:
+        local_path = build_local_filing_path(row, filings_output_dir)
+        url = str(row.get("derived_filing_url") or "")
+        if not url:
+            download_results.append(
+                {
+                    "url": url,
+                    "destination": str(local_path),
+                    "status": "failed",
+                    "content_type": None,
+                    "content_encoding": None,
+                    "bytes_written": 0,
+                    "sha256": None,
+                    "error_message": "selected filing row is missing derived_filing_url",
+                    "downloaded_at_utc": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            continue
+
+        if args.skip_existing and local_path.exists() and local_path.stat().st_size > 0:
+            download_results.append(
+                {
+                    "url": url,
+                    "destination": str(local_path),
+                    "status": "skipped_existing",
+                    "content_type": None,
+                    "content_encoding": None,
+                    "bytes_written": local_path.stat().st_size,
+                    "sha256": _file_sha256(local_path),
+                    "downloaded_at_utc": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            continue
+
+        try:
+            download_results.append(
+                download_binary(
+                    url=url,
+                    destination=local_path,
+                    user_agent=str(args.user_agent),
+                    delay_seconds=float(args.request_delay_seconds),
+                )
+            )
+        except RuntimeError as exc:
+            download_results.append(
+                {
+                    "url": url,
+                    "destination": str(local_path),
+                    "status": "failed",
+                    "content_type": None,
+                    "content_encoding": None,
+                    "bytes_written": 0,
+                    "sha256": None,
+                    "error_message": str(exc),
+                    "downloaded_at_utc": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+
+    document_rows = build_document_manifest_rows(selected_rows, download_results)
+    documents_manifest_path = Path(str(args.documents_manifest_path))
+    download_report_path = Path(str(args.download_report_path))
+    output_paths = {
+        "documents_manifest_path": str(documents_manifest_path),
+        "download_report_path": str(download_report_path),
+    }
+    report = build_filing_download_report(document_rows, manifest_rows, output_paths)
+
+    _write_jsonl(document_rows, documents_manifest_path)
+    _write_json(report, download_report_path)
+
+    total_downloaded = int(report["total_documents_downloaded"])
+    total_skipped = int(report["total_documents_skipped_existing"])
+    total_failed = int(report["total_documents_failed"])
+    all_attempted_downloads_failed = (
+        len(document_rows) > 0 and total_failed == len(document_rows) and total_downloaded == 0
+    )
+
+    return {
+        "mode": "download_filings",
+        "phase": "2A-3C",
+        "company_filter": str(args.company),
+        "form_filter": str(args.form),
+        "limit": int(args.limit),
+        "documents_manifest_path": str(documents_manifest_path),
+        "download_report_path": str(download_report_path),
+        "total_documents_attempted": int(report["total_documents_attempted"]),
+        "total_documents_downloaded": total_downloaded,
+        "total_documents_skipped_existing": total_skipped,
+        "total_documents_failed": total_failed,
+        "warnings": report["warnings"],
+        "all_attempted_downloads_failed": all_attempted_downloads_failed and total_skipped == 0,
+    }
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Plan or run Phase 2A finance SEC/XBRL JSON acquisition."
@@ -851,9 +1206,51 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Read local SEC JSON and regenerate processed summaries.",
     )
     parser.add_argument(
+        "--download-filings",
+        action="store_true",
+        help="Download selected SEC filing HTML documents from a local manifest.",
+    )
+    parser.add_argument(
         "--output-dir",
         default=str(DEFAULT_OUTPUT_DIR),
         help="Directory where processed finance exploration outputs should be written.",
+    )
+    parser.add_argument(
+        "--manifest-path",
+        default=str(DEFAULT_SELECTED_FILINGS_MANIFEST_PATH),
+        help="Path to the selected filings manifest JSONL from Phase 2A-3B.",
+    )
+    parser.add_argument(
+        "--filings-output-dir",
+        default=str(DEFAULT_FILINGS_OUTPUT_DIR),
+        help="Directory where raw selected SEC filing documents should be written.",
+    )
+    parser.add_argument(
+        "--documents-manifest-path",
+        default=str(DEFAULT_DOCUMENTS_MANIFEST_PATH),
+        help="Path for the selected filing documents manifest JSONL.",
+    )
+    parser.add_argument(
+        "--download-report-path",
+        default=str(DEFAULT_DOWNLOAD_REPORT_PATH),
+        help="Path for the filing download report JSON.",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Optional total filing document download limit after filters; 0 means uncapped.",
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip downloads when the target local filing document already exists.",
+    )
+    parser.add_argument(
+        "--form",
+        default="all",
+        choices=ALLOWED_FORM_FILTERS,
+        help="Filing form to download, or all.",
     )
     parser.add_argument(
         "--user-agent",
@@ -876,7 +1273,15 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _selected_mode_count(args: argparse.Namespace) -> int:
-    return sum(bool(value) for value in (args.dry_run, args.download_json, args.summarize_local))
+    return sum(
+        bool(value)
+        for value in (
+            args.dry_run,
+            args.download_json,
+            args.summarize_local,
+            args.download_filings,
+        )
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -888,8 +1293,8 @@ def main(argv: list[str] | None = None) -> int:
     if _selected_mode_count(args) != 1:
         print(
             "Exactly one mode must be selected: --dry-run, --download-json, "
-            "or --summarize-local. Download mode is not implemented in Phase "
-            "2A-3A unless --download-json is explicitly selected.",
+            "--summarize-local, or --download-filings. Download mode is not "
+            "implemented in Phase 2A-3A unless an explicit download mode is selected.",
             file=sys.stderr,
         )
         return 2
@@ -898,18 +1303,25 @@ def main(argv: list[str] | None = None) -> int:
         if int(args.max_filings_per_company) < 0:
             msg = "max_filings_per_company must be >= 0"
             raise ValueError(msg)
+        if int(args.limit) < 0:
+            msg = "limit must be >= 0"
+            raise ValueError(msg)
 
         if args.dry_run:
             payload = build_dry_run_plan(args)
         elif args.download_json:
             payload = build_download_json_summary(args)
-        else:
+        elif args.summarize_local:
             payload = build_summarize_local_summary(args)
+        else:
+            payload = build_download_filings_summary(args)
     except (FileNotFoundError, RuntimeError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
     print(json.dumps(payload, indent=2, sort_keys=True))
+    if payload.get("all_attempted_downloads_failed"):
+        return 2
     return 0
 
 
