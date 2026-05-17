@@ -163,3 +163,42 @@ User-Agent: LLM-Inference-Optimization-Suite research-contact@example.com
 - Dry-run output can be produced without network calls.
 - Tests pass.
 - No raw SEC files are committed.
+
+## Phase 2A-3B JSON Acquisition and Exploration
+
+Phase 2A-3B downloads submissions JSON and companyfacts JSON only. Filing HTML/TXT
+downloads are deferred to 2A-3C.
+
+Raw SEC JSON is stored locally under:
+
+- `data/raw/finance/sec/submissions/`
+- `data/raw/finance/sec/companyfacts/`
+
+Processed exploration artifacts are stored locally under:
+
+- `data/processed/finance/sec/selected_filings_manifest.jsonl`
+- `data/processed/finance/sec/xbrl_concept_inventory.jsonl`
+- `data/processed/finance/sec/finance_sec_exploration_report.json`
+
+The selected filings manifest turns SEC `filings.recent` column arrays into
+row-level JSONL records. The XBRL inventory summarizes available `us-gaap`
+concepts, observation counts, units, forms, fiscal years, fiscal periods, and
+important concept coverage. The exploration report should be reviewed before any
+filing document download.
+
+Example commands:
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --download-json --company MSFT
+```
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --summarize-local --company MSFT
+```
+
+```text
+python scripts/phase2/finance_sec_acquisition.py --summarize-local --company all
+```
+
+Do not use these JSON files to make benchmark claims yet. They are source
+acquisition and exploration artifacts only.

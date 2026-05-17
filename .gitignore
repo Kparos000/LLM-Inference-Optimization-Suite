@@ -47,6 +47,9 @@ results/figures/*
 data/prompts/scaled/*_1000.jsonl
 data/prompts/scaled/*_5000.jsonl
 data/prompts/scaled/*_10000.jsonl
+data/raw/finance/sec/
+data/processed/finance/sec/*.json
+data/processed/finance/sec/*.jsonl
 
 # Keep result folders
 !results/raw/.gitkeep
