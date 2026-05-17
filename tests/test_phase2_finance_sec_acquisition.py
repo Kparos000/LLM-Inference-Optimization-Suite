@@ -1,4 +1,5 @@
 import argparse
+import gzip
 import importlib.util
 import json
 import subprocess
@@ -30,8 +31,9 @@ REQUIRED_COMPANY_FIELDS = {
 
 
 class FakeUrlopenResponse:
-    def __init__(self, payload: dict[str, object]) -> None:
-        self.payload = payload
+    def __init__(self, body: bytes, headers: dict[str, str] | None = None) -> None:
+        self.body = body
+        self.headers = headers or {}
 
     def __enter__(self) -> "FakeUrlopenResponse":
         return self
@@ -40,7 +42,7 @@ class FakeUrlopenResponse:
         return None
 
     def read(self) -> bytes:
-        return json.dumps(self.payload).encode("utf-8")
+        return self.body
 
 
 def _load_registry() -> dict[str, Any]:
@@ -289,7 +291,7 @@ def test_build_dry_run_plan_for_msft() -> None:
     assert company["planned_filing_years"] == [2024, 2025, 2026]
 
 
-def test_download_json_function_can_be_mocked_without_network() -> None:
+def test_download_json_handles_plain_json_response() -> None:
     module = _load_script_module()
     download_json = cast(
         Callable[[str, Path, str, float], dict[str, Any]],
@@ -300,7 +302,7 @@ def test_download_json_function_can_be_mocked_without_network() -> None:
         output_path = Path(temporary_directory) / "sample.json"
         with patch(
             "urllib.request.urlopen",
-            return_value=FakeUrlopenResponse({"ok": True, "value": 3}),
+            return_value=FakeUrlopenResponse(b'{"ok": true}'),
         ):
             parsed = download_json(
                 "https://data.sec.gov/submissions/CIK0000789019.json",
@@ -309,7 +311,58 @@ def test_download_json_function_can_be_mocked_without_network() -> None:
                 0,
             )
 
-        assert parsed == {"ok": True, "value": 3}
+        assert parsed == {"ok": True}
+        assert json.loads(output_path.read_text(encoding="utf-8")) == parsed
+
+
+def test_download_json_handles_gzip_response_with_header() -> None:
+    module = _load_script_module()
+    download_json = cast(
+        Callable[[str, Path, str, float], dict[str, Any]],
+        module.__dict__["download_json"],
+    )
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_path = Path(temporary_directory) / "sample.json"
+        with patch(
+            "urllib.request.urlopen",
+            return_value=FakeUrlopenResponse(
+                gzip.compress(b'{"ok": true}'),
+                {"Content-Encoding": "gzip"},
+            ),
+        ):
+            parsed = download_json(
+                "https://data.sec.gov/submissions/CIK0000789019.json",
+                output_path,
+                "test-agent",
+                0,
+            )
+
+        assert parsed == {"ok": True}
+        assert json.loads(output_path.read_text(encoding="utf-8")) == parsed
+
+
+def test_download_json_handles_gzip_response_without_header_magic_bytes() -> None:
+    module = _load_script_module()
+    download_json = cast(
+        Callable[[str, Path, str, float], dict[str, Any]],
+        module.__dict__["download_json"],
+    )
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_path = Path(temporary_directory) / "sample.json"
+        with patch(
+            "urllib.request.urlopen",
+            return_value=FakeUrlopenResponse(gzip.compress(b'{"ok": true}')),
+        ):
+            parsed = download_json(
+                "https://data.sec.gov/submissions/CIK0000789019.json",
+                output_path,
+                "test-agent",
+                0,
+            )
+
+        assert parsed == {"ok": True}
         assert json.loads(output_path.read_text(encoding="utf-8")) == parsed
 
 

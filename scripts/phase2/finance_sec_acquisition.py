@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import sys
 import time
@@ -200,6 +201,7 @@ def download_json(
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             raw_payload = response.read()
+            content_encoding = response.headers.get("Content-Encoding", "")
     except urllib.error.HTTPError as exc:
         msg = f"Failed to download SEC JSON from {url}: HTTP {exc.code} {exc.reason}"
         raise RuntimeError(msg) from exc
@@ -207,8 +209,21 @@ def download_json(
         msg = f"Failed to download SEC JSON from {url}: {exc.reason}"
         raise RuntimeError(msg) from exc
 
+    # SEC responses may be gzip-compressed when Accept-Encoding is requested, so
+    # handle both explicit gzip headers and gzip magic bytes.
+    if "gzip" in content_encoding.lower() or raw_payload.startswith(b"\x1f\x8b"):
+        try:
+            raw_payload = gzip.decompress(raw_payload)
+        except OSError as exc:
+            msg = f"SEC endpoint returned invalid gzip data: {url}"
+            raise RuntimeError(msg) from exc
+
     try:
-        parsed_json = json.loads(raw_payload.decode("utf-8"))
+        response_text = raw_payload.decode("utf-8")
+        parsed_json = json.loads(response_text)
+    except UnicodeDecodeError as exc:
+        msg = f"SEC endpoint returned non-UTF-8 JSON payload: {url}"
+        raise RuntimeError(msg) from exc
     except json.JSONDecodeError as exc:
         msg = f"SEC endpoint did not return valid JSON: {url}"
         raise RuntimeError(msg) from exc
