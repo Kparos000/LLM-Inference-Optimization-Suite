@@ -103,7 +103,8 @@ def _selection_rules() -> dict[str, str]:
             "prioritize 2026 quarterlies and retain 2024/2025 quarterlies for trends."
         ),
         "8-K": (
-            "Form equals 8-K; filing date from 2024 onward; prioritize items 2.02 and/or 9.01."
+            "Form equals 8-K; filing date from 2024 onward; require item 2.02. "
+            "Item 9.01 alone is not sufficient."
         ),
     }
 
@@ -317,6 +318,14 @@ def _row_has_selected_year(row: dict[str, Any], start_year: int, end_year: int) 
     return any(start_year <= year <= end_year for year in years)
 
 
+def parse_8k_items(items: object) -> set[str]:
+    """Parse comma-separated 8-K item numbers into normalized item strings."""
+
+    if not isinstance(items, str):
+        return set()
+    return {item.strip() for item in items.split(",") if item.strip()}
+
+
 def is_selected_finance_filing(
     row: dict[str, Any],
     start_year: int,
@@ -340,10 +349,14 @@ def is_selected_finance_filing(
         return True, "Selected quarterly filing candidate from target year range."
 
     if form == "8-K":
-        items = str(row.get("items") or "")
-        if "2.02" in items or "9.01" in items:
-            return True, "Selected earnings/results candidate 8-K with item 2.02 and/or 9.01."
-        return False, "8-K does not contain item 2.02 or 9.01"
+        items = parse_8k_items(row.get("items"))
+        if "2.02" in items:
+            return (
+                True,
+                "Selected earnings/results 8-K because item 2.02 is present; "
+                "item 9.01 may provide supporting exhibits.",
+            )
+        return False, "8-K does not contain required earnings/results item 2.02"
 
     return False, "form-specific finance selection rule is not implemented"
 
@@ -582,7 +595,12 @@ def build_exploration_report(
             "report_date_min": _max_or_min_iso_date(report_dates, minimum=True),
             "report_date_max": _max_or_min_iso_date(report_dates, minimum=False),
             "earnings_8k_candidate_count": sum(
-                1 for row in manifest_rows if row.get("form") == "8-K"
+                1
+                for row in manifest_rows
+                if row.get("form") == "8-K" and "2.02" in parse_8k_items(row.get("items"))
+            ),
+            "earnings_8k_selection_rule": (
+                "8-K rows require item 2.02. Item 9.01 alone is not sufficient."
             ),
         },
         "xbrl_summary": {

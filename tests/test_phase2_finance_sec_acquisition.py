@@ -240,6 +240,17 @@ def test_normalize_forms() -> None:
     assert normalize_forms(" 10-k , 8-k ") == ["10-K", "8-K"]
 
 
+def test_parse_8k_items() -> None:
+    module = _load_script_module()
+    parse_8k_items = cast(Callable[[object], set[str]], module.__dict__["parse_8k_items"])
+
+    assert parse_8k_items("2.02,9.01") == {"2.02", "9.01"}
+    assert parse_8k_items(" 2.02 , 9.01 ") == {"2.02", "9.01"}
+    assert parse_8k_items("5.02,9.01") == {"5.02", "9.01"}
+    assert parse_8k_items("") == set()
+    assert parse_8k_items(None) == set()
+
+
 def test_select_companies() -> None:
     module = _load_script_module()
     select_companies = cast(
@@ -422,8 +433,32 @@ def test_is_selected_finance_filing() -> None:
         2026,
         forms,
     )[0]
+    assert is_selected_finance_filing(
+        {"form": "8-K", "filing_date": "2025-07-01", "items": "2.02"},
+        2024,
+        2026,
+        forms,
+    )[0]
+    assert not is_selected_finance_filing(
+        {"form": "8-K", "filing_date": "2025-07-01", "items": "5.02,9.01"},
+        2024,
+        2026,
+        forms,
+    )[0]
+    assert not is_selected_finance_filing(
+        {"form": "8-K", "filing_date": "2025-07-01", "items": "9.01"},
+        2024,
+        2026,
+        forms,
+    )[0]
     assert not is_selected_finance_filing(
         {"form": "8-K", "filing_date": "2025-07-01", "items": "8.01"},
+        2024,
+        2026,
+        forms,
+    )[0]
+    assert not is_selected_finance_filing(
+        {"form": "8-K", "filing_date": "2025-07-01", "items": ""},
         2024,
         2026,
         forms,
@@ -434,6 +469,27 @@ def test_is_selected_finance_filing() -> None:
         2026,
         forms,
     )[0]
+
+
+def test_8k_901_only_is_not_selected_as_earnings_candidate() -> None:
+    module = _load_script_module()
+    is_selected_finance_filing = cast(
+        Callable[[dict[str, Any], int, int, list[str]], tuple[bool, str]],
+        module.__dict__["is_selected_finance_filing"],
+    )
+    selected, _reason = is_selected_finance_filing(
+        {
+            "form": "8-K",
+            "filing_date": "2026-05-14",
+            "report_date": "2026-05-13",
+            "items": "5.02,9.01",
+        },
+        2024,
+        2026,
+        ["10-K", "10-Q", "8-K"],
+    )
+
+    assert selected is False
 
 
 def test_build_selected_filings_manifest_from_fake_data() -> None:
@@ -530,6 +586,11 @@ def test_build_exploration_report_from_fake_manifest_and_inventory() -> None:
     assert "xbrl_summary" in report
     assert "important_concept_coverage" in report
     assert "next_step" in report
+    selected_filings_summary = report["selected_filings_summary"]
+    assert isinstance(selected_filings_summary, dict)
+    assert selected_filings_summary["earnings_8k_selection_rule"] == (
+        "8-K rows require item 2.02. Item 9.01 alone is not sufficient."
+    )
 
 
 def test_finance_sec_acquisition_cli_dry_run_msft() -> None:
@@ -576,22 +637,39 @@ def test_finance_sec_acquisition_cli_requires_a_mode() -> None:
 
 
 def test_finance_sec_acquisition_cli_summarize_local_missing_files() -> None:
-    completed_process = subprocess.run(
-        [
-            sys.executable,
-            str(SCRIPT_PATH),
-            "--summarize-local",
-            "--company",
-            "MSFT",
-            "--registry-path",
-            str(REGISTRY_PATH),
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        temporary_path = Path(temporary_directory)
+        company = dict(_msft_company())
+        company["local_raw_submissions_path"] = str(temporary_path / "missing_submissions.json")
+        company["local_raw_companyfacts_path"] = str(temporary_path / "missing_companyfacts.json")
+        registry_path = temporary_path / "registry.json"
+        registry_path.write_text(
+            json.dumps(
+                {
+                    "registry_name": "test_registry",
+                    "version": "1.0",
+                    "companies": [company],
+                }
+            ),
+            encoding="utf-8",
+        )
 
-    combined_output = completed_process.stdout + completed_process.stderr
+        completed_process = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--summarize-local",
+                "--company",
+                "MSFT",
+                "--registry-path",
+                str(registry_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        combined_output = completed_process.stdout + completed_process.stderr
 
     assert completed_process.returncode != 0
     assert "--download-json first" in combined_output

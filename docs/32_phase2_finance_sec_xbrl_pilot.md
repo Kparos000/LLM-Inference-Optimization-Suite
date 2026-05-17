@@ -81,9 +81,12 @@ calendar period for every company.
 
 - Form equals `8-K`.
 - Filing date from 2024 onward.
-- Prioritize items containing 2.02 and/or 9.01.
+- Require item 2.02; 9.01 is retained as supporting exhibit metadata when present.
 - 2.02 means Results of Operations and Financial Condition.
-- 9.01 means Financial Statements and Exhibits.
+- 9.01 means Financial Statements and Exhibits, but 9.01 alone can appear in
+  non-earnings 8-Ks.
+- Phase 2A requires 2.02 for earnings-related 8-K inclusion to reduce noisy 8-K
+  documents before Phase 2A-3C HTML download.
 
 ## SEC URL Derivation
 
@@ -181,7 +184,9 @@ Processed exploration artifacts are stored locally under:
 - `data/processed/finance/sec/finance_sec_exploration_report.json`
 
 The selected filings manifest turns SEC `filings.recent` column arrays into
-row-level JSONL records. The XBRL inventory summarizes available `us-gaap`
+row-level JSONL records. It is intentionally conservative for 8-Ks: earnings
+8-K inclusion requires item 2.02, while item 9.01 is retained as supporting
+exhibit metadata when present. The XBRL inventory summarizes available `us-gaap`
 concepts, observation counts, units, forms, fiscal years, fiscal periods, and
 important concept coverage. The exploration report should be reviewed before any
 filing document download.
