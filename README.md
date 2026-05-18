@@ -100,6 +100,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 2 data source validation matrix](docs/30_phase2_data_source_validation_matrix.md)
 - [Phase 2 vertical data contracts](docs/31_phase2_vertical_data_contracts.md)
 - [Phase 2 finance SEC/XBRL pilot](docs/32_phase2_finance_sec_xbrl_pilot.md)
+- [Phase 2A-4 airline and healthcare synthetic pilots](docs/33_phase2_airline_healthcare_synthetic_pilots.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

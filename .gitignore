@@ -56,6 +56,8 @@ data/processed/finance/sec/filing_sections_manifest.jsonl
 data/processed/finance/sec/finance_text_extraction_report.json
 data/processed/finance/sec/finance_section_quality_report.json
 data/processed/finance/sec/finance_curation_report.json
+data/generated/airline/airline_synthetic_report.json
+data/generated/healthcare_admin/healthcare_admin_synthetic_report.json
 
 # Keep result folders
 !results/raw/.gitkeep
