@@ -2,8 +2,10 @@ import importlib.util
 import json
 import subprocess
 import sys
+from argparse import Namespace
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "scripts/phase2/prepare_research_ai_papers.py"
@@ -70,6 +72,107 @@ def test_parse_openreview_page_extracts_metadata() -> None:
     assert parsed["authors"] == ["Jane Doe", "John Smith"]
     assert parsed["abstract"] == "We evaluate efficient bounded agents."
     assert parsed["pdf_url"] == "https://openreview.net/pdf?id=test123"
+
+
+def test_clean_iclr_abstract_removes_boilerplate() -> None:
+    module = _load_preparation_module()
+    raw_text = (
+        "This paper studies efficient bounded agent evaluation. "
+        "Show more Video ICLR uses cookies Useful links About ICLR"
+    )
+
+    cleaned = module.clean_iclr_abstract(raw_text)
+
+    assert "This paper studies efficient bounded agent evaluation." in cleaned
+    assert "Show more" not in cleaned
+    assert "ICLR uses cookies" not in cleaned
+
+
+def test_is_noisy_abstract() -> None:
+    module = _load_preparation_module()
+
+    assert module.is_noisy_abstract("This abstract is followed by ICLR uses cookies.")
+    assert not module.is_noisy_abstract("This clean abstract studies model evaluation.")
+
+
+def test_is_paper_specific_openreview_url() -> None:
+    module = _load_preparation_module()
+
+    assert not module.is_paper_specific_openreview_url("https://openreview.net/group?id=ICLR.cc")
+    assert module.is_paper_specific_openreview_url("https://openreview.net/forum?id=abc123")
+    assert module.is_paper_specific_openreview_url("https://openreview.net/pdf?id=abc123")
+
+
+def test_classify_pdf_url() -> None:
+    module = _load_preparation_module()
+
+    assert module.classify_pdf_url("https://openreview.net/pdf?id=abc") == "openreview_pdf"
+    assert module.classify_pdf_url("https://iclr.cc/virtual/2025/Slides/123.pdf") == "slides_pdf"
+    assert module.classify_pdf_url("https://iclr.cc/poster.pdf") == "poster_pdf"
+    assert module.classify_pdf_url("https://example.com/supplement.pdf") == "supplementary_pdf"
+    assert module.classify_pdf_url("https://example.com/paper.pdf") == "unknown_pdf"
+    assert module.classify_pdf_url(None) == "missing"
+
+
+def test_select_preferred_pdf_url_prefers_openreview() -> None:
+    module = _load_preparation_module()
+
+    selected_url, pdf_link_type = module.select_preferred_pdf_url(
+        [
+            "https://iclr.cc/virtual/2025/Slides/123.pdf",
+            "https://openreview.net/pdf?id=abc123",
+        ]
+    )
+
+    assert selected_url == "https://openreview.net/pdf?id=abc123"
+    assert pdf_link_type == "openreview_pdf"
+
+
+def test_parse_iclr_poster_page_cleans_abstract_and_rejects_generic_openreview() -> None:
+    module = _load_preparation_module()
+    html_text = """
+    <html>
+      <body>
+        <h2>Abstract</h2>
+        This paper studies efficient bounded agent evaluation.
+        Show more Video ICLR uses cookies Useful links
+        <a href="https://openreview.net/group?id=ICLR.cc">OpenReview</a>
+        <a href="/virtual/2025/Slides/123.pdf">Slides</a>
+      </body>
+    </html>
+    """
+
+    parsed = module.parse_iclr_poster_page(
+        html_text,
+        "https://iclr.cc/virtual/2025/poster/12345",
+    )
+
+    assert parsed["abstract_quality_status"] == "clean"
+    assert "ICLR uses cookies" not in parsed["abstract"]
+    assert parsed["openreview_url"] is None
+    assert parsed["generic_openreview_rejected"] is True
+    assert parsed["pdf_link_type"] == "slides_pdf"
+    assert parsed["paper_body_available"] is False
+
+
+def test_parse_iclr_poster_page_paper_pdf_ready_for_extraction() -> None:
+    module = _load_preparation_module()
+    html_text = """
+    <html>
+      <body>
+        <a href="https://openreview.net/pdf?id=abc123">PDF</a>
+      </body>
+    </html>
+    """
+
+    parsed = module.parse_iclr_poster_page(
+        html_text,
+        "https://iclr.cc/virtual/2025/poster/12345",
+    )
+
+    assert parsed["pdf_link_type"] == "openreview_pdf"
+    assert parsed["paper_body_available"] is True
+    assert parsed["ready_for_text_extraction"] is True
 
 
 def test_enrich_paper_record_preserves_original_metadata() -> None:
@@ -179,6 +282,141 @@ def test_build_paper_preparation_report() -> None:
     assert report["next_step"]
 
 
+def test_build_paper_preparation_report_includes_quality_counts() -> None:
+    module = _load_preparation_module()
+    report = module.build_paper_preparation_report(
+        approved_records=[{"paper_id": "paper_1", "source": "ICLR", "topics": ["agents"]}],
+        enriched_records=[
+            {
+                "paper_id": "paper_1",
+                "source": "ICLR",
+                "topics": ["agents"],
+                "abstract_quality_status": "clean",
+                "paper_body_available": True,
+                "ready_for_text_extraction": True,
+                "pdf_link_type": "openreview_pdf",
+                "pdf_url_candidates": [
+                    {
+                        "url": "https://openreview.net/pdf?id=abc123",
+                        "pdf_link_type": "openreview_pdf",
+                    },
+                    {
+                        "url": "https://iclr.cc/virtual/2025/Slides/123.pdf",
+                        "pdf_link_type": "slides_pdf",
+                    },
+                ],
+            },
+            {
+                "paper_id": "paper_2",
+                "source": "ICLR",
+                "topics": ["agents"],
+                "abstract_quality_status": "noisy",
+                "paper_body_available": False,
+                "ready_for_text_extraction": False,
+                "pdf_link_type": "slides_pdf",
+                "pdf_url_candidates": [
+                    {
+                        "url": "https://iclr.cc/virtual/2025/Slides/456.pdf",
+                        "pdf_link_type": "slides_pdf",
+                    }
+                ],
+            },
+        ],
+        text_manifest_rows=[],
+        section_rows=[],
+        output_files={},
+    )
+
+    assert report["clean_abstract_count"] == 1
+    assert report["noisy_abstract_count"] == 1
+    assert report["paper_body_available_count"] == 1
+    assert report["slides_pdf_count"] == 2
+    assert report["records_ready_for_text_extraction"] == 1
+
+
+def test_download_pdfs_skips_non_paper_pdfs_by_default(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "slides_only",
+            "title": "Slides Only",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/1",
+            "pdf_url_enriched": "https://iclr.cc/virtual/2025/Slides/1.pdf",
+            "pdf_link_type": "slides_pdf",
+            "paper_body_available": False,
+            "ready_for_text_extraction": False,
+        },
+        {
+            "paper_id": "paper_body",
+            "title": "Paper Body",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/2",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=abc123",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    args = Namespace(
+        approved_registry_path=approved_path,
+        enriched_registry_path=enriched_path,
+        raw_paper_dir=tmp_path / "papers",
+        paper_text_dir=tmp_path / "text",
+        text_manifest_path=tmp_path / "text_manifest.jsonl",
+        sections_manifest_path=tmp_path / "sections_manifest.jsonl",
+        report_path=report_path,
+        limit=0,
+        skip_existing=False,
+        include_non_paper_pdfs=False,
+        timeout_seconds=1,
+        request_delay_seconds=0,
+    )
+
+    with mock.patch.object(
+        module,
+        "download_binary",
+        return_value={
+            "download_status": "downloaded",
+            "source_url": "https://openreview.net/pdf?id=abc123",
+            "local_pdf_path": str(tmp_path / "paper.pdf"),
+            "file_size_bytes": 10,
+            "sha256": "abc",
+            "error_message": "",
+        },
+    ) as download_mock:
+        summary = module.download_pdfs(args)
+
+    assert summary["pdfs_skipped_not_full_paper"] == 1
+    assert summary["pdfs_downloaded_by_type"] == {"openreview_pdf": 1}
+    assert download_mock.call_count == 1
+
+    module.write_jsonl(enriched_path, records)
+    args.include_non_paper_pdfs = True
+    with mock.patch.object(
+        module,
+        "download_binary",
+        return_value={
+            "download_status": "downloaded",
+            "source_url": "https://example.com/paper.pdf",
+            "local_pdf_path": str(tmp_path / "paper.pdf"),
+            "file_size_bytes": 10,
+            "sha256": "abc",
+            "error_message": "",
+        },
+    ) as download_mock:
+        module.download_pdfs(args)
+
+    assert download_mock.call_count == 2
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],
@@ -203,3 +441,13 @@ def test_docs_include_paper_detail_acquisition() -> None:
     assert "--enrich-metadata" in text
     assert "--download-pdfs" in text
     assert "--extract-text" in text
+
+
+def test_docs_include_text_qa_quality_gate() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "Phase 2A-5A-Text-QA" in text
+    assert "Metadata Quality Gate" in text
+    assert "paper_body_available" in text
+    assert "slides_pdf" in text
+    assert "OpenReview" in text

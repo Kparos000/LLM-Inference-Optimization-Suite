@@ -314,6 +314,46 @@ python scripts/phase2/prepare_research_ai_papers.py --summarize-local
 If PDF text extraction is unavailable locally, the script should still preserve
 enriched metadata and clearly report skipped text extraction.
 
+## Phase 2A-5A-Text-QA Metadata Quality Gate
+
+Enriched ICLR abstracts must be cleaned before use. Generic OpenReview group
+links are not paper-specific provenance, so the preparation script rejects group
+URLs such as `openreview.net/group?id=ICLR.cc` unless a paper-specific forum,
+PDF, or attachment link is also present.
+
+PDF links are classified before download as `openreview_pdf`, `full_paper_pdf`,
+`unknown_pdf`, `slides_pdf`, `poster_pdf`, `supplementary_pdf`, or `missing`.
+Slide PDFs should not be treated as full paper bodies. The
+`paper_body_available` and `ready_for_text_extraction` fields are the quality
+gate for local text extraction and later curation.
+
+Refresh enriched metadata and inspect the quality report:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --enrich-metadata
+```
+
+```text
+python -m json.tool data/generated/research_ai/research_ai_paper_preparation_report.json
+```
+
+Download only records that are ready for full-paper text extraction:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing
+```
+
+Optionally download non-paper PDFs for manual inspection:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing --include-non-paper-pdfs
+```
+
+Phase 2A-5B should only create method, results, or limitations prompts from
+records with enough text evidence. If `paper_body_available_count` is low,
+enrich paper links manually or via better source parsing before generating
+Research AI gold/eval records.
+
 ## Next Step
 
 Phase 2A-5B should create:

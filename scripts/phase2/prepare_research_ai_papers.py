@@ -48,6 +48,29 @@ PAPER_SECTION_HEADINGS = {
     "conclusion": ("Conclusion",),
     "references": ("References",),
 }
+NOISY_ABSTRACT_MARKERS = (
+    "Show more",
+    "Video",
+    "Chat is not available",
+    "Successful Page Load",
+    "ICLR uses cookies",
+    "Useful links",
+    "About ICLR",
+    "Sponsor / Exhibitor Information",
+    "ICLR Proceedings at OpenReview",
+    "Privacy Policy",
+    "Contact",
+)
+PDF_TYPE_PRIORITY = {
+    "openreview_pdf": 0,
+    "full_paper_pdf": 1,
+    "unknown_pdf": 2,
+    "supplementary_pdf": 3,
+    "poster_pdf": 4,
+    "slides_pdf": 5,
+    "missing": 6,
+}
+PAPER_BODY_PDF_TYPES = {"openreview_pdf", "full_paper_pdf", "unknown_pdf"}
 
 
 class LinkExtractor(HTMLParser):
@@ -155,6 +178,36 @@ def normalize_text_block(value: str | None) -> str:
     text = re.sub(r"[ \t\r\f\v]+", " ", text)
     text = re.sub(r"\n\s*\n+", "\n", text)
     return text.strip()
+
+
+def clean_iclr_abstract(raw_text: str) -> str:
+    text = normalize_whitespace(raw_text)
+    text = re.sub(r"^Abstract\s*[:\-]?\s*", "", text, flags=re.IGNORECASE)
+    if not text:
+        return ""
+    lower_text = text.lower()
+    marker_positions = [
+        lower_text.find(marker.lower())
+        for marker in NOISY_ABSTRACT_MARKERS
+        if lower_text.find(marker.lower()) >= 0
+    ]
+    if marker_positions:
+        text = text[: min(marker_positions)].strip()
+    text = re.sub(
+        r"\b(?:Terms of Service|Code of Conduct|Accessibility|Copyright)\b.*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
+    word_count = len(re.findall(r"\b[A-Za-z][A-Za-z0-9\-]*\b", text))
+    if word_count < 3:
+        return ""
+    return text
+
+
+def is_noisy_abstract(text: str) -> bool:
+    lowered = normalize_whitespace(text).lower()
+    return any(marker.lower() in lowered for marker in NOISY_ABSTRACT_MARKERS)
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -277,6 +330,138 @@ def first_link_url(
     return None
 
 
+def is_paper_specific_openreview_url(url: str) -> bool:
+    parsed = urllib.parse.urlparse(url)
+    if "openreview.net" not in parsed.netloc.lower():
+        return False
+    path = parsed.path.lower()
+    query = urllib.parse.parse_qs(parsed.query)
+    paper_id = (query.get("id") or [""])[0].strip()
+    if path.startswith("/group") or "group?id=" in url.lower():
+        return False
+    if paper_id.lower().startswith("iclr.cc") or paper_id.lower() == "iclr.cc":
+        return False
+    return bool(paper_id) and path in {"/forum", "/pdf", "/attachment"}
+
+
+def is_pdf_like_url(url: str) -> bool:
+    parsed = urllib.parse.urlparse(url)
+    path = parsed.path.lower()
+    lowered = url.lower()
+    return path.endswith(".pdf") or "openreview.net/pdf" in lowered or path == "/pdf"
+
+
+def classify_pdf_url(url: str | None) -> str:
+    if not url:
+        return "missing"
+    lowered = urllib.parse.unquote(url).lower()
+    path = urllib.parse.urlparse(url).path.lower()
+    if "openreview.net/pdf" in lowered or (
+        "openreview.net" in lowered and path == "/pdf" and "id=" in lowered
+    ):
+        return "openreview_pdf"
+    if "/slides/" in lowered or "slides" in lowered:
+        return "slides_pdf"
+    if "/posters/" in lowered or "poster" in lowered:
+        return "poster_pdf"
+    if "supplement" in lowered or "supp" in lowered:
+        return "supplementary_pdf"
+    if "full_paper" in lowered or "full-paper" in lowered or "fulltext" in lowered:
+        return "full_paper_pdf"
+    if path.endswith(".pdf"):
+        return "unknown_pdf"
+    return "missing"
+
+
+def pdf_candidates_from_urls(urls: list[str]) -> list[dict[str, str]]:
+    candidates: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for url in urls:
+        normalized_url = url.strip()
+        if not normalized_url or normalized_url in seen:
+            continue
+        pdf_link_type = classify_pdf_url(normalized_url)
+        if pdf_link_type == "missing":
+            continue
+        seen.add(normalized_url)
+        candidates.append({"url": normalized_url, "pdf_link_type": pdf_link_type})
+    return candidates
+
+
+def select_preferred_pdf_url(candidate_urls: list[str]) -> tuple[str | None, str]:
+    candidates = pdf_candidates_from_urls(candidate_urls)
+    if not candidates:
+        return None, "missing"
+    selected = min(
+        candidates,
+        key=lambda candidate: (
+            PDF_TYPE_PRIORITY.get(candidate["pdf_link_type"], PDF_TYPE_PRIORITY["missing"]),
+            candidate["url"],
+        ),
+    )
+    return selected["url"], selected["pdf_link_type"]
+
+
+def pdf_candidates_from_links(links: list[dict[str, str]]) -> list[dict[str, str]]:
+    return pdf_candidates_from_urls(
+        [link["absolute_url"] for link in links if is_pdf_like_url(link["absolute_url"])]
+    )
+
+
+def select_openreview_forum_url(links: list[dict[str, str]]) -> tuple[str | None, bool]:
+    openreview_urls = [
+        link["absolute_url"] for link in links if "openreview.net" in link["absolute_url"].lower()
+    ]
+    paper_specific_urls = [url for url in openreview_urls if is_paper_specific_openreview_url(url)]
+    generic_rejected = bool(openreview_urls) and len(paper_specific_urls) < len(openreview_urls)
+    forum_urls = [
+        url for url in paper_specific_urls if urllib.parse.urlparse(url).path.lower() == "/forum"
+    ]
+    if forum_urls:
+        return forum_urls[0], generic_rejected
+    return None, generic_rejected
+
+
+def abstract_quality_fields(abstract: str | None) -> dict[str, Any]:
+    text = abstract or ""
+    if not text:
+        status = "missing"
+    elif is_noisy_abstract(text):
+        status = "noisy"
+    else:
+        status = "clean"
+    return {
+        "abstract_quality_status": status,
+        "abstract_char_count": len(text),
+        "abstract_word_count": len(re.findall(r"\b\w+\b", text)),
+    }
+
+
+def pdf_availability_fields(
+    pdf_candidates: list[dict[str, str]], pdf_url: str | None
+) -> dict[str, Any]:
+    pdf_link_type = classify_pdf_url(pdf_url)
+    candidate_types = {candidate["pdf_link_type"] for candidate in pdf_candidates}
+    paper_body_available = bool(pdf_url) and pdf_link_type in PAPER_BODY_PDF_TYPES
+    return {
+        "pdf_url_candidates": pdf_candidates,
+        "pdf_link_type": pdf_link_type,
+        "paper_body_available": paper_body_available,
+        "slides_available": "slides_pdf" in candidate_types,
+        "poster_available": "poster_pdf" in candidate_types,
+        "supplementary_available": "supplementary_pdf" in candidate_types,
+    }
+
+
+def ready_for_text_extraction(record: dict[str, Any]) -> bool:
+    pdf_url = record.get("pdf_url_enriched") or record.get("pdf_url")
+    abstract_status = str(record.get("abstract_quality_status") or "missing")
+    return bool(record.get("paper_body_available") and pdf_url) and abstract_status in {
+        "clean",
+        "missing",
+    }
+
+
 def extract_title_from_metadata(parser: PageMetadataParser) -> str | None:
     title = first_meta_value(
         parser,
@@ -379,10 +564,13 @@ def parse_keywords_from_metadata(parser: PageMetadataParser) -> list[str]:
 def parse_iclr_poster_page(html_text: str, source_url: str) -> dict[str, Any]:
     links = extract_links_from_html(html_text, source_url)
     parser = parse_page_metadata(html_text)
-    openreview_url = first_link_url(links, url_contains=("openreview.net",))
-    pdf_url = first_link_url(links, url_contains=("openreview.net/pdf",)) or first_link_url(
-        links, url_endswith=(".pdf",)
+    openreview_url, generic_openreview_rejected = select_openreview_forum_url(links)
+    pdf_candidates = pdf_candidates_from_links(links)
+    pdf_url, pdf_link_type = select_preferred_pdf_url(
+        [candidate["url"] for candidate in pdf_candidates]
     )
+    raw_abstract = extract_abstract_from_metadata(parser)
+    abstract = clean_iclr_abstract(raw_abstract or "")
     supplementary_url = first_link_url(
         links,
         url_contains=("supplement", "attachment"),
@@ -395,9 +583,16 @@ def parse_iclr_poster_page(html_text: str, source_url: str) -> dict[str, Any]:
         "source_url": source_url,
         "title": extract_title_from_metadata(parser),
         "authors": extract_authors_from_metadata(parser),
-        "abstract": extract_abstract_from_metadata(parser),
+        "abstract": abstract,
+        **abstract_quality_fields(abstract),
         "openreview_url": openreview_url,
+        "paper_specific_openreview_found": bool(openreview_url),
+        "generic_openreview_rejected": generic_openreview_rejected,
         "pdf_url": pdf_url,
+        **pdf_availability_fields(pdf_candidates, pdf_url),
+        "ready_for_text_extraction": bool(
+            pdf_url and pdf_link_type in PAPER_BODY_PDF_TYPES and not is_noisy_abstract(abstract)
+        ),
         "supplementary_url": supplementary_url,
         "presentation_url": presentation_url,
         "poster_url": poster_url,
@@ -407,22 +602,32 @@ def parse_iclr_poster_page(html_text: str, source_url: str) -> dict[str, Any]:
 def parse_openreview_page(html_text: str, source_url: str) -> dict[str, Any]:
     links = extract_links_from_html(html_text, source_url)
     parser = parse_page_metadata(html_text)
-    pdf_url = first_link_url(links, url_contains=("openreview.net/pdf", "/pdf?id="))
+    pdf_candidates = pdf_candidates_from_links(links)
+    pdf_url, pdf_link_type = select_preferred_pdf_url(
+        [candidate["url"] for candidate in pdf_candidates]
+    )
     forum_url = (
         source_url
-        if "openreview.net/forum" in source_url
-        else first_link_url(links, url_contains=("openreview.net/forum", "/forum?id="))
+        if is_paper_specific_openreview_url(source_url)
+        and urllib.parse.urlparse(source_url).path.lower() == "/forum"
+        else select_openreview_forum_url(links)[0]
     )
     venue = first_meta_value(parser, ("citation_conference_title", "citation_journal_title"))
     if not venue:
         venue_match = re.search(r"(?i)\bICLR\s+20\d{2}\b", parser.visible_text)
         venue = venue_match.group(0) if venue_match else None
+    abstract = clean_iclr_abstract(extract_abstract_from_metadata(parser) or "")
     return {
         "source_url": source_url,
         "title": extract_title_from_metadata(parser),
         "authors": extract_authors_from_metadata(parser),
-        "abstract": extract_abstract_from_metadata(parser),
+        "abstract": abstract,
+        **abstract_quality_fields(abstract),
         "pdf_url": pdf_url,
+        **pdf_availability_fields(pdf_candidates, pdf_url),
+        "ready_for_text_extraction": bool(
+            pdf_url and pdf_link_type in PAPER_BODY_PDF_TYPES and not is_noisy_abstract(abstract)
+        ),
         "forum_url": forum_url,
         "venue": venue,
         "keywords": parse_keywords_from_metadata(parser),
@@ -465,20 +670,53 @@ def enrich_paper_record(
         iclr_page.get("authors"),
         original_authors,
     )
-    abstract = choose_first_text(
+    raw_abstract = choose_first_text(
         openreview_page.get("abstract"),
         iclr_page.get("abstract"),
         original_abstract,
     )
-    pdf_url = choose_first_text(
-        openreview_page.get("pdf_url"),
-        iclr_page.get("pdf_url"),
-        original_pdf_url,
+    abstract = clean_iclr_abstract(raw_abstract or "")
+    pdf_candidates = pdf_candidates_from_urls(
+        [
+            str(candidate.get("url") or "")
+            for page in (openreview_page, iclr_page)
+            for candidate in page.get("pdf_url_candidates", [])
+            if isinstance(candidate, dict)
+        ]
     )
-    openreview_url = choose_first_text(
+    page_pdf_urls = [
+        str(page.get("pdf_url") or "")
+        for page in (openreview_page, iclr_page)
+        if page.get("pdf_url")
+    ]
+    if page_pdf_urls:
+        pdf_candidates = pdf_candidates_from_urls(
+            [*(candidate["url"] for candidate in pdf_candidates), *page_pdf_urls]
+        )
+    if original_pdf_url:
+        pdf_candidates = pdf_candidates_from_urls(
+            [*(candidate["url"] for candidate in pdf_candidates), str(original_pdf_url)]
+        )
+    pdf_url, pdf_link_type = select_preferred_pdf_url(
+        [candidate["url"] for candidate in pdf_candidates]
+    )
+    openreview_candidate = choose_first_text(
         iclr_page.get("openreview_url"),
         openreview_page.get("forum_url"),
         original_openreview_url,
+    )
+    openreview_url = (
+        openreview_candidate
+        if openreview_candidate and is_paper_specific_openreview_url(openreview_candidate)
+        else None
+    )
+    paper_specific_openreview_found = bool(openreview_url)
+    generic_openreview_rejected = bool(
+        iclr_page.get("generic_openreview_rejected")
+        or openreview_page.get("generic_openreview_rejected")
+        or (
+            openreview_candidate and not openreview_url and "openreview.net" in openreview_candidate
+        )
     )
     source_pages_checked = [
         str(page.get("source_url"))
@@ -496,6 +734,17 @@ def enrich_paper_record(
         )
         if value in (None, "", [])
     ]
+    quality_notes: list[str] = []
+    abstract_quality = abstract_quality_fields(abstract)
+    pdf_availability = pdf_availability_fields(pdf_candidates, pdf_url)
+    if abstract_quality["abstract_quality_status"] == "noisy":
+        quality_notes.append("Abstract still contains boilerplate and needs review.")
+    if not paper_specific_openreview_found:
+        quality_notes.append("No paper-specific OpenReview forum URL was found.")
+    if generic_openreview_rejected:
+        quality_notes.append("Generic OpenReview group links were rejected.")
+    if not pdf_availability["paper_body_available"]:
+        quality_notes.append("No full-paper PDF source is available yet.")
     useful_fields_found = sum(
         1 for value in (authors, abstract, pdf_url, openreview_url) if value not in (None, "", [])
     )
@@ -505,6 +754,11 @@ def enrich_paper_record(
         status = "partial"
     else:
         status = "failed"
+    record_ready_for_text_extraction = bool(
+        pdf_availability["paper_body_available"]
+        and pdf_url
+        and abstract_quality["abstract_quality_status"] in {"clean", "missing"}
+    )
 
     enriched = dict(record)
     enriched.update(
@@ -515,9 +769,15 @@ def enrich_paper_record(
             "abstract_enriched": abstract,
             "pdf_url_enriched": pdf_url,
             "openreview_url": openreview_url,
+            "paper_specific_openreview_found": paper_specific_openreview_found,
+            "generic_openreview_rejected": generic_openreview_rejected,
             "source_pages_checked": source_pages_checked,
             "missing_fields_after_enrichment": missing_fields_after_enrichment,
             "enrichment_errors": errors,
+            **abstract_quality,
+            **pdf_availability,
+            "ready_for_text_extraction": record_ready_for_text_extraction,
+            "enrichment_quality_notes": quality_notes,
         }
     )
     if authors and not enriched.get("authors"):
@@ -705,6 +965,55 @@ def build_paper_preparation_report(
         str(record.get("pdf_download_status") or "") for record in enriched
     )
     text_statuses = Counter(str(row.get("text_extraction_status") or "") for row in text_rows)
+    abstract_quality_counter = Counter(
+        str(record.get("abstract_quality_status") or "missing") for record in enriched
+    )
+    pdf_candidate_type_counter: Counter[str] = Counter()
+    selected_pdf_type_counter = Counter(
+        str(
+            record.get("pdf_link_type")
+            or classify_pdf_url(record.get("pdf_url_enriched") or record.get("pdf_url"))
+        )
+        for record in enriched
+    )
+    for record in enriched:
+        candidates = record.get("pdf_url_candidates")
+        if isinstance(candidates, list):
+            for candidate in candidates:
+                if isinstance(candidate, dict):
+                    pdf_candidate_type_counter[
+                        str(candidate.get("pdf_link_type") or "missing")
+                    ] += 1
+        elif record.get("pdf_url_enriched") or record.get("pdf_url"):
+            pdf_candidate_type_counter[
+                classify_pdf_url(str(record.get("pdf_url_enriched") or record.get("pdf_url")))
+            ] += 1
+    paper_body_available_count = sum(1 for record in enriched if record.get("paper_body_available"))
+    records_ready_for_text_extraction = sum(
+        1
+        for record in enriched
+        if bool(record.get("ready_for_text_extraction")) or ready_for_text_extraction(record)
+    )
+    warnings = [
+        "This is paper detail acquisition and text preparation only.",
+        "No RAG, retrieval, embeddings, prompt assembly, or inference is performed.",
+        "Some conference records may not expose PDFs or abstracts on the listing page.",
+        (
+            "Phase 2A-5B should create curated Research AI prompts/KB/gold only "
+            "from records with enough metadata/text evidence."
+        ),
+    ]
+    if abstract_quality_counter.get("noisy", 0) > 0:
+        warnings.append("Some enriched abstracts still look noisy and need review.")
+    if enriched and paper_body_available_count == 0:
+        warnings.append(
+            "No full-paper PDF bodies are available; do not generate method/result prompts yet."
+        )
+    slide_or_poster_count = pdf_candidate_type_counter.get(
+        "slides_pdf", 0
+    ) + pdf_candidate_type_counter.get("poster_pdf", 0)
+    if slide_or_poster_count > paper_body_available_count:
+        warnings.append("Many PDF links are slides or posters and are not full paper text sources.")
     return {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
@@ -720,6 +1029,24 @@ def build_paper_preparation_report(
             pdf_download_statuses.get("downloaded", 0) + pdf_download_statuses.get("existing", 0)
         ),
         "pdf_download_failures": pdf_download_statuses.get("failed", 0),
+        "clean_abstract_count": abstract_quality_counter.get("clean", 0),
+        "noisy_abstract_count": abstract_quality_counter.get("noisy", 0),
+        "missing_abstract_count": abstract_quality_counter.get("missing", 0),
+        "paper_body_available_count": paper_body_available_count,
+        "openreview_pdf_count": pdf_candidate_type_counter.get("openreview_pdf", 0),
+        "full_paper_pdf_count": pdf_candidate_type_counter.get("full_paper_pdf", 0),
+        "unknown_pdf_count": pdf_candidate_type_counter.get("unknown_pdf", 0),
+        "slides_pdf_count": pdf_candidate_type_counter.get("slides_pdf", 0),
+        "poster_pdf_count": pdf_candidate_type_counter.get("poster_pdf", 0),
+        "supplementary_pdf_count": pdf_candidate_type_counter.get("supplementary_pdf", 0),
+        "missing_pdf_count": selected_pdf_type_counter.get("missing", 0),
+        "paper_specific_openreview_count": sum(
+            1 for record in enriched if record.get("paper_specific_openreview_found")
+        ),
+        "generic_openreview_rejected_count": sum(
+            1 for record in enriched if record.get("generic_openreview_rejected")
+        ),
+        "records_ready_for_text_extraction": records_ready_for_text_extraction,
         "text_extracted_count": text_statuses.get("extracted", 0),
         "text_extraction_skipped_count": sum(
             count
@@ -734,29 +1061,16 @@ def build_paper_preparation_report(
             for record in records_for_counts
             if not record.get("authors_enriched") and not record.get("authors")
         ),
-        "missing_abstract_count": sum(
-            1
-            for record in records_for_counts
-            if not record.get("abstract_enriched") and not record.get("abstract")
-        ),
         "missing_pdf_url_count": sum(
             1
             for record in records_for_counts
             if not record.get("pdf_url_enriched") and not record.get("pdf_url")
         ),
         "output_files": output_files or {},
-        "warnings": [
-            "This is paper detail acquisition and text preparation only.",
-            "No RAG, retrieval, embeddings, prompt assembly, or inference is performed.",
-            "Some conference records may not expose PDFs or abstracts on the listing page.",
-            (
-                "Phase 2A-5B should create curated Research AI prompts/KB/gold only "
-                "from records with enough metadata/text evidence."
-            ),
-        ],
+        "warnings": warnings,
         "next_step": (
-            "Proceed to Phase 2A-5B only after reviewing enriched metadata and text "
-            "extraction coverage."
+            "Proceed to --download-pdfs only for records with paper_body_available=true. "
+            "If coverage is low, enrich from OpenReview/arXiv manually before 2A-5B."
         ),
     }
 
@@ -856,11 +1170,12 @@ def enrich_metadata(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def existing_pdf_download_result(url: str, destination: Path) -> dict[str, Any]:
+def existing_pdf_download_result(url: str, destination: Path, pdf_link_type: str) -> dict[str, Any]:
     return {
         "download_status": "existing",
         "source_url": url,
         "local_pdf_path": str(destination),
+        "pdf_link_type": pdf_link_type,
         "file_size_bytes": destination.stat().st_size,
         "sha256": file_sha256(destination),
         "error_message": "",
@@ -873,6 +1188,7 @@ def apply_download_result(record: dict[str, Any], result: dict[str, Any]) -> dic
         {
             "local_pdf_path": result.get("local_pdf_path"),
             "pdf_download_status": result.get("download_status"),
+            "pdf_download_type": result.get("pdf_link_type") or record.get("pdf_link_type"),
             "pdf_download_error": result.get("error_message"),
             "pdf_sha256": result.get("sha256"),
             "pdf_file_size_bytes": result.get("file_size_bytes"),
@@ -886,18 +1202,30 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
     updated_records: list[dict[str, Any]] = []
     for record in records:
         pdf_url = str(record.get("pdf_url_enriched") or record.get("pdf_url") or "")
+        pdf_link_type = str(record.get("pdf_link_type") or classify_pdf_url(pdf_url))
         destination = build_local_pdf_path(record, args.raw_paper_dir)
         if not pdf_url:
             result = {
                 "download_status": "skipped_no_pdf_url",
                 "source_url": "",
                 "local_pdf_path": str(destination),
+                "pdf_link_type": pdf_link_type,
                 "file_size_bytes": 0,
                 "sha256": None,
                 "error_message": "",
             }
+        elif not bool(args.include_non_paper_pdfs) and not ready_for_text_extraction(record):
+            result = {
+                "download_status": "skipped_not_full_paper",
+                "source_url": pdf_url,
+                "local_pdf_path": str(destination),
+                "pdf_link_type": pdf_link_type,
+                "file_size_bytes": 0,
+                "sha256": None,
+                "error_message": "PDF is not marked ready for full-paper text extraction.",
+            }
         elif bool(args.skip_existing) and destination.exists():
-            result = existing_pdf_download_result(pdf_url, destination)
+            result = existing_pdf_download_result(pdf_url, destination, pdf_link_type)
         else:
             result = download_binary(
                 pdf_url,
@@ -905,6 +1233,7 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
                 timeout_seconds=int(args.timeout_seconds),
                 delay_seconds=float(args.request_delay_seconds),
             )
+            result["pdf_link_type"] = pdf_link_type
         updated_records.append(apply_download_result(record, result))
 
     write_jsonl(args.enriched_registry_path, updated_records)
@@ -918,6 +1247,11 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
     download_statuses = Counter(
         str(record.get("pdf_download_status") or "") for record in updated_records
     )
+    downloads_by_type = Counter(
+        str(record.get("pdf_download_type") or "missing")
+        for record in updated_records
+        if record.get("pdf_download_status") in {"downloaded", "existing"}
+    )
     return {
         "mode": "download_pdfs",
         "phase": PHASE,
@@ -926,6 +1260,8 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
         "pdfs_downloaded": int(report["pdfs_downloaded"]),
         "pdf_download_failures": int(report["pdf_download_failures"]),
         "pdfs_skipped_no_url": download_statuses.get("skipped_no_pdf_url", 0),
+        "pdfs_skipped_not_full_paper": download_statuses.get("skipped_not_full_paper", 0),
+        "pdfs_downloaded_by_type": dict(downloads_by_type),
         "enriched_registry_path": str(args.enriched_registry_path),
         "raw_paper_dir": str(args.raw_paper_dir),
         "report_path": str(args.report_path),
@@ -1099,6 +1435,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--report-path", type=Path, default=DEFAULT_REPORT_PATH)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--skip-existing", action="store_true")
+    parser.add_argument("--include-non-paper-pdfs", action="store_true")
     parser.add_argument("--request-delay-seconds", type=float, default=1.0)
     parser.add_argument("--timeout-seconds", type=int, default=30)
     return parser.parse_args(argv)
