@@ -299,6 +299,26 @@ Download PDFs only for enriched records with PDF URLs:
 python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing
 ```
 
+OpenReview may return HTTP 429 when many PDFs are downloaded quickly. The
+`--request-delay-seconds` option applies to metadata and PDF HTTP requests. Use
+slower retry settings when resuming a larger download:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing --request-delay-seconds 10 --download-max-retries 5 --download-backoff-seconds 60
+```
+
+Retry only records that failed in the previous preparation report:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing --failed-only --request-delay-seconds 15 --download-max-retries 5 --download-backoff-seconds 90
+```
+
+Retry one paper by id:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing --paper-id <paper_id> --request-delay-seconds 15
+```
+
 PDF download writes files under:
 
 ```text

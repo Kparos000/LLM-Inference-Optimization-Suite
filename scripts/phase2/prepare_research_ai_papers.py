@@ -812,49 +812,148 @@ def build_local_pdf_path(record: dict[str, Any], raw_paper_dir: Path) -> Path:
     return raw_paper_dir / safe_local_paper_dir_name(record) / "paper.pdf"
 
 
+def parse_retry_after_seconds(headers: Any) -> float | None:
+    if not headers:
+        return None
+    retry_after = headers.get("Retry-After")
+    if retry_after is None:
+        return None
+    retry_after_text = str(retry_after).strip()
+    if not retry_after_text:
+        return None
+    try:
+        return max(0.0, float(retry_after_text))
+    except ValueError:
+        return None
+
+
+def download_failure_result(
+    url: str,
+    destination: Path,
+    attempts: int,
+    error_message: str,
+    status_code: int | None = None,
+) -> dict[str, Any]:
+    return {
+        "status": "failed",
+        "download_status": "failed",
+        "url": url,
+        "source_url": url,
+        "destination": str(destination),
+        "local_pdf_path": str(destination),
+        "bytes_written": 0,
+        "file_size_bytes": 0,
+        "sha256": None,
+        "content_type": None,
+        "downloaded_at_utc": utc_now(),
+        "attempts": attempts,
+        "status_code": status_code,
+        "error_message": error_message,
+    }
+
+
+def download_binary_with_retries(
+    url: str,
+    destination: Path,
+    timeout_seconds: int,
+    request_delay_seconds: float,
+    max_retries: int,
+    backoff_seconds: float,
+) -> dict[str, Any]:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    total_attempts = max(0, int(max_retries)) + 1
+    last_error_message = ""
+    last_status_code: int | None = None
+    attempts_used = 0
+    for attempt in range(1, total_attempts + 1):
+        attempts_used = attempt
+        if request_delay_seconds > 0:
+            time.sleep(request_delay_seconds)
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "application/pdf,application/octet-stream,*/*",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                payload = response.read()
+                headers = getattr(response, "headers", None)
+                content_type = headers.get("Content-Type") if headers else None
+        except urllib.error.HTTPError as exc:
+            last_status_code = int(exc.code)
+            last_error_message = str(exc)
+            retryable = exc.code == 429 or 500 <= exc.code <= 599
+            if not retryable or attempt >= total_attempts:
+                break
+            sleep_seconds = parse_retry_after_seconds(exc.headers) if exc.code == 429 else None
+            if sleep_seconds is None:
+                sleep_seconds = backoff_seconds * attempt
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
+            continue
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error_message = str(exc)
+            if attempt >= total_attempts:
+                break
+            sleep_seconds = backoff_seconds * attempt
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
+            continue
+
+        try:
+            destination.write_bytes(payload)
+        except OSError as exc:
+            return download_failure_result(
+                url,
+                destination,
+                attempts=attempt,
+                error_message=f"Failed to write PDF to {destination}: {exc}",
+            )
+        payload_sha256 = hashlib.sha256(payload).hexdigest()
+        return {
+            "status": "downloaded",
+            "download_status": "downloaded",
+            "url": url,
+            "source_url": url,
+            "destination": str(destination),
+            "local_pdf_path": str(destination),
+            "bytes_written": len(payload),
+            "file_size_bytes": len(payload),
+            "sha256": payload_sha256,
+            "content_type": content_type,
+            "downloaded_at_utc": utc_now(),
+            "attempts": attempt,
+            "status_code": None,
+            "error_message": "",
+        }
+    return download_failure_result(
+        url,
+        destination,
+        attempts=attempts_used or total_attempts,
+        status_code=last_status_code,
+        error_message=last_error_message or "Download failed.",
+    )
+
+
 def download_binary(
     url: str,
     destination: Path,
     timeout_seconds: int,
     delay_seconds: float,
 ) -> dict[str, Any]:
-    if delay_seconds > 0:
-        time.sleep(delay_seconds)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    request = urllib.request.Request(
+    result = download_binary_with_retries(
         url,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "application/pdf,application/octet-stream,*/*",
-        },
+        destination,
+        timeout_seconds=timeout_seconds,
+        request_delay_seconds=delay_seconds,
+        max_retries=0,
+        backoff_seconds=0,
     )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-            payload = response.read()
-            headers = getattr(response, "headers", None)
-            content_type = headers.get("Content-Type") if headers else None
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
-        return {
-            "status": "failed",
-            "download_status": "failed",
-            "url": url,
-            "source_url": url,
-            "destination": str(destination),
-            "local_pdf_path": str(destination),
-            "bytes_written": 0,
-            "file_size_bytes": 0,
-            "sha256": None,
-            "content_type": None,
-            "downloaded_at_utc": utc_now(),
-            "error_message": str(exc),
-        }
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        destination.write_bytes(payload)
-    except OSError as exc:
-        msg = f"Failed to write PDF to {destination}: {exc}"
-        raise RuntimeError(msg) from exc
-    payload_sha256 = hashlib.sha256(payload).hexdigest()
+    if result.get("download_status") == "failed":
+        return result
+    payload_sha256 = str(result.get("sha256") or "")
     return {
         "status": "downloaded",
         "download_status": "downloaded",
@@ -862,11 +961,13 @@ def download_binary(
         "source_url": url,
         "destination": str(destination),
         "local_pdf_path": str(destination),
-        "bytes_written": len(payload),
-        "file_size_bytes": len(payload),
+        "bytes_written": result.get("bytes_written"),
+        "file_size_bytes": result.get("file_size_bytes"),
         "sha256": payload_sha256,
-        "content_type": content_type,
-        "downloaded_at_utc": utc_now(),
+        "content_type": result.get("content_type"),
+        "downloaded_at_utc": result.get("downloaded_at_utc"),
+        "attempts": result.get("attempts"),
+        "status_code": result.get("status_code"),
         "error_message": "",
     }
 
@@ -990,6 +1091,7 @@ def build_paper_preparation_report(
     text_manifest_rows: list[dict[str, Any]] | None = None,
     section_rows: list[dict[str, Any]] | None = None,
     output_files: dict[str, str] | None = None,
+    download_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     approved = approved_records or []
     enriched = enriched_records or []
@@ -1063,11 +1165,14 @@ def build_paper_preparation_report(
             "paper_id": record.get("paper_id"),
             "title": record.get("title"),
             "pdf_url": record.get("pdf_url_enriched") or record.get("pdf_url"),
+            "status_code": record.get("pdf_download_status_code"),
+            "attempts": record.get("pdf_download_attempts"),
             "error_message": record.get("pdf_download_error"),
         }
         for record in enriched
         if record.get("pdf_download_status") == "failed"
     ]
+    policy = download_policy or {}
     return {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
@@ -1084,6 +1189,12 @@ def build_paper_preparation_report(
         ),
         "pdf_download_failures": pdf_download_statuses.get("failed", 0),
         "pdf_download_failure_details": pdf_download_failure_details,
+        "download_max_retries": policy.get("download_max_retries"),
+        "download_backoff_seconds": policy.get("download_backoff_seconds"),
+        "request_delay_seconds": policy.get("request_delay_seconds"),
+        "download_timeout_seconds": policy.get("download_timeout_seconds"),
+        "failed_only": policy.get("failed_only"),
+        "paper_id_filter": policy.get("paper_id_filter"),
         "clean_abstract_count": abstract_quality_counter.get("clean", 0),
         "noisy_abstract_count": abstract_quality_counter.get("noisy", 0),
         "missing_abstract_count": abstract_quality_counter.get("missing", 0),
@@ -1239,6 +1350,8 @@ def existing_pdf_download_result(url: str, destination: Path, pdf_link_type: str
         "sha256": file_sha256(destination),
         "content_type": "application/pdf",
         "downloaded_at_utc": utc_now(),
+        "attempts": 0,
+        "status_code": None,
         "error_message": "",
     }
 
@@ -1255,19 +1368,84 @@ def apply_download_result(record: dict[str, Any], result: dict[str, Any]) -> dic
             "pdf_file_size_bytes": result.get("file_size_bytes"),
             "pdf_downloaded_at_utc": result.get("downloaded_at_utc"),
             "pdf_content_type": result.get("content_type"),
+            "pdf_download_attempts": result.get("attempts"),
+            "pdf_download_status_code": result.get("status_code"),
         }
     )
     return updated
+
+
+def effective_download_timeout_seconds(args: argparse.Namespace) -> int:
+    explicit_timeout = getattr(args, "download_timeout_seconds", None)
+    if explicit_timeout is not None:
+        return int(explicit_timeout)
+    return int(args.timeout_seconds)
+
+
+def effective_download_request_delay_seconds(args: argparse.Namespace) -> float:
+    explicit_delay = getattr(args, "download_request_delay_seconds", None)
+    if explicit_delay is not None:
+        return float(explicit_delay)
+    return float(args.request_delay_seconds)
+
+
+def download_policy_from_args(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "download_max_retries": int(getattr(args, "download_max_retries", 3)),
+        "download_backoff_seconds": float(getattr(args, "download_backoff_seconds", 30.0)),
+        "request_delay_seconds": effective_download_request_delay_seconds(args),
+        "download_timeout_seconds": effective_download_timeout_seconds(args),
+        "failed_only": bool(getattr(args, "failed_only", False)),
+        "paper_id_filter": str(getattr(args, "paper_id", "") or ""),
+    }
+
+
+def read_failed_download_paper_ids(report_path: Path) -> set[str]:
+    if not report_path.exists():
+        return set()
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return set()
+    failed_details = report.get("pdf_download_failure_details")
+    if not isinstance(failed_details, list):
+        return set()
+    return {
+        str(detail.get("paper_id"))
+        for detail in failed_details
+        if isinstance(detail, dict) and detail.get("paper_id")
+    }
 
 
 def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
     if not args.enriched_registry_path.exists():
         msg = f"Missing enriched registry: {args.enriched_registry_path}"
         raise RuntimeError(msg)
-    records = apply_limit(read_jsonl(args.enriched_registry_path), int(args.limit))
+    all_records = read_jsonl(args.enriched_registry_path)
+    scoped_records = apply_limit(all_records, int(args.limit))
+    scoped_paper_ids = {str(record.get("paper_id") or "") for record in scoped_records}
+    failed_only = bool(getattr(args, "failed_only", False))
+    paper_id_filter = str(getattr(args, "paper_id", "") or "")
+    failed_paper_ids = read_failed_download_paper_ids(args.report_path) if failed_only else set()
+    download_policy = download_policy_from_args(args)
     updated_records: list[dict[str, Any]] = []
+    run_records: list[dict[str, Any]] = []
+    run_results: list[dict[str, Any]] = []
+    selected_record_count = 0
+    eligible_count = 0
     attempted_downloads = 0
-    for record in records:
+    for record in all_records:
+        paper_id = str(record.get("paper_id") or "")
+        selected = paper_id in scoped_paper_ids
+        if paper_id_filter:
+            selected = selected and paper_id == paper_id_filter
+        if failed_only:
+            selected = selected and paper_id in failed_paper_ids
+        if not selected:
+            updated_records.append(record)
+            continue
+
+        selected_record_count += 1
         pdf_url = str(record.get("pdf_url_enriched") or record.get("pdf_url") or "")
         pdf_link_type = str(record.get("pdf_link_type") or classify_pdf_url(pdf_url))
         destination = build_local_pdf_path(record, args.raw_paper_dir)
@@ -1285,6 +1463,8 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
                 "sha256": None,
                 "content_type": None,
                 "downloaded_at_utc": None,
+                "attempts": 0,
+                "status_code": None,
                 "error_message": "",
             }
         elif not bool(args.include_non_paper_pdfs) and not ready_for_text_extraction(record):
@@ -1301,36 +1481,27 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
                 "sha256": None,
                 "content_type": None,
                 "downloaded_at_utc": None,
+                "attempts": 0,
+                "status_code": None,
                 "error_message": "PDF is not marked ready for full-paper text extraction.",
             }
-        elif bool(args.skip_existing) and destination.exists():
-            result = existing_pdf_download_result(pdf_url, destination, pdf_link_type)
         else:
-            attempted_downloads += 1
-            try:
-                result = download_binary(
+            eligible_count += 1
+            if bool(args.skip_existing) and destination.exists():
+                result = existing_pdf_download_result(pdf_url, destination, pdf_link_type)
+            else:
+                attempted_downloads += 1
+                result = download_binary_with_retries(
                     pdf_url,
                     destination,
-                    timeout_seconds=int(args.timeout_seconds),
-                    delay_seconds=float(args.request_delay_seconds),
+                    timeout_seconds=int(download_policy["download_timeout_seconds"]),
+                    request_delay_seconds=float(download_policy["request_delay_seconds"]),
+                    max_retries=int(download_policy["download_max_retries"]),
+                    backoff_seconds=float(download_policy["download_backoff_seconds"]),
                 )
-            except RuntimeError as exc:
-                result = {
-                    "status": "failed",
-                    "download_status": "failed",
-                    "url": pdf_url,
-                    "source_url": pdf_url,
-                    "destination": str(destination),
-                    "local_pdf_path": str(destination),
-                    "pdf_link_type": pdf_link_type,
-                    "bytes_written": 0,
-                    "file_size_bytes": 0,
-                    "sha256": None,
-                    "content_type": None,
-                    "downloaded_at_utc": utc_now(),
-                    "error_message": str(exc),
-                }
             result["pdf_link_type"] = pdf_link_type
+        run_records.append(record)
+        run_results.append(result)
         updated_records.append(apply_download_result(record, result))
 
     write_jsonl(args.enriched_registry_path, updated_records)
@@ -1339,43 +1510,55 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
         approved_records=approved_records,
         enriched_records=updated_records,
         output_files=output_files_from_args(args),
+        download_policy=download_policy,
     )
     write_json(args.report_path, report)
-    download_statuses = Counter(
-        str(record.get("pdf_download_status") or "") for record in updated_records
-    )
+    download_statuses = Counter(str(result.get("download_status") or "") for result in run_results)
     downloads_by_type = Counter(
-        str(record.get("pdf_download_type") or "missing")
-        for record in updated_records
-        if record.get("pdf_download_status") in {"downloaded", "existing"}
+        str(result.get("pdf_link_type") or "missing")
+        for result in run_results
+        if result.get("download_status") in {"downloaded", "existing"}
     )
+    failure_details = [
+        {
+            "paper_id": record.get("paper_id"),
+            "title": record.get("title"),
+            "pdf_url": result.get("url") or result.get("source_url"),
+            "status_code": result.get("status_code"),
+            "attempts": result.get("attempts"),
+            "error_message": result.get("error_message"),
+        }
+        for record, result in zip(run_records, run_results, strict=False)
+        if result.get("download_status") == "failed"
+    ]
     summary = {
         "mode": "download_pdfs",
         "phase": PHASE,
-        "records_attempted": len(records),
-        "pdf_urls_found": int(report["pdf_urls_found"]),
-        "pdfs_downloaded": int(report["pdfs_downloaded"]),
-        "pdf_download_failures": int(report["pdf_download_failures"]),
+        "records_attempted": selected_record_count,
+        "pdf_urls_found": sum(1 for result in run_results if result.get("url")),
+        "pdfs_downloaded": download_statuses.get("downloaded", 0)
+        + download_statuses.get("existing", 0),
+        "pdf_download_failures": download_statuses.get("failed", 0),
         "pdfs_skipped_existing": download_statuses.get("existing", 0),
         "pdfs_skipped_no_url": download_statuses.get("skipped_no_pdf_url", 0),
         "pdfs_skipped_not_full_paper": download_statuses.get("skipped_not_full_paper", 0),
         "pdfs_downloaded_by_type": dict(downloads_by_type),
-        "pdf_download_failure_details": report["pdf_download_failure_details"],
+        "download_max_retries": download_policy["download_max_retries"],
+        "download_backoff_seconds": download_policy["download_backoff_seconds"],
+        "request_delay_seconds": download_policy["request_delay_seconds"],
+        "download_timeout_seconds": download_policy["download_timeout_seconds"],
+        "failed_only": failed_only,
+        "paper_id_filter": paper_id_filter,
+        "pdf_download_failure_details": failure_details,
         "enriched_registry_path": str(args.enriched_registry_path),
         "raw_paper_dir": str(args.raw_paper_dir),
         "report_path": str(args.report_path),
         "warnings": report["warnings"],
     }
-    eligible_count = sum(
-        1
-        for record in records
-        if (record.get("pdf_url_enriched") or record.get("pdf_url"))
-        and (bool(args.include_non_paper_pdfs) or ready_for_text_extraction(record))
-    )
     if eligible_count == 0:
         msg = "No records are eligible for PDF download."
         raise RuntimeError(msg)
-    if attempted_downloads > 0 and int(report["pdf_download_failures"]) == attempted_downloads:
+    if attempted_downloads > 0 and download_statuses.get("failed", 0) == attempted_downloads:
         msg = "All attempted PDF downloads failed."
         raise RuntimeError(msg)
     return summary
@@ -1550,6 +1733,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--include-non-paper-pdfs", action="store_true")
     parser.add_argument("--request-delay-seconds", type=float, default=1.0)
     parser.add_argument("--timeout-seconds", type=int, default=30)
+    parser.add_argument("--download-max-retries", type=int, default=3)
+    parser.add_argument("--download-backoff-seconds", type=float, default=30.0)
+    parser.add_argument("--download-timeout-seconds", type=int, default=None)
+    parser.add_argument("--download-request-delay-seconds", type=float, default=None)
+    parser.add_argument("--paper-id", default="")
+    parser.add_argument("--failed-only", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -1576,6 +1765,18 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if int(args.limit) < 0:
         print("--limit must be >= 0.", file=sys.stderr)
+        return 2
+    if int(args.download_max_retries) < 0:
+        print("--download-max-retries must be >= 0.", file=sys.stderr)
+        return 2
+    if float(args.download_backoff_seconds) < 0:
+        print("--download-backoff-seconds must be >= 0.", file=sys.stderr)
+        return 2
+    if effective_download_timeout_seconds(args) <= 0:
+        print("Download timeout must be > 0.", file=sys.stderr)
+        return 2
+    if effective_download_request_delay_seconds(args) < 0:
+        print("Download request delay must be >= 0.", file=sys.stderr)
         return 2
     try:
         if args.dry_run:

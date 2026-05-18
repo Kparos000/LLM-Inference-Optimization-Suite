@@ -411,7 +411,7 @@ def test_download_pdfs_skips_non_paper_pdfs_by_default(tmp_path: Path) -> None:
 
     with mock.patch.object(
         module,
-        "download_binary",
+        "download_binary_with_retries",
         return_value={
             "download_status": "downloaded",
             "source_url": "https://openreview.net/pdf?id=abc123",
@@ -431,7 +431,7 @@ def test_download_pdfs_skips_non_paper_pdfs_by_default(tmp_path: Path) -> None:
     args.include_non_paper_pdfs = True
     with mock.patch.object(
         module,
-        "download_binary",
+        "download_binary_with_retries",
         return_value={
             "download_status": "downloaded",
             "source_url": "https://example.com/paper.pdf",
@@ -468,6 +468,74 @@ def test_download_binary_creates_parent_directories(tmp_path: Path) -> None:
     assert result["bytes_written"] > 0
     assert result["sha256"]
     assert result["content_type"] == "application/pdf"
+
+
+def test_download_binary_retries_429_then_success(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    destination = tmp_path / "paper.pdf"
+    error = module.urllib.error.HTTPError(
+        "https://openreview.net/pdf?id=abc123",
+        429,
+        "Too Many Requests",
+        {},
+        None,
+    )
+
+    with (
+        mock.patch.object(
+            module.urllib.request,
+            "urlopen",
+            side_effect=[error, _FakeBinaryResponse(b"%PDF-1.4 fake pdf")],
+        ) as urlopen_mock,
+        mock.patch.object(module.time, "sleep") as sleep_mock,
+    ):
+        result = module.download_binary_with_retries(
+            "https://openreview.net/pdf?id=abc123",
+            destination,
+            timeout_seconds=1,
+            request_delay_seconds=0,
+            max_retries=1,
+            backoff_seconds=2,
+        )
+
+    assert destination.exists()
+    assert result["status"] == "downloaded"
+    assert result["attempts"] == 2
+    assert result["sha256"]
+    assert urlopen_mock.call_count == 2
+    sleep_mock.assert_called_once_with(2)
+
+
+def test_download_binary_honors_retry_after(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    destination = tmp_path / "paper.pdf"
+    error = module.urllib.error.HTTPError(
+        "https://openreview.net/pdf?id=abc123",
+        429,
+        "Too Many Requests",
+        {"Retry-After": "7"},
+        None,
+    )
+
+    with (
+        mock.patch.object(
+            module.urllib.request,
+            "urlopen",
+            side_effect=[error, _FakeBinaryResponse(b"%PDF-1.4 fake pdf")],
+        ),
+        mock.patch.object(module.time, "sleep") as sleep_mock,
+    ):
+        result = module.download_binary_with_retries(
+            "https://openreview.net/pdf?id=abc123",
+            destination,
+            timeout_seconds=1,
+            request_delay_seconds=0,
+            max_retries=1,
+            backoff_seconds=30,
+        )
+
+    assert result["status"] == "downloaded"
+    sleep_mock.assert_called_once_with(7.0)
 
 
 def test_download_pdfs_continues_after_one_failure(tmp_path: Path) -> None:
@@ -520,9 +588,11 @@ def test_download_pdfs_continues_after_one_failure(tmp_path: Path) -> None:
         url: str,
         destination: Path,
         timeout_seconds: int,
-        delay_seconds: float,
+        request_delay_seconds: float,
+        max_retries: int,
+        backoff_seconds: float,
     ) -> dict[str, Any]:
-        _ = timeout_seconds, delay_seconds
+        _ = timeout_seconds, request_delay_seconds, max_retries, backoff_seconds
         if "failure" in url:
             return {
                 "status": "failed",
@@ -553,7 +623,7 @@ def test_download_pdfs_continues_after_one_failure(tmp_path: Path) -> None:
             "error_message": "",
         }
 
-    with mock.patch.object(module, "download_binary", side_effect=fake_download):
+    with mock.patch.object(module, "download_binary_with_retries", side_effect=fake_download):
         summary = module.download_pdfs(args)
 
     assert summary["pdfs_downloaded"] == 1
@@ -600,7 +670,7 @@ def test_download_pdfs_all_fail_returns_failure(tmp_path: Path) -> None:
 
     with mock.patch.object(
         module,
-        "download_binary",
+        "download_binary_with_retries",
         return_value={
             "status": "failed",
             "download_status": "failed",
@@ -626,6 +696,234 @@ def test_download_pdfs_all_fail_returns_failure(tmp_path: Path) -> None:
     assert report_path.exists()
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report["pdf_download_failures"] == 1
+
+
+def test_download_pdfs_failed_only_filters_records(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "paper_success",
+            "title": "Paper Success",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/1",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=success",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+        {
+            "paper_id": "paper_failure",
+            "title": "Paper Failure",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/2",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=failure",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    report_path.write_text(
+        json.dumps(
+            {
+                "pdf_download_failure_details": [
+                    {"paper_id": "paper_failure", "error_message": "HTTP Error 429"}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    args = Namespace(
+        approved_registry_path=approved_path,
+        enriched_registry_path=enriched_path,
+        raw_paper_dir=tmp_path / "papers",
+        paper_text_dir=tmp_path / "text",
+        text_manifest_path=tmp_path / "text_manifest.jsonl",
+        sections_manifest_path=tmp_path / "sections_manifest.jsonl",
+        report_path=report_path,
+        limit=0,
+        skip_existing=False,
+        include_non_paper_pdfs=False,
+        timeout_seconds=1,
+        request_delay_seconds=0,
+        failed_only=True,
+        paper_id="",
+        download_max_retries=1,
+        download_backoff_seconds=0,
+    )
+
+    with mock.patch.object(
+        module,
+        "download_binary_with_retries",
+        return_value={
+            "status": "downloaded",
+            "download_status": "downloaded",
+            "url": "https://openreview.net/pdf?id=failure",
+            "source_url": "https://openreview.net/pdf?id=failure",
+            "local_pdf_path": str(tmp_path / "paper.pdf"),
+            "file_size_bytes": 10,
+            "sha256": "abc",
+            "attempts": 1,
+            "status_code": None,
+            "error_message": "",
+        },
+    ) as download_mock:
+        summary = module.download_pdfs(args)
+
+    assert summary["records_attempted"] == 1
+    assert summary["failed_only"] is True
+    assert download_mock.call_count == 1
+    assert download_mock.call_args.args[0] == "https://openreview.net/pdf?id=failure"
+
+
+def test_download_pdfs_paper_id_filter(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "paper_a",
+            "title": "Paper A",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/1",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=a",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+        {
+            "paper_id": "paper_b",
+            "title": "Paper B",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/2",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=b",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    args = Namespace(
+        approved_registry_path=approved_path,
+        enriched_registry_path=enriched_path,
+        raw_paper_dir=tmp_path / "papers",
+        paper_text_dir=tmp_path / "text",
+        text_manifest_path=tmp_path / "text_manifest.jsonl",
+        sections_manifest_path=tmp_path / "sections_manifest.jsonl",
+        report_path=report_path,
+        limit=0,
+        skip_existing=False,
+        include_non_paper_pdfs=False,
+        timeout_seconds=1,
+        request_delay_seconds=0,
+        failed_only=False,
+        paper_id="paper_b",
+        download_max_retries=1,
+        download_backoff_seconds=0,
+    )
+
+    with mock.patch.object(
+        module,
+        "download_binary_with_retries",
+        return_value={
+            "status": "downloaded",
+            "download_status": "downloaded",
+            "url": "https://openreview.net/pdf?id=b",
+            "source_url": "https://openreview.net/pdf?id=b",
+            "local_pdf_path": str(tmp_path / "paper.pdf"),
+            "file_size_bytes": 10,
+            "sha256": "abc",
+            "attempts": 1,
+            "status_code": None,
+            "error_message": "",
+        },
+    ) as download_mock:
+        summary = module.download_pdfs(args)
+
+    assert summary["records_attempted"] == 1
+    assert summary["paper_id_filter"] == "paper_b"
+    assert download_mock.call_count == 1
+    assert download_mock.call_args.args[0] == "https://openreview.net/pdf?id=b"
+
+
+def test_download_report_includes_retry_policy(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "paper_retry",
+            "title": "Paper Retry",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/1",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=retry",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        }
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    args = Namespace(
+        approved_registry_path=approved_path,
+        enriched_registry_path=enriched_path,
+        raw_paper_dir=tmp_path / "papers",
+        paper_text_dir=tmp_path / "text",
+        text_manifest_path=tmp_path / "text_manifest.jsonl",
+        sections_manifest_path=tmp_path / "sections_manifest.jsonl",
+        report_path=report_path,
+        limit=0,
+        skip_existing=False,
+        include_non_paper_pdfs=False,
+        timeout_seconds=5,
+        request_delay_seconds=12,
+        failed_only=False,
+        paper_id="paper_retry",
+        download_max_retries=4,
+        download_backoff_seconds=60,
+    )
+
+    with mock.patch.object(
+        module,
+        "download_binary_with_retries",
+        return_value={
+            "status": "downloaded",
+            "download_status": "downloaded",
+            "url": "https://openreview.net/pdf?id=retry",
+            "source_url": "https://openreview.net/pdf?id=retry",
+            "local_pdf_path": str(tmp_path / "paper.pdf"),
+            "file_size_bytes": 10,
+            "sha256": "abc",
+            "attempts": 1,
+            "status_code": None,
+            "error_message": "",
+        },
+    ):
+        summary = module.download_pdfs(args)
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert summary["download_max_retries"] == 4
+    assert summary["download_backoff_seconds"] == 60.0
+    assert summary["request_delay_seconds"] == 12.0
+    assert summary["failed_only"] is False
+    assert summary["paper_id_filter"] == "paper_retry"
+    assert report["download_max_retries"] == 4
+    assert report["download_backoff_seconds"] == 60.0
+    assert report["request_delay_seconds"] == 12.0
+    assert report["failed_only"] is False
+    assert report["paper_id_filter"] == "paper_retry"
 
 
 def test_extract_text_missing_pdf_warning(tmp_path: Path) -> None:
