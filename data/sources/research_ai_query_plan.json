@@ -1,7 +1,7 @@
 {
   "query_plan_name": "research_ai_arxiv_discovery_plan",
   "version": "1.0",
-  "description": "Metadata-only arXiv discovery plan for the Phase 2A AI Research Assistant / Education-Research vertical. The plan identifies candidate papers for later human review and does not select final benchmark papers.",
+  "description": "Metadata-only arXiv discovery plan for the Phase 2A AI Research Assistant / Education-Research vertical. The plan identifies candidate papers for later human review and does not select final benchmark papers. Candidate research papers should be published or submitted between January 1, 2024 and May 30, 2026 where metadata supports date filtering.",
   "source": "arXiv API",
   "api_base_url": "https://export.arxiv.org/api/query",
   "delay_seconds": 3,
@@ -9,6 +9,13 @@
   "target_candidate_count": 60,
   "target_shortlist_count": 12,
   "target_prompt_seed_count": 40,
+  "paper_window": {
+    "start_date": "2024-01-01",
+    "end_date": "2026-05-30",
+    "arxiv_submitted_date_start": "202401010000",
+    "arxiv_submitted_date_end": "202605302359",
+    "notes": "Approved Research AI paper discovery window for Phase 2A seed curation."
+  },
   "status_mix_for_seed": {
     "answer": 37,
     "escalation_or_insufficient_evidence": 2,

@@ -1,3 +1,4 @@
+import csv
 import importlib.util
 import io
 import json
@@ -17,6 +18,8 @@ RESEARCH_SCHEMA_PATH = ROOT / "data/schemas/research_ai_prompt_record_schema.jso
 SCRIPT_PATH = ROOT / "scripts/phase2/discover_research_ai_papers.py"
 SAMPLE_PATH = ROOT / "data/sources/research_ai_candidate_papers_sample.jsonl"
 DOC_PATH = ROOT / "docs/34_phase2_research_ai_paper_discovery.md"
+MANUAL_TEMPLATE_PATH = ROOT / "data/sources/research_ai_manual_registry_template.csv"
+APPROVED_PAPERS_EXAMPLE_PATH = ROOT / "data/sources/research_ai_approved_papers.example.jsonl"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -54,6 +57,16 @@ def test_query_plan_exists_and_parses() -> None:
         "escalation_or_insufficient_evidence",
         "out_of_scope",
     }
+
+
+def test_query_plan_has_paper_window() -> None:
+    query_plan = _load_json(QUERY_PLAN_PATH)
+    paper_window = query_plan["paper_window"]
+
+    assert paper_window["start_date"] == "2024-01-01"
+    assert paper_window["end_date"] == "2026-05-30"
+    assert paper_window["arxiv_submitted_date_start"] == "202401010000"
+    assert paper_window["arxiv_submitted_date_end"] == "202605302359"
 
 
 def test_status_schemas_include_out_of_scope() -> None:
@@ -94,6 +107,39 @@ def test_query_id_filter() -> None:
         assert "Unknown query_id" in str(exc)
     else:
         raise AssertionError("Expected unknown query_id to raise RuntimeError")
+
+
+def test_format_arxiv_submitted_date() -> None:
+    module = _load_discovery_module()
+
+    assert module.format_arxiv_submitted_date("2024-01-01") == "202401010000"
+    assert module.format_arxiv_submitted_date("2026-05-30", end_of_day=True) == "202605302359"
+
+
+def test_apply_arxiv_date_filter_simple_query() -> None:
+    module = _load_discovery_module()
+
+    query = module.apply_arxiv_date_filter(
+        'all:"LLM inference"',
+        "2024-01-01",
+        "2026-05-30",
+    )
+
+    assert "submittedDate:[202401010000 TO 202605302359]" in query
+    assert query.startswith('all:"LLM inference" AND')
+
+
+def test_apply_arxiv_date_filter_compound_query() -> None:
+    module = _load_discovery_module()
+
+    query = module.apply_arxiv_date_filter(
+        'all:"LLM inference" OR all:"LLM serving"',
+        "2024-01-01",
+        "2026-05-30",
+    )
+
+    assert query.startswith("(")
+    assert "AND submittedDate:[202401010000 TO 202605302359]" in query
 
 
 class _FakeResponse:
@@ -393,6 +439,7 @@ def test_failure_report_written_when_all_queries_fail(tmp_path: Path) -> None:
         output_report=report_path,
         run_log_path=run_log_path,
         output_manual_template=tmp_path / "manual_template.csv",
+        manual_validation_report=tmp_path / "manual_validation_report.json",
         max_results_per_query=1,
         sample_size=1,
         delay_seconds=0,
@@ -402,6 +449,9 @@ def test_failure_report_written_when_all_queries_fail(tmp_path: Path) -> None:
         continue_on_error=False,
         allow_partial=False,
         simple_query_mode=True,
+        start_date=None,
+        end_date=None,
+        disable_date_filter=False,
     )
 
     with mock.patch.object(
@@ -494,6 +544,51 @@ def test_simple_query_mode_changes_dry_run_url() -> None:
     assert "large+language+model+inference" not in planned_url
 
 
+def test_dry_run_url_contains_date_filter() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--query-id",
+            "llm_serving_inference_optimization",
+            "--simple-query-mode",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    planned_url = summary["planned_queries"][0]["url"]
+    assert "submittedDate" in planned_url
+
+
+def test_disable_date_filter_dry_run() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--query-id",
+            "llm_serving_inference_optimization",
+            "--simple-query-mode",
+            "--disable-date-filter",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    planned_url = summary["planned_queries"][0]["url"]
+    assert "submittedDate" not in planned_url
+
+
 def test_write_manual_template_cli(tmp_path: Path) -> None:
     manual_template_path = tmp_path / "manual.csv"
     run_log_path = tmp_path / "manual_log.jsonl"
@@ -525,6 +620,132 @@ def test_write_manual_template_cli(tmp_path: Path) -> None:
         "arxiv_id",
         "reason_for_inclusion",
     }.issubset(header)
+
+
+def test_manual_registry_template_exists() -> None:
+    assert MANUAL_TEMPLATE_PATH.exists()
+    with MANUAL_TEMPLATE_PATH.open("r", encoding="utf-8", newline="") as file:
+        reader = csv.DictReader(file)
+        assert reader.fieldnames is not None
+        assert {
+            "selection_status",
+            "topic",
+            "paper_id",
+            "arxiv_id",
+            "title",
+            "authors",
+            "published",
+            "primary_category",
+            "abstract_url",
+            "pdf_url",
+            "reason_for_inclusion",
+            "notes",
+        }.issubset(reader.fieldnames)
+
+
+def test_approved_papers_example_exists() -> None:
+    assert APPROVED_PAPERS_EXAMPLE_PATH.exists()
+    records = _read_jsonl(APPROVED_PAPERS_EXAMPLE_PATH)
+
+    assert records
+    assert records[0]["selection_status"] == "example_not_approved"
+
+
+def test_validate_manual_registry_with_tmp_file(tmp_path: Path) -> None:
+    registry_path = tmp_path / "approved_papers.jsonl"
+    report_path = tmp_path / "manual_registry_validation_report.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "paper_id": "research_ai_manual_001",
+                "arxiv_id": "2401.12345",
+                "title": "Approved Test Paper",
+                "authors": ["Researcher One"],
+                "published": "2024-02-01",
+                "primary_category": "cs.CL",
+                "categories": ["cs.CL"],
+                "abstract_url": "https://arxiv.org/abs/2401.12345",
+                "pdf_url": "https://arxiv.org/pdf/2401.12345",
+                "topic": "LLM serving and inference optimization",
+                "reason_for_inclusion": "Temporary validation fixture.",
+                "selection_status": "approved",
+                "provenance_url": "https://arxiv.org/abs/2401.12345",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--validate-manual-registry",
+            "--manual-registry-path",
+            str(registry_path),
+            "--manual-validation-report",
+            str(report_path),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["validation_status"] == "passed"
+    report = _load_json(report_path)
+    assert report["validation_status"] == "passed"
+
+
+def test_validate_manual_registry_rejects_out_of_window(tmp_path: Path) -> None:
+    registry_path = tmp_path / "approved_papers.jsonl"
+    report_path = tmp_path / "manual_registry_validation_report.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "paper_id": "research_ai_manual_001",
+                "arxiv_id": "2301.12345",
+                "title": "Out of Window Test Paper",
+                "authors": ["Researcher One"],
+                "published": "2023-01-01",
+                "primary_category": "cs.CL",
+                "categories": ["cs.CL"],
+                "abstract_url": "https://arxiv.org/abs/2301.12345",
+                "pdf_url": "https://arxiv.org/pdf/2301.12345",
+                "topic": "LLM serving and inference optimization",
+                "reason_for_inclusion": "Temporary validation fixture.",
+                "selection_status": "approved",
+                "provenance_url": "https://arxiv.org/abs/2301.12345",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--validate-manual-registry",
+            "--manual-registry-path",
+            str(registry_path),
+            "--manual-validation-report",
+            str(report_path),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    report = _load_json(report_path)
+    assert report["validation_status"] == "failed"
+    assert report["errors"][0]["error_type"] == "published_date_out_of_window"
 
 
 def test_failed_cli_mentions_report_and_log_paths(tmp_path: Path) -> None:
@@ -616,3 +837,13 @@ def test_docs_include_observability_and_manual_fallback() -> None:
     assert "Manual Paper Registry Fallback" in text
     assert "--simple-query-mode" in text
     assert "--write-manual-template" in text
+
+
+def test_docs_include_paper_window_and_manual_registry() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "January 1, 2024" in text
+    assert "May 30, 2026" in text
+    assert "Manual Registry" in text
+    assert "HTTP 429" in text
+    assert "--validate-manual-registry" in text

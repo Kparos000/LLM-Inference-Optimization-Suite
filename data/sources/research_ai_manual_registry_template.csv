@@ -1,0 +1,2 @@
+selection_status,topic,paper_id,arxiv_id,title,authors,published,primary_category,abstract_url,pdf_url,reason_for_inclusion,notes
+example_not_approved,example_topic,research_ai_example_001,0000.00000,Example only - replace with approved paper metadata,Example Author,2024-01-01,cs.CL,https://arxiv.org/abs/0000.00000,https://arxiv.org/pdf/0000.00000,Example row only; not approved for Phase 2A-5B.,Replace this row before manual approval.

@@ -63,6 +63,7 @@ data/generated/research_ai/candidate_papers_review.csv
 data/generated/research_ai/research_ai_discovery_report.json
 data/generated/research_ai/research_ai_discovery_run_log.jsonl
 data/generated/research_ai/manual_paper_registry_template.csv
+data/generated/research_ai/manual_registry_validation_report.json
 
 # Keep result folders
 !results/raw/.gitkeep

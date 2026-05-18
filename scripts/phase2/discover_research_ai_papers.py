@@ -25,6 +25,10 @@ DEFAULT_OUTPUT_SAMPLE = Path("data/sources/research_ai_candidate_papers_sample.j
 DEFAULT_OUTPUT_REPORT = Path("data/generated/research_ai/research_ai_discovery_report.json")
 DEFAULT_RUN_LOG = Path("data/generated/research_ai/research_ai_discovery_run_log.jsonl")
 DEFAULT_MANUAL_TEMPLATE = Path("data/generated/research_ai/manual_paper_registry_template.csv")
+DEFAULT_MANUAL_REGISTRY = Path("data/sources/research_ai_approved_papers.jsonl")
+DEFAULT_MANUAL_VALIDATION_REPORT = Path(
+    "data/generated/research_ai/manual_registry_validation_report.json"
+)
 
 ARXIV_NAMESPACE = "http://www.w3.org/2005/Atom"
 ARXIV_EXTENSION_NAMESPACE = "http://arxiv.org/schemas/atom"
@@ -89,6 +93,40 @@ STATUS_TAXONOMY = {
         "boundary response."
     ),
 }
+MANUAL_REGISTRY_FIELDS = [
+    "selection_status",
+    "topic",
+    "paper_id",
+    "arxiv_id",
+    "title",
+    "authors",
+    "published",
+    "primary_category",
+    "abstract_url",
+    "pdf_url",
+    "reason_for_inclusion",
+    "notes",
+]
+MANUAL_REGISTRY_REQUIRED_FIELDS = [
+    "paper_id",
+    "arxiv_id",
+    "title",
+    "authors",
+    "published",
+    "primary_category",
+    "abstract_url",
+    "pdf_url",
+    "topic",
+    "reason_for_inclusion",
+    "selection_status",
+    "provenance_url",
+]
+MANUAL_REGISTRY_ALLOWED_STATUSES = {
+    "approved",
+    "candidate",
+    "rejected",
+    "example_not_approved",
+}
 
 
 class ArxivFetchError(RuntimeError):
@@ -124,6 +162,26 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8", newline="\n") as file:
         for row in rows:
             file.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        msg = f"Missing required JSONL file: {path}"
+        raise RuntimeError(msg)
+    rows: list[dict[str, Any]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError as exc:
+            msg = f"Invalid JSON in {path} on line {line_number}: {exc.msg}"
+            raise RuntimeError(msg) from exc
+        if not isinstance(parsed, dict):
+            msg = f"Expected JSON object in {path} on line {line_number}"
+            raise RuntimeError(msg)
+        rows.append(parsed)
+    return rows
 
 
 def write_run_log_event(path: Path, event: dict[str, Any]) -> None:
@@ -192,6 +250,48 @@ def build_arxiv_url(
         "sortOrder": sort_order,
     }
     return f"{api_base_url}?{urllib.parse.urlencode(query_params)}"
+
+
+def format_arxiv_submitted_date(date_string: str, end_of_day: bool = False) -> str:
+    """Format a YYYY-MM-DD date for arXiv submittedDate range queries."""
+
+    try:
+        parsed = datetime.strptime(date_string, "%Y-%m-%d")
+    except ValueError as exc:
+        msg = f"Expected date in YYYY-MM-DD format, got: {date_string}"
+        raise RuntimeError(msg) from exc
+    suffix = "2359" if end_of_day else "0000"
+    return f"{parsed:%Y%m%d}{suffix}"
+
+
+def apply_arxiv_date_filter(search_query: str, start_date: str, end_date: str) -> str:
+    """Add the approved submittedDate range to an arXiv search query."""
+
+    start = format_arxiv_submitted_date(start_date)
+    end = format_arxiv_submitted_date(end_date, end_of_day=True)
+    date_filter = f"submittedDate:[{start} TO {end}]"
+    stripped_query = search_query.strip()
+    if " OR " in stripped_query and not (
+        stripped_query.startswith("(") and stripped_query.endswith(")")
+    ):
+        stripped_query = f"({stripped_query})"
+    return f"{stripped_query} AND {date_filter}"
+
+
+def paper_window_from_args(query_plan: dict[str, Any], args: argparse.Namespace) -> dict[str, str]:
+    configured_window = query_plan.get("paper_window", {})
+    start_date = str(args.start_date or configured_window.get("start_date") or "2024-01-01")
+    end_date = str(args.end_date or configured_window.get("end_date") or "2026-05-30")
+    return {
+        "start_date": start_date,
+        "end_date": end_date,
+        "arxiv_submitted_date_start": format_arxiv_submitted_date(start_date),
+        "arxiv_submitted_date_end": format_arxiv_submitted_date(end_date, end_of_day=True),
+        "notes": str(
+            configured_window.get("notes")
+            or "Approved Research AI paper discovery window for Phase 2A seed curation."
+        ),
+    }
 
 
 def _retry_after_seconds(error: urllib.error.HTTPError) -> float | None:
@@ -639,6 +739,8 @@ def build_report(
     errors: list[dict[str, Any]] | None = None,
     retry_policy: dict[str, Any] | None = None,
     simple_query_mode: bool = False,
+    paper_window: dict[str, Any] | None = None,
+    date_filter_enabled: bool = True,
 ) -> dict[str, Any]:
     topic_counter: Counter[str] = Counter()
     category_counter: Counter[str] = Counter()
@@ -650,8 +752,8 @@ def build_report(
     if discovery_status == "failed":
         next_step = (
             "Retry later with --simple-query-mode, --query-id, --max-results-per-query 3, "
-            "--delay-seconds 30; inspect the run log; use --write-manual-template if arXiv "
-            "remains unavailable."
+            "--delay-seconds 30; inspect the run log; use --write-manual-template and "
+            "--validate-manual-registry if arXiv remains unavailable."
         )
     else:
         next_step = (
@@ -673,6 +775,12 @@ def build_report(
         "errors": errors or [],
         "retry_policy": retry_policy or {},
         "simple_query_mode": simple_query_mode,
+        "paper_window": paper_window or query_plan.get("paper_window", {}),
+        "date_filter_enabled": date_filter_enabled,
+        "arxiv_submitted_date_start": (paper_window or {}).get("arxiv_submitted_date_start")
+        or query_plan.get("paper_window", {}).get("arxiv_submitted_date_start"),
+        "arxiv_submitted_date_end": (paper_window or {}).get("arxiv_submitted_date_end")
+        or query_plan.get("paper_window", {}).get("arxiv_submitted_date_end"),
         "counts_by_topic": dict(topic_counter),
         "counts_by_primary_category": dict(category_counter),
         "top_candidates": [
@@ -741,13 +849,23 @@ def planned_urls(
     max_results_override: int,
     query_id: str = "all",
     simple_query_mode: bool = False,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    date_filter_enabled: bool = True,
 ) -> list[dict[str, str]]:
     planned: list[dict[str, str]] = []
     for query_group in select_query_groups(query_plan, query_id):
         max_results = _query_max_results(query_group, query_plan, max_results_override)
+        search_query = query_search_query(query_group, simple_query_mode)
+        if date_filter_enabled:
+            search_query = apply_arxiv_date_filter(
+                search_query,
+                start_date or str(query_plan.get("paper_window", {}).get("start_date")),
+                end_date or str(query_plan.get("paper_window", {}).get("end_date")),
+            )
         url = build_arxiv_url(
             api_base_url=str(query_plan["api_base_url"]),
-            search_query=query_search_query(query_group, simple_query_mode),
+            search_query=search_query,
             max_results=max_results,
             sort_by=str(query_group.get("sort_by") or "relevance"),
             sort_order=str(query_group.get("sort_order") or "descending"),
@@ -764,6 +882,8 @@ def planned_urls(
 
 def discover(args: argparse.Namespace) -> dict[str, Any]:
     query_plan = load_json(args.query_plan)
+    paper_window = paper_window_from_args(query_plan, args)
+    date_filter_enabled = not args.disable_date_filter
     raw_candidates: list[dict[str, Any]] = []
     delay_seconds = (
         float(args.delay_seconds)
@@ -789,14 +909,23 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         "Research AI arXiv discovery started.",
         selected_query_ids=selected_query_ids,
         simple_query_mode=args.simple_query_mode,
+        date_filter_enabled=date_filter_enabled,
+        paper_window=paper_window,
     )
 
     for index, query_group in enumerate(query_groups):
         enriched_group = {**query_group, "categories_allowed": sorted(categories_allowed)}
         max_results = _query_max_results(enriched_group, query_plan, args.max_results_per_query)
+        search_query = query_search_query(enriched_group, args.simple_query_mode)
+        if date_filter_enabled:
+            search_query = apply_arxiv_date_filter(
+                search_query,
+                paper_window["start_date"],
+                paper_window["end_date"],
+            )
         url = build_arxiv_url(
             api_base_url=str(query_plan["api_base_url"]),
-            search_query=query_search_query(enriched_group, args.simple_query_mode),
+            search_query=search_query,
             max_results=max_results,
             sort_by=str(enriched_group.get("sort_by") or "relevance"),
             sort_order=str(enriched_group.get("sort_order") or "descending"),
@@ -874,6 +1003,7 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         "discovery_report_json": str(args.output_report),
         "run_log_jsonl": str(args.run_log_path),
         "manual_template_csv": str(args.output_manual_template),
+        "manual_validation_report_json": str(args.manual_validation_report),
     }
     if not successful_query_groups:
         discovery_status = "failed"
@@ -894,6 +1024,8 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         errors=errors,
         retry_policy=retry_policy,
         simple_query_mode=args.simple_query_mode,
+        paper_window=paper_window,
+        date_filter_enabled=date_filter_enabled,
     )
 
     if successful_query_groups:
@@ -927,6 +1059,8 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         "output_review_csv": str(args.output_review_csv),
         "output_sample": str(args.output_sample),
         "output_report": str(args.output_report),
+        "date_filter_enabled": date_filter_enabled,
+        "paper_window": paper_window,
         "warnings": report["warnings"],
     }
     if discovery_status == "failed":
@@ -959,11 +1093,16 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
 
 def dry_run(args: argparse.Namespace) -> dict[str, Any]:
     query_plan = load_json(args.query_plan)
+    paper_window = paper_window_from_args(query_plan, args)
+    date_filter_enabled = not args.disable_date_filter
     urls = planned_urls(
         query_plan,
         args.max_results_per_query,
         args.query_id,
         args.simple_query_mode,
+        paper_window["start_date"],
+        paper_window["end_date"],
+        date_filter_enabled,
     )
     selected_query_ids = [planned["query_id"] for planned in urls]
     log_event(
@@ -973,6 +1112,8 @@ def dry_run(args: argparse.Namespace) -> dict[str, Any]:
         "Research AI arXiv discovery dry-run started.",
         selected_query_ids=selected_query_ids,
         simple_query_mode=args.simple_query_mode,
+        date_filter_enabled=date_filter_enabled,
+        paper_window=paper_window,
     )
     for planned in urls:
         log_event(
@@ -990,6 +1131,7 @@ def dry_run(args: argparse.Namespace) -> dict[str, Any]:
         "discovery_report_json": str(args.output_report),
         "run_log_jsonl": str(args.run_log_path),
         "manual_template_csv": str(args.output_manual_template),
+        "manual_validation_report_json": str(args.manual_validation_report),
     }
     report = build_report(
         query_plan=query_plan,
@@ -1010,6 +1152,8 @@ def dry_run(args: argparse.Namespace) -> dict[str, Any]:
             ),
         },
         simple_query_mode=args.simple_query_mode,
+        paper_window=paper_window,
+        date_filter_enabled=date_filter_enabled,
     )
     write_json(args.output_report, report)
     log_event(
@@ -1036,6 +1180,8 @@ def dry_run(args: argparse.Namespace) -> dict[str, Any]:
         "output_review_csv": str(args.output_review_csv),
         "output_sample": str(args.output_sample),
         "output_report": str(args.output_report),
+        "date_filter_enabled": date_filter_enabled,
+        "paper_window": paper_window,
         "will_download_pdfs": False,
     }
 
@@ -1047,24 +1193,26 @@ def write_manual_template(args: argparse.Namespace) -> dict[str, Any]:
         "run_started",
         "Writing manual Research AI paper registry template.",
     )
-    fieldnames = [
-        "selection_status",
-        "topic",
-        "paper_id",
-        "arxiv_id",
-        "title",
-        "authors",
-        "published",
-        "primary_category",
-        "abstract_url",
-        "pdf_url",
-        "reason_for_inclusion",
-        "notes",
-    ]
     args.output_manual_template.parent.mkdir(parents=True, exist_ok=True)
     with args.output_manual_template.open("w", encoding="utf-8", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer = csv.DictWriter(file, fieldnames=MANUAL_REGISTRY_FIELDS)
         writer.writeheader()
+        writer.writerow(
+            {
+                "selection_status": "example_not_approved",
+                "topic": "example_topic",
+                "paper_id": "research_ai_example_001",
+                "arxiv_id": "0000.00000",
+                "title": "Example only - replace with approved paper metadata",
+                "authors": "Example Author",
+                "published": "2024-01-01",
+                "primary_category": "cs.CL",
+                "abstract_url": "https://arxiv.org/abs/0000.00000",
+                "pdf_url": "https://arxiv.org/pdf/0000.00000",
+                "reason_for_inclusion": "Example row only; not approved for Phase 2A-5B.",
+                "notes": "Replace this row before manual approval.",
+            }
+        )
     log_event(
         args.run_log_path,
         "write_manual_template",
@@ -1083,7 +1231,7 @@ def write_manual_template(args: argparse.Namespace) -> dict[str, Any]:
         "phase": "2A-5A",
         "output_manual_template": str(args.output_manual_template),
         "run_log_path": str(args.run_log_path),
-        "columns": fieldnames,
+        "columns": MANUAL_REGISTRY_FIELDS,
         "warnings": [
             (
                 "Manual fallback templates must preserve paper provenance and must not "
@@ -1094,10 +1242,185 @@ def write_manual_template(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _parse_date_prefix(value: Any) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.strptime(text[:10], "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def validate_manual_registry_records(
+    records: list[dict[str, Any]],
+    start_date: str,
+    end_date: str,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    errors: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    seen_paper_ids: set[str] = set()
+    window_start = datetime.strptime(start_date, "%Y-%m-%d")
+    window_end = datetime.strptime(end_date, "%Y-%m-%d")
+    for index, record in enumerate(records, start=1):
+        paper_id = str(record.get("paper_id") or "").strip()
+        missing_fields = [
+            field
+            for field in MANUAL_REGISTRY_REQUIRED_FIELDS
+            if record.get(field) in (None, "", [])
+        ]
+        if missing_fields:
+            errors.append(
+                {
+                    "line_number": index,
+                    "paper_id": paper_id,
+                    "error_type": "missing_required_fields",
+                    "fields": missing_fields,
+                }
+            )
+        if paper_id:
+            if paper_id in seen_paper_ids:
+                errors.append(
+                    {
+                        "line_number": index,
+                        "paper_id": paper_id,
+                        "error_type": "duplicate_paper_id",
+                    }
+                )
+            seen_paper_ids.add(paper_id)
+        if str(record.get("selection_status") or "") not in MANUAL_REGISTRY_ALLOWED_STATUSES:
+            errors.append(
+                {
+                    "line_number": index,
+                    "paper_id": paper_id,
+                    "error_type": "invalid_selection_status",
+                    "selection_status": record.get("selection_status"),
+                }
+            )
+        published = _parse_date_prefix(record.get("published"))
+        if published is not None and not (window_start <= published <= window_end):
+            errors.append(
+                {
+                    "line_number": index,
+                    "paper_id": paper_id,
+                    "error_type": "published_date_out_of_window",
+                    "published": record.get("published"),
+                    "approved_start_date": start_date,
+                    "approved_end_date": end_date,
+                }
+            )
+        elif published is None and record.get("published"):
+            warnings.append(
+                f"Could not parse published date for paper_id={paper_id}; date window not checked."
+            )
+        abstract_url = str(record.get("abstract_url") or "")
+        if abstract_url and not abstract_url.startswith("https://arxiv.org/abs/"):
+            errors.append(
+                {
+                    "line_number": index,
+                    "paper_id": paper_id,
+                    "error_type": "invalid_abstract_url",
+                    "abstract_url": abstract_url,
+                }
+            )
+        pdf_url = str(record.get("pdf_url") or "")
+        if pdf_url and not pdf_url.startswith("https://arxiv.org/pdf/"):
+            errors.append(
+                {
+                    "line_number": index,
+                    "paper_id": paper_id,
+                    "error_type": "invalid_pdf_url",
+                    "pdf_url": pdf_url,
+                }
+            )
+        if not str(record.get("arxiv_id") or "").strip():
+            errors.append(
+                {
+                    "line_number": index,
+                    "paper_id": paper_id,
+                    "error_type": "empty_arxiv_id",
+                }
+            )
+    return errors, warnings
+
+
+def build_manual_validation_report(
+    records: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
+    warnings: list[str],
+    registry_path: Path,
+    paper_window: dict[str, Any],
+) -> dict[str, Any]:
+    status_counter = Counter(str(record.get("selection_status") or "") for record in records)
+    return {
+        "phase": "2A-5A",
+        "generated_at_utc": utc_now(),
+        "validation_status": "failed" if errors else "passed",
+        "manual_registry_path": str(registry_path),
+        "record_count": len(records),
+        "valid_record_count": len(records) - len({error.get("line_number") for error in errors}),
+        "invalid_record_count": len({error.get("line_number") for error in errors}),
+        "counts_by_selection_status": dict(status_counter),
+        "paper_window": paper_window,
+        "required_fields": MANUAL_REGISTRY_REQUIRED_FIELDS,
+        "allowed_selection_statuses": sorted(MANUAL_REGISTRY_ALLOWED_STATUSES),
+        "errors": errors,
+        "warnings": warnings,
+        "next_step": (
+            "Proceed to Phase 2A-5B only after the manual registry validates and all "
+            "approved records contain real paper provenance. Do not use example_not_approved "
+            "records for curation."
+        ),
+    }
+
+
+def validate_manual_registry(args: argparse.Namespace) -> dict[str, Any]:
+    query_plan = load_json(args.query_plan)
+    paper_window = paper_window_from_args(query_plan, args)
+    if not args.manual_registry_path.exists():
+        msg = (
+            "Manual approved registry not found. Create "
+            "data/sources/research_ai_approved_papers.jsonl from the template or rerun "
+            "arXiv discovery later."
+        )
+        raise RuntimeError(msg)
+
+    records = read_jsonl(args.manual_registry_path)
+    errors, warnings = validate_manual_registry_records(
+        records,
+        paper_window["start_date"],
+        paper_window["end_date"],
+    )
+    report = build_manual_validation_report(
+        records=records,
+        errors=errors,
+        warnings=warnings,
+        registry_path=args.manual_registry_path,
+        paper_window=paper_window,
+    )
+    write_json(args.manual_validation_report, report)
+    summary = {
+        "mode": "validate_manual_registry",
+        "phase": "2A-5A",
+        "validation_status": report["validation_status"],
+        "manual_registry_path": str(args.manual_registry_path),
+        "manual_validation_report": str(args.manual_validation_report),
+        "record_count": len(records),
+        "error_count": len(errors),
+        "warning_count": len(warnings),
+        "paper_window": paper_window,
+    }
+    if errors:
+        msg = f"Manual registry validation failed. See {args.manual_validation_report} for details."
+        raise RuntimeError(msg)
+    return summary
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--discover", action="store_true")
     parser.add_argument("--write-manual-template", action="store_true")
+    parser.add_argument("--validate-manual-registry", action="store_true")
     parser.add_argument("--query-plan", type=Path, default=DEFAULT_QUERY_PLAN)
     parser.add_argument("--query-id", default="all")
     parser.add_argument("--output-candidates", type=Path, default=DEFAULT_OUTPUT_CANDIDATES)
@@ -1106,6 +1429,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-report", type=Path, default=DEFAULT_OUTPUT_REPORT)
     parser.add_argument("--run-log-path", type=Path, default=DEFAULT_RUN_LOG)
     parser.add_argument("--output-manual-template", type=Path, default=DEFAULT_MANUAL_TEMPLATE)
+    parser.add_argument("--manual-registry-path", type=Path, default=DEFAULT_MANUAL_REGISTRY)
+    parser.add_argument(
+        "--manual-validation-report",
+        type=Path,
+        default=DEFAULT_MANUAL_VALIDATION_REPORT,
+    )
     parser.add_argument("--max-results-per-query", type=int, default=0)
     parser.add_argument("--sample-size", type=int, default=12)
     parser.add_argument("--dry-run", action="store_true")
@@ -1116,17 +1445,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--continue-on-error", action="store_true")
     parser.add_argument("--allow-partial", action="store_true")
     parser.add_argument("--simple-query-mode", action="store_true")
+    parser.add_argument("--start-date")
+    parser.add_argument("--end-date")
+    parser.add_argument("--disable-date-filter", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     mode_count = sum(
-        bool(mode) for mode in (args.discover, args.dry_run, args.write_manual_template)
+        bool(mode)
+        for mode in (
+            args.discover,
+            args.dry_run,
+            args.write_manual_template,
+            args.validate_manual_registry,
+        )
     )
     if mode_count != 1:
         print(
-            "Pass exactly one mode: --dry-run, --discover, or --write-manual-template.",
+            (
+                "Pass exactly one mode: --dry-run, --discover, --write-manual-template, "
+                "or --validate-manual-registry."
+            ),
             file=sys.stderr,
         )
         return 2
@@ -1135,6 +1476,8 @@ def main(argv: list[str] | None = None) -> int:
             summary = dry_run(args)
         elif args.write_manual_template:
             summary = write_manual_template(args)
+        elif args.validate_manual_registry:
+            summary = validate_manual_registry(args)
         else:
             summary = discover(args)
     except RuntimeError as exc:

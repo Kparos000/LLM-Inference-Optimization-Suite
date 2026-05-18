@@ -33,6 +33,18 @@ The query plan is stored in:
 
 - `data/sources/research_ai_query_plan.json`
 
+## Approved Paper Window
+
+Research AI candidate papers should be from January 1, 2024 to May 30, 2026.
+arXiv discovery uses `submittedDate` filtering when metadata discovery is
+available, using the configured range:
+
+- `submittedDate:[202401010000 TO 202605302359]`
+
+The end date is a configured project target. Discovery can only return papers
+available from arXiv at runtime, and metadata should be reviewed before any
+paper is approved for Phase 2A-5B.
+
 ## Candidate Review Workflow
 
 1. Run discovery.
@@ -131,6 +143,13 @@ Use this command shape when arXiv returns repeated throttling responses:
 python scripts/phase2/discover_research_ai_papers.py --discover --query-id llm_serving_inference_optimization --max-results-per-query 3 --delay-seconds 30 --max-retries 2 --backoff-seconds 60 --simple-query-mode
 ```
 
+The date-filtered dry-run should show the `submittedDate` filter in the planned
+URL:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --dry-run --query-id llm_serving_inference_optimization --simple-query-mode
+```
+
 ## Manual Paper Registry Fallback
 
 If arXiv discovery remains unavailable due to HTTP 429 responses or network
@@ -145,6 +164,45 @@ Create the manual review template with:
 
 ```text
 python scripts/phase2/discover_research_ai_papers.py --write-manual-template
+```
+
+## Manual Registry Path When arXiv Is Rate-Limited
+
+Current arXiv API access may return `HTTP 429 Rate exceeded`. If live discovery
+keeps failing, use the manual-approved registry workflow. Manual fallback is
+acceptable only when provenance is preserved. Required fields include arXiv ID,
+title, authors, published date, abstract URL, PDF URL, topic, and
+`reason_for_inclusion`.
+
+Do not fabricate paper metadata. Do not proceed to Phase 2A-5B with
+`example_not_approved` records.
+
+Manual registry workflow:
+
+1. Generate the template:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --write-manual-template
+```
+
+2. Manually create:
+
+```text
+data/sources/research_ai_approved_papers.jsonl
+```
+
+3. Validate the registry:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --validate-manual-registry
+```
+
+4. Proceed to Phase 2A-5B only after validation passes.
+
+Conservative date-filtered discovery can still be retried later:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --query-id llm_serving_inference_optimization --max-results-per-query 3 --delay-seconds 30 --max-retries 2 --backoff-seconds 60 --simple-query-mode
 ```
 
 ## Next Step
