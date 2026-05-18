@@ -4,18 +4,21 @@
 
 Phase 2A-5A discovers candidate AI research papers for the AI Research
 Assistant / Education-Research vertical. This is a metadata-only discovery
-step that creates a query plan, arXiv metadata records, a review CSV, a small
-committed candidate sample, and a local discovery report.
+step that creates a query plan, candidate metadata records, a review CSV, a
+small committed candidate sample, and a local discovery report.
 
 This step does not download PDFs, parse full text, generate prompts, implement
 RAG, run inference, call models, create embeddings, or make benchmark claims.
 
 ## Data Source
 
-The primary source is the arXiv API. The API returns Atom XML containing paper
-metadata such as title, abstract, authors, categories, updated/published dates,
-and links to abstract and PDF pages. Phase 2A-5A records metadata only. PDF
-download and paper parsing are deferred.
+The original primary source is the arXiv API. The API returns Atom XML
+containing paper metadata such as title, abstract, authors, categories,
+updated/published dates, and links to abstract and PDF pages. Because arXiv API
+requests have repeatedly returned `HTTP 429` in this environment, live
+discovery now also supports public HTML metadata discovery from ICLR 2025 and
+Hugging Face Papers. Phase 2A-5A records metadata only. PDF download and paper
+parsing are deferred.
 
 ## Query Plan
 
@@ -32,6 +35,46 @@ The discovery plan uses seven query groups:
 The query plan is stored in:
 
 - `data/sources/research_ai_query_plan.json`
+
+## Multi-source Discovery
+
+The arXiv API remains available for later retry, but it is disabled by default
+for live discovery because it has repeatedly returned `HTTP 429` in the current
+environment. The practical default discovery path uses:
+
+- ICLR 2025 virtual papers
+- Hugging Face Papers
+
+HTML discovery extracts candidate metadata only. Some candidate records may have
+titles and provenance links without abstracts, authors, or PDF links. Missing
+metadata can be completed during manual approval. The manual approved registry
+remains the final gate before Phase 2A-5B.
+
+Example commands:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --dry-run --source all
+```
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --source iclr
+```
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --source huggingface
+```
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --source all
+```
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --source arxiv --query-id llm_serving_inference_optimization --max-results-per-query 3 --delay-seconds 30 --simple-query-mode
+```
+
+Phase 2A-5B should not proceed directly from noisy scraped candidates. It should
+proceed from reviewed and approved papers in
+`data/sources/research_ai_approved_papers.jsonl`.
 
 ## Approved Paper Window
 

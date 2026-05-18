@@ -69,6 +69,14 @@ def test_query_plan_has_paper_window() -> None:
     assert paper_window["arxiv_submitted_date_end"] == "202605302359"
 
 
+def test_query_plan_has_discovery_sources() -> None:
+    query_plan = _load_json(QUERY_PLAN_PATH)
+    sources = {source["source_id"]: source for source in query_plan["discovery_sources"]}
+
+    assert {"iclr_2025_virtual", "huggingface_papers", "arxiv_api"}.issubset(sources)
+    assert sources["arxiv_api"]["enabled"] is False
+
+
 def test_status_schemas_include_out_of_scope() -> None:
     gold_schema = _load_json(GOLD_SCHEMA_PATH)
     research_schema = _load_json(RESEARCH_SCHEMA_PATH)
@@ -140,6 +148,86 @@ def test_apply_arxiv_date_filter_compound_query() -> None:
 
     assert query.startswith("(")
     assert "AND submittedDate:[202401010000 TO 202605302359]" in query
+
+
+def test_build_huggingface_search_urls() -> None:
+    module = _load_discovery_module()
+
+    urls = module.build_huggingface_search_urls(
+        "https://huggingface.co/papers",
+        ["LLM inference", "RAG"],
+    )
+
+    assert len(urls) == 2
+    assert urls[0]["url"].startswith("https://huggingface.co/papers?q=")
+    assert "LLM+inference" in urls[0]["url"]
+
+
+def test_parse_iclr_2025_papers_html() -> None:
+    module = _load_discovery_module()
+    html_text = """
+    <html><body>
+      <a href="/virtual/2025/poster/123">Efficient LLM Inference Serving</a>
+      <a href="https://openreview.net/forum?id=abc">Speculative Decoding for Language Models</a>
+    </body></html>
+    """
+
+    records = module.parse_iclr_2025_papers_html(
+        html_text,
+        "https://iclr.cc/virtual/2025/papers.html",
+    )
+
+    assert len(records) == 2
+    assert records[0]["source"] == "ICLR"
+    assert records[0]["venue"] == "ICLR 2025"
+    assert records[0]["title"] == "Efficient LLM Inference Serving"
+    assert records[0]["provenance_url"].startswith("https://iclr.cc/")
+
+
+def test_parse_huggingface_papers_html() -> None:
+    module = _load_discovery_module()
+    html_text = """
+    <html><body>
+      <a href="/papers/2401.12345">RAGChecker: Evaluating Retrieval Augmented Generation</a>
+      <a href="/papers/2502.00001">Automated Design of Agentic Systems</a>
+    </body></html>
+    """
+
+    records = module.parse_huggingface_papers_html(
+        html_text,
+        "https://huggingface.co/papers?q=RAG",
+        "RAG",
+    )
+
+    assert len(records) == 2
+    assert records[0]["source"] == "Hugging Face Papers"
+    assert records[0]["title"] == "RAGChecker: Evaluating Retrieval Augmented Generation"
+    assert records[0]["provenance_url"].startswith("https://huggingface.co/papers/")
+
+
+def test_infer_research_topics() -> None:
+    module = _load_discovery_module()
+
+    assert "speculative_decoding_kv_cache" in module.infer_research_topics(
+        "Faster Cascades via Speculative Decoding"
+    )
+    assert "agentic_workflows_tool_use" in module.infer_research_topics(
+        "Automated Design of Agentic Systems"
+    )
+    assert "rag_context_engineering" in module.infer_research_topics("RAGChecker")
+
+
+def test_score_html_candidate_positive_for_relevant_title() -> None:
+    module = _load_discovery_module()
+    candidate = {
+        "title": "Efficient LLM Inference Serving with Continuous Batching",
+        "abstract": "",
+        "source": "ICLR",
+        "topics": ["llm_serving_inference_optimization"],
+        "year": 2025,
+    }
+
+    assert module.score_html_candidate(candidate) > 0
 
 
 class _FakeResponse:
@@ -379,6 +467,38 @@ def test_dedupe_candidates() -> None:
     assert deduped[0]["arxiv_id_version"] == "2401.12345v2"
 
 
+def test_dedupe_candidates_without_arxiv_id_by_title() -> None:
+    module = _load_discovery_module()
+    candidates = [
+        {
+            "arxiv_id": "",
+            "title": "Efficient LLM Inference Serving",
+            "query_ids": ["iclr_2025_virtual"],
+            "topics": ["llm_serving_inference_optimization"],
+            "matched_keywords": ["inference"],
+            "source_ids": ["iclr_2025_virtual"],
+            "score": 5,
+            "provenance_url": "https://iclr.cc/paper/1",
+        },
+        {
+            "arxiv_id": "",
+            "title": "Efficient LLM Inference Serving",
+            "query_ids": ["huggingface_llm_inference"],
+            "topics": ["llm_serving_inference_optimization"],
+            "matched_keywords": ["serving"],
+            "source_ids": ["huggingface_papers"],
+            "score": 8,
+            "provenance_url": "https://huggingface.co/papers/1",
+        },
+    ]
+
+    deduped = module.dedupe_candidates(candidates)
+
+    assert len(deduped) == 1
+    assert deduped[0]["score"] == 8
+    assert deduped[0]["query_ids"] == ["huggingface_llm_inference", "iclr_2025_virtual"]
+
+
 def test_rank_candidates() -> None:
     module = _load_discovery_module()
     candidates = [
@@ -432,6 +552,7 @@ def test_failure_report_written_when_all_queries_fail(tmp_path: Path) -> None:
     run_log_path = tmp_path / "run_log.jsonl"
     args = Namespace(
         query_plan=QUERY_PLAN_PATH,
+        source="arxiv",
         query_id="llm_serving_inference_optimization",
         output_candidates=tmp_path / "candidate_papers.jsonl",
         output_review_csv=tmp_path / "candidate_papers_review.csv",
@@ -497,7 +618,8 @@ def test_dry_run_cli() -> None:
     assert result.returncode == 0, result.stderr
     summary = json.loads(result.stdout)
     assert summary["mode"] == "dry_run"
-    assert summary["planned_query_count"] == 7
+    assert summary["source"] == "all"
+    assert summary["planned_source_count"] == 2
 
 
 def test_dry_run_supports_query_id() -> None:
@@ -506,6 +628,8 @@ def test_dry_run_supports_query_id() -> None:
             sys.executable,
             str(SCRIPT_PATH),
             "--dry-run",
+            "--source",
+            "arxiv",
             "--query-id",
             "llm_serving_inference_optimization",
         ],
@@ -527,6 +651,8 @@ def test_simple_query_mode_changes_dry_run_url() -> None:
             sys.executable,
             str(SCRIPT_PATH),
             "--dry-run",
+            "--source",
+            "arxiv",
             "--query-id",
             "llm_serving_inference_optimization",
             "--simple-query-mode",
@@ -550,6 +676,8 @@ def test_dry_run_url_contains_date_filter() -> None:
             sys.executable,
             str(SCRIPT_PATH),
             "--dry-run",
+            "--source",
+            "arxiv",
             "--query-id",
             "llm_serving_inference_optimization",
             "--simple-query-mode",
@@ -572,6 +700,8 @@ def test_disable_date_filter_dry_run() -> None:
             sys.executable,
             str(SCRIPT_PATH),
             "--dry-run",
+            "--source",
+            "arxiv",
             "--query-id",
             "llm_serving_inference_optimization",
             "--simple-query-mode",
@@ -587,6 +717,48 @@ def test_disable_date_filter_dry_run() -> None:
     summary = json.loads(result.stdout)
     planned_url = summary["planned_queries"][0]["url"]
     assert "submittedDate" not in planned_url
+
+
+def test_dry_run_source_all() -> None:
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), "--dry-run", "--source", "all"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    planned_sources = summary["planned_sources"]
+    assert any(plan["source_id"] == "iclr_2025_virtual" for plan in planned_sources)
+    assert any(plan["source_id"] == "huggingface_papers" for plan in planned_sources)
+    assert all(plan["source_id"] != "arxiv_api" for plan in planned_sources)
+
+
+def test_dry_run_source_arxiv_still_available() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--source",
+            "arxiv",
+            "--query-id",
+            "llm_serving_inference_optimization",
+            "--simple-query-mode",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["source"] == "arxiv"
+    assert summary["planned_query_count"] == 1
+    assert "export.arxiv.org/api/query" in summary["planned_queries"][0]["url"]
 
 
 def test_write_manual_template_cli(tmp_path: Path) -> None:
@@ -761,6 +933,8 @@ def test_failed_cli_mentions_report_and_log_paths(tmp_path: Path) -> None:
             sys.executable,
             str(SCRIPT_PATH),
             "--discover",
+            "--source",
+            "arxiv",
             "--query-plan",
             str(query_plan_path),
             "--query-id",
@@ -847,3 +1021,13 @@ def test_docs_include_paper_window_and_manual_registry() -> None:
     assert "Manual Registry" in text
     assert "HTTP 429" in text
     assert "--validate-manual-registry" in text
+
+
+def test_docs_include_multi_source_discovery() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "Multi-source Discovery" in text
+    assert "ICLR 2025" in text
+    assert "Hugging Face Papers" in text
+    assert "--source all" in text
+    assert "arXiv API remains available" in text

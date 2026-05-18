@@ -4,6 +4,36 @@
   "description": "Metadata-only arXiv discovery plan for the Phase 2A AI Research Assistant / Education-Research vertical. The plan identifies candidate papers for later human review and does not select final benchmark papers. Candidate research papers should be published or submitted between January 1, 2024 and May 30, 2026 where metadata supports date filtering.",
   "source": "arXiv API",
   "api_base_url": "https://export.arxiv.org/api/query",
+  "approved_discovery_strategy": "Use ICLR 2025 and Hugging Face Papers for candidate discovery when arXiv API is rate-limited; preserve manual registry fallback with explicit provenance.",
+  "discovery_sources": [
+    {
+      "source_id": "iclr_2025_virtual",
+      "source_name": "ICLR 2025 Virtual Papers",
+      "source_type": "conference_html",
+      "url": "https://iclr.cc/virtual/2025/papers.html",
+      "enabled": true,
+      "paper_window_compatible": true,
+      "notes": "Public ICLR 2025 paper listing page; used for metadata discovery only."
+    },
+    {
+      "source_id": "huggingface_papers",
+      "source_name": "Hugging Face Papers",
+      "source_type": "papers_html",
+      "url": "https://huggingface.co/papers",
+      "enabled": true,
+      "paper_window_compatible": true,
+      "notes": "Public Hugging Face Papers discovery pages; used for metadata discovery only."
+    },
+    {
+      "source_id": "arxiv_api",
+      "source_name": "arXiv API",
+      "source_type": "atom_api",
+      "url": "https://export.arxiv.org/api/query",
+      "enabled": false,
+      "paper_window_compatible": true,
+      "notes": "Kept for later retry; currently disabled by default due to repeated HTTP 429 throttling."
+    }
+  ],
   "delay_seconds": 3,
   "max_results_per_query": 20,
   "target_candidate_count": 60,
