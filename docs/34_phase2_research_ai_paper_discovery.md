@@ -248,6 +248,28 @@ Conservative date-filtered discovery can still be retried later:
 python scripts/phase2/discover_research_ai_papers.py --discover --query-id llm_serving_inference_optimization --max-results-per-query 3 --delay-seconds 30 --max-retries 2 --backoff-seconds 60 --simple-query-mode
 ```
 
+## Approved Paper Registry
+
+The approved paper registry is created from reviewed discovery candidates. For
+this phase, ICLR 2025 candidate metadata is acceptable even when arXiv IDs,
+authors, or PDF URLs are missing from the public listing page. The registry must
+preserve provenance URLs and remains metadata-only; no PDFs are downloaded.
+
+The approved registry is the input to Phase 2A-5B. Do not proceed to 2A-5B from
+the raw candidate CSV. Proceed only from validated approved registry records.
+
+Build the approved registry:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --build-approved-registry
+```
+
+Validate the approved registry:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --validate-manual-registry --manual-registry-path data/sources/research_ai_approved_papers.jsonl
+```
+
 ## Next Step
 
 Phase 2A-5B should create:

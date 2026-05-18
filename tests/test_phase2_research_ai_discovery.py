@@ -20,6 +20,7 @@ SAMPLE_PATH = ROOT / "data/sources/research_ai_candidate_papers_sample.jsonl"
 DOC_PATH = ROOT / "docs/34_phase2_research_ai_paper_discovery.md"
 MANUAL_TEMPLATE_PATH = ROOT / "data/sources/research_ai_manual_registry_template.csv"
 APPROVED_PAPERS_EXAMPLE_PATH = ROOT / "data/sources/research_ai_approved_papers.example.jsonl"
+APPROVED_REGISTRY_PATH = ROOT / "data/sources/research_ai_approved_papers.jsonl"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -761,6 +762,251 @@ def test_dry_run_source_arxiv_still_available() -> None:
     assert "export.arxiv.org/api/query" in summary["planned_queries"][0]["url"]
 
 
+def _fake_candidate(
+    rank: int,
+    score: int,
+    title: str,
+    topics: str,
+    paper_id: str | None = None,
+) -> dict[str, str]:
+    return {
+        "rank": str(rank),
+        "score": str(score),
+        "paper_id": paper_id or f"research_ai_fake_{rank:03d}",
+        "arxiv_id": "",
+        "title": title,
+        "source": "ICLR",
+        "venue": "ICLR 2025",
+        "year": "2025",
+        "topics": topics,
+        "authors": "",
+        "published": "2025",
+        "primary_category": "conference",
+        "categories": "ICLR 2025",
+        "provenance_url": f"https://iclr.cc/virtual/2025/poster/{rank}",
+        "abstract_url": f"https://iclr.cc/virtual/2025/poster/{rank}",
+        "pdf_url": "",
+        "selection_status": "candidate",
+        "review_notes": "",
+    }
+
+
+def test_build_approved_registry_from_fake_candidates() -> None:
+    module = _load_discovery_module()
+    candidates = [
+        _fake_candidate(
+            1,
+            15,
+            "AgentHarm: A Benchmark for Measuring Harmfulness of LLM Agents",
+            "agentic_workflows_tool_use",
+        ),
+        _fake_candidate(
+            2, 14, "AgentTrek: Agent Trajectory Synthesis", "agentic_workflows_tool_use"
+        ),
+        _fake_candidate(
+            3, 13, "Faster Cascades via Speculative Decoding", "speculative_decoding_kv_cache"
+        ),
+        _fake_candidate(
+            4, 12, "Retrieval Head Explains Long-Context Factuality", "rag_context_engineering"
+        ),
+        _fake_candidate(
+            5,
+            11,
+            "MiniPLM: Knowledge Distillation for Pre-training Language Models",
+            "small_language_models_efficient_llms",
+        ),
+        _fake_candidate(
+            6,
+            10,
+            "Inference Optimal VLMs Need Fewer Visual Tokens",
+            "llm_serving_inference_optimization",
+        ),
+        _fake_candidate(7, 9, "CodeMMLU: A Benchmark for CodeLLMs", "research_ai_candidate"),
+        _fake_candidate(
+            8, 8, "Compute-Optimal LLMs Generalize Better with Scale", "research_ai_candidate"
+        ),
+    ]
+
+    approved = module.build_approved_registry_from_candidates(candidates, approved_count=6)
+
+    assert len(approved) == 6
+    assert {record["selection_status"] for record in approved} == {"approved"}
+    topics = {topic for record in approved for topic in record["topics"]}
+    assert len(topics) >= 4
+
+
+def test_approval_keyword_matching_does_not_match_substrings() -> None:
+    module = _load_discovery_module()
+
+    assert not module.is_project_relevant_candidate(
+        _fake_candidate(
+            1,
+            1,
+            "A Coefficient Makes SVRG Effective",
+            "research_ai_candidate",
+        )
+    )
+
+
+def test_approved_registry_records_allow_iclr_without_arxiv_fields() -> None:
+    module = _load_discovery_module()
+    record = {
+        "paper_id": "research_ai_iclr_test",
+        "title": "Faster Cascades via Speculative Decoding",
+        "authors": [],
+        "published": "2025",
+        "year": 2025,
+        "source": "ICLR",
+        "source_id": "iclr_2025_virtual",
+        "venue": "ICLR 2025",
+        "primary_category": "conference",
+        "categories": ["ICLR 2025"],
+        "abstract_url": "https://iclr.cc/virtual/2025/poster/27888",
+        "pdf_url": None,
+        "provenance_url": "https://iclr.cc/virtual/2025/poster/27888",
+        "topic": "speculative_decoding_kv_cache",
+        "topics": ["speculative_decoding_kv_cache"],
+        "reason_for_inclusion": "Included because it is relevant to speculative decoding.",
+        "selection_status": "approved",
+    }
+
+    errors, warnings = module.validate_manual_registry_records(
+        [record],
+        "2024-01-01",
+        "2026-05-30",
+    )
+
+    assert errors == []
+    assert warnings
+
+
+def test_approved_registry_validation_rejects_duplicate_paper_id() -> None:
+    module = _load_discovery_module()
+    record = {
+        "paper_id": "research_ai_duplicate",
+        "title": "Faster Cascades via Speculative Decoding",
+        "published": "2025",
+        "source": "ICLR",
+        "source_id": "iclr_2025_virtual",
+        "venue": "ICLR 2025",
+        "primary_category": "conference",
+        "categories": ["ICLR 2025"],
+        "provenance_url": "https://iclr.cc/virtual/2025/poster/27888",
+        "topic": "speculative_decoding_kv_cache",
+        "topics": ["speculative_decoding_kv_cache"],
+        "reason_for_inclusion": "Included for testing.",
+        "selection_status": "approved",
+    }
+
+    errors, _warnings = module.validate_manual_registry_records(
+        [record, dict(record)],
+        "2024-01-01",
+        "2026-05-30",
+    )
+
+    assert any(error["error_type"] == "duplicate_paper_id" for error in errors)
+
+
+def test_approved_registry_validation_rejects_missing_provenance() -> None:
+    module = _load_discovery_module()
+    record = {
+        "paper_id": "research_ai_missing_provenance",
+        "title": "Faster Cascades via Speculative Decoding",
+        "published": "2025",
+        "source": "ICLR",
+        "source_id": "iclr_2025_virtual",
+        "venue": "ICLR 2025",
+        "primary_category": "conference",
+        "categories": ["ICLR 2025"],
+        "provenance_url": "",
+        "topic": "speculative_decoding_kv_cache",
+        "topics": ["speculative_decoding_kv_cache"],
+        "reason_for_inclusion": "Included for testing.",
+        "selection_status": "approved",
+    }
+
+    errors, _warnings = module.validate_manual_registry_records(
+        [record],
+        "2024-01-01",
+        "2026-05-30",
+    )
+
+    assert any(error["error_type"] == "missing_required_fields" for error in errors)
+    assert any(error["error_type"] == "missing_provenance_url" for error in errors)
+
+
+def test_approved_registry_validation_rejects_missing_categories() -> None:
+    module = _load_discovery_module()
+    record = {
+        "paper_id": "research_ai_missing_categories",
+        "title": "Faster Cascades via Speculative Decoding",
+        "published": "2025",
+        "source": "ICLR",
+        "source_id": "iclr_2025_virtual",
+        "venue": "ICLR 2025",
+        "primary_category": "conference",
+        "categories": [],
+        "provenance_url": "https://iclr.cc/virtual/2025/poster/27888",
+        "topic": "speculative_decoding_kv_cache",
+        "topics": ["speculative_decoding_kv_cache"],
+        "reason_for_inclusion": "Included for testing.",
+        "selection_status": "approved",
+    }
+
+    errors, _warnings = module.validate_manual_registry_records(
+        [record],
+        "2024-01-01",
+        "2026-05-30",
+    )
+
+    assert any(
+        error["error_type"] == "missing_required_fields" and "categories" in error["fields"]
+        for error in errors
+    )
+
+
+def test_build_approved_registry_report() -> None:
+    module = _load_discovery_module()
+    approved = [
+        {
+            "title": "Faster Cascades via Speculative Decoding",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "topics": ["speculative_decoding_kv_cache"],
+            "authors": [],
+            "pdf_url": None,
+            "arxiv_id": None,
+        }
+    ]
+
+    report = module.build_approved_registry_report(approved, Path("candidate_papers_review.csv"))
+
+    assert report["approved_record_count"] == 1
+    assert report["counts_by_topic"]["speculative_decoding_kv_cache"] == 1
+    assert report["selected_titles"] == ["Faster Cascades via Speculative Decoding"]
+    assert report["missing_pdf_url_count"] == 1
+    assert "Phase 2A-5B" in report["next_step"]
+
+
+def test_build_approved_registry_cli_missing_csv(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--build-approved-registry",
+            "--candidate-review-csv",
+            str(tmp_path / "missing.csv"),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "Candidate review CSV not found" in (result.stdout + result.stderr)
+
+
 def test_write_manual_template_cli(tmp_path: Path) -> None:
     manual_template_path = tmp_path / "manual.csv"
     run_log_path = tmp_path / "manual_log.jsonl"
@@ -834,11 +1080,15 @@ def test_validate_manual_registry_with_tmp_file(tmp_path: Path) -> None:
                 "title": "Approved Test Paper",
                 "authors": ["Researcher One"],
                 "published": "2024-02-01",
+                "source": "arXiv",
+                "source_id": "arxiv_api",
+                "venue": "arXiv",
                 "primary_category": "cs.CL",
                 "categories": ["cs.CL"],
                 "abstract_url": "https://arxiv.org/abs/2401.12345",
                 "pdf_url": "https://arxiv.org/pdf/2401.12345",
                 "topic": "LLM serving and inference optimization",
+                "topics": ["llm_serving_inference_optimization"],
                 "reason_for_inclusion": "Temporary validation fixture.",
                 "selection_status": "approved",
                 "provenance_url": "https://arxiv.org/abs/2401.12345",
@@ -883,11 +1133,15 @@ def test_validate_manual_registry_rejects_out_of_window(tmp_path: Path) -> None:
                 "title": "Out of Window Test Paper",
                 "authors": ["Researcher One"],
                 "published": "2023-01-01",
+                "source": "arXiv",
+                "source_id": "arxiv_api",
+                "venue": "arXiv",
                 "primary_category": "cs.CL",
                 "categories": ["cs.CL"],
                 "abstract_url": "https://arxiv.org/abs/2301.12345",
                 "pdf_url": "https://arxiv.org/pdf/2301.12345",
                 "topic": "LLM serving and inference optimization",
+                "topics": ["llm_serving_inference_optimization"],
                 "reason_for_inclusion": "Temporary validation fixture.",
                 "selection_status": "approved",
                 "provenance_url": "https://arxiv.org/abs/2301.12345",
@@ -1031,3 +1285,21 @@ def test_docs_include_multi_source_discovery() -> None:
     assert "Hugging Face Papers" in text
     assert "--source all" in text
     assert "arXiv API remains available" in text
+
+
+def test_docs_include_approved_registry_section() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "Approved Paper Registry" in text
+    assert "--build-approved-registry" in text
+    assert "validated approved registry" in text
+    assert "Phase 2A-5B" in text
+
+
+def test_committed_approved_registry_exists_after_generation() -> None:
+    assert APPROVED_REGISTRY_PATH.exists()
+    records = _read_jsonl(APPROVED_REGISTRY_PATH)
+
+    assert len(records) == 20
+    assert {record["selection_status"] for record in records} == {"approved"}
+    assert all(record.get("provenance_url") for record in records)

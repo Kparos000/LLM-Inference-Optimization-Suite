@@ -29,6 +29,11 @@ DEFAULT_MANUAL_REGISTRY = Path("data/sources/research_ai_approved_papers.jsonl")
 DEFAULT_MANUAL_VALIDATION_REPORT = Path(
     "data/generated/research_ai/manual_registry_validation_report.json"
 )
+DEFAULT_CANDIDATE_REVIEW_CSV = Path("data/generated/research_ai/candidate_papers_review.csv")
+DEFAULT_APPROVED_REGISTRY = Path("data/sources/research_ai_approved_papers.jsonl")
+DEFAULT_APPROVED_REGISTRY_REPORT = Path(
+    "data/generated/research_ai/research_ai_approved_registry_report.json"
+)
 DEFAULT_ICLR_URL = "https://iclr.cc/virtual/2025/papers.html"
 DEFAULT_HUGGINGFACE_URL = "https://huggingface.co/papers"
 DEFAULT_HUGGINGFACE_SEARCH_QUERIES = (
@@ -189,14 +194,15 @@ MANUAL_REGISTRY_FIELDS = [
 ]
 MANUAL_REGISTRY_REQUIRED_FIELDS = [
     "paper_id",
-    "arxiv_id",
     "title",
-    "authors",
     "published",
+    "source",
+    "source_id",
+    "venue",
     "primary_category",
-    "abstract_url",
-    "pdf_url",
+    "categories",
     "topic",
+    "topics",
     "reason_for_inclusion",
     "selection_status",
     "provenance_url",
@@ -262,6 +268,17 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
             raise RuntimeError(msg)
         rows.append(parsed)
     return rows
+
+
+def read_csv_dicts(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        msg = (
+            "Candidate review CSV not found. Run discovery first, for example:\n"
+            "python scripts/phase2/discover_research_ai_papers.py --discover --source iclr"
+        )
+        raise RuntimeError(msg)
+    with path.open("r", encoding="utf-8", newline="") as file:
+        return [dict(row) for row in csv.DictReader(file)]
 
 
 def write_run_log_event(path: Path, event: dict[str, Any]) -> None:
@@ -919,6 +936,12 @@ def parse_search_queries(value: str) -> list[str]:
     return [query.strip() for query in value.split(",") if query.strip()]
 
 
+def parse_semicolon_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return [part.strip() for part in str(value or "").split(";") if part.strip()]
+
+
 def build_huggingface_search_urls(base_url: str, search_queries: list[str]) -> list[dict[str, str]]:
     return [
         {
@@ -1044,6 +1067,286 @@ def score_html_candidate(candidate: dict[str, Any]) -> int:
     if not any(term in haystack for term in RELATED_TERMS):
         score -= 3
     return score
+
+
+APPROVAL_BUCKET_TARGETS = {
+    "agentic_workflows_tool_use": 4,
+    "llm_serving_inference_optimization": 3,
+    "speculative_decoding_kv_cache": 3,
+    "rag_context_engineering": 3,
+    "small_language_models_efficient_llms": 3,
+    "evaluation_benchmark_uncertainty": 2,
+    "compute_data_efficiency": 2,
+}
+APPROVAL_BUCKET_KEYWORDS = {
+    "agentic_workflows_tool_use": (
+        "agent",
+        "agents",
+        "agentic",
+        "swarm",
+        "tool",
+        "planning",
+        "trajectory",
+    ),
+    "llm_serving_inference_optimization": (
+        "inference",
+        "serving",
+        "latency",
+        "throughput",
+        "kernel",
+        "kernels",
+        "visual tokens",
+    ),
+    "speculative_decoding_kv_cache": (
+        "speculative",
+        "decoding",
+        "cascade",
+        "cascades",
+        "token prediction",
+    ),
+    "rag_context_engineering": (
+        "retrieval",
+        "long-context",
+        "long context",
+        "context",
+        "in-context",
+        "factuality",
+        "context reliance",
+    ),
+    "small_language_models_efficient_llms": (
+        "miniplm",
+        "distillation",
+        "small",
+        "efficient",
+        "normalized transformer",
+    ),
+    "evaluation_benchmark_uncertainty": (
+        "benchmark",
+        "evaluation",
+        "uncertainty",
+        "safety",
+        "codemmlu",
+        "reasoning capabilities",
+    ),
+    "compute_data_efficiency": (
+        "compute-optimal",
+        "data efficiency",
+        "scaling laws",
+        "data optimization",
+        "scale",
+        "kernels",
+    ),
+}
+UNRELATED_TITLE_TERMS = (
+    "portrait",
+    "diffusion",
+    "text-to-speech",
+    "audio-visual",
+    "video grounding",
+    "tabular",
+    "protein",
+    "drug",
+    "pde",
+    "surfel",
+    "image restoration",
+)
+UNRELATED_EXCEPTIONS = (
+    "language model",
+    "llm",
+    "transformer",
+)
+
+
+def approval_keyword_matches(keyword: str, haystack: str) -> bool:
+    escaped = re.escape(keyword.lower()).replace(r"\ ", r"\s+")
+    return re.search(rf"(?<![a-z0-9]){escaped}(?![a-z0-9])", haystack) is not None
+
+
+def approval_buckets_for_candidate(candidate: dict[str, Any]) -> list[str]:
+    title = str(candidate.get("title") or "")
+    topics = set(parse_semicolon_list(candidate.get("topics", [])))
+    haystack = f"{title} {' '.join(topics)}".lower()
+    buckets = [
+        bucket
+        for bucket, keywords in APPROVAL_BUCKET_KEYWORDS.items()
+        if bucket in topics
+        or any(approval_keyword_matches(keyword, haystack) for keyword in keywords)
+    ]
+    return buckets or ["general_project_relevance"]
+
+
+def is_project_relevant_candidate(candidate: dict[str, Any]) -> bool:
+    title = str(candidate.get("title") or "")
+    title_lower = title.lower()
+    if "portrait" in title_lower or "audio-visual" in title_lower:
+        return False
+    if "distillation" in title_lower and not any(
+        term in title_lower for term in ("language model", "llm", "plm")
+    ):
+        return False
+    if any(term in title_lower for term in UNRELATED_TITLE_TERMS) and not any(
+        exception in title_lower for exception in UNRELATED_EXCEPTIONS
+    ):
+        return False
+    buckets = approval_buckets_for_candidate(candidate)
+    if buckets != ["general_project_relevance"]:
+        return True
+    return any(
+        term in title_lower
+        for term in (
+            "llm",
+            "language model",
+            "code llm",
+            "codellm",
+            "foundation model",
+            "transformer",
+            "chain-of-thought",
+            "memorization in lms",
+        )
+    )
+
+
+def reason_for_approval(candidate: dict[str, Any], bucket: str) -> str:
+    title = str(candidate.get("title") or "This paper")
+    reason_by_bucket = {
+        "agentic_workflows_tool_use": (
+            "Included because it directly supports bounded agentic workflow evaluation."
+        ),
+        "llm_serving_inference_optimization": (
+            "Included because it is relevant to inference optimization or serving efficiency."
+        ),
+        "speculative_decoding_kv_cache": (
+            "Included because it is relevant to speculative decoding and inference acceleration."
+        ),
+        "rag_context_engineering": (
+            "Included because it supports long-context or retrieval-grounded evaluation."
+        ),
+        "small_language_models_efficient_llms": (
+            "Included because it is relevant to efficient or smaller language model deployment."
+        ),
+        "evaluation_benchmark_uncertainty": (
+            "Included because it supports benchmark, evaluation, or uncertainty analysis."
+        ),
+        "compute_data_efficiency": (
+            "Included because it supports compute, data, or scaling efficiency analysis."
+        ),
+    }
+    return reason_by_bucket.get(
+        bucket,
+        f"Included because '{title}' is relevant to Research AI seed curation.",
+    )
+
+
+def candidate_csv_row_to_record(row: dict[str, Any], bucket: str) -> dict[str, Any]:
+    title = str(row.get("title") or "").strip()
+    source = str(row.get("source") or "ICLR").strip()
+    source_id = "iclr_2025_virtual" if source == "ICLR" else str(row.get("source_id") or "")
+    provenance_url = str(row.get("provenance_url") or row.get("abstract_url") or "").strip()
+    pdf_url = str(row.get("pdf_url") or "").strip() or None
+    authors = parse_semicolon_list(row.get("authors"))
+    categories = parse_semicolon_list(row.get("categories")) or ["ICLR 2025"]
+    topics = parse_semicolon_list(row.get("topics")) or infer_research_topics(title)
+    if bucket not in topics and bucket != "general_project_relevance":
+        topics = [bucket, *topics]
+    if bucket != "general_project_relevance":
+        topics = [topic for topic in topics if topic != "research_ai_candidate"]
+    rank_text = str(row.get("rank") or "").strip()
+    score_text = str(row.get("score") or "0").strip()
+    missing_noncritical = []
+    if not authors:
+        missing_noncritical.append("authors")
+    if not pdf_url:
+        missing_noncritical.append("pdf_url")
+    if not str(row.get("arxiv_id") or "").strip():
+        missing_noncritical.append("arxiv_id")
+    return {
+        "paper_id": str(row.get("paper_id") or paper_id_from_title(source_id, title)).strip(),
+        "title": title,
+        "authors": authors,
+        "published": str(row.get("published") or row.get("year") or "2025").strip(),
+        "year": int(str(row.get("year") or "2025")),
+        "primary_category": str(row.get("primary_category") or "conference").strip(),
+        "categories": categories,
+        "source": source,
+        "source_id": source_id,
+        "venue": str(row.get("venue") or "ICLR 2025").strip(),
+        "abstract_url": str(row.get("abstract_url") or provenance_url).strip(),
+        "pdf_url": pdf_url,
+        "provenance_url": provenance_url,
+        "topic": topics[0],
+        "topics": topics,
+        "reason_for_inclusion": reason_for_approval(row, bucket),
+        "selection_status": "approved",
+        "metadata": {
+            "approval_source": "candidate_papers_review.csv",
+            "approval_method": "deterministic_ranked_diversity_selection",
+            "approval_bucket": bucket,
+            "original_score": int(float(score_text)) if score_text else 0,
+            "original_rank": int(rank_text) if rank_text.isdigit() else None,
+            "review_required_fields_missing": missing_noncritical,
+            "paper_window_start": "2024-01-01",
+            "paper_window_end": "2026-05-30",
+        },
+    }
+
+
+def build_approved_registry_from_candidates(
+    candidates: list[dict[str, Any]], approved_count: int = 20
+) -> list[dict[str, Any]]:
+    sorted_candidates = sorted(
+        candidates,
+        key=lambda row: (
+            -int(float(str(row.get("score") or "0") or 0)),
+            int(str(row.get("rank") or "999999") or 999999),
+            str(row.get("title") or "").lower(),
+        ),
+    )
+    relevant_candidates = [
+        candidate for candidate in sorted_candidates if is_project_relevant_candidate(candidate)
+    ]
+    selected: list[tuple[dict[str, Any], str]] = []
+    selected_titles: set[str] = set()
+    for bucket, target_count in APPROVAL_BUCKET_TARGETS.items():
+        for candidate in relevant_candidates:
+            if (
+                len(
+                    [
+                        selected_bucket
+                        for _, selected_bucket in selected
+                        if selected_bucket == bucket
+                    ]
+                )
+                >= target_count
+            ):
+                break
+            title_key = _normalized_title_key(str(candidate.get("title") or ""))
+            if title_key in selected_titles:
+                continue
+            if bucket not in approval_buckets_for_candidate(candidate):
+                continue
+            selected.append((candidate, bucket))
+            selected_titles.add(title_key)
+    for candidate in relevant_candidates:
+        if len(selected) >= approved_count:
+            break
+        title_key = _normalized_title_key(str(candidate.get("title") or ""))
+        if title_key in selected_titles:
+            continue
+        buckets = approval_buckets_for_candidate(candidate)
+        selected.append((candidate, buckets[0]))
+        selected_titles.add(title_key)
+    for candidate in sorted_candidates:
+        if len(selected) >= approved_count:
+            break
+        title_key = _normalized_title_key(str(candidate.get("title") or ""))
+        if title_key in selected_titles:
+            continue
+        selected.append((candidate, approval_buckets_for_candidate(candidate)[0]))
+        selected_titles.add(title_key)
+    return [
+        candidate_csv_row_to_record(candidate, bucket)
+        for candidate, bucket in selected[:approved_count]
+    ]
 
 
 def _version_sort_key(candidate: dict[str, Any]) -> tuple[int, str]:
@@ -2027,6 +2330,8 @@ def _parse_date_prefix(value: Any) -> datetime | None:
     text = str(value or "").strip()
     if not text:
         return None
+    if re.fullmatch(r"\d{4}", text):
+        return datetime.strptime(f"{text}-01-01", "%Y-%m-%d")
     try:
         return datetime.strptime(text[:10], "%Y-%m-%d")
     except ValueError:
@@ -2045,6 +2350,8 @@ def validate_manual_registry_records(
     window_end = datetime.strptime(end_date, "%Y-%m-%d")
     for index, record in enumerate(records, start=1):
         paper_id = str(record.get("paper_id") or "").strip()
+        source = str(record.get("source") or "").strip()
+        selection_status = str(record.get("selection_status") or "").strip()
         missing_fields = [
             field
             for field in MANUAL_REGISTRY_REQUIRED_FIELDS
@@ -2069,7 +2376,7 @@ def validate_manual_registry_records(
                     }
                 )
             seen_paper_ids.add(paper_id)
-        if str(record.get("selection_status") or "") not in MANUAL_REGISTRY_ALLOWED_STATUSES:
+        if selection_status not in MANUAL_REGISTRY_ALLOWED_STATUSES:
             errors.append(
                 {
                     "line_number": index,
@@ -2078,7 +2385,16 @@ def validate_manual_registry_records(
                     "selection_status": record.get("selection_status"),
                 }
             )
-        published = _parse_date_prefix(record.get("published"))
+        if source == "ICLR" and selection_status != "approved":
+            errors.append(
+                {
+                    "line_number": index,
+                    "paper_id": paper_id,
+                    "error_type": "iclr_record_not_approved",
+                    "selection_status": selection_status,
+                }
+            )
+        published = _parse_date_prefix(record.get("published") or record.get("year"))
         if published is not None and not (window_start <= published <= window_end):
             errors.append(
                 {
@@ -2094,34 +2410,60 @@ def validate_manual_registry_records(
             warnings.append(
                 f"Could not parse published date for paper_id={paper_id}; date window not checked."
             )
-        abstract_url = str(record.get("abstract_url") or "")
-        if abstract_url and not abstract_url.startswith("https://arxiv.org/abs/"):
+        provenance_url = str(record.get("provenance_url") or "")
+        if selection_status == "approved" and not provenance_url:
             errors.append(
                 {
                     "line_number": index,
                     "paper_id": paper_id,
-                    "error_type": "invalid_abstract_url",
-                    "abstract_url": abstract_url,
+                    "error_type": "missing_provenance_url",
                 }
             )
-        pdf_url = str(record.get("pdf_url") or "")
-        if pdf_url and not pdf_url.startswith("https://arxiv.org/pdf/"):
-            errors.append(
-                {
-                    "line_number": index,
-                    "paper_id": paper_id,
-                    "error_type": "invalid_pdf_url",
-                    "pdf_url": pdf_url,
-                }
-            )
-        if not str(record.get("arxiv_id") or "").strip():
-            errors.append(
-                {
-                    "line_number": index,
-                    "paper_id": paper_id,
-                    "error_type": "empty_arxiv_id",
-                }
-            )
+        if source == "arXiv":
+            abstract_url = str(record.get("abstract_url") or "")
+            if not str(record.get("arxiv_id") or "").strip():
+                errors.append(
+                    {
+                        "line_number": index,
+                        "paper_id": paper_id,
+                        "error_type": "missing_arxiv_id",
+                    }
+                )
+            if not abstract_url.startswith("https://arxiv.org/abs/"):
+                errors.append(
+                    {
+                        "line_number": index,
+                        "paper_id": paper_id,
+                        "error_type": "invalid_abstract_url",
+                        "abstract_url": abstract_url,
+                    }
+                )
+            pdf_url = str(record.get("pdf_url") or "")
+            if not pdf_url.startswith("https://arxiv.org/pdf/"):
+                errors.append(
+                    {
+                        "line_number": index,
+                        "paper_id": paper_id,
+                        "error_type": "invalid_pdf_url",
+                        "pdf_url": pdf_url,
+                    }
+                )
+        elif source == "ICLR":
+            if provenance_url and not provenance_url.startswith("https://iclr.cc/"):
+                errors.append(
+                    {
+                        "line_number": index,
+                        "paper_id": paper_id,
+                        "error_type": "invalid_iclr_provenance_url",
+                        "provenance_url": provenance_url,
+                    }
+                )
+            if not record.get("authors"):
+                warnings.append(f"authors missing for ICLR paper_id={paper_id}")
+            if not record.get("pdf_url"):
+                warnings.append(f"pdf_url missing for ICLR paper_id={paper_id}")
+            if not record.get("arxiv_id"):
+                warnings.append(f"arxiv_id missing for ICLR paper_id={paper_id}")
     return errors, warnings
 
 
@@ -2133,6 +2475,14 @@ def build_manual_validation_report(
     paper_window: dict[str, Any],
 ) -> dict[str, Any]:
     status_counter = Counter(str(record.get("selection_status") or "") for record in records)
+    source_counter = Counter(str(record.get("source") or "") for record in records)
+    topic_counter: Counter[str] = Counter()
+    for record in records:
+        topics = record.get("topics")
+        if isinstance(topics, list):
+            topic_counter.update(str(topic) for topic in topics)
+        elif record.get("topic"):
+            topic_counter[str(record["topic"])] += 1
     return {
         "phase": "2A-5A",
         "generated_at_utc": utc_now(),
@@ -2141,6 +2491,8 @@ def build_manual_validation_report(
         "record_count": len(records),
         "valid_record_count": len(records) - len({error.get("line_number") for error in errors}),
         "invalid_record_count": len({error.get("line_number") for error in errors}),
+        "counts_by_source": dict(source_counter),
+        "counts_by_topic": dict(topic_counter),
         "counts_by_selection_status": dict(status_counter),
         "paper_window": paper_window,
         "required_fields": MANUAL_REGISTRY_REQUIRED_FIELDS,
@@ -2152,6 +2504,85 @@ def build_manual_validation_report(
             "approved records contain real paper provenance. Do not use example_not_approved "
             "records for curation."
         ),
+    }
+
+
+def build_approved_registry_report(
+    approved_records: list[dict[str, Any]], source_csv_path: Path
+) -> dict[str, Any]:
+    topic_counter: Counter[str] = Counter()
+    source_counter = Counter(str(record.get("source") or "") for record in approved_records)
+    venue_counter = Counter(str(record.get("venue") or "") for record in approved_records)
+    bucket_counter: Counter[str] = Counter()
+    for record in approved_records:
+        topic_counter.update(str(topic) for topic in record.get("topics", []))
+        bucket = record.get("metadata", {}).get("approval_bucket")
+        if bucket:
+            bucket_counter[str(bucket)] += 1
+    missing_authors = sum(1 for record in approved_records if not record.get("authors"))
+    missing_pdf_url = sum(1 for record in approved_records if not record.get("pdf_url"))
+    missing_arxiv_id = sum(1 for record in approved_records if not record.get("arxiv_id"))
+    target_warnings = [
+        (
+            f"Approval bucket {bucket} selected {bucket_counter.get(bucket, 0)} "
+            f"records versus target {target}; remaining slots were filled with "
+            "highest-ranked project-relevant candidates."
+        )
+        for bucket, target in APPROVAL_BUCKET_TARGETS.items()
+        if bucket_counter.get(bucket, 0) < target
+    ]
+    return {
+        "phase": "2A-5A",
+        "generated_at_utc": utc_now(),
+        "approved_record_count": len(approved_records),
+        "source_csv_path": str(source_csv_path),
+        "counts_by_source": dict(source_counter),
+        "counts_by_topic": dict(topic_counter),
+        "counts_by_venue": dict(venue_counter),
+        "counts_by_approval_bucket": dict(bucket_counter),
+        "missing_authors_count": missing_authors,
+        "missing_pdf_url_count": missing_pdf_url,
+        "missing_arxiv_id_count": missing_arxiv_id,
+        "selected_titles": [str(record.get("title") or "") for record in approved_records],
+        "warnings": [
+            *target_warnings,
+            "This approved registry is metadata-only.",
+            "Some ICLR records may not include authors/PDF URLs from the public listing page.",
+            "No PDFs were downloaded.",
+            (
+                "Phase 2A-5B should create Research AI source/prompt, KB/context, "
+                "and gold/eval seed records from this approved registry."
+            ),
+            "RAG/retrieval/inference remain deferred.",
+        ],
+        "next_step": "Proceed to Phase 2A-5B Research AI curated seed creation.",
+    }
+
+
+def build_approved_registry(args: argparse.Namespace) -> dict[str, Any]:
+    candidates = read_csv_dicts(args.candidate_review_csv)
+    approved_records = build_approved_registry_from_candidates(
+        candidates,
+        approved_count=args.approved_count,
+    )
+    if len(approved_records) < args.approved_count:
+        msg = (
+            f"Only selected {len(approved_records)} approved records from "
+            f"{args.candidate_review_csv}; requested {args.approved_count}."
+        )
+        raise RuntimeError(msg)
+    write_jsonl(args.approved_registry_path, approved_records)
+    report = build_approved_registry_report(approved_records, args.candidate_review_csv)
+    write_json(args.approved_registry_report, report)
+    return {
+        "mode": "build_approved_registry",
+        "phase": "2A-5A",
+        "approved_record_count": len(approved_records),
+        "approved_registry_path": str(args.approved_registry_path),
+        "approved_registry_report": str(args.approved_registry_report),
+        "source_csv_path": str(args.candidate_review_csv),
+        "warnings": report["warnings"],
+        "next_step": report["next_step"],
     }
 
 
@@ -2202,6 +2633,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--discover", action="store_true")
     parser.add_argument("--write-manual-template", action="store_true")
     parser.add_argument("--validate-manual-registry", action="store_true")
+    parser.add_argument("--build-approved-registry", action="store_true")
     parser.add_argument("--query-plan", type=Path, default=DEFAULT_QUERY_PLAN)
     parser.add_argument("--query-id", default="all")
     parser.add_argument("--source", default="all", choices=["all", "arxiv", "iclr", "huggingface"])
@@ -2218,6 +2650,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--run-log-path", type=Path, default=DEFAULT_RUN_LOG)
     parser.add_argument("--output-manual-template", type=Path, default=DEFAULT_MANUAL_TEMPLATE)
     parser.add_argument("--manual-registry-path", type=Path, default=DEFAULT_MANUAL_REGISTRY)
+    parser.add_argument("--candidate-review-csv", type=Path, default=DEFAULT_CANDIDATE_REVIEW_CSV)
+    parser.add_argument("--approved-registry-path", type=Path, default=DEFAULT_APPROVED_REGISTRY)
+    parser.add_argument(
+        "--approved-registry-report",
+        type=Path,
+        default=DEFAULT_APPROVED_REGISTRY_REPORT,
+    )
     parser.add_argument(
         "--manual-validation-report",
         type=Path,
@@ -2226,6 +2665,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-results-per-query", type=int, default=0)
     parser.add_argument("--sample-size", type=int, default=12)
     parser.add_argument("--max-candidates-per-source", type=int, default=80)
+    parser.add_argument("--approved-count", type=int, default=20)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--delay-seconds", type=float, default=0)
     parser.add_argument("--timeout-seconds", type=int, default=30)
@@ -2250,13 +2690,14 @@ def main(argv: list[str] | None = None) -> int:
             args.dry_run,
             args.write_manual_template,
             args.validate_manual_registry,
+            args.build_approved_registry,
         )
     )
     if mode_count != 1:
         print(
             (
                 "Pass exactly one mode: --dry-run, --discover, --write-manual-template, "
-                "or --validate-manual-registry."
+                "--validate-manual-registry, or --build-approved-registry."
             ),
             file=sys.stderr,
         )
@@ -2268,6 +2709,8 @@ def main(argv: list[str] | None = None) -> int:
             summary = write_manual_template(args)
         elif args.validate_manual_registry:
             summary = validate_manual_registry(args)
+        elif args.build_approved_registry:
+            summary = build_approved_registry(args)
         else:
             summary = discover(args)
     except RuntimeError as exc:
