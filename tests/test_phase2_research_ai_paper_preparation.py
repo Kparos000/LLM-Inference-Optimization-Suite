@@ -285,6 +285,57 @@ def test_extract_text_from_pdf_missing_dependency_is_graceful(tmp_path: Path) ->
     assert method == "skipped_missing_dependency" or method.startswith("failed_")
 
 
+def test_get_pdf_text_extraction_backend_returns_known_value() -> None:
+    module = _load_preparation_module()
+
+    backend = module.get_pdf_text_extraction_backend()
+
+    assert backend in {"pypdf", "PyPDF2", "missing"}
+
+
+def test_extract_text_from_pdf_missing_dependency_message(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 fake pdf")
+
+    with mock.patch.object(module.importlib, "import_module", side_effect=ImportError):
+        extracted_text, method = module.extract_text_from_pdf(pdf_path)
+
+    assert extracted_text == ""
+    assert method == "skipped_missing_dependency"
+
+
+def test_extract_text_from_pdf_with_mock_pypdf(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 fake pdf")
+
+    class FakePage:
+        def __init__(self, text: str) -> None:
+            self.text = text
+
+        def extract_text(self) -> str:
+            return self.text
+
+    class FakePdfReader:
+        def __init__(self, _path: str) -> None:
+            self.pages = [FakePage("Abstract\nFirst page text."), FakePage("Conclusion\nDone.")]
+
+    fake_pypdf_module = type("FakePypdfModule", (), {"PdfReader": FakePdfReader})
+
+    def fake_import_module(name: str) -> Any:
+        if name == "pypdf":
+            return fake_pypdf_module
+        raise ImportError(name)
+
+    with mock.patch.object(module.importlib, "import_module", side_effect=fake_import_module):
+        extracted_text, method = module.extract_text_from_pdf(pdf_path)
+
+    assert "First page text" in extracted_text
+    assert "Conclusion" in extracted_text
+    assert method == "pypdf"
+
+
 def test_build_paper_preparation_report() -> None:
     module = _load_preparation_module()
     report = module.build_paper_preparation_report(
@@ -308,7 +359,24 @@ def test_build_paper_preparation_report() -> None:
     assert report["enriched_record_count"] == 1
     assert report["pdf_urls_found"] == 1
     assert report["text_extraction_skipped_count"] == 1
+    assert report["pdf_text_backend"] in {"pypdf", "PyPDF2", "missing"}
     assert report["next_step"]
+
+
+def test_extract_text_report_includes_backend() -> None:
+    module = _load_preparation_module()
+    report = module.build_paper_preparation_report(
+        approved_records=[],
+        enriched_records=[],
+        text_manifest_rows=[{"paper_id": "paper_1", "text_extraction_status": "extracted"}],
+        section_rows=[],
+        output_files={},
+        pdf_text_backend="pypdf",
+    )
+
+    assert report["pdf_text_backend"] == "pypdf"
+    assert report["text_extracted_count"] == 1
+    assert report["no_sections_detected_count"] == 1
 
 
 def test_build_paper_preparation_report_includes_quality_counts() -> None:
@@ -1006,3 +1074,11 @@ def test_docs_include_text_qa_quality_gate() -> None:
     assert "paper_body_available" in text
     assert "slides_pdf" in text
     assert "OpenReview" in text
+
+
+def test_docs_include_pdf_text_dependency_section() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "PDF Text Extraction Dependency" in text
+    assert "pypdf" in text
+    assert "--extract-text" in text

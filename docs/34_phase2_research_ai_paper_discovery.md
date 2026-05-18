@@ -350,6 +350,32 @@ python scripts/phase2/prepare_research_ai_papers.py --summarize-local
 If PDF text extraction is unavailable locally, the script should still preserve
 enriched metadata and clearly report skipped text extraction.
 
+## PDF Text Extraction Dependency
+
+PDF download and PDF text extraction are separate steps. Downloaded PDFs are
+stored locally under:
+
+```text
+data/raw/research_ai/papers/<short_slug>/paper.pdf
+```
+
+Text extraction requires `pypdf` or `PyPDF2`. The preferred local dependency is
+`pypdf`:
+
+```text
+pip install pypdf
+```
+
+Then rerun text extraction:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --extract-text
+```
+
+PDF text extraction writes local text and section manifests only. It does not
+perform RAG, retrieval, embeddings, prompt assembly, inference, or Research AI
+prompt/gold generation.
+
 ## Phase 2A-5A-Text-QA Metadata Quality Gate
 
 Enriched ICLR abstracts must be cleaned before use. Generic OpenReview group

@@ -26,6 +26,9 @@ from typing import Any
 
 PHASE = "2A-5A-Text"
 USER_AGENT = "LLM-Inference-Optimization-Suite research-paper-prep"
+PDF_EXTRACTION_DEPENDENCY_WARNING = (
+    "PDF text extraction dependency is missing. Install pypdf or PyPDF2, then rerun --extract-text."
+)
 
 DEFAULT_APPROVED_REGISTRY_PATH = Path("data/sources/research_ai_approved_papers.jsonl")
 DEFAULT_ENRICHED_REGISTRY_PATH = Path("data/generated/research_ai/enriched_paper_registry.jsonl")
@@ -40,9 +43,11 @@ PAPER_SECTION_HEADINGS = {
     "introduction": ("Introduction",),
     "related_work": ("Related Work",),
     "background": ("Background",),
-    "method": ("Method", "Methods", "Approach"),
+    "method": ("Method", "Methods"),
+    "approach": ("Approach",),
     "experiments": ("Experiments", "Experimental Setup"),
-    "results": ("Results", "Evaluation"),
+    "evaluation": ("Evaluation",),
+    "results": ("Results",),
     "discussion": ("Discussion",),
     "limitations": ("Limitations",),
     "conclusion": ("Conclusion",),
@@ -980,7 +985,7 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_pdf_reader() -> tuple[Any | None, str]:
+def get_pdf_text_extraction_backend() -> str:
     for module_name in ("pypdf", "PyPDF2"):
         try:
             module = importlib.import_module(module_name)
@@ -988,22 +993,45 @@ def load_pdf_reader() -> tuple[Any | None, str]:
             continue
         reader = getattr(module, "PdfReader", None)
         if reader is not None:
-            return reader, module_name
-    return None, "skipped_missing_dependency"
+            return module_name
+    return "missing"
 
 
-def extract_text_from_pdf(pdf_path: Path) -> tuple[str, str]:
+def load_pdf_reader() -> tuple[Any | None, str]:
+    backend = get_pdf_text_extraction_backend()
+    if backend == "missing":
+        return None, "skipped_missing_dependency"
+    module = importlib.import_module(backend)
+    return module.PdfReader, backend
+
+
+def extract_text_from_pdf_with_error(pdf_path: Path) -> tuple[str, str, str]:
     reader_class, method = load_pdf_reader()
     if reader_class is None:
-        return "", method
+        return (
+            "",
+            method,
+            PDF_EXTRACTION_DEPENDENCY_WARNING,
+        )
     try:
         reader = reader_class(str(pdf_path))
         pages = getattr(reader, "pages", [])
-        page_text = [str(page.extract_text() or "") for page in pages]
-    except Exception:  # noqa: BLE001 - one bad PDF must not stop preparation.
-        return "", f"failed_{method}"
+        page_text = []
+        for index, page in enumerate(pages, start=1):
+            extracted = str(page.extract_text() or "").strip()
+            if extracted:
+                page_text.append(f"--- Page {index} ---\n{extracted}")
+    except Exception as exc:  # noqa: BLE001 - one bad PDF must not stop preparation.
+        return "", f"failed_{method}", str(exc)
     text = normalize_text_block("\n\n".join(page_text))
-    return text, method if text else f"failed_{method}_empty_text"
+    if not text:
+        return "", f"failed_{method}_empty_text", "No text was extracted from local PDF."
+    return text, method, ""
+
+
+def extract_text_from_pdf(pdf_path: Path) -> tuple[str, str]:
+    extracted_text, method, _error_message = extract_text_from_pdf_with_error(pdf_path)
+    return extracted_text, method
 
 
 def write_text_file(path: Path, text: str) -> dict[str, Any]:
@@ -1092,6 +1120,7 @@ def build_paper_preparation_report(
     section_rows: list[dict[str, Any]] | None = None,
     output_files: dict[str, str] | None = None,
     download_policy: dict[str, Any] | None = None,
+    pdf_text_backend: str | None = None,
 ) -> dict[str, Any]:
     approved = approved_records or []
     enriched = enriched_records or []
@@ -1105,6 +1134,7 @@ def build_paper_preparation_report(
         str(record.get("pdf_download_status") or "") for record in enriched
     )
     text_statuses = Counter(str(row.get("text_extraction_status") or "") for row in text_rows)
+    backend = pdf_text_backend or get_pdf_text_extraction_backend()
     abstract_quality_counter = Counter(
         str(record.get("abstract_quality_status") or "missing") for record in enriched
     )
@@ -1160,6 +1190,24 @@ def build_paper_preparation_report(
         warnings.append(
             "No local PDFs were found. Run --download-pdfs --skip-existing before --extract-text."
         )
+    if backend == "missing":
+        warnings.append(PDF_EXTRACTION_DEPENDENCY_WARNING)
+    extracted_text_paper_ids = {
+        str(row.get("paper_id"))
+        for row in text_rows
+        if str(row.get("text_extraction_status") or "") == "extracted" and row.get("paper_id")
+    }
+    section_paper_ids = {
+        str(section.get("paper_id")) for section in sections if section.get("paper_id")
+    }
+    no_sections_detected_count = len(extracted_text_paper_ids - section_paper_ids)
+    if no_sections_detected_count > 0:
+        warnings.append("Some extracted texts did not yield recognized section headings.")
+    local_pdf_count = sum(
+        1
+        for row in text_rows
+        if row.get("local_pdf_path") and Path(str(row["local_pdf_path"])).exists()
+    )
     pdf_download_failure_details = [
         {
             "paper_id": record.get("paper_id"),
@@ -1195,6 +1243,8 @@ def build_paper_preparation_report(
         "download_timeout_seconds": policy.get("download_timeout_seconds"),
         "failed_only": policy.get("failed_only"),
         "paper_id_filter": policy.get("paper_id_filter"),
+        "pdf_text_backend": backend,
+        "local_pdf_count": local_pdf_count,
         "clean_abstract_count": abstract_quality_counter.get("clean", 0),
         "noisy_abstract_count": abstract_quality_counter.get("noisy", 0),
         "missing_abstract_count": abstract_quality_counter.get("missing", 0),
@@ -1215,11 +1265,13 @@ def build_paper_preparation_report(
         "records_ready_for_text_extraction": records_ready_for_text_extraction,
         "text_extracted_count": text_statuses.get("extracted", 0),
         "text_extraction_skipped_count": sum(
-            count
-            for status, count in text_statuses.items()
-            if status.startswith("skipped") or status.startswith("failed")
+            count for status, count in text_statuses.items() if status.startswith("skipped")
+        ),
+        "text_extraction_failed_count": sum(
+            count for status, count in text_statuses.items() if status.startswith("failed")
         ),
         "sections_extracted_count": len(sections),
+        "no_sections_detected_count": no_sections_detected_count,
         "counts_by_topic": counts_by_topic(records_for_counts),
         "counts_by_source": counts_by_source(records_for_counts),
         "missing_authors_count": sum(
@@ -1599,6 +1651,7 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
     records = apply_limit(read_jsonl(args.enriched_registry_path), int(args.limit))
     text_manifest_rows: list[dict[str, Any]] = []
     section_rows: list[dict[str, Any]] = []
+    backend = get_pdf_text_extraction_backend()
     for record in records:
         local_pdf_value = str(record.get("local_pdf_path") or "").strip()
         local_pdf_path = (
@@ -1619,7 +1672,7 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
                 )
             )
             continue
-        extracted_text, method = extract_text_from_pdf(local_pdf_path)
+        extracted_text, method, error_message = extract_text_from_pdf_with_error(local_pdf_path)
         if extracted_text:
             text_metadata = write_text_file(local_text_path, extracted_text)
             row = build_text_manifest_row(
@@ -1645,7 +1698,7 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
                     local_text_path,
                     method,
                     method,
-                    error_message="No text was extracted from local PDF.",
+                    error_message=error_message or "No text was extracted from local PDF.",
                 )
             )
 
@@ -1658,15 +1711,20 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
         text_manifest_rows=text_manifest_rows,
         section_rows=section_rows,
         output_files=output_files_from_args(args),
+        pdf_text_backend=backend,
     )
     write_json(args.report_path, report)
     return {
         "mode": "extract_text",
         "phase": PHASE,
         "records_attempted": len(records),
+        "pdf_text_backend": report["pdf_text_backend"],
+        "local_pdf_count": int(report["local_pdf_count"]),
         "text_extracted_count": int(report["text_extracted_count"]),
         "text_extraction_skipped_count": int(report["text_extraction_skipped_count"]),
+        "text_extraction_failed_count": int(report["text_extraction_failed_count"]),
         "sections_extracted_count": int(report["sections_extracted_count"]),
+        "no_sections_detected_count": int(report["no_sections_detected_count"]),
         "text_manifest_path": str(args.text_manifest_path),
         "sections_manifest_path": str(args.sections_manifest_path),
         "report_path": str(args.report_path),
