@@ -80,6 +80,35 @@ python scripts/phase2/discover_research_ai_papers.py --discover
 python scripts/phase2/discover_research_ai_papers.py --discover --sample-size 20
 ```
 
+## Handling arXiv Rate Limits
+
+arXiv may return `HTTP 429` when metadata requests are throttled. The discovery
+script supports retry/backoff, request timeouts, one-query execution, and
+partial-output reporting so discovery can proceed conservatively without
+claiming more than the API returned.
+
+Use smaller max results and one query at a time when throttled. The default
+query-plan delay is 3 seconds, but throttled environments should use
+`--delay-seconds 10` or higher. Phase 2A-5A still does not download PDFs. If
+arXiv is unavailable, do not fake successful discovery; keep the schema/example
+sample until real metadata is collected or a manually approved paper registry is
+created.
+
+Example one-query retry command:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --query-id llm_serving_inference_optimization --max-results-per-query 5 --delay-seconds 10 --max-retries 5 --backoff-seconds 20
+```
+
+Example partial discovery command:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --query-id all --max-results-per-query 5 --delay-seconds 10 --continue-on-error --allow-partial
+```
+
+Phase 2A-5B should only proceed once real candidate papers have been discovered
+or a manually approved paper registry has been created.
+
 ## Next Step
 
 Phase 2A-5B should create:

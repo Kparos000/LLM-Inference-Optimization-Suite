@@ -9,6 +9,7 @@ import json
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -137,20 +138,85 @@ def build_arxiv_url(
     return f"{api_base_url}?{urllib.parse.urlencode(query_params)}"
 
 
-def fetch_arxiv_atom(url: str) -> str:
+def _retry_after_seconds(error: urllib.error.HTTPError) -> float | None:
+    retry_after = error.headers.get("Retry-After") if error.headers else None
+    if retry_after and retry_after.isdigit():
+        return float(retry_after)
+    return None
+
+
+def _backoff_delay(
+    attempt_number: int,
+    backoff_seconds: float,
+    retry_after: float | None = None,
+) -> float:
+    if retry_after is not None:
+        return retry_after
+    deterministic_jitter = min(1.0, attempt_number * 0.25)
+    return backoff_seconds * attempt_number + deterministic_jitter
+
+
+def fetch_url_with_retries(
+    url: str,
+    user_agent: str,
+    timeout_seconds: int,
+    max_retries: int,
+    backoff_seconds: float,
+) -> str:
+    """Fetch arXiv metadata with conservative retry handling for transient failures."""
+
     request = urllib.request.Request(
         url,
         headers={
-            "User-Agent": USER_AGENT,
+            "User-Agent": user_agent,
             "Accept": "application/atom+xml, application/xml, text/xml",
         },
     )
-    try:
-        with urllib.request.urlopen(request, timeout=45) as response:
-            return response.read().decode("utf-8")
-    except Exception as exc:  # noqa: BLE001 - convert library errors to a clear CLI error.
-        msg = f"Failed to fetch arXiv metadata from {url}: {exc}"
-        raise RuntimeError(msg) from exc
+    attempts = max_retries + 1
+    last_error = ""
+    for attempt_index in range(attempts):
+        attempt_number = attempt_index + 1
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                return response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            status = int(exc.code)
+            last_error = f"HTTP {status}: {exc.reason}"
+            if status == 429:
+                if attempt_index >= max_retries:
+                    break
+                retry_after = _retry_after_seconds(exc)
+                time.sleep(_backoff_delay(attempt_number, backoff_seconds, retry_after))
+                continue
+            if 500 <= status <= 599:
+                if attempt_index >= max_retries:
+                    break
+                time.sleep(_backoff_delay(attempt_number, backoff_seconds))
+                continue
+            msg = f"Failed to fetch arXiv metadata from {url}: HTTP {status}: {exc.reason}"
+            raise RuntimeError(msg) from exc
+        except (TimeoutError, urllib.error.URLError) as exc:
+            last_error = str(exc)
+            if attempt_index >= max_retries:
+                break
+            time.sleep(_backoff_delay(attempt_number, backoff_seconds))
+    msg = f"Failed to fetch arXiv metadata from {url} after {attempts} attempts: {last_error}"
+    raise RuntimeError(msg)
+
+
+def fetch_arxiv_atom(
+    url: str,
+    timeout_seconds: int = 30,
+    max_retries: int = 3,
+    backoff_seconds: float = 10,
+) -> str:
+    return fetch_url_with_retries(
+        url=url,
+        user_agent=USER_AGENT,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        backoff_seconds=backoff_seconds,
+    )
 
 
 def _entry_text(entry: ET.Element, tag: str) -> str:
@@ -383,6 +449,11 @@ def build_report(
     ranked_candidates: list[dict[str, Any]],
     sample_candidates: list[dict[str, Any]],
     output_files: dict[str, str],
+    discovery_status: str = "success",
+    failed_query_groups: list[str] | None = None,
+    successful_query_groups: list[str] | None = None,
+    errors: list[dict[str, str]] | None = None,
+    retry_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     topic_counter: Counter[str] = Counter()
     category_counter: Counter[str] = Counter()
@@ -394,10 +465,15 @@ def build_report(
     return {
         "phase": "2A-5A",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "discovery_status": discovery_status,
         "query_group_count": len(query_plan.get("query_groups", [])),
         "raw_candidate_count": raw_candidate_count,
         "deduped_candidate_count": len(ranked_candidates),
         "sample_candidate_count": len(sample_candidates),
+        "failed_query_groups": failed_query_groups or [],
+        "successful_query_groups": successful_query_groups or [],
+        "errors": errors or [],
+        "retry_policy": retry_policy or {},
         "counts_by_topic": dict(topic_counter),
         "counts_by_primary_category": dict(category_counter),
         "top_candidates": [
@@ -440,9 +516,31 @@ def _query_max_results(
     return int(query_group.get("max_results") or query_plan.get("max_results_per_query") or 20)
 
 
-def planned_urls(query_plan: dict[str, Any], max_results_override: int) -> list[dict[str, str]]:
+def select_query_groups(query_plan: dict[str, Any], query_id: str = "all") -> list[dict[str, Any]]:
+    """Return requested arXiv query groups from a query plan."""
+
+    query_groups = list(query_plan.get("query_groups", []))
+    if query_id == "all":
+        return query_groups
+    selected = [
+        query_group
+        for query_group in query_groups
+        if str(query_group.get("query_id") or "") == query_id
+    ]
+    if not selected:
+        known_ids = ", ".join(str(query_group.get("query_id")) for query_group in query_groups)
+        msg = f"Unknown query_id '{query_id}'. Known query IDs: {known_ids}"
+        raise RuntimeError(msg)
+    return selected
+
+
+def planned_urls(
+    query_plan: dict[str, Any],
+    max_results_override: int,
+    query_id: str = "all",
+) -> list[dict[str, str]]:
     planned: list[dict[str, str]] = []
-    for query_group in query_plan.get("query_groups", []):
+    for query_group in select_query_groups(query_plan, query_id):
         max_results = _query_max_results(query_group, query_plan, max_results_override)
         url = build_arxiv_url(
             api_base_url=str(query_plan["api_base_url"]),
@@ -469,9 +567,19 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         if float(args.delay_seconds) > 0
         else float(query_plan.get("delay_seconds") or 3)
     )
+    retry_policy = {
+        "max_retries": args.max_retries,
+        "backoff_seconds": args.backoff_seconds,
+        "timeout_seconds": args.timeout_seconds,
+        "delay_seconds": delay_seconds,
+    }
     categories_allowed = set(query_plan.get("categories_allowed", [])) or DEFAULT_CATEGORIES_ALLOWED
+    query_groups = select_query_groups(query_plan, args.query_id)
+    successful_query_groups: list[str] = []
+    failed_query_groups: list[str] = []
+    errors: list[dict[str, str]] = []
 
-    for index, query_group in enumerate(query_plan.get("query_groups", [])):
+    for index, query_group in enumerate(query_groups):
         enriched_group = {**query_group, "categories_allowed": sorted(categories_allowed)}
         max_results = _query_max_results(enriched_group, query_plan, args.max_results_per_query)
         url = build_arxiv_url(
@@ -483,10 +591,29 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         )
         if index > 0:
             time.sleep(delay_seconds)
-        xml_text = fetch_arxiv_atom(url)
+        query_id = str(enriched_group["query_id"])
+        try:
+            xml_text = fetch_arxiv_atom(
+                url,
+                timeout_seconds=args.timeout_seconds,
+                max_retries=args.max_retries,
+                backoff_seconds=args.backoff_seconds,
+            )
+        except RuntimeError as exc:
+            failed_query_groups.append(query_id)
+            errors.append(
+                {
+                    "query_id": query_id,
+                    "url": url,
+                    "error_message": str(exc),
+                }
+            )
+            if not args.continue_on_error:
+                break
+            continue
         parsed_candidates = parse_arxiv_atom(
             xml_text=xml_text,
-            query_id=str(enriched_group["query_id"]),
+            query_id=query_id,
             topic=str(enriched_group["topic"]),
         )
         for candidate in parsed_candidates:
@@ -496,6 +623,7 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
             )
             candidate["score"] = score_candidate(candidate, enriched_group)
         raw_candidates.extend(parsed_candidates)
+        successful_query_groups.append(query_id)
 
     deduped_candidates = dedupe_candidates(raw_candidates)
     ranked_candidates = rank_candidates(deduped_candidates)
@@ -506,40 +634,65 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_papers_sample_jsonl": str(args.output_sample),
         "discovery_report_json": str(args.output_report),
     }
+    if not successful_query_groups:
+        discovery_status = "failed"
+    elif failed_query_groups:
+        discovery_status = "partial"
+    else:
+        discovery_status = "success"
     report = build_report(
         query_plan=query_plan,
         raw_candidate_count=len(raw_candidates),
         ranked_candidates=ranked_candidates,
         sample_candidates=sample_candidates,
         output_files=output_files,
+        discovery_status=discovery_status,
+        failed_query_groups=failed_query_groups,
+        successful_query_groups=successful_query_groups,
+        errors=errors,
+        retry_policy=retry_policy,
     )
 
-    write_jsonl(args.output_candidates, ranked_candidates)
-    write_review_csv(args.output_review_csv, ranked_candidates)
-    write_jsonl(args.output_sample, sample_candidates)
+    if successful_query_groups:
+        write_jsonl(args.output_candidates, ranked_candidates)
+        write_review_csv(args.output_review_csv, ranked_candidates)
+        if sample_candidates:
+            write_jsonl(args.output_sample, sample_candidates)
     write_json(args.output_report, report)
 
-    return {
+    summary = {
         "mode": "discover",
         "phase": "2A-5A",
-        "query_group_count": len(query_plan.get("query_groups", [])),
+        "discovery_status": discovery_status,
+        "query_group_count": len(query_groups),
         "raw_candidate_count": len(raw_candidates),
         "deduped_candidate_count": len(ranked_candidates),
         "sample_candidate_count": len(sample_candidates),
+        "successful_query_groups": successful_query_groups,
+        "failed_query_groups": failed_query_groups,
+        "errors": errors,
         "output_candidates": str(args.output_candidates),
         "output_review_csv": str(args.output_review_csv),
         "output_sample": str(args.output_sample),
         "output_report": str(args.output_report),
         "warnings": report["warnings"],
     }
+    if discovery_status == "failed":
+        msg = "All selected arXiv query groups failed; see discovery report for details."
+        raise RuntimeError(msg)
+    if discovery_status == "partial" and not (args.allow_partial or args.continue_on_error):
+        msg = "arXiv discovery was partial; rerun with --allow-partial to accept partial outputs."
+        raise RuntimeError(msg)
+    return summary
 
 
 def dry_run(args: argparse.Namespace) -> dict[str, Any]:
     query_plan = load_json(args.query_plan)
-    urls = planned_urls(query_plan, args.max_results_per_query)
+    urls = planned_urls(query_plan, args.max_results_per_query, args.query_id)
     return {
         "mode": "dry_run",
         "phase": "2A-5A",
+        "discovery_status": "dry_run",
         "planned_query_count": len(urls),
         "planned_queries": urls,
         "output_candidates": str(args.output_candidates),
@@ -554,6 +707,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--discover", action="store_true")
     parser.add_argument("--query-plan", type=Path, default=DEFAULT_QUERY_PLAN)
+    parser.add_argument("--query-id", default="all")
     parser.add_argument("--output-candidates", type=Path, default=DEFAULT_OUTPUT_CANDIDATES)
     parser.add_argument("--output-review-csv", type=Path, default=DEFAULT_OUTPUT_REVIEW_CSV)
     parser.add_argument("--output-sample", type=Path, default=DEFAULT_OUTPUT_SAMPLE)
@@ -562,13 +716,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--sample-size", type=int, default=12)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--delay-seconds", type=float, default=0)
+    parser.add_argument("--timeout-seconds", type=int, default=30)
+    parser.add_argument("--max-retries", type=int, default=3)
+    parser.add_argument("--backoff-seconds", type=float, default=10)
+    parser.add_argument("--continue-on-error", action="store_true")
+    parser.add_argument("--allow-partial", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    if not args.discover and not args.dry_run:
-        print("Pass --dry-run or --discover.", file=sys.stderr)
+    if args.discover == args.dry_run:
+        print("Pass exactly one mode: --dry-run or --discover.", file=sys.stderr)
         return 2
     try:
         summary = dry_run(args) if args.dry_run else discover(args)

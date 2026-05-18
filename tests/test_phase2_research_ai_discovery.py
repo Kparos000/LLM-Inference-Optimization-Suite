@@ -2,8 +2,11 @@ import importlib.util
 import json
 import subprocess
 import sys
+import urllib.error
+from email.message import Message
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 QUERY_PLAN_PATH = ROOT / "data/sources/research_ai_query_plan.json"
@@ -57,6 +60,122 @@ def test_status_schemas_include_out_of_scope() -> None:
 
     assert "out_of_scope" in gold_schema["properties"]["expected_status"]["enum"]
     assert "out_of_scope" in research_schema["properties"]["expected_status"]["enum"]
+
+
+def test_query_id_filter() -> None:
+    module = _load_discovery_module()
+    query_plan = _load_json(QUERY_PLAN_PATH)
+
+    selected = module.select_query_groups(query_plan, "llm_serving_inference_optimization")
+
+    assert len(selected) == 1
+    assert selected[0]["query_id"] == "llm_serving_inference_optimization"
+    try:
+        module.select_query_groups(query_plan, "unknown_query")
+    except RuntimeError as exc:
+        assert "Unknown query_id" in str(exc)
+    else:
+        raise AssertionError("Expected unknown query_id to raise RuntimeError")
+
+
+class _FakeResponse:
+    def __init__(self, body: bytes) -> None:
+        self.body = body
+
+    def __enter__(self) -> "_FakeResponse":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.body
+
+
+def test_fetch_url_with_retries_success() -> None:
+    module = _load_discovery_module()
+    xml_text = b"<feed><entry></entry></feed>"
+
+    with mock.patch.object(
+        module.urllib.request,
+        "urlopen",
+        return_value=_FakeResponse(xml_text),
+    ):
+        result = module.fetch_url_with_retries(
+            url="https://export.arxiv.org/api/query",
+            user_agent="test-agent",
+            timeout_seconds=1,
+            max_retries=3,
+            backoff_seconds=0,
+        )
+
+    assert "<feed>" in result
+
+
+def test_fetch_url_with_retries_429_then_success() -> None:
+    module = _load_discovery_module()
+    url = "https://export.arxiv.org/api/query"
+    headers = Message()
+    headers.add_header("Retry-After", "0")
+    too_many_requests = urllib.error.HTTPError(
+        url=url,
+        code=429,
+        msg="Too Many Requests",
+        hdrs=headers,
+        fp=None,
+    )
+
+    with (
+        mock.patch.object(
+            module.urllib.request,
+            "urlopen",
+            side_effect=[too_many_requests, _FakeResponse(b"<feed>ok</feed>")],
+        ) as urlopen_mock,
+        mock.patch.object(module.time, "sleep") as sleep_mock,
+    ):
+        result = module.fetch_url_with_retries(
+            url=url,
+            user_agent="test-agent",
+            timeout_seconds=1,
+            max_retries=3,
+            backoff_seconds=0,
+        )
+
+    assert result == "<feed>ok</feed>"
+    assert urlopen_mock.call_count == 2
+    sleep_mock.assert_called_once()
+
+
+def test_fetch_url_with_retries_4xx_non_retry() -> None:
+    module = _load_discovery_module()
+    url = "https://export.arxiv.org/api/query"
+    not_found = urllib.error.HTTPError(
+        url=url,
+        code=404,
+        msg="Not Found",
+        hdrs=Message(),
+        fp=None,
+    )
+
+    with mock.patch.object(
+        module.urllib.request,
+        "urlopen",
+        side_effect=not_found,
+    ) as urlopen_mock:
+        try:
+            module.fetch_url_with_retries(
+                url=url,
+                user_agent="test-agent",
+                timeout_seconds=1,
+                max_retries=3,
+                backoff_seconds=0,
+            )
+        except RuntimeError as exc:
+            assert "HTTP 404" in str(exc)
+        else:
+            raise AssertionError("Expected HTTP 404 to raise RuntimeError")
+
+    assert urlopen_mock.call_count == 1
 
 
 def test_parse_arxiv_atom() -> None:
@@ -172,6 +291,41 @@ def test_rank_candidates() -> None:
     assert ranked[0]["score"] == 10
 
 
+def test_partial_report_shape() -> None:
+    module = _load_discovery_module()
+    query_plan = _load_json(QUERY_PLAN_PATH)
+
+    report = module.build_report(
+        query_plan=query_plan,
+        raw_candidate_count=1,
+        ranked_candidates=[],
+        sample_candidates=[],
+        output_files={"discovery_report_json": "report.json"},
+        discovery_status="partial",
+        failed_query_groups=["query_b"],
+        successful_query_groups=["query_a"],
+        errors=[
+            {
+                "query_id": "query_b",
+                "url": "https://export.arxiv.org/api/query",
+                "error_message": "HTTP 429",
+            }
+        ],
+        retry_policy={
+            "max_retries": 3,
+            "backoff_seconds": 10,
+            "timeout_seconds": 30,
+            "delay_seconds": 3,
+        },
+    )
+
+    assert report["discovery_status"] == "partial"
+    assert report["failed_query_groups"] == ["query_b"]
+    assert report["successful_query_groups"] == ["query_a"]
+    assert report["errors"][0]["error_message"] == "HTTP 429"
+    assert report["retry_policy"]["max_retries"] == 3
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],
@@ -185,6 +339,27 @@ def test_dry_run_cli() -> None:
     summary = json.loads(result.stdout)
     assert summary["mode"] == "dry_run"
     assert summary["planned_query_count"] == 7
+
+
+def test_dry_run_supports_query_id() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--query-id",
+            "llm_serving_inference_optimization",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["mode"] == "dry_run"
+    assert summary["planned_query_count"] == 1
 
 
 def test_sample_file_exists_after_generation_or_static_fixture() -> None:
@@ -213,3 +388,12 @@ def test_docs_include_status_taxonomy() -> None:
     assert "World Cup" in text
     assert "Phase 2A-5B" in text
     assert "RAG/context engineering remains deferred" in text
+
+
+def test_docs_include_rate_limit_guidance() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "HTTP 429" in text
+    assert "retry/backoff" in text
+    assert "--query-id" in text
+    assert "--allow-partial" in text
