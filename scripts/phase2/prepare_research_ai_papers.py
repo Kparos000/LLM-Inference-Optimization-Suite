@@ -1,0 +1,1150 @@
+"""Prepare approved Research AI papers with metadata, PDFs, and extracted text.
+
+This Phase 2A-5A-Text script enriches the approved paper registry and prepares
+local text artifacts where possible. It does not build RAG indexes, embeddings,
+prompts, gold records, or run model inference.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import html
+import importlib
+import json
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from collections import Counter
+from datetime import datetime, timezone
+from html.parser import HTMLParser
+from pathlib import Path
+from typing import Any
+
+PHASE = "2A-5A-Text"
+USER_AGENT = "LLM-Inference-Optimization-Suite research-paper-prep"
+
+DEFAULT_APPROVED_REGISTRY_PATH = Path("data/sources/research_ai_approved_papers.jsonl")
+DEFAULT_ENRICHED_REGISTRY_PATH = Path("data/generated/research_ai/enriched_paper_registry.jsonl")
+DEFAULT_RAW_PAPER_DIR = Path("data/raw/research_ai/papers/")
+DEFAULT_PAPER_TEXT_DIR = Path("data/processed/research_ai/paper_text/")
+DEFAULT_TEXT_MANIFEST_PATH = Path("data/processed/research_ai/paper_text_manifest.jsonl")
+DEFAULT_SECTIONS_MANIFEST_PATH = Path("data/processed/research_ai/paper_sections_manifest.jsonl")
+DEFAULT_REPORT_PATH = Path("data/generated/research_ai/research_ai_paper_preparation_report.json")
+
+PAPER_SECTION_HEADINGS = {
+    "abstract": ("Abstract",),
+    "introduction": ("Introduction",),
+    "related_work": ("Related Work",),
+    "background": ("Background",),
+    "method": ("Method", "Methods", "Approach"),
+    "experiments": ("Experiments", "Experimental Setup"),
+    "results": ("Results", "Evaluation"),
+    "discussion": ("Discussion",),
+    "limitations": ("Limitations",),
+    "conclusion": ("Conclusion",),
+    "references": ("References",),
+}
+
+
+class LinkExtractor(HTMLParser):
+    """Extract links and visible link text from a small HTML document."""
+
+    def __init__(self, base_url: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.base_url = base_url
+        self.links: list[dict[str, str]] = []
+        self._active_links: list[dict[str, Any]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "a":
+            return
+        attr_map = {name.lower(): value or "" for name, value in attrs}
+        href = attr_map.get("href", "").strip()
+        if not href:
+            return
+        self._active_links.append({"href": href, "text_parts": []})
+
+    def handle_data(self, data: str) -> None:
+        if self._active_links:
+            self._active_links[-1]["text_parts"].append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "a" or not self._active_links:
+            return
+        active = self._active_links.pop()
+        href = str(active["href"])
+        text = normalize_whitespace(" ".join(str(part) for part in active["text_parts"]))
+        self.links.append(
+            {
+                "text": text,
+                "href": html.unescape(href),
+                "absolute_url": urllib.parse.urljoin(self.base_url, html.unescape(href)),
+            }
+        )
+
+
+class PageMetadataParser(HTMLParser):
+    """Collect visible text, metadata tags, and the HTML title."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.meta: dict[str, list[str]] = {}
+        self.title_parts: list[str] = []
+        self.visible_parts: list[str] = []
+        self._capture_title = False
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag_lower = tag.lower()
+        if tag_lower in {"script", "style", "noscript"}:
+            self._skip_depth += 1
+            return
+        if tag_lower == "title":
+            self._capture_title = True
+            return
+        if tag_lower == "meta":
+            attr_map = {name.lower(): value or "" for name, value in attrs}
+            key = attr_map.get("name") or attr_map.get("property")
+            content = normalize_whitespace(attr_map.get("content"))
+            if key and content:
+                self.meta.setdefault(key.lower(), []).append(content)
+        if tag_lower in {"br", "p", "div", "section", "h1", "h2", "h3", "li"}:
+            self.visible_parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if self._skip_depth > 0:
+            return
+        if self._capture_title:
+            self.title_parts.append(data)
+        self.visible_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag_lower = tag.lower()
+        if tag_lower in {"script", "style", "noscript"} and self._skip_depth > 0:
+            self._skip_depth -= 1
+            return
+        if tag_lower == "title":
+            self._capture_title = False
+        if tag_lower in {"p", "div", "section", "h1", "h2", "h3", "li"}:
+            self.visible_parts.append("\n")
+
+    @property
+    def title(self) -> str:
+        return normalize_whitespace(" ".join(self.title_parts))
+
+    @property
+    def visible_text(self) -> str:
+        text = "\n".join(part.strip() for part in self.visible_parts if part.strip())
+        return normalize_text_block(text)
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def normalize_whitespace(value: str | None) -> str:
+    return re.sub(r"\s+", " ", html.unescape(value or "")).strip()
+
+
+def normalize_text_block(value: str | None) -> str:
+    text = html.unescape(value or "")
+    text = re.sub(r"[ \t\r\f\v]+", " ", text)
+    text = re.sub(r"\n\s*\n+", "\n", text)
+    return text.strip()
+
+
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        msg = f"Missing JSONL input: {path}"
+        raise RuntimeError(msg)
+    rows: list[dict[str, Any]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError as exc:
+            msg = f"Invalid JSON in {path} on line {line_number}: {exc.msg}"
+            raise RuntimeError(msg) from exc
+        if not isinstance(parsed, dict):
+            msg = f"Expected JSON object in {path} on line {line_number}"
+            raise RuntimeError(msg)
+        rows.append(parsed)
+    return rows
+
+
+def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as file:
+        for row in rows:
+            file.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True) + "\n")
+
+
+def apply_limit(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    if limit <= 0:
+        return rows
+    return rows[:limit]
+
+
+def fetch_html(url: str, timeout_seconds: int, delay_seconds: float) -> str:
+    if delay_seconds > 0:
+        time.sleep(delay_seconds)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            raw = response.read()
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
+        msg = f"Failed to fetch HTML from {url}: {exc}"
+        raise RuntimeError(msg) from exc
+    return raw.decode("utf-8", errors="replace")
+
+
+def extract_links_from_html(html_text: str, base_url: str) -> list[dict[str, str]]:
+    parser = LinkExtractor(base_url)
+    parser.feed(html_text)
+    return parser.links
+
+
+def parse_page_metadata(html_text: str) -> PageMetadataParser:
+    parser = PageMetadataParser()
+    parser.feed(html_text)
+    return parser
+
+
+def first_meta_value(parser: PageMetadataParser, names: tuple[str, ...]) -> str | None:
+    for name in names:
+        values = parser.meta.get(name.lower())
+        if values:
+            return values[0]
+    return None
+
+
+def meta_values(parser: PageMetadataParser, names: tuple[str, ...]) -> list[str]:
+    values: list[str] = []
+    for name in names:
+        values.extend(parser.meta.get(name.lower(), []))
+    return dedupe_preserve_order(values)
+
+
+def dedupe_preserve_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for value in values:
+        normalized = normalize_whitespace(value)
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(normalized)
+    return deduped
+
+
+def first_link_url(
+    links: list[dict[str, str]],
+    *,
+    url_contains: tuple[str, ...] = (),
+    text_contains: tuple[str, ...] = (),
+    url_endswith: tuple[str, ...] = (),
+) -> str | None:
+    for link in links:
+        absolute_url = link["absolute_url"]
+        url_lower = absolute_url.lower()
+        text_lower = link["text"].lower()
+        if url_endswith and not any(url_lower.split("?", 1)[0].endswith(s) for s in url_endswith):
+            continue
+        if url_contains and not any(term in url_lower for term in url_contains):
+            continue
+        if text_contains and not any(term in text_lower for term in text_contains):
+            continue
+        return absolute_url
+    return None
+
+
+def extract_title_from_metadata(parser: PageMetadataParser) -> str | None:
+    title = first_meta_value(
+        parser,
+        (
+            "citation_title",
+            "og:title",
+            "twitter:title",
+            "dc.title",
+        ),
+    )
+    if title:
+        return strip_site_suffix(title)
+    if parser.title:
+        return strip_site_suffix(parser.title)
+    match = re.search(r"(?im)^\s*Title\s*[:\n]\s*(.+)$", parser.visible_text)
+    if match:
+        return normalize_whitespace(match.group(1))
+    return None
+
+
+def strip_site_suffix(title: str) -> str:
+    return re.sub(r"\s*[\-|]\s*(OpenReview|ICLR.*)$", "", normalize_whitespace(title)).strip()
+
+
+def split_authors(value: str) -> list[str]:
+    text = normalize_whitespace(value)
+    if not text:
+        return []
+    text = re.sub(r"^(Authors?|By)\s*:\s*", "", text, flags=re.IGNORECASE)
+    parts = re.split(r"\s*;\s*|\s*,\s*|\s+\band\b\s+", text)
+    return [
+        part.strip()
+        for part in parts
+        if part.strip()
+        and len(part.strip()) <= 120
+        and not part.strip().lower().startswith("abstract")
+    ]
+
+
+def extract_authors_from_metadata(parser: PageMetadataParser) -> list[str]:
+    authors = meta_values(
+        parser,
+        (
+            "citation_author",
+            "dc.creator",
+            "author",
+        ),
+    )
+    if authors:
+        return authors
+    text = parser.visible_text
+    match = re.search(
+        r"(?is)(?:^|\n)\s*Authors?\s*[:\n]\s*(.+?)(?:\n\s*(?:Abstract|Keywords|TL;DR|PDF)\b|$)",
+        text,
+    )
+    if match:
+        return split_authors(match.group(1))
+    return []
+
+
+def extract_abstract_from_metadata(parser: PageMetadataParser) -> str | None:
+    abstract = first_meta_value(
+        parser,
+        (
+            "citation_abstract",
+            "description",
+            "og:description",
+            "twitter:description",
+            "dc.description",
+        ),
+    )
+    if abstract and not looks_like_navigation_text(abstract):
+        return abstract
+    text = parser.visible_text
+    match = re.search(
+        (
+            r"(?is)(?:^|\n)\s*Abstract\s*[:\n]\s*(.+?)"
+            r"(?=\n\s*(?:1\s+)?(?:Introduction|Keywords|Related Work|Background|Method|PDF)\b|$)"
+        ),
+        text,
+    )
+    if match:
+        return normalize_text_block(match.group(1))
+    return None
+
+
+def looks_like_navigation_text(value: str) -> bool:
+    text = value.lower()
+    return any(term in text for term in ("openreview", "sign in", "conference management"))
+
+
+def parse_keywords_from_metadata(parser: PageMetadataParser) -> list[str]:
+    keywords = meta_values(parser, ("citation_keywords", "keywords"))
+    parsed_keywords: list[str] = []
+    for value in keywords:
+        parsed_keywords.extend(part.strip() for part in re.split(r"[,;]", value) if part.strip())
+    return dedupe_preserve_order(parsed_keywords)
+
+
+def parse_iclr_poster_page(html_text: str, source_url: str) -> dict[str, Any]:
+    links = extract_links_from_html(html_text, source_url)
+    parser = parse_page_metadata(html_text)
+    openreview_url = first_link_url(links, url_contains=("openreview.net",))
+    pdf_url = first_link_url(links, url_contains=("openreview.net/pdf",)) or first_link_url(
+        links, url_endswith=(".pdf",)
+    )
+    supplementary_url = first_link_url(
+        links,
+        url_contains=("supplement", "attachment"),
+    ) or first_link_url(links, text_contains=("supplement", "appendix"))
+    presentation_url = first_link_url(links, text_contains=("presentation", "video", "slides"))
+    poster_url = first_link_url(links, text_contains=("poster",)) or (
+        source_url if "/poster/" in source_url else None
+    )
+    return {
+        "source_url": source_url,
+        "title": extract_title_from_metadata(parser),
+        "authors": extract_authors_from_metadata(parser),
+        "abstract": extract_abstract_from_metadata(parser),
+        "openreview_url": openreview_url,
+        "pdf_url": pdf_url,
+        "supplementary_url": supplementary_url,
+        "presentation_url": presentation_url,
+        "poster_url": poster_url,
+    }
+
+
+def parse_openreview_page(html_text: str, source_url: str) -> dict[str, Any]:
+    links = extract_links_from_html(html_text, source_url)
+    parser = parse_page_metadata(html_text)
+    pdf_url = first_link_url(links, url_contains=("openreview.net/pdf", "/pdf?id="))
+    forum_url = (
+        source_url
+        if "openreview.net/forum" in source_url
+        else first_link_url(links, url_contains=("openreview.net/forum", "/forum?id="))
+    )
+    venue = first_meta_value(parser, ("citation_conference_title", "citation_journal_title"))
+    if not venue:
+        venue_match = re.search(r"(?i)\bICLR\s+20\d{2}\b", parser.visible_text)
+        venue = venue_match.group(0) if venue_match else None
+    return {
+        "source_url": source_url,
+        "title": extract_title_from_metadata(parser),
+        "authors": extract_authors_from_metadata(parser),
+        "abstract": extract_abstract_from_metadata(parser),
+        "pdf_url": pdf_url,
+        "forum_url": forum_url,
+        "venue": venue,
+        "keywords": parse_keywords_from_metadata(parser),
+    }
+
+
+def choose_first_text(*values: Any) -> str | None:
+    for value in values:
+        text = normalize_text_block(str(value)) if value not in (None, "", []) else ""
+        if text:
+            return text
+    return None
+
+
+def choose_first_list(*values: Any) -> list[str]:
+    for value in values:
+        if isinstance(value, list):
+            parsed = [str(item).strip() for item in value if str(item).strip()]
+        elif value:
+            parsed = split_authors(str(value))
+        else:
+            parsed = []
+        if parsed:
+            return parsed
+    return []
+
+
+def enrich_paper_record(
+    record: dict[str, Any], fetched_pages: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    iclr_page = fetched_pages.get("iclr", {})
+    openreview_page = fetched_pages.get("openreview", {})
+    original_authors = record.get("authors")
+    original_abstract = record.get("abstract") or record.get("abstract_enriched")
+    original_pdf_url = record.get("pdf_url")
+    original_openreview_url = record.get("openreview_url")
+
+    authors = choose_first_list(
+        openreview_page.get("authors"),
+        iclr_page.get("authors"),
+        original_authors,
+    )
+    abstract = choose_first_text(
+        openreview_page.get("abstract"),
+        iclr_page.get("abstract"),
+        original_abstract,
+    )
+    pdf_url = choose_first_text(
+        openreview_page.get("pdf_url"),
+        iclr_page.get("pdf_url"),
+        original_pdf_url,
+    )
+    openreview_url = choose_first_text(
+        iclr_page.get("openreview_url"),
+        openreview_page.get("forum_url"),
+        original_openreview_url,
+    )
+    source_pages_checked = [
+        str(page.get("source_url"))
+        for page in (iclr_page, openreview_page)
+        if page.get("source_url")
+    ]
+    errors = [str(page.get("error")) for page in (iclr_page, openreview_page) if page.get("error")]
+    missing_fields_after_enrichment = [
+        field
+        for field, value in (
+            ("authors", authors),
+            ("abstract", abstract),
+            ("pdf_url", pdf_url),
+            ("openreview_url", openreview_url),
+        )
+        if value in (None, "", [])
+    ]
+    useful_fields_found = sum(
+        1 for value in (authors, abstract, pdf_url, openreview_url) if value not in (None, "", [])
+    )
+    if not missing_fields_after_enrichment and not errors:
+        status = "success"
+    elif useful_fields_found > 0 or source_pages_checked:
+        status = "partial"
+    else:
+        status = "failed"
+
+    enriched = dict(record)
+    enriched.update(
+        {
+            "enriched_metadata_status": status,
+            "enriched_at_utc": utc_now(),
+            "authors_enriched": authors,
+            "abstract_enriched": abstract,
+            "pdf_url_enriched": pdf_url,
+            "openreview_url": openreview_url,
+            "source_pages_checked": source_pages_checked,
+            "missing_fields_after_enrichment": missing_fields_after_enrichment,
+            "enrichment_errors": errors,
+        }
+    )
+    if authors and not enriched.get("authors"):
+        enriched["authors"] = authors
+    if pdf_url and not enriched.get("pdf_url"):
+        enriched["pdf_url"] = pdf_url
+    if abstract and not enriched.get("abstract"):
+        enriched["abstract"] = abstract
+    return enriched
+
+
+def build_local_pdf_path(record: dict[str, Any], raw_paper_dir: Path) -> Path:
+    paper_id = str(record.get("paper_id") or "unknown_paper").strip()
+    return raw_paper_dir / paper_id / f"{paper_id}.pdf"
+
+
+def download_binary(
+    url: str,
+    destination: Path,
+    timeout_seconds: int,
+    delay_seconds: float,
+) -> dict[str, Any]:
+    if delay_seconds > 0:
+        time.sleep(delay_seconds)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/pdf,application/octet-stream,*/*",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            payload = response.read()
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
+        return {
+            "download_status": "failed",
+            "source_url": url,
+            "local_pdf_path": str(destination),
+            "file_size_bytes": 0,
+            "sha256": None,
+            "error_message": str(exc),
+        }
+    destination.write_bytes(payload)
+    return {
+        "download_status": "downloaded",
+        "source_url": url,
+        "local_pdf_path": str(destination),
+        "file_size_bytes": len(payload),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "error_message": "",
+    }
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_pdf_reader() -> tuple[Any | None, str]:
+    for module_name in ("pypdf", "PyPDF2"):
+        try:
+            module = importlib.import_module(module_name)
+        except ImportError:
+            continue
+        reader = getattr(module, "PdfReader", None)
+        if reader is not None:
+            return reader, module_name
+    return None, "skipped_missing_dependency"
+
+
+def extract_text_from_pdf(pdf_path: Path) -> tuple[str, str]:
+    reader_class, method = load_pdf_reader()
+    if reader_class is None:
+        return "", method
+    try:
+        reader = reader_class(str(pdf_path))
+        pages = getattr(reader, "pages", [])
+        page_text = [str(page.extract_text() or "") for page in pages]
+    except Exception:  # noqa: BLE001 - one bad PDF must not stop preparation.
+        return "", f"failed_{method}"
+    text = normalize_text_block("\n\n".join(page_text))
+    return text, method if text else f"failed_{method}_empty_text"
+
+
+def write_text_file(path: Path, text: str) -> dict[str, Any]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+    return {
+        "local_text_path": str(path),
+        "text_char_count": len(text),
+        "text_word_count": len(re.findall(r"\b\w+\b", text)),
+        "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    }
+
+
+def section_heading_regex() -> re.Pattern[str]:
+    headings = [
+        re.escape(heading)
+        for heading_values in PAPER_SECTION_HEADINGS.values()
+        for heading in heading_values
+    ]
+    heading_alternation = "|".join(sorted(headings, key=len, reverse=True))
+    return re.compile(rf"(?im)^\s*(?:\d+(?:\.\d+)*\.?\s+)?({heading_alternation})\s*$")
+
+
+def normalize_section_type(section_title: str) -> str:
+    lowered = section_title.lower()
+    for section_type, headings in PAPER_SECTION_HEADINGS.items():
+        if lowered in {heading.lower() for heading in headings}:
+            return section_type
+    return re.sub(r"[^a-z0-9]+", "_", lowered).strip("_") or "section"
+
+
+def detect_research_paper_sections(text: str, record: dict[str, Any]) -> list[dict[str, Any]]:
+    matches = list(section_heading_regex().finditer(text))
+    if not matches:
+        return []
+    paper_id = str(record.get("paper_id") or "unknown_paper")
+    title = str(record.get("title") or "")
+    local_text_path = str(record.get("local_text_path") or "")
+    extraction_method = str(record.get("extraction_method") or "")
+    sections: list[dict[str, Any]] = []
+    for index, match in enumerate(matches):
+        section_title = normalize_whitespace(match.group(1))
+        section_type = normalize_section_type(section_title)
+        section_start = match.start()
+        section_end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        section_text = text[section_start:section_end].strip()
+        sections.append(
+            {
+                "section_record_id": (
+                    f"research_ai_section_{paper_id}_{index + 1:03d}_{section_type}"
+                ),
+                "paper_id": paper_id,
+                "title": title,
+                "section_type": section_type,
+                "section_title": section_title,
+                "section_start_char": section_start,
+                "section_end_char": section_end,
+                "char_count": len(section_text),
+                "word_count": len(re.findall(r"\b\w+\b", section_text)),
+                "extraction_method": extraction_method,
+                "local_text_path": local_text_path,
+            }
+        )
+    return sections
+
+
+def counts_by_topic(records: list[dict[str, Any]]) -> dict[str, int]:
+    counter: Counter[str] = Counter()
+    for record in records:
+        topics = record.get("topics")
+        if isinstance(topics, list):
+            counter.update(str(topic) for topic in topics)
+        elif record.get("topic"):
+            counter[str(record["topic"])] += 1
+    return dict(counter)
+
+
+def counts_by_source(records: list[dict[str, Any]]) -> dict[str, int]:
+    return dict(Counter(str(record.get("source") or "") for record in records))
+
+
+def build_paper_preparation_report(
+    approved_records: list[dict[str, Any]] | None = None,
+    enriched_records: list[dict[str, Any]] | None = None,
+    text_manifest_rows: list[dict[str, Any]] | None = None,
+    section_rows: list[dict[str, Any]] | None = None,
+    output_files: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    approved = approved_records or []
+    enriched = enriched_records or []
+    text_rows = text_manifest_rows or []
+    sections = section_rows or []
+    records_for_counts = enriched or approved
+    enrichment_statuses = Counter(
+        str(record.get("enriched_metadata_status") or "") for record in enriched
+    )
+    pdf_download_statuses = Counter(
+        str(record.get("pdf_download_status") or "") for record in enriched
+    )
+    text_statuses = Counter(str(row.get("text_extraction_status") or "") for row in text_rows)
+    return {
+        "phase": PHASE,
+        "generated_at_utc": utc_now(),
+        "approved_record_count": len(approved),
+        "enriched_record_count": len(enriched),
+        "enrichment_success_count": enrichment_statuses.get("success", 0),
+        "enrichment_partial_count": enrichment_statuses.get("partial", 0),
+        "enrichment_failed_count": enrichment_statuses.get("failed", 0),
+        "pdf_urls_found": sum(
+            1 for record in enriched if record.get("pdf_url_enriched") or record.get("pdf_url")
+        ),
+        "pdfs_downloaded": (
+            pdf_download_statuses.get("downloaded", 0) + pdf_download_statuses.get("existing", 0)
+        ),
+        "pdf_download_failures": pdf_download_statuses.get("failed", 0),
+        "text_extracted_count": text_statuses.get("extracted", 0),
+        "text_extraction_skipped_count": sum(
+            count
+            for status, count in text_statuses.items()
+            if status.startswith("skipped") or status.startswith("failed")
+        ),
+        "sections_extracted_count": len(sections),
+        "counts_by_topic": counts_by_topic(records_for_counts),
+        "counts_by_source": counts_by_source(records_for_counts),
+        "missing_authors_count": sum(
+            1
+            for record in records_for_counts
+            if not record.get("authors_enriched") and not record.get("authors")
+        ),
+        "missing_abstract_count": sum(
+            1
+            for record in records_for_counts
+            if not record.get("abstract_enriched") and not record.get("abstract")
+        ),
+        "missing_pdf_url_count": sum(
+            1
+            for record in records_for_counts
+            if not record.get("pdf_url_enriched") and not record.get("pdf_url")
+        ),
+        "output_files": output_files or {},
+        "warnings": [
+            "This is paper detail acquisition and text preparation only.",
+            "No RAG, retrieval, embeddings, prompt assembly, or inference is performed.",
+            "Some conference records may not expose PDFs or abstracts on the listing page.",
+            (
+                "Phase 2A-5B should create curated Research AI prompts/KB/gold only "
+                "from records with enough metadata/text evidence."
+            ),
+        ],
+        "next_step": (
+            "Proceed to Phase 2A-5B only after reviewing enriched metadata and text "
+            "extraction coverage."
+        ),
+    }
+
+
+def output_files_from_args(args: argparse.Namespace) -> dict[str, str]:
+    return {
+        "approved_registry_path": str(args.approved_registry_path),
+        "enriched_registry_path": str(args.enriched_registry_path),
+        "raw_paper_dir": str(args.raw_paper_dir),
+        "paper_text_dir": str(args.paper_text_dir),
+        "text_manifest_path": str(args.text_manifest_path),
+        "sections_manifest_path": str(args.sections_manifest_path),
+        "report_path": str(args.report_path),
+    }
+
+
+def dry_run(args: argparse.Namespace) -> dict[str, Any]:
+    approved_records = apply_limit(read_jsonl(args.approved_registry_path), int(args.limit))
+    report = build_paper_preparation_report(
+        approved_records=approved_records,
+        output_files=output_files_from_args(args),
+    )
+    return {
+        "mode": "dry_run",
+        "phase": PHASE,
+        "approved_record_count": len(approved_records),
+        "planned_provenance_fetches": sum(
+            1 for record in approved_records if record.get("provenance_url")
+        ),
+        "will_download_pdfs": False,
+        "will_extract_text": False,
+        "output_files": output_files_from_args(args),
+        "warnings": report["warnings"],
+        "next_step": "Run --enrich-metadata before PDF download or text extraction.",
+    }
+
+
+def enrich_metadata(args: argparse.Namespace) -> dict[str, Any]:
+    approved_records = apply_limit(read_jsonl(args.approved_registry_path), int(args.limit))
+    enriched_records: list[dict[str, Any]] = []
+    for record in approved_records:
+        fetched_pages: dict[str, dict[str, Any]] = {}
+        provenance_url = str(record.get("provenance_url") or "")
+        if provenance_url:
+            try:
+                iclr_html = fetch_html(
+                    provenance_url,
+                    timeout_seconds=int(args.timeout_seconds),
+                    delay_seconds=float(args.request_delay_seconds),
+                )
+                fetched_pages["iclr"] = parse_iclr_poster_page(iclr_html, provenance_url)
+            except RuntimeError as exc:
+                fetched_pages["iclr"] = {"source_url": provenance_url, "error": str(exc)}
+        else:
+            fetched_pages["iclr"] = {"error": "missing provenance_url"}
+
+        openreview_url = str(fetched_pages.get("iclr", {}).get("openreview_url") or "")
+        if openreview_url:
+            try:
+                openreview_html = fetch_html(
+                    openreview_url,
+                    timeout_seconds=int(args.timeout_seconds),
+                    delay_seconds=float(args.request_delay_seconds),
+                )
+                fetched_pages["openreview"] = parse_openreview_page(
+                    openreview_html,
+                    openreview_url,
+                )
+            except RuntimeError as exc:
+                fetched_pages["openreview"] = {
+                    "source_url": openreview_url,
+                    "error": str(exc),
+                }
+        enriched_records.append(enrich_paper_record(record, fetched_pages))
+
+    write_jsonl(args.enriched_registry_path, enriched_records)
+    report = build_paper_preparation_report(
+        approved_records=approved_records,
+        enriched_records=enriched_records,
+        output_files=output_files_from_args(args),
+    )
+    write_json(args.report_path, report)
+    status_counter = Counter(str(row.get("enriched_metadata_status")) for row in enriched_records)
+    return {
+        "mode": "enrich_metadata",
+        "phase": PHASE,
+        "records_attempted": len(approved_records),
+        "records_enriched_success": status_counter.get("success", 0),
+        "records_enriched_partial": status_counter.get("partial", 0),
+        "records_failed": status_counter.get("failed", 0),
+        "pdf_urls_found": int(report["pdf_urls_found"]),
+        "abstracts_found": sum(1 for record in enriched_records if record.get("abstract_enriched")),
+        "authors_found": sum(1 for record in enriched_records if record.get("authors_enriched")),
+        "enriched_registry_path": str(args.enriched_registry_path),
+        "report_path": str(args.report_path),
+        "warnings": report["warnings"],
+    }
+
+
+def existing_pdf_download_result(url: str, destination: Path) -> dict[str, Any]:
+    return {
+        "download_status": "existing",
+        "source_url": url,
+        "local_pdf_path": str(destination),
+        "file_size_bytes": destination.stat().st_size,
+        "sha256": file_sha256(destination),
+        "error_message": "",
+    }
+
+
+def apply_download_result(record: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(record)
+    updated.update(
+        {
+            "local_pdf_path": result.get("local_pdf_path"),
+            "pdf_download_status": result.get("download_status"),
+            "pdf_download_error": result.get("error_message"),
+            "pdf_sha256": result.get("sha256"),
+            "pdf_file_size_bytes": result.get("file_size_bytes"),
+        }
+    )
+    return updated
+
+
+def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
+    records = apply_limit(read_jsonl(args.enriched_registry_path), int(args.limit))
+    updated_records: list[dict[str, Any]] = []
+    for record in records:
+        pdf_url = str(record.get("pdf_url_enriched") or record.get("pdf_url") or "")
+        destination = build_local_pdf_path(record, args.raw_paper_dir)
+        if not pdf_url:
+            result = {
+                "download_status": "skipped_no_pdf_url",
+                "source_url": "",
+                "local_pdf_path": str(destination),
+                "file_size_bytes": 0,
+                "sha256": None,
+                "error_message": "",
+            }
+        elif bool(args.skip_existing) and destination.exists():
+            result = existing_pdf_download_result(pdf_url, destination)
+        else:
+            result = download_binary(
+                pdf_url,
+                destination,
+                timeout_seconds=int(args.timeout_seconds),
+                delay_seconds=float(args.request_delay_seconds),
+            )
+        updated_records.append(apply_download_result(record, result))
+
+    write_jsonl(args.enriched_registry_path, updated_records)
+    approved_records = read_jsonl(args.approved_registry_path)
+    report = build_paper_preparation_report(
+        approved_records=approved_records,
+        enriched_records=updated_records,
+        output_files=output_files_from_args(args),
+    )
+    write_json(args.report_path, report)
+    download_statuses = Counter(
+        str(record.get("pdf_download_status") or "") for record in updated_records
+    )
+    return {
+        "mode": "download_pdfs",
+        "phase": PHASE,
+        "records_attempted": len(records),
+        "pdf_urls_found": int(report["pdf_urls_found"]),
+        "pdfs_downloaded": int(report["pdfs_downloaded"]),
+        "pdf_download_failures": int(report["pdf_download_failures"]),
+        "pdfs_skipped_no_url": download_statuses.get("skipped_no_pdf_url", 0),
+        "enriched_registry_path": str(args.enriched_registry_path),
+        "raw_paper_dir": str(args.raw_paper_dir),
+        "report_path": str(args.report_path),
+        "warnings": report["warnings"],
+    }
+
+
+def build_text_manifest_row(
+    record: dict[str, Any],
+    local_pdf_path: Path,
+    local_text_path: Path,
+    status: str,
+    method: str,
+    text_metadata: dict[str, Any] | None = None,
+    error_message: str = "",
+) -> dict[str, Any]:
+    metadata = text_metadata or {}
+    paper_id = str(record.get("paper_id") or "")
+    return {
+        "text_record_id": f"research_ai_text_{paper_id}",
+        "paper_id": paper_id,
+        "title": record.get("title"),
+        "source": record.get("source"),
+        "venue": record.get("venue"),
+        "provenance_url": record.get("provenance_url"),
+        "pdf_url": record.get("pdf_url_enriched") or record.get("pdf_url"),
+        "local_pdf_path": str(local_pdf_path),
+        "local_text_path": metadata.get("local_text_path") or str(local_text_path),
+        "text_extraction_status": status,
+        "extraction_method": method,
+        "text_char_count": metadata.get("text_char_count", 0),
+        "text_word_count": metadata.get("text_word_count", 0),
+        "text_sha256": metadata.get("text_sha256"),
+        "extracted_at_utc": utc_now(),
+        "error_message": error_message,
+    }
+
+
+def extract_text(args: argparse.Namespace) -> dict[str, Any]:
+    records = apply_limit(read_jsonl(args.enriched_registry_path), int(args.limit))
+    text_manifest_rows: list[dict[str, Any]] = []
+    section_rows: list[dict[str, Any]] = []
+    for record in records:
+        local_pdf_value = str(record.get("local_pdf_path") or "").strip()
+        local_pdf_path = (
+            Path(local_pdf_value)
+            if local_pdf_value
+            else build_local_pdf_path(record, args.raw_paper_dir)
+        )
+        local_text_path = args.paper_text_dir / f"{record.get('paper_id')}.txt"
+        if not local_pdf_path.exists():
+            text_manifest_rows.append(
+                build_text_manifest_row(
+                    record,
+                    local_pdf_path,
+                    local_text_path,
+                    "skipped_missing_pdf",
+                    "not_attempted",
+                    error_message="Local PDF file is missing.",
+                )
+            )
+            continue
+        extracted_text, method = extract_text_from_pdf(local_pdf_path)
+        if extracted_text:
+            text_metadata = write_text_file(local_text_path, extracted_text)
+            row = build_text_manifest_row(
+                record,
+                local_pdf_path,
+                local_text_path,
+                "extracted",
+                method,
+                text_metadata,
+            )
+            text_manifest_rows.append(row)
+            section_record = {
+                **record,
+                "local_text_path": row["local_text_path"],
+                "extraction_method": method,
+            }
+            section_rows.extend(detect_research_paper_sections(extracted_text, section_record))
+        else:
+            text_manifest_rows.append(
+                build_text_manifest_row(
+                    record,
+                    local_pdf_path,
+                    local_text_path,
+                    method,
+                    method,
+                    error_message="No text was extracted from local PDF.",
+                )
+            )
+
+    write_jsonl(args.text_manifest_path, text_manifest_rows)
+    write_jsonl(args.sections_manifest_path, section_rows)
+    approved_records = read_jsonl(args.approved_registry_path)
+    report = build_paper_preparation_report(
+        approved_records=approved_records,
+        enriched_records=records,
+        text_manifest_rows=text_manifest_rows,
+        section_rows=section_rows,
+        output_files=output_files_from_args(args),
+    )
+    write_json(args.report_path, report)
+    return {
+        "mode": "extract_text",
+        "phase": PHASE,
+        "records_attempted": len(records),
+        "text_extracted_count": int(report["text_extracted_count"]),
+        "text_extraction_skipped_count": int(report["text_extraction_skipped_count"]),
+        "sections_extracted_count": int(report["sections_extracted_count"]),
+        "text_manifest_path": str(args.text_manifest_path),
+        "sections_manifest_path": str(args.sections_manifest_path),
+        "report_path": str(args.report_path),
+        "warnings": report["warnings"],
+    }
+
+
+def summarize_local(args: argparse.Namespace) -> dict[str, Any]:
+    approved_records = read_jsonl(args.approved_registry_path)
+    enriched_records = (
+        read_jsonl(args.enriched_registry_path) if args.enriched_registry_path.exists() else []
+    )
+    text_rows = read_jsonl(args.text_manifest_path) if args.text_manifest_path.exists() else []
+    section_rows = (
+        read_jsonl(args.sections_manifest_path) if args.sections_manifest_path.exists() else []
+    )
+    report = build_paper_preparation_report(
+        approved_records=approved_records,
+        enriched_records=enriched_records,
+        text_manifest_rows=text_rows,
+        section_rows=section_rows,
+        output_files=output_files_from_args(args),
+    )
+    write_json(args.report_path, report)
+    return {
+        "mode": "summarize_local",
+        "phase": PHASE,
+        "approved_record_count": len(approved_records),
+        "enriched_record_count": len(enriched_records),
+        "text_manifest_record_count": len(text_rows),
+        "section_record_count": len(section_rows),
+        "report_path": str(args.report_path),
+        "warnings": report["warnings"],
+        "next_step": report["next_step"],
+    }
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--enrich-metadata", action="store_true")
+    parser.add_argument("--download-pdfs", action="store_true")
+    parser.add_argument("--extract-text", action="store_true")
+    parser.add_argument("--summarize-local", action="store_true")
+    parser.add_argument(
+        "--approved-registry-path",
+        type=Path,
+        default=DEFAULT_APPROVED_REGISTRY_PATH,
+    )
+    parser.add_argument(
+        "--enriched-registry-path",
+        type=Path,
+        default=DEFAULT_ENRICHED_REGISTRY_PATH,
+    )
+    parser.add_argument("--raw-paper-dir", type=Path, default=DEFAULT_RAW_PAPER_DIR)
+    parser.add_argument("--paper-text-dir", type=Path, default=DEFAULT_PAPER_TEXT_DIR)
+    parser.add_argument("--text-manifest-path", type=Path, default=DEFAULT_TEXT_MANIFEST_PATH)
+    parser.add_argument(
+        "--sections-manifest-path", type=Path, default=DEFAULT_SECTIONS_MANIFEST_PATH
+    )
+    parser.add_argument("--report-path", type=Path, default=DEFAULT_REPORT_PATH)
+    parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--skip-existing", action="store_true")
+    parser.add_argument("--request-delay-seconds", type=float, default=1.0)
+    parser.add_argument("--timeout-seconds", type=int, default=30)
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    mode_count = sum(
+        bool(mode)
+        for mode in (
+            args.dry_run,
+            args.enrich_metadata,
+            args.download_pdfs,
+            args.extract_text,
+            args.summarize_local,
+        )
+    )
+    if mode_count != 1:
+        print(
+            (
+                "Pass exactly one mode: --dry-run, --enrich-metadata, --download-pdfs, "
+                "--extract-text, or --summarize-local."
+            ),
+            file=sys.stderr,
+        )
+        return 2
+    if int(args.limit) < 0:
+        print("--limit must be >= 0.", file=sys.stderr)
+        return 2
+    try:
+        if args.dry_run:
+            summary = dry_run(args)
+        elif args.enrich_metadata:
+            summary = enrich_metadata(args)
+        elif args.download_pdfs:
+            summary = download_pdfs(args)
+        elif args.extract_text:
+            summary = extract_text(args)
+        else:
+            summary = summarize_local(args)
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(summary, ensure_ascii=True, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

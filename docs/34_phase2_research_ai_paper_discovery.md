@@ -270,6 +270,50 @@ Validate the approved registry:
 python scripts/phase2/discover_research_ai_papers.py --validate-manual-registry --manual-registry-path data/sources/research_ai_approved_papers.jsonl
 ```
 
+## Phase 2A-5A-Text Paper Detail Acquisition
+
+The approved registry is metadata-only and is not enough for high-quality
+method, result, or limitation prompts. Phase 2A-5A-Text enriches approved ICLR
+records with available ICLR/OpenReview metadata, downloads PDFs only when paper
+links are available, and extracts local text only when PDF extraction succeeds.
+
+This step creates enriched metadata, paper text manifests, and simple section
+manifests for later review. It does not perform RAG, retrieval, embeddings,
+prompt assembly, inference, or final Research AI prompt/gold generation.
+
+Plan the work without network calls:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --dry-run
+```
+
+Fetch available ICLR/OpenReview metadata:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --enrich-metadata
+```
+
+Download PDFs only for enriched records with PDF URLs:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing
+```
+
+Extract text from local PDFs where supported:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --extract-text
+```
+
+Regenerate the local preparation report:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --summarize-local
+```
+
+If PDF text extraction is unavailable locally, the script should still preserve
+enriched metadata and clearly report skipped text extraction.
+
 ## Next Step
 
 Phase 2A-5B should create:
