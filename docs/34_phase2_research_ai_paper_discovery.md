@@ -109,6 +109,44 @@ python scripts/phase2/discover_research_ai_papers.py --discover --query-id all -
 Phase 2A-5B should only proceed once real candidate papers have been discovered
 or a manually approved paper registry has been created.
 
+## Discovery Observability and Failure Logs
+
+The discovery script writes a discovery report even when every selected arXiv
+query fails. It also writes a run log JSONL file for dry-run, success, partial,
+and failed runs. Generated reports and logs are local/ignored artifacts.
+
+The run log captures:
+
+- HTTP status when available
+- exception type
+- attempt count
+- `Retry-After` header when present
+- request URL
+- response body snippet when available
+- elapsed request time when available
+
+Use this command shape when arXiv returns repeated throttling responses:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --query-id llm_serving_inference_optimization --max-results-per-query 3 --delay-seconds 30 --max-retries 2 --backoff-seconds 60 --simple-query-mode
+```
+
+## Manual Paper Registry Fallback
+
+If arXiv discovery remains unavailable due to HTTP 429 responses or network
+restrictions, the project may proceed by manually approving a small 12-20 paper
+registry. The manual fallback must still preserve provenance URLs, arXiv IDs,
+titles, authors, abstracts where available, and `reason_for_inclusion`.
+
+Do not fabricate paper metadata. Phase 2A-5B can use either discovered
+candidates or a manually approved registry, as long as provenance is clear.
+
+Create the manual review template with:
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --write-manual-template
+```
+
 ## Next Step
 
 Phase 2A-5B should create:

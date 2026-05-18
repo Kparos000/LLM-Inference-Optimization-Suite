@@ -1,8 +1,10 @@
 import importlib.util
+import io
 import json
 import subprocess
 import sys
 import urllib.error
+from argparse import Namespace
 from email.message import Message
 from pathlib import Path
 from typing import Any
@@ -60,6 +62,22 @@ def test_status_schemas_include_out_of_scope() -> None:
 
     assert "out_of_scope" in gold_schema["properties"]["expected_status"]["enum"]
     assert "out_of_scope" in research_schema["properties"]["expected_status"]["enum"]
+
+
+def test_run_log_writer(tmp_path: Path) -> None:
+    module = _load_discovery_module()
+    run_log_path = tmp_path / "run_log.jsonl"
+
+    module.write_run_log_event(run_log_path, {"mode": "test", "event_type": "run_started"})
+    module.write_run_log_event(
+        run_log_path,
+        {"mode": "test", "event_type": "run_completed", "message": "done"},
+    )
+
+    rows = _read_jsonl(run_log_path)
+    assert len(rows) == 2
+    assert rows[0]["phase"] == "2A-5A"
+    assert rows[0]["event_type"] == "run_started"
 
 
 def test_query_id_filter() -> None:
@@ -176,6 +194,42 @@ def test_fetch_url_with_retries_4xx_non_retry() -> None:
             raise AssertionError("Expected HTTP 404 to raise RuntimeError")
 
     assert urlopen_mock.call_count == 1
+
+
+def test_http_error_details_include_status_and_body_snippet() -> None:
+    module = _load_discovery_module()
+    url = "https://export.arxiv.org/api/query"
+    headers = Message()
+    headers.add_header("Retry-After", "2")
+    too_many_requests = urllib.error.HTTPError(
+        url=url,
+        code=429,
+        msg="Too Many Requests",
+        hdrs=headers,
+        fp=io.BytesIO(b"rate limited response body"),
+    )
+
+    with (
+        mock.patch.object(module.urllib.request, "urlopen", side_effect=too_many_requests),
+        mock.patch.object(module.time, "sleep"),
+    ):
+        try:
+            module.fetch_url_with_retries(
+                url=url,
+                user_agent="test-agent",
+                timeout_seconds=1,
+                max_retries=0,
+                backoff_seconds=0,
+            )
+        except module.ArxivFetchError as exc:
+            details = exc.details
+        else:
+            raise AssertionError("Expected ArxivFetchError")
+
+    assert details["status_code"] == 429
+    assert details["response_body_snippet"] == "rate limited response body"
+    assert details["retry_after"] == 2.0
+    assert details["exception_type"] == "HTTPError"
 
 
 def test_parse_arxiv_atom() -> None:
@@ -326,6 +380,61 @@ def test_partial_report_shape() -> None:
     assert report["retry_policy"]["max_retries"] == 3
 
 
+def test_failure_report_written_when_all_queries_fail(tmp_path: Path) -> None:
+    module = _load_discovery_module()
+    report_path = tmp_path / "report.json"
+    run_log_path = tmp_path / "run_log.jsonl"
+    args = Namespace(
+        query_plan=QUERY_PLAN_PATH,
+        query_id="llm_serving_inference_optimization",
+        output_candidates=tmp_path / "candidate_papers.jsonl",
+        output_review_csv=tmp_path / "candidate_papers_review.csv",
+        output_sample=tmp_path / "candidate_papers_sample.jsonl",
+        output_report=report_path,
+        run_log_path=run_log_path,
+        output_manual_template=tmp_path / "manual_template.csv",
+        max_results_per_query=1,
+        sample_size=1,
+        delay_seconds=0,
+        timeout_seconds=1,
+        max_retries=0,
+        backoff_seconds=0,
+        continue_on_error=False,
+        allow_partial=False,
+        simple_query_mode=True,
+    )
+
+    with mock.patch.object(
+        module,
+        "fetch_arxiv_atom",
+        side_effect=module.ArxivFetchError(
+            "mocked HTTP 429",
+            {
+                "query_id": "llm_serving_inference_optimization",
+                "url": "https://export.arxiv.org/api/query",
+                "attempt_number": 1,
+                "status_code": 429,
+                "exception_type": "HTTPError",
+                "retry_after": None,
+                "response_body_snippet": "rate limited",
+                "error_message": "mocked HTTP 429",
+            },
+        ),
+    ):
+        try:
+            module.discover(args)
+        except RuntimeError as exc:
+            assert "All selected arXiv query groups failed" in str(exc)
+        else:
+            raise AssertionError("Expected failed discovery to raise RuntimeError")
+
+    report = _load_json(report_path)
+    assert report["discovery_status"] == "failed"
+    assert report["errors"]
+    assert report["failed_query_groups"] == ["llm_serving_inference_optimization"]
+    assert run_log_path.exists()
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],
@@ -360,6 +469,106 @@ def test_dry_run_supports_query_id() -> None:
     summary = json.loads(result.stdout)
     assert summary["mode"] == "dry_run"
     assert summary["planned_query_count"] == 1
+
+
+def test_simple_query_mode_changes_dry_run_url() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--query-id",
+            "llm_serving_inference_optimization",
+            "--simple-query-mode",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    planned_url = summary["planned_queries"][0]["url"]
+    assert "LLM+inference" in planned_url
+    assert "large+language+model+inference" not in planned_url
+
+
+def test_write_manual_template_cli(tmp_path: Path) -> None:
+    manual_template_path = tmp_path / "manual.csv"
+    run_log_path = tmp_path / "manual_log.jsonl"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--write-manual-template",
+            "--output-manual-template",
+            str(manual_template_path),
+            "--run-log-path",
+            str(run_log_path),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["mode"] == "write_manual_template"
+    header = manual_template_path.read_text(encoding="utf-8").splitlines()[0].split(",")
+    assert {
+        "selection_status",
+        "topic",
+        "paper_id",
+        "arxiv_id",
+        "reason_for_inclusion",
+    }.issubset(header)
+
+
+def test_failed_cli_mentions_report_and_log_paths(tmp_path: Path) -> None:
+    query_plan = _load_json(QUERY_PLAN_PATH)
+    query_plan["api_base_url"] = "file:///definitely_missing_arxiv_endpoint"
+    query_plan_path = tmp_path / "query_plan.json"
+    query_plan_path.write_text(json.dumps(query_plan), encoding="utf-8")
+    report_path = tmp_path / "research_ai_discovery_report.json"
+    run_log_path = tmp_path / "research_ai_discovery_run_log.jsonl"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--discover",
+            "--query-plan",
+            str(query_plan_path),
+            "--query-id",
+            "llm_serving_inference_optimization",
+            "--max-results-per-query",
+            "1",
+            "--max-retries",
+            "0",
+            "--timeout-seconds",
+            "1",
+            "--backoff-seconds",
+            "0",
+            "--output-report",
+            str(report_path),
+            "--run-log-path",
+            str(run_log_path),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    combined_output = result.stdout + result.stderr
+    assert "research_ai_discovery_report.json" in combined_output
+    assert "research_ai_discovery_run_log.jsonl" in combined_output
+    assert report_path.exists()
+    assert run_log_path.exists()
 
 
 def test_sample_file_exists_after_generation_or_static_fixture() -> None:
@@ -397,3 +606,13 @@ def test_docs_include_rate_limit_guidance() -> None:
     assert "retry/backoff" in text
     assert "--query-id" in text
     assert "--allow-partial" in text
+
+
+def test_docs_include_observability_and_manual_fallback() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "Discovery Observability" in text
+    assert "run log" in text
+    assert "Manual Paper Registry Fallback" in text
+    assert "--simple-query-mode" in text
+    assert "--write-manual-template" in text

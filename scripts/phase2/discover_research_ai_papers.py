@@ -23,12 +23,23 @@ DEFAULT_OUTPUT_CANDIDATES = Path("data/generated/research_ai/candidate_papers.js
 DEFAULT_OUTPUT_REVIEW_CSV = Path("data/generated/research_ai/candidate_papers_review.csv")
 DEFAULT_OUTPUT_SAMPLE = Path("data/sources/research_ai_candidate_papers_sample.jsonl")
 DEFAULT_OUTPUT_REPORT = Path("data/generated/research_ai/research_ai_discovery_report.json")
+DEFAULT_RUN_LOG = Path("data/generated/research_ai/research_ai_discovery_run_log.jsonl")
+DEFAULT_MANUAL_TEMPLATE = Path("data/generated/research_ai/manual_paper_registry_template.csv")
 
 ARXIV_NAMESPACE = "http://www.w3.org/2005/Atom"
 ARXIV_EXTENSION_NAMESPACE = "http://arxiv.org/schemas/atom"
 ATOM = {"atom": ARXIV_NAMESPACE, "arxiv": ARXIV_EXTENSION_NAMESPACE}
 DEFAULT_CATEGORIES_ALLOWED = {"cs.CL", "cs.LG", "cs.AI", "cs.DC", "cs.SE", "cs.IR"}
 USER_AGENT = "LLM-Inference-Optimization-Suite research-discovery"
+SIMPLE_SEARCH_QUERIES = {
+    "llm_serving_inference_optimization": 'all:"LLM inference"',
+    "vllm_pagedattention_continuous_batching": 'all:"vLLM"',
+    "speculative_decoding_kv_cache": 'all:"speculative decoding"',
+    "rag_context_engineering": 'all:"retrieval augmented generation"',
+    "llm_routing_model_selection": 'all:"LLM routing"',
+    "agentic_workflows_tool_use": 'all:"LLM agents"',
+    "small_language_models_efficient_llms": 'all:"small language models"',
+}
 TITLE_SIGNAL_TERMS = (
     "llm",
     "inference",
@@ -80,6 +91,14 @@ STATUS_TAXONOMY = {
 }
 
 
+class ArxivFetchError(RuntimeError):
+    """Raised when arXiv metadata fetch fails after retry handling."""
+
+    def __init__(self, message: str, details: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.details = details
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         msg = f"Missing required JSON file: {path}"
@@ -89,6 +108,10 @@ def load_json(path: Path) -> dict[str, Any]:
         msg = f"Expected JSON object in {path}"
         raise RuntimeError(msg)
     return parsed
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -101,6 +124,39 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8", newline="\n") as file:
         for row in rows:
             file.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def write_run_log_event(path: Path, event: dict[str, Any]) -> None:
+    """Append one JSON event to the Research AI discovery run log."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "timestamp_utc": utc_now(),
+        "phase": "2A-5A",
+        **event,
+    }
+    with path.open("a", encoding="utf-8", newline="\n") as file:
+        file.write(json.dumps(payload, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def log_event(
+    run_log_path: Path | None,
+    mode: str,
+    event_type: str,
+    message: str,
+    **kwargs: Any,
+) -> None:
+    if run_log_path is None:
+        return
+    write_run_log_event(
+        run_log_path,
+        {
+            "mode": mode,
+            "event_type": event_type,
+            "message": message,
+            **{key: value for key, value in kwargs.items() if value is not None},
+        },
+    )
 
 
 def normalize_text(value: str | None) -> str:
@@ -156,12 +212,46 @@ def _backoff_delay(
     return backoff_seconds * attempt_number + deterministic_jitter
 
 
+def _error_body_snippet(error: urllib.error.HTTPError, max_chars: int = 500) -> str:
+    if error.fp is None:
+        return ""
+    try:
+        body = error.fp.read(max_chars)
+    except Exception:  # noqa: BLE001 - body snippets are diagnostic best effort.
+        return ""
+    if isinstance(body, str):
+        return body[:max_chars]
+    return body.decode("utf-8", errors="replace")[:max_chars]
+
+
+def _base_error_details(
+    *,
+    url: str,
+    attempt_number: int,
+    exception_type: str,
+    message: str,
+    elapsed_seconds: float,
+    query_id: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "query_id": query_id,
+        "url": url,
+        "attempt_number": attempt_number,
+        "exception_type": exception_type,
+        "error_message": message,
+        "elapsed_seconds": round(elapsed_seconds, 4),
+    }
+
+
 def fetch_url_with_retries(
     url: str,
     user_agent: str,
     timeout_seconds: int,
     max_retries: int,
     backoff_seconds: float,
+    run_log_path: Path | None = None,
+    mode: str = "discover",
+    query_id: str | None = None,
 ) -> str:
     """Fetch arXiv metadata with conservative retry handling for transient failures."""
 
@@ -174,34 +264,121 @@ def fetch_url_with_retries(
     )
     attempts = max_retries + 1
     last_error = ""
+    last_details: dict[str, Any] = {}
     for attempt_index in range(attempts):
         attempt_number = attempt_index + 1
+        started = time.monotonic()
+        log_event(
+            run_log_path,
+            mode,
+            "request_attempt",
+            "Starting arXiv metadata request.",
+            query_id=query_id,
+            attempt_number=attempt_number,
+            url=url,
+        )
         try:
             with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-                return response.read().decode("utf-8")
+                text = response.read().decode("utf-8")
+                elapsed_seconds = time.monotonic() - started
+                log_event(
+                    run_log_path,
+                    mode,
+                    "request_success",
+                    "arXiv metadata request succeeded.",
+                    query_id=query_id,
+                    attempt_number=attempt_number,
+                    url=url,
+                    elapsed_seconds=round(elapsed_seconds, 4),
+                )
+                return text
         except urllib.error.HTTPError as exc:
+            elapsed_seconds = time.monotonic() - started
             status = int(exc.code)
             last_error = f"HTTP {status}: {exc.reason}"
+            retry_after = _retry_after_seconds(exc)
+            last_details = {
+                **_base_error_details(
+                    url=url,
+                    attempt_number=attempt_number,
+                    exception_type=type(exc).__name__,
+                    message=last_error,
+                    elapsed_seconds=elapsed_seconds,
+                    query_id=query_id,
+                ),
+                "status_code": status,
+                "reason": str(exc.reason),
+                "retry_after": retry_after,
+                "response_body_snippet": _error_body_snippet(exc),
+            }
             if status == 429:
                 if attempt_index >= max_retries:
                     break
-                retry_after = _retry_after_seconds(exc)
-                time.sleep(_backoff_delay(attempt_number, backoff_seconds, retry_after))
+                delay = _backoff_delay(attempt_number, backoff_seconds, retry_after)
+                log_event(
+                    run_log_path,
+                    mode,
+                    "request_retry",
+                    "arXiv returned HTTP 429; retrying after backoff.",
+                    **last_details,
+                )
+                time.sleep(delay)
                 continue
             if 500 <= status <= 599:
                 if attempt_index >= max_retries:
                     break
+                log_event(
+                    run_log_path,
+                    mode,
+                    "request_retry",
+                    "arXiv returned HTTP 5xx; retrying after backoff.",
+                    **last_details,
+                )
                 time.sleep(_backoff_delay(attempt_number, backoff_seconds))
                 continue
             msg = f"Failed to fetch arXiv metadata from {url}: HTTP {status}: {exc.reason}"
-            raise RuntimeError(msg) from exc
+            log_event(
+                run_log_path,
+                mode,
+                "request_failed",
+                "arXiv request failed with non-retryable HTTP status.",
+                **last_details,
+            )
+            raise ArxivFetchError(msg, last_details) from exc
         except (TimeoutError, urllib.error.URLError) as exc:
+            elapsed_seconds = time.monotonic() - started
             last_error = str(exc)
+            last_details = _base_error_details(
+                url=url,
+                attempt_number=attempt_number,
+                exception_type=type(exc).__name__,
+                message=last_error,
+                elapsed_seconds=elapsed_seconds,
+                query_id=query_id,
+            )
             if attempt_index >= max_retries:
                 break
+            log_event(
+                run_log_path,
+                mode,
+                "request_retry",
+                "arXiv request raised a transient network error; retrying.",
+                **last_details,
+            )
             time.sleep(_backoff_delay(attempt_number, backoff_seconds))
     msg = f"Failed to fetch arXiv metadata from {url} after {attempts} attempts: {last_error}"
-    raise RuntimeError(msg)
+    last_details = {
+        **last_details,
+        "error_message": msg,
+    }
+    log_event(
+        run_log_path,
+        mode,
+        "request_failed",
+        "arXiv request failed after all retry attempts.",
+        **last_details,
+    )
+    raise ArxivFetchError(msg, last_details)
 
 
 def fetch_arxiv_atom(
@@ -209,6 +386,9 @@ def fetch_arxiv_atom(
     timeout_seconds: int = 30,
     max_retries: int = 3,
     backoff_seconds: float = 10,
+    run_log_path: Path | None = None,
+    mode: str = "discover",
+    query_id: str | None = None,
 ) -> str:
     return fetch_url_with_retries(
         url=url,
@@ -216,6 +396,9 @@ def fetch_arxiv_atom(
         timeout_seconds=timeout_seconds,
         max_retries=max_retries,
         backoff_seconds=backoff_seconds,
+        run_log_path=run_log_path,
+        mode=mode,
+        query_id=query_id,
     )
 
 
@@ -450,10 +633,12 @@ def build_report(
     sample_candidates: list[dict[str, Any]],
     output_files: dict[str, str],
     discovery_status: str = "success",
+    selected_query_ids: list[str] | None = None,
     failed_query_groups: list[str] | None = None,
     successful_query_groups: list[str] | None = None,
-    errors: list[dict[str, str]] | None = None,
+    errors: list[dict[str, Any]] | None = None,
     retry_policy: dict[str, Any] | None = None,
+    simple_query_mode: bool = False,
 ) -> dict[str, Any]:
     topic_counter: Counter[str] = Counter()
     category_counter: Counter[str] = Counter()
@@ -462,11 +647,24 @@ def build_report(
         primary_category = str(candidate.get("primary_category") or "")
         if primary_category:
             category_counter[primary_category] += 1
+    if discovery_status == "failed":
+        next_step = (
+            "Retry later with --simple-query-mode, --query-id, --max-results-per-query 3, "
+            "--delay-seconds 30; inspect the run log; use --write-manual-template if arXiv "
+            "remains unavailable."
+        )
+    else:
+        next_step = (
+            "Review candidate_papers_review.csv, approve a 12-20 paper shortlist, then "
+            "proceed to Phase 2A-5B to create research AI paper registry, KB/context "
+            "samples, prompt/source records, and gold/eval records."
+        )
     return {
         "phase": "2A-5A",
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": utc_now(),
         "discovery_status": discovery_status,
-        "query_group_count": len(query_plan.get("query_groups", [])),
+        "selected_query_ids": selected_query_ids or [],
+        "query_group_count": len(selected_query_ids or query_plan.get("query_groups", [])),
         "raw_candidate_count": raw_candidate_count,
         "deduped_candidate_count": len(ranked_candidates),
         "sample_candidate_count": len(sample_candidates),
@@ -474,6 +672,7 @@ def build_report(
         "successful_query_groups": successful_query_groups or [],
         "errors": errors or [],
         "retry_policy": retry_policy or {},
+        "simple_query_mode": simple_query_mode,
         "counts_by_topic": dict(topic_counter),
         "counts_by_primary_category": dict(category_counter),
         "top_candidates": [
@@ -500,11 +699,7 @@ def build_report(
                 "until all five Phase 2A vertical datasets are prepared."
             ),
         ],
-        "next_step": (
-            "Review candidate_papers_review.csv, approve a 12-20 paper shortlist, then "
-            "proceed to Phase 2A-5B to create research AI paper registry, KB/context "
-            "samples, prompt/source records, and gold/eval records."
-        ),
+        "next_step": next_step,
     }
 
 
@@ -514,6 +709,13 @@ def _query_max_results(
     if override > 0:
         return override
     return int(query_group.get("max_results") or query_plan.get("max_results_per_query") or 20)
+
+
+def query_search_query(query_group: dict[str, Any], simple_query_mode: bool = False) -> str:
+    query_id = str(query_group.get("query_id") or "")
+    if simple_query_mode and query_id in SIMPLE_SEARCH_QUERIES:
+        return SIMPLE_SEARCH_QUERIES[query_id]
+    return str(query_group["search_query"])
 
 
 def select_query_groups(query_plan: dict[str, Any], query_id: str = "all") -> list[dict[str, Any]]:
@@ -538,13 +740,14 @@ def planned_urls(
     query_plan: dict[str, Any],
     max_results_override: int,
     query_id: str = "all",
+    simple_query_mode: bool = False,
 ) -> list[dict[str, str]]:
     planned: list[dict[str, str]] = []
     for query_group in select_query_groups(query_plan, query_id):
         max_results = _query_max_results(query_group, query_plan, max_results_override)
         url = build_arxiv_url(
             api_base_url=str(query_plan["api_base_url"]),
-            search_query=str(query_group["search_query"]),
+            search_query=query_search_query(query_group, simple_query_mode),
             max_results=max_results,
             sort_by=str(query_group.get("sort_by") or "relevance"),
             sort_order=str(query_group.get("sort_order") or "descending"),
@@ -575,16 +778,25 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
     }
     categories_allowed = set(query_plan.get("categories_allowed", [])) or DEFAULT_CATEGORIES_ALLOWED
     query_groups = select_query_groups(query_plan, args.query_id)
+    selected_query_ids = [str(query_group["query_id"]) for query_group in query_groups]
     successful_query_groups: list[str] = []
     failed_query_groups: list[str] = []
-    errors: list[dict[str, str]] = []
+    errors: list[dict[str, Any]] = []
+    log_event(
+        args.run_log_path,
+        "discover",
+        "run_started",
+        "Research AI arXiv discovery started.",
+        selected_query_ids=selected_query_ids,
+        simple_query_mode=args.simple_query_mode,
+    )
 
     for index, query_group in enumerate(query_groups):
         enriched_group = {**query_group, "categories_allowed": sorted(categories_allowed)}
         max_results = _query_max_results(enriched_group, query_plan, args.max_results_per_query)
         url = build_arxiv_url(
             api_base_url=str(query_plan["api_base_url"]),
-            search_query=str(enriched_group["search_query"]),
+            search_query=query_search_query(enriched_group, args.simple_query_mode),
             max_results=max_results,
             sort_by=str(enriched_group.get("sort_by") or "relevance"),
             sort_order=str(enriched_group.get("sort_order") or "descending"),
@@ -592,21 +804,39 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         if index > 0:
             time.sleep(delay_seconds)
         query_id = str(enriched_group["query_id"])
+        log_event(
+            args.run_log_path,
+            "discover",
+            "query_started",
+            "Starting arXiv query group.",
+            query_id=query_id,
+            url=url,
+        )
         try:
             xml_text = fetch_arxiv_atom(
                 url,
                 timeout_seconds=args.timeout_seconds,
                 max_retries=args.max_retries,
                 backoff_seconds=args.backoff_seconds,
+                run_log_path=args.run_log_path,
+                mode="discover",
+                query_id=query_id,
             )
-        except RuntimeError as exc:
+        except ArxivFetchError as exc:
             failed_query_groups.append(query_id)
-            errors.append(
-                {
-                    "query_id": query_id,
-                    "url": url,
-                    "error_message": str(exc),
-                }
+            error_details = {
+                **exc.details,
+                "query_id": query_id,
+                "url": url,
+                "error_message": str(exc),
+            }
+            errors.append(error_details)
+            log_event(
+                args.run_log_path,
+                "discover",
+                "query_failed",
+                "arXiv query group failed.",
+                **error_details,
             )
             if not args.continue_on_error:
                 break
@@ -624,6 +854,15 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
             candidate["score"] = score_candidate(candidate, enriched_group)
         raw_candidates.extend(parsed_candidates)
         successful_query_groups.append(query_id)
+        log_event(
+            args.run_log_path,
+            "discover",
+            "query_succeeded",
+            "arXiv query group succeeded.",
+            query_id=query_id,
+            url=url,
+            raw_candidate_count=len(parsed_candidates),
+        )
 
     deduped_candidates = dedupe_candidates(raw_candidates)
     ranked_candidates = rank_candidates(deduped_candidates)
@@ -633,6 +872,8 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_papers_review_csv": str(args.output_review_csv),
         "candidate_papers_sample_jsonl": str(args.output_sample),
         "discovery_report_json": str(args.output_report),
+        "run_log_jsonl": str(args.run_log_path),
+        "manual_template_csv": str(args.output_manual_template),
     }
     if not successful_query_groups:
         discovery_status = "failed"
@@ -647,10 +888,12 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         sample_candidates=sample_candidates,
         output_files=output_files,
         discovery_status=discovery_status,
+        selected_query_ids=selected_query_ids,
         failed_query_groups=failed_query_groups,
         successful_query_groups=successful_query_groups,
         errors=errors,
         retry_policy=retry_policy,
+        simple_query_mode=args.simple_query_mode,
     )
 
     if successful_query_groups:
@@ -659,6 +902,15 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         if sample_candidates:
             write_jsonl(args.output_sample, sample_candidates)
     write_json(args.output_report, report)
+    log_event(
+        args.run_log_path,
+        "discover",
+        "outputs_written",
+        "Research AI discovery outputs written.",
+        discovery_status=discovery_status,
+        output_report=str(args.output_report),
+        output_run_log_path=str(args.run_log_path),
+    )
 
     summary = {
         "mode": "discover",
@@ -678,17 +930,102 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         "warnings": report["warnings"],
     }
     if discovery_status == "failed":
-        msg = "All selected arXiv query groups failed; see discovery report for details."
+        log_event(
+            args.run_log_path,
+            "discover",
+            "run_failed",
+            "All selected arXiv query groups failed.",
+            output_report=str(args.output_report),
+            output_run_log_path=str(args.run_log_path),
+        )
+        msg = (
+            "All selected arXiv query groups failed. See:\n"
+            f"- {args.output_report}\n"
+            f"- {args.run_log_path}"
+        )
         raise RuntimeError(msg)
     if discovery_status == "partial" and not (args.allow_partial or args.continue_on_error):
         msg = "arXiv discovery was partial; rerun with --allow-partial to accept partial outputs."
         raise RuntimeError(msg)
+    log_event(
+        args.run_log_path,
+        "discover",
+        "run_completed",
+        "Research AI arXiv discovery completed.",
+        discovery_status=discovery_status,
+    )
     return summary
 
 
 def dry_run(args: argparse.Namespace) -> dict[str, Any]:
     query_plan = load_json(args.query_plan)
-    urls = planned_urls(query_plan, args.max_results_per_query, args.query_id)
+    urls = planned_urls(
+        query_plan,
+        args.max_results_per_query,
+        args.query_id,
+        args.simple_query_mode,
+    )
+    selected_query_ids = [planned["query_id"] for planned in urls]
+    log_event(
+        args.run_log_path,
+        "dry_run",
+        "run_started",
+        "Research AI arXiv discovery dry-run started.",
+        selected_query_ids=selected_query_ids,
+        simple_query_mode=args.simple_query_mode,
+    )
+    for planned in urls:
+        log_event(
+            args.run_log_path,
+            "dry_run",
+            "dry_run_planned_query",
+            "Planned arXiv metadata query.",
+            query_id=planned["query_id"],
+            url=planned["url"],
+        )
+    output_files = {
+        "candidate_papers_jsonl": str(args.output_candidates),
+        "candidate_papers_review_csv": str(args.output_review_csv),
+        "candidate_papers_sample_jsonl": str(args.output_sample),
+        "discovery_report_json": str(args.output_report),
+        "run_log_jsonl": str(args.run_log_path),
+        "manual_template_csv": str(args.output_manual_template),
+    }
+    report = build_report(
+        query_plan=query_plan,
+        raw_candidate_count=0,
+        ranked_candidates=[],
+        sample_candidates=[],
+        output_files=output_files,
+        discovery_status="dry_run",
+        selected_query_ids=selected_query_ids,
+        retry_policy={
+            "max_retries": args.max_retries,
+            "backoff_seconds": args.backoff_seconds,
+            "timeout_seconds": args.timeout_seconds,
+            "delay_seconds": (
+                float(args.delay_seconds)
+                if float(args.delay_seconds) > 0
+                else float(query_plan.get("delay_seconds") or 3)
+            ),
+        },
+        simple_query_mode=args.simple_query_mode,
+    )
+    write_json(args.output_report, report)
+    log_event(
+        args.run_log_path,
+        "dry_run",
+        "outputs_written",
+        "Research AI discovery dry-run report written.",
+        output_report=str(args.output_report),
+        output_run_log_path=str(args.run_log_path),
+    )
+    log_event(
+        args.run_log_path,
+        "dry_run",
+        "run_completed",
+        "Research AI arXiv discovery dry-run completed.",
+    )
     return {
         "mode": "dry_run",
         "phase": "2A-5A",
@@ -703,15 +1040,72 @@ def dry_run(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def write_manual_template(args: argparse.Namespace) -> dict[str, Any]:
+    log_event(
+        args.run_log_path,
+        "write_manual_template",
+        "run_started",
+        "Writing manual Research AI paper registry template.",
+    )
+    fieldnames = [
+        "selection_status",
+        "topic",
+        "paper_id",
+        "arxiv_id",
+        "title",
+        "authors",
+        "published",
+        "primary_category",
+        "abstract_url",
+        "pdf_url",
+        "reason_for_inclusion",
+        "notes",
+    ]
+    args.output_manual_template.parent.mkdir(parents=True, exist_ok=True)
+    with args.output_manual_template.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+    log_event(
+        args.run_log_path,
+        "write_manual_template",
+        "outputs_written",
+        "Manual Research AI paper registry template written.",
+        output_manual_template=str(args.output_manual_template),
+    )
+    log_event(
+        args.run_log_path,
+        "write_manual_template",
+        "run_completed",
+        "Manual Research AI paper registry template completed.",
+    )
+    return {
+        "mode": "write_manual_template",
+        "phase": "2A-5A",
+        "output_manual_template": str(args.output_manual_template),
+        "run_log_path": str(args.run_log_path),
+        "columns": fieldnames,
+        "warnings": [
+            (
+                "Manual fallback templates must preserve paper provenance and must not "
+                "fabricate metadata."
+            ),
+            "Phase 2A-5B can use a manually approved registry only after review.",
+        ],
+    }
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--discover", action="store_true")
+    parser.add_argument("--write-manual-template", action="store_true")
     parser.add_argument("--query-plan", type=Path, default=DEFAULT_QUERY_PLAN)
     parser.add_argument("--query-id", default="all")
     parser.add_argument("--output-candidates", type=Path, default=DEFAULT_OUTPUT_CANDIDATES)
     parser.add_argument("--output-review-csv", type=Path, default=DEFAULT_OUTPUT_REVIEW_CSV)
     parser.add_argument("--output-sample", type=Path, default=DEFAULT_OUTPUT_SAMPLE)
     parser.add_argument("--output-report", type=Path, default=DEFAULT_OUTPUT_REPORT)
+    parser.add_argument("--run-log-path", type=Path, default=DEFAULT_RUN_LOG)
+    parser.add_argument("--output-manual-template", type=Path, default=DEFAULT_MANUAL_TEMPLATE)
     parser.add_argument("--max-results-per-query", type=int, default=0)
     parser.add_argument("--sample-size", type=int, default=12)
     parser.add_argument("--dry-run", action="store_true")
@@ -721,16 +1115,28 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--backoff-seconds", type=float, default=10)
     parser.add_argument("--continue-on-error", action="store_true")
     parser.add_argument("--allow-partial", action="store_true")
+    parser.add_argument("--simple-query-mode", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    if args.discover == args.dry_run:
-        print("Pass exactly one mode: --dry-run or --discover.", file=sys.stderr)
+    mode_count = sum(
+        bool(mode) for mode in (args.discover, args.dry_run, args.write_manual_template)
+    )
+    if mode_count != 1:
+        print(
+            "Pass exactly one mode: --dry-run, --discover, or --write-manual-template.",
+            file=sys.stderr,
+        )
         return 2
     try:
-        summary = dry_run(args) if args.dry_run else discover(args)
+        if args.dry_run:
+            summary = dry_run(args)
+        elif args.write_manual_template:
+            summary = write_manual_template(args)
+        else:
+            summary = discover(args)
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

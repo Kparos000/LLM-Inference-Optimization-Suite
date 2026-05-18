@@ -61,6 +61,8 @@ data/generated/healthcare_admin/healthcare_admin_synthetic_report.json
 data/generated/research_ai/candidate_papers.jsonl
 data/generated/research_ai/candidate_papers_review.csv
 data/generated/research_ai/research_ai_discovery_report.json
+data/generated/research_ai/research_ai_discovery_run_log.jsonl
+data/generated/research_ai/manual_paper_registry_template.csv
 
 # Keep result folders
 !results/raw/.gitkeep
