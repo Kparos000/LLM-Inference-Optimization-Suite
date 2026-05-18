@@ -299,10 +299,22 @@ Download PDFs only for enriched records with PDF URLs:
 python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing
 ```
 
+PDF download writes files under:
+
+```text
+data/raw/research_ai/papers/<paper_id>/<paper_id>.pdf
+```
+
 Extract text from local PDFs where supported:
 
 ```text
 python scripts/phase2/prepare_research_ai_papers.py --extract-text
+```
+
+Run text extraction only after:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-existing
 ```
 
 Regenerate the local preparation report:

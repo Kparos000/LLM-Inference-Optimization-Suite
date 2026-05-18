@@ -12,6 +12,21 @@ SCRIPT_PATH = ROOT / "scripts/phase2/prepare_research_ai_papers.py"
 DOC_PATH = ROOT / "docs/34_phase2_research_ai_paper_discovery.md"
 
 
+class _FakeBinaryResponse:
+    def __init__(self, body: bytes, content_type: str = "application/pdf") -> None:
+        self.body = body
+        self.headers = {"Content-Type": content_type}
+
+    def __enter__(self) -> "_FakeBinaryResponse":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.body
+
+
 def _load_preparation_module() -> Any:
     spec = importlib.util.spec_from_file_location("prepare_research_ai_papers", SCRIPT_PATH)
     assert spec is not None
@@ -415,6 +430,234 @@ def test_download_pdfs_skips_non_paper_pdfs_by_default(tmp_path: Path) -> None:
         module.download_pdfs(args)
 
     assert download_mock.call_count == 2
+
+
+def test_download_binary_creates_parent_directories(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    destination = tmp_path / "nested" / "paper" / "paper.pdf"
+
+    with mock.patch.object(
+        module.urllib.request,
+        "urlopen",
+        return_value=_FakeBinaryResponse(b"%PDF-1.4 fake pdf"),
+    ):
+        result = module.download_binary(
+            "https://openreview.net/pdf?id=abc123",
+            destination,
+            timeout_seconds=1,
+            delay_seconds=0,
+        )
+
+    assert destination.exists()
+    assert destination.parent.exists()
+    assert result["status"] == "downloaded"
+    assert result["bytes_written"] > 0
+    assert result["sha256"]
+    assert result["content_type"] == "application/pdf"
+
+
+def test_download_pdfs_continues_after_one_failure(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "paper_success",
+            "title": "Paper Success",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/1",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=success",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+        {
+            "paper_id": "paper_failure",
+            "title": "Paper Failure",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/2",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=failure",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    args = Namespace(
+        approved_registry_path=approved_path,
+        enriched_registry_path=enriched_path,
+        raw_paper_dir=tmp_path / "papers",
+        paper_text_dir=tmp_path / "text",
+        text_manifest_path=tmp_path / "text_manifest.jsonl",
+        sections_manifest_path=tmp_path / "sections_manifest.jsonl",
+        report_path=report_path,
+        limit=0,
+        skip_existing=False,
+        include_non_paper_pdfs=False,
+        timeout_seconds=1,
+        request_delay_seconds=0,
+    )
+
+    def fake_download(
+        url: str,
+        destination: Path,
+        timeout_seconds: int,
+        delay_seconds: float,
+    ) -> dict[str, Any]:
+        _ = timeout_seconds, delay_seconds
+        if "failure" in url:
+            return {
+                "status": "failed",
+                "download_status": "failed",
+                "url": url,
+                "source_url": url,
+                "destination": str(destination),
+                "local_pdf_path": str(destination),
+                "bytes_written": 0,
+                "file_size_bytes": 0,
+                "sha256": None,
+                "content_type": None,
+                "downloaded_at_utc": "2026-05-18T00:00:00+00:00",
+                "error_message": "simulated failure",
+            }
+        return {
+            "status": "downloaded",
+            "download_status": "downloaded",
+            "url": url,
+            "source_url": url,
+            "destination": str(destination),
+            "local_pdf_path": str(destination),
+            "bytes_written": 10,
+            "file_size_bytes": 10,
+            "sha256": "abc",
+            "content_type": "application/pdf",
+            "downloaded_at_utc": "2026-05-18T00:00:00+00:00",
+            "error_message": "",
+        }
+
+    with mock.patch.object(module, "download_binary", side_effect=fake_download):
+        summary = module.download_pdfs(args)
+
+    assert summary["pdfs_downloaded"] == 1
+    assert summary["pdf_download_failures"] == 1
+    assert summary["pdf_download_failure_details"][0]["paper_id"] == "paper_failure"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["pdf_download_failure_details"][0]["error_message"] == "simulated failure"
+
+
+def test_download_pdfs_all_fail_returns_failure(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "paper_failure",
+            "title": "Paper Failure",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/2",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=failure",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        }
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    args = Namespace(
+        approved_registry_path=approved_path,
+        enriched_registry_path=enriched_path,
+        raw_paper_dir=tmp_path / "papers",
+        paper_text_dir=tmp_path / "text",
+        text_manifest_path=tmp_path / "text_manifest.jsonl",
+        sections_manifest_path=tmp_path / "sections_manifest.jsonl",
+        report_path=report_path,
+        limit=0,
+        skip_existing=False,
+        include_non_paper_pdfs=False,
+        timeout_seconds=1,
+        request_delay_seconds=0,
+    )
+
+    with mock.patch.object(
+        module,
+        "download_binary",
+        return_value={
+            "status": "failed",
+            "download_status": "failed",
+            "url": "https://openreview.net/pdf?id=failure",
+            "source_url": "https://openreview.net/pdf?id=failure",
+            "destination": str(tmp_path / "paper.pdf"),
+            "local_pdf_path": str(tmp_path / "paper.pdf"),
+            "bytes_written": 0,
+            "file_size_bytes": 0,
+            "sha256": None,
+            "content_type": None,
+            "downloaded_at_utc": "2026-05-18T00:00:00+00:00",
+            "error_message": "simulated failure",
+        },
+    ):
+        try:
+            module.download_pdfs(args)
+        except RuntimeError as exc:
+            assert "All attempted PDF downloads failed" in str(exc)
+        else:
+            raise AssertionError("Expected all failed downloads to raise RuntimeError")
+
+    assert report_path.exists()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["pdf_download_failures"] == 1
+
+
+def test_extract_text_missing_pdf_warning(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    text_manifest_path = tmp_path / "text_manifest.jsonl"
+    sections_manifest_path = tmp_path / "sections_manifest.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "missing_pdf",
+            "title": "Missing PDF",
+            "source": "ICLR",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://iclr.cc/virtual/2025/poster/1",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=missing",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        }
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    args = Namespace(
+        approved_registry_path=approved_path,
+        enriched_registry_path=enriched_path,
+        raw_paper_dir=tmp_path / "papers",
+        paper_text_dir=tmp_path / "text",
+        text_manifest_path=text_manifest_path,
+        sections_manifest_path=sections_manifest_path,
+        report_path=report_path,
+        limit=0,
+        skip_existing=False,
+        include_non_paper_pdfs=False,
+        timeout_seconds=1,
+        request_delay_seconds=0,
+    )
+
+    module.extract_text(args)
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    expected_warning = (
+        "No local PDFs were found. Run --download-pdfs --skip-existing before --extract-text."
+    )
+    assert any(warning == expected_warning for warning in report["warnings"])
 
 
 def test_dry_run_cli() -> None:
