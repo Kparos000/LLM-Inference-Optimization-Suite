@@ -59,7 +59,8 @@
       "enum": [
         "answer",
         "escalate",
-        "insufficient_evidence"
+        "insufficient_evidence",
+        "out_of_scope"
       ]
     },
     "required_chunk_ids": {

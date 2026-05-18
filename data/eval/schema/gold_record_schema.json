@@ -57,7 +57,8 @@
         "escalate",
         "boundary_response",
         "spam_or_fraud",
-        "insufficient_evidence"
+        "insufficient_evidence",
+        "out_of_scope"
       ]
     },
     "must_include": {

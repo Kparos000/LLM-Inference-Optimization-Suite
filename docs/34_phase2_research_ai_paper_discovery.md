@@ -1,0 +1,93 @@
+# Phase 2A-5A AI Research Paper Discovery
+
+## Purpose
+
+Phase 2A-5A discovers candidate AI research papers for the AI Research
+Assistant / Education-Research vertical. This is a metadata-only discovery
+step that creates a query plan, arXiv metadata records, a review CSV, a small
+committed candidate sample, and a local discovery report.
+
+This step does not download PDFs, parse full text, generate prompts, implement
+RAG, run inference, call models, create embeddings, or make benchmark claims.
+
+## Data Source
+
+The primary source is the arXiv API. The API returns Atom XML containing paper
+metadata such as title, abstract, authors, categories, updated/published dates,
+and links to abstract and PDF pages. Phase 2A-5A records metadata only. PDF
+download and paper parsing are deferred.
+
+## Query Plan
+
+The discovery plan uses seven query groups:
+
+- LLM serving and inference optimization
+- vLLM / PagedAttention / continuous batching
+- speculative decoding / KV cache / prefix caching
+- RAG / context engineering
+- LLM routing / model selection
+- agentic workflows / tool use
+- small language models / efficient LLMs
+
+The query plan is stored in:
+
+- `data/sources/research_ai_query_plan.json`
+
+## Candidate Review Workflow
+
+1. Run discovery.
+2. Review the generated `candidate_papers_review.csv`.
+3. Select 12-20 papers for the first approved research corpus.
+4. Proceed to Phase 2A-5B.
+
+The committed sample file,
+`data/sources/research_ai_candidate_papers_sample.jsonl`, shows the candidate
+metadata shape without committing the full generated local discovery output. If
+arXiv access is unavailable during development, this file may contain a clearly
+marked schema/example row rather than real discovery metadata; rerun discovery
+before approving a paper shortlist.
+
+## Status Taxonomy
+
+- `answer`: The question is in scope and answerable from the provided data.
+- `escalate`: The question is in scope, but unclear, ambiguous, conflicting, or
+  requires human/expert review.
+- `insufficient_evidence`: The question is in scope, but the available corpus
+  does not provide enough evidence.
+- `out_of_scope`: The question is outside the selected vertical/corpus. The
+  model may know the answer from general world knowledge, but a grounded/RAG or
+  agentic system should not answer from this corpus.
+- `spam_or_fraud`: The request is spam, abusive, fraudulent, or intentionally
+  irrelevant for support-style verticals.
+- `boundary_response`: The request hits a safety/privacy/clinical/admin
+  boundary and requires a safe boundary response.
+
+For example, a question such as "When will the next World Cup be played?" is
+`out_of_scope` for the AI Research Assistant corpus even if a base model might
+know the answer.
+
+## Example Commands
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --dry-run
+```
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover
+```
+
+```text
+python scripts/phase2/discover_research_ai_papers.py --discover --sample-size 20
+```
+
+## Next Step
+
+Phase 2A-5B should create:
+
+- approved paper registry
+- KB/context records
+- 40 research prompt/source records
+- 40 gold/eval records
+
+Full RAG/context engineering remains deferred until all five verticals have
+data, KB/context, and gold/eval assets.

@@ -1,0 +1,160 @@
+{
+  "query_plan_name": "research_ai_arxiv_discovery_plan",
+  "version": "1.0",
+  "description": "Metadata-only arXiv discovery plan for the Phase 2A AI Research Assistant / Education-Research vertical. The plan identifies candidate papers for later human review and does not select final benchmark papers.",
+  "source": "arXiv API",
+  "api_base_url": "https://export.arxiv.org/api/query",
+  "delay_seconds": 3,
+  "max_results_per_query": 20,
+  "target_candidate_count": 60,
+  "target_shortlist_count": 12,
+  "target_prompt_seed_count": 40,
+  "status_mix_for_seed": {
+    "answer": 37,
+    "escalation_or_insufficient_evidence": 2,
+    "out_of_scope": 1
+  },
+  "categories_allowed": [
+    "cs.CL",
+    "cs.LG",
+    "cs.AI",
+    "cs.DC",
+    "cs.SE",
+    "cs.IR"
+  ],
+  "query_groups": [
+    {
+      "query_id": "llm_serving_inference_optimization",
+      "topic": "LLM serving and inference optimization",
+      "search_query": "all:\"LLM inference\" OR all:\"large language model inference\" OR all:\"LLM serving\"",
+      "max_results": 20,
+      "sort_by": "relevance",
+      "sort_order": "descending",
+      "required_keywords": [
+        "inference"
+      ],
+      "preferred_keywords": [
+        "serving",
+        "latency",
+        "throughput",
+        "batching",
+        "GPU",
+        "memory"
+      ],
+      "notes": "Candidate papers should help evaluate LLM serving performance, latency, throughput, memory, and batching behavior."
+    },
+    {
+      "query_id": "vllm_pagedattention_continuous_batching",
+      "topic": "vLLM, PagedAttention, continuous batching",
+      "search_query": "all:\"vLLM\" OR all:\"PagedAttention\" OR all:\"continuous batching\"",
+      "max_results": 20,
+      "sort_by": "relevance",
+      "sort_order": "descending",
+      "required_keywords": [
+        "vLLM"
+      ],
+      "preferred_keywords": [
+        "PagedAttention",
+        "batching",
+        "serving",
+        "throughput",
+        "memory"
+      ],
+      "notes": "Candidate papers should cover vLLM, PagedAttention, continuous batching, or related serving-system mechanisms."
+    },
+    {
+      "query_id": "speculative_decoding_kv_cache",
+      "topic": "speculative decoding, KV cache, prefix caching",
+      "search_query": "all:\"speculative decoding\" OR all:\"KV cache\" OR all:\"prefix caching\"",
+      "max_results": 20,
+      "sort_by": "relevance",
+      "sort_order": "descending",
+      "required_keywords": [
+        "decoding"
+      ],
+      "preferred_keywords": [
+        "speculative",
+        "KV cache",
+        "prefix",
+        "latency",
+        "inference"
+      ],
+      "notes": "Candidate papers should cover decode-stage optimization, KV-cache behavior, prefix reuse, or related latency controls."
+    },
+    {
+      "query_id": "rag_context_engineering",
+      "topic": "retrieval augmented generation and context engineering",
+      "search_query": "all:\"retrieval augmented generation\" OR all:\"RAG\" OR all:\"context engineering\"",
+      "max_results": 20,
+      "sort_by": "relevance",
+      "sort_order": "descending",
+      "required_keywords": [
+        "retrieval"
+      ],
+      "preferred_keywords": [
+        "RAG",
+        "grounding",
+        "context",
+        "citations",
+        "evaluation"
+      ],
+      "notes": "Candidate papers should support later groundedness, retrieval, citation, and context-engineering evaluation design."
+    },
+    {
+      "query_id": "llm_routing_model_selection",
+      "topic": "LLM routing and model selection",
+      "search_query": "all:\"LLM routing\" OR all:\"model routing\" OR all:\"LLM router\" OR all:\"model selection\"",
+      "max_results": 20,
+      "sort_by": "relevance",
+      "sort_order": "descending",
+      "required_keywords": [
+        "routing"
+      ],
+      "preferred_keywords": [
+        "router",
+        "model selection",
+        "cost",
+        "latency",
+        "accuracy"
+      ],
+      "notes": "Candidate papers should help define future learned routing inputs and evaluation labels."
+    },
+    {
+      "query_id": "agentic_workflows_tool_use",
+      "topic": "agentic workflows and tool use",
+      "search_query": "all:\"LLM agents\" OR all:\"agentic workflows\" OR all:\"tool use\"",
+      "max_results": 20,
+      "sort_by": "relevance",
+      "sort_order": "descending",
+      "required_keywords": [
+        "agent"
+      ],
+      "preferred_keywords": [
+        "tool",
+        "workflow",
+        "planning",
+        "evaluation"
+      ],
+      "notes": "Candidate papers should cover agentic systems, tool-use workflows, planning, or agent evaluation."
+    },
+    {
+      "query_id": "small_language_models_efficient_llms",
+      "topic": "small language models and efficient LLM deployment",
+      "search_query": "all:\"small language models\" OR all:\"efficient language models\" OR all:\"small language model agents\"",
+      "max_results": 20,
+      "sort_by": "relevance",
+      "sort_order": "descending",
+      "required_keywords": [
+        "language model"
+      ],
+      "preferred_keywords": [
+        "small",
+        "efficient",
+        "agent",
+        "distillation",
+        "latency"
+      ],
+      "notes": "Candidate papers should cover efficient model deployment, smaller model use, compression, distillation, or latency-aware deployment."
+    }
+  ]
+}
