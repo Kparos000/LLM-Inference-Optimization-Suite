@@ -71,6 +71,7 @@ PDF_TYPE_PRIORITY = {
     "missing": 6,
 }
 PAPER_BODY_PDF_TYPES = {"openreview_pdf", "full_paper_pdf", "unknown_pdf"}
+MAX_LOCAL_PAPER_DIR_CHARS = 72
 
 
 class LinkExtractor(HTMLParser):
@@ -789,9 +790,26 @@ def enrich_paper_record(
     return enriched
 
 
+def stable_short_hash(value: str, length: int = 12) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:length]
+
+
+def safe_local_paper_dir_name(
+    record: dict[str, Any], max_chars: int = MAX_LOCAL_PAPER_DIR_CHARS
+) -> str:
+    paper_id = str(record.get("paper_id") or "unknown_paper").strip() or "unknown_paper"
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", paper_id.lower()).strip("_") or "unknown_paper"
+    if len(slug) <= max_chars:
+        return slug
+
+    suffix = stable_short_hash(paper_id)
+    prefix_chars = max(1, max_chars - len(suffix) - 1)
+    prefix = slug[:prefix_chars].rstrip("_") or "paper"
+    return f"{prefix}_{suffix}"
+
+
 def build_local_pdf_path(record: dict[str, Any], raw_paper_dir: Path) -> Path:
-    paper_id = str(record.get("paper_id") or "unknown_paper").strip()
-    return raw_paper_dir / paper_id / f"{paper_id}.pdf"
+    return raw_paper_dir / safe_local_paper_dir_name(record) / "paper.pdf"
 
 
 def download_binary(

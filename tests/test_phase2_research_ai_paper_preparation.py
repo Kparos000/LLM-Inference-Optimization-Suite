@@ -229,7 +229,21 @@ def test_build_local_pdf_path() -> None:
         Path("data/raw/research_ai/papers"),
     )
 
-    assert path.as_posix().endswith("research_ai_test/research_ai_test.pdf")
+    assert path.as_posix().endswith("research_ai_test/paper.pdf")
+
+
+def test_build_local_pdf_path_uses_short_filename_for_long_ids() -> None:
+    module = _load_preparation_module()
+    long_paper_id = "research_ai_iclr_2025_virtual_" + ("very_long_title_segment_" * 8)
+
+    path = module.build_local_pdf_path(
+        {"paper_id": long_paper_id},
+        Path("data/raw/research_ai/papers"),
+    )
+
+    assert path.name == "paper.pdf"
+    assert len(path.parent.name) <= module.MAX_LOCAL_PAPER_DIR_CHARS
+    assert path.parent.name.endswith(module.stable_short_hash(long_paper_id))
 
 
 def test_detect_research_paper_sections() -> None:

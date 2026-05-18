@@ -302,8 +302,12 @@ python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --skip-exist
 PDF download writes files under:
 
 ```text
-data/raw/research_ai/papers/<paper_id>/<paper_id>.pdf
+data/raw/research_ai/papers/<short_paper_slug>/paper.pdf
 ```
+
+The full `paper_id` is preserved in the enriched registry and text manifests;
+the local directory name is shortened to keep downloads reliable on Windows
+paths.
 
 Extract text from local PDFs where supported:
 
