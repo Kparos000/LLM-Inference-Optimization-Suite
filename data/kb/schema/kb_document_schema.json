@@ -47,6 +47,9 @@
         "sec_filing_section",
         "xbrl_fact_table",
         "research_paper_section",
+        "paper_abstract",
+        "paper_section",
+        "paper_metadata",
         "healthcare_admin_policy"
       ]
     },

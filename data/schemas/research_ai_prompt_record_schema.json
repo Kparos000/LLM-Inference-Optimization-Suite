@@ -41,7 +41,8 @@
         "method_classification",
         "limitation_extraction",
         "research_gap_identification",
-        "escalation_response"
+        "escalation_response",
+        "boundary_response"
       ]
     },
     "question": {
