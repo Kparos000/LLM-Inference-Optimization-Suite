@@ -74,6 +74,14 @@ data/raw/research_ai/papers/
 data/processed/research_ai/paper_text/
 data/processed/research_ai/paper_text_manifest.jsonl
 data/processed/research_ai/paper_sections_manifest.jsonl
+data/generated/retail/amazon_reviews_sample.jsonl
+data/generated/retail/amazon_metadata_sample.jsonl
+data/generated/retail/amazon_reviews_exploration_report.json
+data/generated/retail/amazon_reviews_field_profile.json
+data/generated/retail/amazon_reviews_text_profile.json
+data/generated/retail/amazon_reviews_quality_report.json
+data/generated/retail/plots/
+data/generated/retail/word_views/
 
 # Keep result folders
 !results/raw/.gitkeep

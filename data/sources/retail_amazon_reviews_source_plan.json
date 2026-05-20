@@ -1,0 +1,70 @@
+{
+  "controlled_sampling_required": true,
+  "do_not_download_full_dataset": true,
+  "expected_metadata_fields": [
+    "main_category",
+    "title",
+    "average_rating",
+    "rating_number",
+    "features",
+    "description",
+    "price",
+    "images",
+    "videos",
+    "store",
+    "categories",
+    "details",
+    "parent_asin",
+    "bought_together"
+  ],
+  "expected_review_fields": [
+    "rating",
+    "title",
+    "text",
+    "images",
+    "asin",
+    "parent_asin",
+    "user_id",
+    "timestamp",
+    "verified_purchase",
+    "helpful_vote"
+  ],
+  "final_seed_prompt_target": 40,
+  "future_scale_targets": [
+    250,
+    1000,
+    5000,
+    10000
+  ],
+  "initial_category_priority": [
+    "All_Beauty",
+    "Home_and_Kitchen",
+    "Electronics"
+  ],
+  "phase": "2A-6A",
+  "purpose": "Explore Amazon Reviews 2023 review and metadata schemas with controlled samples before creating Retail prompt/source, KB/context, and gold/eval seed records.",
+  "recommended_categories": [
+    "All_Beauty",
+    "Home_and_Kitchen",
+    "Electronics",
+    "Clothing_Shoes_and_Jewelry",
+    "Sports_and_Outdoors",
+    "Toys_and_Games"
+  ],
+  "retail_support_use_cases": [
+    "product QA from reviews",
+    "review summarization",
+    "product comparison",
+    "return/refund policy reasoning",
+    "defect/quality issue identification",
+    "review evidence lookup",
+    "metadata extraction",
+    "escalation/out-of-scope handling"
+  ],
+  "source_location": "Hugging Face dataset McAuley-Lab/Amazon-Reviews-2023",
+  "source_name": "Amazon Reviews 2023",
+  "source_owner": "McAuley Lab",
+  "target_exploration_sample_size": 1000,
+  "target_metadata_sample_size": 1000,
+  "vertical": "retail"
+}
