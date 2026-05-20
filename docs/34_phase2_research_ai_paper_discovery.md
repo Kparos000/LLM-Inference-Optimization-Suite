@@ -376,6 +376,40 @@ PDF text extraction writes local text and section manifests only. It does not
 perform RAG, retrieval, embeddings, prompt assembly, inference, or Research AI
 prompt/gold generation.
 
+## Phase 2A-5A-Text-Section-QA
+
+Full paper text extraction is not enough by itself. Before Phase 2A-5B creates
+Research AI KB/context and gold/eval seed records, the extracted text needs
+usable section quality for method, experiments, results, limitations, and
+conclusion evidence.
+
+The preparation pipeline detects academic paper sections such as abstract,
+introduction, related work, background, method, approach, experiments,
+evaluation, results, analysis, limitations, discussion, conclusion, references,
+and appendix. The section quality audit flags oversized abstracts, oversized
+non-reference sections, and papers with poor section coverage.
+
+Regenerate extracted text and section manifests:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --extract-text
+```
+
+Run the section quality audit:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --audit-sections
+```
+
+Inspect the local audit report:
+
+```text
+python -m json.tool data/generated/research_ai/research_ai_section_quality_report.json
+```
+
+No RAG, embeddings, retrieval, inference, or prompt generation happens during
+section quality QA.
+
 ## Phase 2A-5A-Text-QA Metadata Quality Gate
 
 Enriched ICLR abstracts must be cleaned before use. Generic OpenReview group

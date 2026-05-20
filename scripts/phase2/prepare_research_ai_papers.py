@@ -37,21 +37,37 @@ DEFAULT_PAPER_TEXT_DIR = Path("data/processed/research_ai/paper_text/")
 DEFAULT_TEXT_MANIFEST_PATH = Path("data/processed/research_ai/paper_text_manifest.jsonl")
 DEFAULT_SECTIONS_MANIFEST_PATH = Path("data/processed/research_ai/paper_sections_manifest.jsonl")
 DEFAULT_REPORT_PATH = Path("data/generated/research_ai/research_ai_paper_preparation_report.json")
+DEFAULT_SECTION_QUALITY_REPORT_PATH = Path(
+    "data/generated/research_ai/research_ai_section_quality_report.json"
+)
 
 PAPER_SECTION_HEADINGS = {
     "abstract": ("Abstract",),
     "introduction": ("Introduction",),
-    "related_work": ("Related Work",),
-    "background": ("Background",),
-    "method": ("Method", "Methods"),
+    "related_work": ("Related Work", "Related Works"),
+    "background": ("Background", "Preliminaries", "Preliminary"),
+    "method": (
+        "Method",
+        "Methods",
+        "Methodology",
+        "Model",
+        "Framework",
+        "Algorithm",
+        "Training",
+        "Data",
+        "Dataset",
+        "Datasets",
+    ),
     "approach": ("Approach",),
-    "experiments": ("Experiments", "Experimental Setup"),
+    "experiments": ("Experiments", "Experimental Setup", "Experiment Setup"),
     "evaluation": ("Evaluation",),
-    "results": ("Results",),
+    "results": ("Results", "Main Results", "Additional Results", "Experimental Results"),
+    "analysis": ("Analysis", "Ablation", "Ablations", "Ablation Study"),
     "discussion": ("Discussion",),
-    "limitations": ("Limitations",),
-    "conclusion": ("Conclusion",),
-    "references": ("References",),
+    "limitations": ("Limitations", "Limitation"),
+    "conclusion": ("Conclusion", "Conclusions"),
+    "references": ("References", "Bibliography"),
+    "appendix": ("Appendix", "Appendices", "Supplementary Material", "Supplemental Material"),
 }
 NOISY_ABSTRACT_MARKERS = (
     "Show more",
@@ -1045,26 +1061,124 @@ def write_text_file(path: Path, text: str) -> dict[str, Any]:
     }
 
 
-def section_heading_regex() -> re.Pattern[str]:
-    headings = [
-        re.escape(heading)
-        for heading_values in PAPER_SECTION_HEADINGS.values()
-        for heading in heading_values
-    ]
-    heading_alternation = "|".join(sorted(headings, key=len, reverse=True))
-    return re.compile(rf"(?im)^\s*(?:\d+(?:\.\d+)*\.?\s+)?({heading_alternation})\s*$")
+def repair_spaced_heading_words(value: str) -> str:
+    text = value
+    for _ in range(4):
+        repaired = re.sub(r"\b([A-Z])\s+([A-Z][A-Z]+)\b", r"\1\2", text)
+        if repaired == text:
+            break
+        text = repaired
+    return text
+
+
+def normalized_heading_key(value: str) -> str:
+    value = repair_spaced_heading_words(value)
+    text = normalize_whitespace(value).lower()
+    text = re.sub(r"^[\W_]+|[\W_]+$", "", text)
+    text = re.sub(r"\s+", " ", text)
+    return text
 
 
 def normalize_section_type(section_title: str) -> str:
-    lowered = section_title.lower()
+    lowered = normalized_heading_key(section_title)
+    if lowered.startswith("appendix"):
+        return "appendix"
     for section_type, headings in PAPER_SECTION_HEADINGS.items():
-        if lowered in {heading.lower() for heading in headings}:
+        if lowered in {normalized_heading_key(heading) for heading in headings}:
             return section_type
-    return re.sub(r"[^a-z0-9]+", "_", lowered).strip("_") or "section"
+    return "other"
+
+
+def section_heading_aliases() -> list[tuple[str, str, str]]:
+    aliases: list[tuple[str, str, str]] = []
+    for section_type, headings in PAPER_SECTION_HEADINGS.items():
+        for heading in headings:
+            aliases.append((normalized_heading_key(heading), section_type, heading))
+    return sorted(aliases, key=lambda item: len(item[0]), reverse=True)
+
+
+def match_section_heading_alias(
+    value: str,
+    *,
+    allow_prefix: bool,
+) -> tuple[str, str] | None:
+    normalized = normalized_heading_key(value)
+    if not normalized:
+        return None
+    if normalized.startswith("appendix"):
+        return "Appendix", "appendix"
+    for alias, section_type, canonical_title in section_heading_aliases():
+        if normalized == alias:
+            return canonical_title, section_type
+        if allow_prefix and normalized.startswith(f"{alias} "):
+            return canonical_title, section_type
+    if normalized.endswith(" results") and len(normalized.split()) <= 5:
+        return "Results", "results"
+    return None
+
+
+def is_false_positive_section_heading(line: str, *, numbered: bool) -> bool:
+    text = normalize_whitespace(line)
+    if not text:
+        return True
+    if re.match(r"^-+\s*Page\s+\d+\s*-+$", text, flags=re.IGNORECASE):
+        return True
+    if re.match(r"^(fig\.?|figure|table)\s+\d+", text, flags=re.IGNORECASE):
+        return True
+    if re.match(r"^\[\d+\]", text):
+        return True
+    if len(text) > (240 if numbered else 120):
+        return True
+    if not numbered and text.endswith("."):
+        return True
+    return False
+
+
+def parse_section_heading_line(line: str) -> tuple[str, str] | None:
+    text = normalize_whitespace(line)
+    if not text:
+        return None
+    numbered_match = re.match(
+        r"^\s*(?:\d+(?:\.\d+)*\.?|[IVXLC]+\.?|[A-Z]\.?)\s+(?P<title>.+?)\s*$",
+        text,
+    )
+    if numbered_match:
+        candidate = numbered_match.group("title").strip(" :-\u2013\u2014")
+        if is_false_positive_section_heading(candidate, numbered=True):
+            return None
+        return match_section_heading_alias(candidate, allow_prefix=True)
+    if is_false_positive_section_heading(text, numbered=False):
+        return None
+    stripped = text.strip(" :-\u2013\u2014")
+    exact_match = match_section_heading_alias(stripped, allow_prefix=False)
+    if exact_match is not None:
+        return exact_match
+    inline_heading_match = re.match(r"^(?P<title>[^.:]{3,60})[.:]\s+\S+", stripped)
+    if inline_heading_match:
+        return match_section_heading_alias(
+            inline_heading_match.group("title"),
+            allow_prefix=True,
+        )
+    return None
+
+
+def iter_section_heading_matches(text: str) -> list[tuple[int, str, str]]:
+    matches: list[tuple[int, str, str]] = []
+    offset = 0
+    for raw_line in text.splitlines(keepends=True):
+        line = raw_line.strip()
+        parsed = parse_section_heading_line(line)
+        if parsed is not None:
+            section_title, section_type = parsed
+            matches.append(
+                (offset + len(raw_line) - len(raw_line.lstrip()), section_title, section_type)
+            )
+        offset += len(raw_line)
+    return matches
 
 
 def detect_research_paper_sections(text: str, record: dict[str, Any]) -> list[dict[str, Any]]:
-    matches = list(section_heading_regex().finditer(text))
+    matches = iter_section_heading_matches(text)
     if not matches:
         return []
     paper_id = str(record.get("paper_id") or "unknown_paper")
@@ -1072,11 +1186,8 @@ def detect_research_paper_sections(text: str, record: dict[str, Any]) -> list[di
     local_text_path = str(record.get("local_text_path") or "")
     extraction_method = str(record.get("extraction_method") or "")
     sections: list[dict[str, Any]] = []
-    for index, match in enumerate(matches):
-        section_title = normalize_whitespace(match.group(1))
-        section_type = normalize_section_type(section_title)
-        section_start = match.start()
-        section_end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+    for index, (section_start, section_title, section_type) in enumerate(matches):
+        section_end = matches[index + 1][0] if index + 1 < len(matches) else len(text)
         section_text = text[section_start:section_end].strip()
         sections.append(
             {
@@ -1111,6 +1222,130 @@ def counts_by_topic(records: list[dict[str, Any]]) -> dict[str, int]:
 
 def counts_by_source(records: list[dict[str, Any]]) -> dict[str, int]:
     return dict(Counter(str(record.get("source") or "") for record in records))
+
+
+def safe_int(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def section_rows_by_paper(section_rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for section in section_rows:
+        paper_id = str(section.get("paper_id") or "")
+        if not paper_id:
+            continue
+        grouped.setdefault(paper_id, []).append(section)
+    return grouped
+
+
+def paper_titles_by_id(
+    text_manifest_rows: list[dict[str, Any]],
+    section_rows: list[dict[str, Any]],
+) -> dict[str, str]:
+    titles: dict[str, str] = {}
+    for row in [*text_manifest_rows, *section_rows]:
+        paper_id = str(row.get("paper_id") or "")
+        title = str(row.get("title") or "")
+        if paper_id and title and paper_id not in titles:
+            titles[paper_id] = title
+    return titles
+
+
+def build_section_quality_records(
+    section_rows: list[dict[str, Any]],
+    text_manifest_rows: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    text_rows = text_manifest_rows or []
+    grouped_sections = section_rows_by_paper(section_rows)
+    titles = paper_titles_by_id(text_rows, section_rows)
+    paper_ids = set(grouped_sections)
+    paper_ids.update(
+        str(row.get("paper_id"))
+        for row in text_rows
+        if row.get("paper_id") and str(row.get("text_extraction_status") or "") == "extracted"
+    )
+    quality_records: list[dict[str, Any]] = []
+    for paper_id in sorted(paper_ids):
+        rows = grouped_sections.get(paper_id, [])
+        section_types = {str(row.get("section_type") or "other") for row in rows}
+        useful_types = section_types - {"references", "appendix"}
+        has_abstract = "abstract" in section_types
+        has_introduction = "introduction" in section_types
+        has_method_or_approach = bool(section_types & {"method", "approach"})
+        has_experiments_or_results = bool(
+            section_types & {"experiments", "evaluation", "results", "analysis"}
+        )
+        has_limitations = "limitations" in section_types
+        has_conclusion = "conclusion" in section_types
+        has_references = "references" in section_types
+        largest_section_word_count = max(
+            (safe_int(row.get("word_count")) for row in rows), default=0
+        )
+        if (
+            (has_abstract or has_introduction)
+            and has_method_or_approach
+            and (has_experiments_or_results or has_conclusion)
+        ):
+            quality_status = "good"
+        elif len(useful_types) >= 2:
+            quality_status = "partial"
+        else:
+            quality_status = "poor"
+        quality_records.append(
+            {
+                "paper_id": paper_id,
+                "title": titles.get(paper_id, ""),
+                "sections_detected_count": len(rows),
+                "has_abstract": has_abstract,
+                "has_introduction": has_introduction,
+                "has_method_or_approach": has_method_or_approach,
+                "has_experiments_or_results": has_experiments_or_results,
+                "has_limitations": has_limitations,
+                "has_conclusion": has_conclusion,
+                "has_references": has_references,
+                "largest_section_word_count": largest_section_word_count,
+                "section_quality_status": quality_status,
+            }
+        )
+    return quality_records
+
+
+def aggregate_section_quality_metrics(
+    section_rows: list[dict[str, Any]],
+    text_manifest_rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    quality_records = build_section_quality_records(section_rows, text_manifest_rows)
+    quality_statuses = Counter(str(record["section_quality_status"]) for record in quality_records)
+    section_counts_by_type = Counter(
+        str(row.get("section_type") or "other") for row in section_rows
+    )
+    return {
+        "section_quality_records": quality_records,
+        "section_counts_by_type": dict(section_counts_by_type),
+        "papers_with_good_sections_count": quality_statuses.get("good", 0),
+        "papers_with_partial_sections_count": quality_statuses.get("partial", 0),
+        "papers_with_poor_sections_count": quality_statuses.get("poor", 0),
+        "papers_with_method_sections_count": sum(
+            1 for record in quality_records if record["has_method_or_approach"]
+        ),
+        "papers_with_results_sections_count": sum(
+            1 for record in quality_records if record["has_experiments_or_results"]
+        ),
+        "papers_with_limitations_sections_count": sum(
+            1 for record in quality_records if record["has_limitations"]
+        ),
+        "no_sections_detected_count": sum(
+            1 for record in quality_records if record["sections_detected_count"] == 0
+        ),
+        "poor_section_quality_titles": [
+            record["title"] or record["paper_id"]
+            for record in quality_records
+            if record["section_quality_status"] == "poor"
+        ],
+    }
 
 
 def build_paper_preparation_report(
@@ -1192,22 +1427,17 @@ def build_paper_preparation_report(
         )
     if backend == "missing":
         warnings.append(PDF_EXTRACTION_DEPENDENCY_WARNING)
-    extracted_text_paper_ids = {
-        str(row.get("paper_id"))
-        for row in text_rows
-        if str(row.get("text_extraction_status") or "") == "extracted" and row.get("paper_id")
-    }
-    section_paper_ids = {
-        str(section.get("paper_id")) for section in sections if section.get("paper_id")
-    }
-    no_sections_detected_count = len(extracted_text_paper_ids - section_paper_ids)
-    if no_sections_detected_count > 0:
-        warnings.append("Some extracted texts did not yield recognized section headings.")
     local_pdf_count = sum(
         1
         for row in text_rows
         if row.get("local_pdf_path") and Path(str(row["local_pdf_path"])).exists()
     )
+    section_metrics = aggregate_section_quality_metrics(sections, text_rows)
+    no_sections_detected_count = int(section_metrics["no_sections_detected_count"])
+    if no_sections_detected_count > 0:
+        warnings.append("Some extracted texts did not yield recognized section headings.")
+    if int(section_metrics["papers_with_poor_sections_count"]) > 0:
+        warnings.append("Some papers have poor section coverage and need review before 2A-5B.")
     pdf_download_failure_details = [
         {
             "paper_id": record.get("paper_id"),
@@ -1272,6 +1502,16 @@ def build_paper_preparation_report(
         ),
         "sections_extracted_count": len(sections),
         "no_sections_detected_count": no_sections_detected_count,
+        "papers_with_good_sections_count": section_metrics["papers_with_good_sections_count"],
+        "papers_with_partial_sections_count": section_metrics["papers_with_partial_sections_count"],
+        "papers_with_poor_sections_count": section_metrics["papers_with_poor_sections_count"],
+        "papers_with_method_sections_count": section_metrics["papers_with_method_sections_count"],
+        "papers_with_results_sections_count": section_metrics["papers_with_results_sections_count"],
+        "papers_with_limitations_sections_count": section_metrics[
+            "papers_with_limitations_sections_count"
+        ],
+        "section_counts_by_type": section_metrics["section_counts_by_type"],
+        "poor_section_quality_titles": section_metrics["poor_section_quality_titles"],
         "counts_by_topic": counts_by_topic(records_for_counts),
         "counts_by_source": counts_by_source(records_for_counts),
         "missing_authors_count": sum(
@@ -1302,6 +1542,9 @@ def output_files_from_args(args: argparse.Namespace) -> dict[str, str]:
         "text_manifest_path": str(args.text_manifest_path),
         "sections_manifest_path": str(args.sections_manifest_path),
         "report_path": str(args.report_path),
+        "section_quality_report_path": str(
+            getattr(args, "section_quality_report_path", DEFAULT_SECTION_QUALITY_REPORT_PATH)
+        ),
     }
 
 
@@ -1702,6 +1945,20 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
                 )
             )
 
+    quality_by_paper = {
+        str(record["paper_id"]): record
+        for record in build_section_quality_records(section_rows, text_manifest_rows)
+    }
+    for row in text_manifest_rows:
+        paper_id = str(row.get("paper_id") or "")
+        quality = quality_by_paper.get(paper_id)
+        row["sections_detected_count"] = (
+            quality["sections_detected_count"] if quality is not None else 0
+        )
+        row["section_quality_status"] = (
+            quality["section_quality_status"] if quality is not None else "not_available"
+        )
+
     write_jsonl(args.text_manifest_path, text_manifest_rows)
     write_jsonl(args.sections_manifest_path, section_rows)
     approved_records = read_jsonl(args.approved_registry_path)
@@ -1729,6 +1986,91 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
         "sections_manifest_path": str(args.sections_manifest_path),
         "report_path": str(args.report_path),
         "warnings": report["warnings"],
+    }
+
+
+def suspicious_large_sections(section_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    suspicious: list[dict[str, Any]] = []
+    for section in section_rows:
+        section_type = str(section.get("section_type") or "other")
+        word_count = safe_int(section.get("word_count"))
+        is_large_abstract = section_type == "abstract" and word_count > 1500
+        is_large_non_reference = section_type != "references" and word_count > 8000
+        if not is_large_abstract and not is_large_non_reference:
+            continue
+        suspicious.append(
+            {
+                "section_record_id": section.get("section_record_id"),
+                "paper_id": section.get("paper_id"),
+                "title": section.get("title"),
+                "section_type": section_type,
+                "section_title": section.get("section_title"),
+                "word_count": word_count,
+                "reason": (
+                    "abstract_above_1500_words"
+                    if is_large_abstract
+                    else "non_reference_section_above_8000_words"
+                ),
+            }
+        )
+    return suspicious
+
+
+def build_section_quality_audit_report(
+    text_manifest_rows: list[dict[str, Any]],
+    section_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    section_metrics = aggregate_section_quality_metrics(section_rows, text_manifest_rows)
+    quality_records = section_metrics["section_quality_records"]
+    suspicious_sections = suspicious_large_sections(section_rows)
+    recommendations = [
+        "Review poor section coverage before creating Research AI KB/gold records.",
+        (
+            "Use method, experiments, results, limitations, and conclusion sections "
+            "for 2A-5B curation."
+        ),
+        "Do not treat oversized abstracts as reliable abstract-only evidence without inspection.",
+    ]
+    if not suspicious_sections:
+        recommendations.append("No oversized abstract or non-reference sections were detected.")
+    return {
+        "phase": "2A-5A-Text-Section-QA",
+        "generated_at_utc": utc_now(),
+        "total_papers": len(quality_records),
+        "total_sections": len(section_rows),
+        "sections_by_type": section_metrics["section_counts_by_type"],
+        "papers_with_good_sections_count": section_metrics["papers_with_good_sections_count"],
+        "papers_with_partial_sections_count": section_metrics["papers_with_partial_sections_count"],
+        "papers_with_poor_sections_count": section_metrics["papers_with_poor_sections_count"],
+        "poor_section_quality_titles": section_metrics["poor_section_quality_titles"],
+        "suspicious_large_sections": suspicious_sections,
+        "recommendations": recommendations,
+        "next_step": (
+            "Review section quality before Phase 2A-5B curated Research AI KB/gold creation."
+        ),
+    }
+
+
+def audit_sections(args: argparse.Namespace) -> dict[str, Any]:
+    text_rows = read_jsonl(args.text_manifest_path) if args.text_manifest_path.exists() else []
+    section_rows = (
+        read_jsonl(args.sections_manifest_path) if args.sections_manifest_path.exists() else []
+    )
+    report = build_section_quality_audit_report(text_rows, section_rows)
+    write_json(args.section_quality_report_path, report)
+    return {
+        "mode": "audit_sections",
+        "phase": report["phase"],
+        "total_papers": report["total_papers"],
+        "total_sections": report["total_sections"],
+        "sections_by_type": report["sections_by_type"],
+        "papers_with_good_sections_count": report["papers_with_good_sections_count"],
+        "papers_with_partial_sections_count": report["papers_with_partial_sections_count"],
+        "papers_with_poor_sections_count": report["papers_with_poor_sections_count"],
+        "suspicious_large_sections_count": len(report["suspicious_large_sections"]),
+        "report_path": str(args.section_quality_report_path),
+        "recommendations": report["recommendations"],
+        "next_step": report["next_step"],
     }
 
 
@@ -1768,6 +2110,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--enrich-metadata", action="store_true")
     parser.add_argument("--download-pdfs", action="store_true")
     parser.add_argument("--extract-text", action="store_true")
+    parser.add_argument("--audit-sections", action="store_true")
     parser.add_argument("--summarize-local", action="store_true")
     parser.add_argument(
         "--approved-registry-path",
@@ -1786,6 +2129,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--sections-manifest-path", type=Path, default=DEFAULT_SECTIONS_MANIFEST_PATH
     )
     parser.add_argument("--report-path", type=Path, default=DEFAULT_REPORT_PATH)
+    parser.add_argument(
+        "--section-quality-report-path",
+        type=Path,
+        default=DEFAULT_SECTION_QUALITY_REPORT_PATH,
+    )
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--skip-existing", action="store_true")
     parser.add_argument("--include-non-paper-pdfs", action="store_true")
@@ -1809,6 +2157,7 @@ def main(argv: list[str] | None = None) -> int:
             args.enrich_metadata,
             args.download_pdfs,
             args.extract_text,
+            args.audit_sections,
             args.summarize_local,
         )
     )
@@ -1816,7 +2165,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             (
                 "Pass exactly one mode: --dry-run, --enrich-metadata, --download-pdfs, "
-                "--extract-text, or --summarize-local."
+                "--extract-text, --audit-sections, or --summarize-local."
             ),
             file=sys.stderr,
         )
@@ -1845,6 +2194,8 @@ def main(argv: list[str] | None = None) -> int:
             summary = download_pdfs(args)
         elif args.extract_text:
             summary = extract_text(args)
+        elif args.audit_sections:
+            summary = audit_sections(args)
         else:
             summary = summarize_local(args)
     except RuntimeError as exc:

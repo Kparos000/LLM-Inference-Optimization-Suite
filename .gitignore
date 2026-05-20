@@ -67,6 +67,7 @@ data/generated/research_ai/manual_registry_validation_report.json
 data/generated/research_ai/research_ai_approved_registry_report.json
 data/generated/research_ai/enriched_paper_registry.jsonl
 data/generated/research_ai/research_ai_paper_preparation_report.json
+data/generated/research_ai/research_ai_section_quality_report.json
 data/raw/research_ai/papers/
 data/processed/research_ai/paper_text/
 data/processed/research_ai/paper_text_manifest.jsonl

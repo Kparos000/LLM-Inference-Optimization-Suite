@@ -274,6 +274,187 @@ This is the conclusion.
     assert all(section["paper_id"] == "research_ai_test" for section in sections)
 
 
+def test_detect_research_paper_sections_numbered_headings() -> None:
+    module = _load_preparation_module()
+    text = """
+ABSTRACT
+Summary.
+1 Introduction
+Intro text.
+2 Method
+Method text.
+3 Experiments
+Experiment text.
+4 Results
+Result text.
+5 Conclusion
+Conclusion text.
+References
+Reference text.
+"""
+
+    sections = module.detect_research_paper_sections(text, {"paper_id": "paper_1"})
+    section_types = {section["section_type"] for section in sections}
+
+    assert {
+        "abstract",
+        "introduction",
+        "method",
+        "experiments",
+        "results",
+        "conclusion",
+        "references",
+    }.issubset(section_types)
+
+
+def test_detect_research_paper_sections_title_case_headings() -> None:
+    module = _load_preparation_module()
+    text = """
+Abstract
+Summary.
+Related Work
+Prior work.
+Approach
+Approach text.
+Evaluation
+Evaluation text.
+Limitations
+Limitations text.
+Conclusion
+Conclusion text.
+References
+Reference text.
+"""
+
+    sections = module.detect_research_paper_sections(text, {"paper_id": "paper_1"})
+    section_types = {section["section_type"] for section in sections}
+
+    assert {
+        "abstract",
+        "related_work",
+        "approach",
+        "evaluation",
+        "limitations",
+        "conclusion",
+        "references",
+    }.issubset(section_types)
+
+
+def test_section_detector_avoids_long_sentence_false_positive() -> None:
+    module = _load_preparation_module()
+    text = """
+Abstract
+This is the abstract.
+This sentence describes a method that is useful for evaluating systems, but it is part of a
+paragraph and should not be interpreted as a standalone method section heading.
+References
+Reference text.
+"""
+
+    sections = module.detect_research_paper_sections(text, {"paper_id": "paper_1"})
+    section_types = {section["section_type"] for section in sections}
+
+    assert "method" not in section_types
+
+
+def test_section_quality_metrics_good() -> None:
+    module = _load_preparation_module()
+    section_rows = [
+        {"paper_id": "paper_1", "title": "Paper", "section_type": "abstract", "word_count": 50},
+        {
+            "paper_id": "paper_1",
+            "title": "Paper",
+            "section_type": "introduction",
+            "word_count": 200,
+        },
+        {"paper_id": "paper_1", "title": "Paper", "section_type": "method", "word_count": 500},
+        {"paper_id": "paper_1", "title": "Paper", "section_type": "results", "word_count": 500},
+        {
+            "paper_id": "paper_1",
+            "title": "Paper",
+            "section_type": "conclusion",
+            "word_count": 100,
+        },
+    ]
+
+    metrics = module.aggregate_section_quality_metrics(section_rows)
+
+    assert metrics["papers_with_good_sections_count"] == 1
+    assert metrics["section_quality_records"][0]["section_quality_status"] == "good"
+
+
+def test_section_quality_metrics_poor_only_abstract_references() -> None:
+    module = _load_preparation_module()
+    section_rows = [
+        {"paper_id": "paper_1", "title": "Paper", "section_type": "abstract", "word_count": 50},
+        {"paper_id": "paper_1", "title": "Paper", "section_type": "references", "word_count": 50},
+    ]
+
+    metrics = module.aggregate_section_quality_metrics(section_rows)
+
+    assert metrics["papers_with_poor_sections_count"] == 1
+    assert metrics["poor_section_quality_titles"] == ["Paper"]
+
+
+def test_audit_sections_report_flags_large_abstract() -> None:
+    module = _load_preparation_module()
+    section_rows = [
+        {
+            "section_record_id": "section_1",
+            "paper_id": "paper_1",
+            "title": "Paper",
+            "section_type": "abstract",
+            "section_title": "Abstract",
+            "word_count": 1501,
+        }
+    ]
+
+    report = module.build_section_quality_audit_report([], section_rows)
+
+    assert report["suspicious_large_sections"][0]["reason"] == "abstract_above_1500_words"
+
+
+def test_audit_sections_cli(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    text_manifest_path = tmp_path / "text_manifest.jsonl"
+    sections_manifest_path = tmp_path / "sections_manifest.jsonl"
+    report_path = tmp_path / "section_quality_report.json"
+    module.write_jsonl(
+        text_manifest_path,
+        [{"paper_id": "paper_1", "title": "Paper", "text_extraction_status": "extracted"}],
+    )
+    module.write_jsonl(
+        sections_manifest_path,
+        [
+            {
+                "paper_id": "paper_1",
+                "title": "Paper",
+                "section_type": "abstract",
+                "word_count": 50,
+            },
+            {
+                "paper_id": "paper_1",
+                "title": "Paper",
+                "section_type": "references",
+                "word_count": 50,
+            },
+        ],
+    )
+    args = Namespace(
+        text_manifest_path=text_manifest_path,
+        sections_manifest_path=sections_manifest_path,
+        section_quality_report_path=report_path,
+    )
+
+    summary = module.audit_sections(args)
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+
+    assert summary["total_sections"] == 2
+    assert summary["sections_by_type"] == {"abstract": 1, "references": 1}
+    assert summary["papers_with_poor_sections_count"] == 1
+    assert report["recommendations"]
+
+
 def test_extract_text_from_pdf_missing_dependency_is_graceful(tmp_path: Path) -> None:
     module = _load_preparation_module()
     pdf_path = tmp_path / "not_a_pdf.pdf"
@@ -1082,3 +1263,11 @@ def test_docs_include_pdf_text_dependency_section() -> None:
     assert "PDF Text Extraction Dependency" in text
     assert "pypdf" in text
     assert "--extract-text" in text
+
+
+def test_docs_include_section_qa() -> None:
+    text = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "Phase 2A-5A-Text-Section-QA" in text
+    assert "--audit-sections" in text
+    assert "section quality" in text
