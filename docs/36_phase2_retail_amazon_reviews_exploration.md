@@ -138,7 +138,58 @@ product metadata plus review-derived summaries as KB/context, include answer,
 insufficient evidence, escalation, out-of-scope, and spam-or-fraud behaviors,
 and avoid committing raw user IDs or bulk raw reviews.
 
+## Phase 2A-6B Controlled Real-Data Loading
+
+Phase 2A-6B adds optional controlled real-data loading from
+`McAuley-Lab/Amazon-Reviews-2023` on Hugging Face. Use
+`--load-from-huggingface` only for small samples. Do not download the full Amazon
+Reviews 2023 dataset.
+
+Generated real samples are written under `data/generated/retail/` and remain
+local and ignored. The loader does not write raw `user_id`; it writes a
+deterministic `user_id_hash` instead. After loading, the script automatically
+runs the same local EDA pipeline and produces the report, field profile, text
+profile, quality report, plots, and word views.
+
+Default config names are inferred from the category:
+
+- reviews: `raw_review_<category>`
+- metadata: `raw_meta_<category>`
+
+If Hugging Face config names differ, inspect the dataset page and rerun with
+explicit `--reviews-config` and `--metadata-config` values.
+
+Controlled load command:
+
+```text
+python scripts/phase2/explore_retail_amazon_reviews.py --load-from-huggingface --category All_Beauty --sample-limit 1000 --metadata-limit 1000
+```
+
+Explore existing local generated samples:
+
+```text
+python scripts/phase2/explore_retail_amazon_reviews.py --explore-local --reviews-input data/generated/retail/amazon_reviews_sample.jsonl --metadata-input data/generated/retail/amazon_metadata_sample.jsonl
+```
+
+Inspect the generated report:
+
+```text
+python -m json.tool data/generated/retail/amazon_reviews_exploration_report.json
+```
+
+Review checklist before Retail seed creation:
+
+- rating distribution
+- review length distribution
+- top terms
+- issue terms
+- low-rating examples
+- metadata product coverage
+- missing fields
+- duplicate and quality flags
+- whether the sample is good enough for Phase 2A-6C seed creation
+
 ## Next Step
 
-After controlled EDA review, proceed to Phase 2A-6B Retail curated seed
+After controlled EDA review, proceed to Phase 2A-6C Retail curated seed
 creation.

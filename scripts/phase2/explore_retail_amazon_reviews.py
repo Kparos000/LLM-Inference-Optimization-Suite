@@ -1,8 +1,10 @@
-"""Explore controlled local samples from Amazon Reviews 2023 for Phase 2A-6A."""
+"""Explore controlled samples from Amazon Reviews 2023 for Phase 2A-6B."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib
 import json
 import re
 import string
@@ -13,10 +15,11 @@ from pathlib import Path
 from statistics import mean, median
 from typing import Any
 
-PHASE = "2A-6A"
+PHASE = "2A-6B"
 SOURCE_NAME = "Amazon Reviews 2023"
 SOURCE_OWNER = "McAuley Lab"
 SOURCE_LOCATION = "Hugging Face dataset McAuley-Lab/Amazon-Reviews-2023"
+HF_DATASET_NAME = "McAuley-Lab/Amazon-Reviews-2023"
 
 DEFAULT_REVIEWS_INPUT = Path("data/generated/retail/amazon_reviews_sample.jsonl")
 DEFAULT_METADATA_INPUT = Path("data/generated/retail/amazon_metadata_sample.jsonl")
@@ -26,6 +29,8 @@ DEFAULT_TEXT_PROFILE_OUTPUT = Path("data/generated/retail/amazon_reviews_text_pr
 DEFAULT_QUALITY_REPORT_OUTPUT = Path("data/generated/retail/amazon_reviews_quality_report.json")
 DEFAULT_PLOTS_DIR = Path("data/generated/retail/plots")
 DEFAULT_WORD_VIEWS_DIR = Path("data/generated/retail/word_views")
+DEFAULT_OUTPUT_REVIEWS_SAMPLE = Path("data/generated/retail/amazon_reviews_sample.jsonl")
+DEFAULT_OUTPUT_METADATA_SAMPLE = Path("data/generated/retail/amazon_metadata_sample.jsonl")
 REVIEW_SCHEMA_SAMPLE_PATH = Path(
     "data/real_world_samples/retail_amazon_reviews_schema_sample.jsonl"
 )
@@ -160,6 +165,144 @@ def read_jsonl_limited(path: Path, limit: int) -> list[dict[str, Any]]:
             if isinstance(parsed, dict):
                 rows.append(parsed)
     return rows
+
+
+def build_hf_dataset_names(category: str) -> dict[str, str]:
+    normalized_category = category.strip() or "All_Beauty"
+    return {
+        "dataset_name": HF_DATASET_NAME,
+        "reviews_config": f"raw_review_{normalized_category}",
+        "metadata_config": f"raw_meta_{normalized_category}",
+        "split": "full",
+    }
+
+
+def _hash_user_id(user_id: Any) -> str | None:
+    if user_id is None or user_id == "":
+        return None
+    return hashlib.sha256(str(user_id).encode("utf-8")).hexdigest()[:16]
+
+
+def sanitize_review_row(row: dict[str, Any]) -> dict[str, Any]:
+    sanitized: dict[str, Any] = {
+        field: row.get(field)
+        for field in EXPECTED_REVIEW_FIELDS
+        if field != "user_id" and field in row
+    }
+    user_id_hash = _hash_user_id(row.get("user_id"))
+    if user_id_hash:
+        sanitized["user_id_hash"] = user_id_hash
+    sanitized["source_type"] = "real_sample"
+    sanitized["sanitized"] = True
+    return sanitized
+
+
+def sanitize_metadata_row(row: dict[str, Any]) -> dict[str, Any]:
+    sanitized = {field: row.get(field) for field in EXPECTED_METADATA_FIELDS if field in row}
+    sanitized["source_type"] = "real_sample"
+    sanitized["sanitized"] = True
+    return sanitized
+
+
+def _import_hf_load_dataset() -> Any:
+    try:
+        datasets_module = importlib.import_module("datasets")
+    except ImportError as exc:
+        raise RuntimeError(
+            "Install datasets to use --load-from-huggingface, or provide local JSONL files "
+            "to --explore-local."
+        ) from exc
+    load_dataset = getattr(datasets_module, "load_dataset", None)
+    if load_dataset is None:
+        raise RuntimeError(
+            "Install datasets to use --load-from-huggingface, or provide local JSONL files "
+            "to --explore-local."
+        )
+    return load_dataset
+
+
+def _load_hf_rows(
+    *,
+    load_dataset_func: Any,
+    config_name: str,
+    limit: int,
+    streaming: bool,
+) -> list[dict[str, Any]]:
+    if limit < 1:
+        return []
+    try:
+        dataset = load_dataset_func(
+            HF_DATASET_NAME,
+            config_name,
+            split="full",
+            streaming=streaming,
+        )
+    except Exception as first_error:
+        try:
+            dataset = load_dataset_func(
+                HF_DATASET_NAME,
+                config_name,
+                split="train",
+                streaming=streaming,
+            )
+        except Exception as second_error:
+            raise RuntimeError(
+                f"Failed to load Hugging Face config {config_name!r}. Inspect available "
+                "Amazon Reviews 2023 config names and rerun with --reviews-config or "
+                f"--metadata-config. Original errors: {first_error}; {second_error}"
+            ) from second_error
+
+    rows: list[dict[str, Any]] = []
+    for row in dataset:
+        if isinstance(row, dict):
+            rows.append(dict(row))
+        else:
+            rows.append(dict(row))
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def load_hf_review_sample(
+    *,
+    load_dataset_func: Any,
+    category: str,
+    sample_limit: int,
+    reviews_config: str | None,
+    streaming: bool,
+    seed: int,
+) -> list[dict[str, Any]]:
+    _ = seed
+    names = build_hf_dataset_names(category)
+    config_name = reviews_config or names["reviews_config"]
+    rows = _load_hf_rows(
+        load_dataset_func=load_dataset_func,
+        config_name=config_name,
+        limit=sample_limit,
+        streaming=streaming,
+    )
+    return [sanitize_review_row(row) for row in rows]
+
+
+def load_hf_metadata_sample(
+    *,
+    load_dataset_func: Any,
+    category: str,
+    metadata_limit: int,
+    metadata_config: str | None,
+    streaming: bool,
+    seed: int,
+) -> list[dict[str, Any]]:
+    _ = seed
+    names = build_hf_dataset_names(category)
+    config_name = metadata_config or names["metadata_config"]
+    rows = _load_hf_rows(
+        load_dataset_func=load_dataset_func,
+        config_name=config_name,
+        limit=metadata_limit,
+        streaming=streaming,
+    )
+    return [sanitize_metadata_row(row) for row in rows]
 
 
 def _is_missing(value: Any) -> bool:
@@ -303,16 +446,31 @@ def profile_text_fields(rows: list[dict[str, Any]]) -> dict[str, Any]:
     rating_distribution: Counter[str] = Counter()
     verified_distribution: Counter[str] = Counter()
     helpful_votes: list[float] = []
+    ratings_by_verified: dict[str, list[float]] = {}
+    category_counts: Counter[str] = Counter()
+    low_rating_count = 0
+    high_rating_count = 0
     for row in rows:
         rating = row.get("rating")
         if not _is_missing(rating):
             rating_distribution[str(rating)] += 1
+        rating_value = _coerce_float(rating)
+        if rating_value is not None:
+            if rating_value <= 2:
+                low_rating_count += 1
+            if rating_value >= 4:
+                high_rating_count += 1
         verified = row.get("verified_purchase")
         if not _is_missing(verified):
             verified_distribution[str(verified)] += 1
+            if rating_value is not None:
+                ratings_by_verified.setdefault(str(verified), []).append(rating_value)
         helpful_vote = _coerce_float(row.get("helpful_vote"))
         if helpful_vote is not None:
             helpful_votes.append(helpful_vote)
+        category = row.get("main_category") or row.get("category")
+        if not _is_missing(category):
+            category_counts[str(category)] += 1
 
     return {
         "row_count": len(rows),
@@ -363,6 +521,13 @@ def profile_text_fields(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "top_bigrams": _top_items(bigrams),
         "top_review_title_terms": _top_items(title_terms),
         "frequent_issue_terms": _top_items(issue_counts, limit=len(ISSUE_TERMS)),
+        "average_rating_by_verified_purchase": {
+            bucket: round(mean(values), 3) for bucket, values in sorted(ratings_by_verified.items())
+        },
+        "low_rating_count": low_rating_count,
+        "high_rating_count": high_rating_count,
+        "issue_term_counts": dict(sorted(issue_counts.items())),
+        "category": dict(sorted(category_counts.items())),
     }
 
 
@@ -392,7 +557,7 @@ def profile_quality(rows: list[dict[str, Any]]) -> dict[str, Any]:
     duplicate_key_counter: Counter[tuple[str, str, str]] = Counter()
     for row in rows:
         asin = row.get("asin")
-        user_id = row.get("user_id")
+        user_id = row.get("user_id_hash") or row.get("user_id")
         timestamp = row.get("timestamp")
         if not _is_missing(asin) and not _is_missing(user_id) and not _is_missing(timestamp):
             duplicate_key_counter[(str(asin), str(user_id), str(timestamp))] += 1
@@ -428,6 +593,12 @@ def profile_quality(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "row_count": len(rows),
         "duplicate_review_key_count": duplicate_review_key_count,
+        "raw_user_id_present_count": sum(1 for row in rows if not _is_missing(row.get("user_id"))),
+        "sanitized_user_id_hash_present_count": sum(
+            1 for row in rows if not _is_missing(row.get("user_id_hash"))
+        ),
+        "missing_text_count": sum(1 for row in rows if not _text_value(row, "text").strip()),
+        "missing_title_count": sum(1 for row in rows if not _text_value(row, "title").strip()),
         "missing_parent_asin_count": sum(1 for row in rows if _is_missing(row.get("parent_asin"))),
         "missing_rating_count": sum(1 for row in rows if _is_missing(row.get("rating"))),
         "invalid_rating_count": invalid_rating_count,
@@ -458,6 +629,7 @@ def _redact_preview_text(text: str, limit: int = 300) -> str:
 
 def write_word_views(
     rows: list[dict[str, Any]],
+    metadata_rows: list[dict[str, Any]],
     text_profile: dict[str, Any],
     word_views_dir: Path,
 ) -> None:
@@ -525,6 +697,47 @@ def write_word_views(
         word_views_dir / "high_rating_positive_preview.txt", preview_lines(high_rating)
     )
 
+    metadata_title_lines: list[str] = []
+    metadata_feature_lines: list[str] = []
+    for row in metadata_rows[:10]:
+        metadata_title_lines.append(
+            json.dumps(
+                {
+                    "parent_asin": row.get("parent_asin"),
+                    "main_category": row.get("main_category"),
+                    "average_rating": row.get("average_rating"),
+                    "rating_number": row.get("rating_number"),
+                    "title_preview": _redact_preview_text(_text_value(row, "title"), limit=140),
+                },
+                sort_keys=True,
+            )
+        )
+        features = row.get("features")
+        if isinstance(features, list):
+            feature_preview = "; ".join(
+                _redact_preview_text(str(item), 120) for item in features[:5]
+            )
+        else:
+            feature_preview = _redact_preview_text(str(features or ""), 300)
+        metadata_feature_lines.append(
+            json.dumps(
+                {
+                    "parent_asin": row.get("parent_asin"),
+                    "title_preview": _redact_preview_text(_text_value(row, "title"), limit=100),
+                    "features_preview": feature_preview,
+                },
+                sort_keys=True,
+            )
+        )
+    _write_text_lines(
+        word_views_dir / "metadata_product_titles_preview.txt",
+        metadata_title_lines,
+    )
+    _write_text_lines(
+        word_views_dir / "metadata_features_preview.txt",
+        metadata_feature_lines,
+    )
+
 
 def write_plots_or_summaries(
     rows: list[dict[str, Any]],
@@ -535,6 +748,7 @@ def write_plots_or_summaries(
     rating_distribution = text_profile.get("rating_distribution", {})
     verified_distribution = text_profile.get("verified_purchase_distribution", {})
     top_terms = text_profile.get("top_unigrams", [])
+    issue_terms = text_profile.get("frequent_issue_terms", [])
     helpful_votes = [
         value for row in rows if (value := _coerce_float(row.get("helpful_vote"))) is not None
     ]
@@ -569,6 +783,14 @@ def write_plots_or_summaries(
                 if isinstance(item, dict)
             ],
         )
+        _write_text_lines(
+            plots_dir / "issue_terms_bar.txt",
+            [
+                f"{item.get('term')},{item.get('count')}"
+                for item in issue_terms[:20]
+                if isinstance(item, dict)
+            ],
+        )
         return {"plot_status": "fallback_text_summaries", "plots_dir": str(plots_dir)}
 
     def save_bar(path: Path, title: str, labels: list[str], values: list[int]) -> None:
@@ -596,6 +818,12 @@ def write_plots_or_summaries(
         "Top Review Terms",
         [str(item.get("term")) for item in top_terms[:15] if isinstance(item, dict)],
         [int(item.get("count", 0)) for item in top_terms[:15] if isinstance(item, dict)],
+    )
+    save_bar(
+        plots_dir / "issue_terms_bar.png",
+        "Issue Terms",
+        [str(item.get("term")) for item in issue_terms[:15] if isinstance(item, dict)],
+        [int(item.get("count", 0)) for item in issue_terms[:15] if isinstance(item, dict)],
     )
 
     plt.figure(figsize=(8, 4))
@@ -780,6 +1008,7 @@ def build_exploration_report(
         "plots_dir": str(plots_dir),
         "word_views_dir": str(word_views_dir),
         "rating_distribution": text_profile.get("rating_distribution", {}),
+        "top_issue_terms": text_profile.get("frequent_issue_terms", [])[:10],
         "review_length_summary": {
             "text_length_chars_min": text_profile.get("text_length_chars_min"),
             "text_length_chars_mean": text_profile.get("text_length_chars_mean"),
@@ -792,6 +1021,13 @@ def build_exploration_report(
         },
         "quality_flags": {
             "duplicate_review_key_count": quality_report.get("duplicate_review_key_count", 0),
+            "raw_user_id_present_count": quality_report.get("raw_user_id_present_count", 0),
+            "sanitized_user_id_hash_present_count": quality_report.get(
+                "sanitized_user_id_hash_present_count",
+                0,
+            ),
+            "missing_text_count": quality_report.get("missing_text_count", 0),
+            "missing_title_count": quality_report.get("missing_title_count", 0),
             "missing_parent_asin_count": quality_report.get("missing_parent_asin_count", 0),
             "missing_rating_count": quality_report.get("missing_rating_count", 0),
             "invalid_rating_count": quality_report.get("invalid_rating_count", 0),
@@ -815,7 +1051,7 @@ def build_exploration_report(
             "Avoid committing bulk raw reviews.",
         ],
         "warnings": _report_warnings(),
-        "next_step": "Proceed to Phase 2A-6B Retail curated seed creation after reviewing EDA.",
+        "next_step": "Proceed to Phase 2A-6C Retail curated seed creation after reviewing EDA.",
     }
 
 
@@ -855,7 +1091,7 @@ def run_local_exploration(args: argparse.Namespace, mode: str) -> dict[str, Any]
     write_json(text_profile_path, text_profile)
     write_json(quality_report_path, quality_report)
     plot_status = write_plots_or_summaries(reviews, text_profile, plots_dir)
-    write_word_views(reviews, text_profile, word_views_dir)
+    write_word_views(reviews, metadata, text_profile, word_views_dir)
     report = build_exploration_report(
         mode=mode,
         reviews_row_count=len(reviews),
@@ -870,6 +1106,10 @@ def run_local_exploration(args: argparse.Namespace, mode: str) -> dict[str, Any]
         quality_report=quality_report,
     )
     report["plot_status"] = plot_status
+    if plot_status.get("plot_status") == "fallback_text_summaries":
+        report["warnings"].append(
+            "matplotlib is unavailable; wrote text plot summaries instead of PNG plots."
+        )
     write_json(report_path, report)
 
     return {
@@ -888,7 +1128,70 @@ def run_local_exploration(args: argparse.Namespace, mode: str) -> dict[str, Any]
     }
 
 
+def run_huggingface_load(args: argparse.Namespace) -> dict[str, Any]:
+    load_dataset_func = _import_hf_load_dataset()
+    output_reviews_sample = Path(args.output_reviews_sample)
+    output_metadata_sample = Path(args.output_metadata_sample)
+    reviews = load_hf_review_sample(
+        load_dataset_func=load_dataset_func,
+        category=str(args.category),
+        sample_limit=int(args.sample_limit),
+        reviews_config=args.reviews_config,
+        streaming=bool(args.streaming),
+        seed=int(args.seed),
+    )
+    metadata = load_hf_metadata_sample(
+        load_dataset_func=load_dataset_func,
+        category=str(args.category),
+        metadata_limit=int(args.metadata_limit),
+        metadata_config=args.metadata_config,
+        streaming=bool(args.streaming),
+        seed=int(args.seed),
+    )
+    write_jsonl(output_reviews_sample, reviews)
+    write_jsonl(output_metadata_sample, metadata)
+
+    local_args = argparse.Namespace(**vars(args))
+    local_args.reviews_input = str(output_reviews_sample)
+    local_args.metadata_input = str(output_metadata_sample)
+    exploration_summary = run_local_exploration(local_args, mode="load_from_huggingface")
+    text_profile = json.loads(Path(args.text_profile_output).read_text(encoding="utf-8"))
+    quality_report = json.loads(Path(args.quality_report_output).read_text(encoding="utf-8"))
+    report = json.loads(Path(args.output_report).read_text(encoding="utf-8"))
+
+    return {
+        "mode": "load_from_huggingface",
+        "phase": PHASE,
+        "category": str(args.category),
+        "reviews_config": args.reviews_config
+        or build_hf_dataset_names(str(args.category))["reviews_config"],
+        "metadata_config": args.metadata_config
+        or build_hf_dataset_names(str(args.category))["metadata_config"],
+        "streaming": bool(args.streaming),
+        "seed": int(args.seed),
+        "reviews_sample_count": len(reviews),
+        "metadata_sample_count": len(metadata),
+        "output_reviews_sample": str(output_reviews_sample),
+        "output_metadata_sample": str(output_metadata_sample),
+        "output_report": exploration_summary["output_report"],
+        "field_profile_output": exploration_summary["field_profile_output"],
+        "text_profile_output": exploration_summary["text_profile_output"],
+        "quality_report_output": exploration_summary["quality_report_output"],
+        "plots_dir": exploration_summary["plots_dir"],
+        "word_views_dir": exploration_summary["word_views_dir"],
+        "rating_distribution": text_profile.get("rating_distribution", {}),
+        "top_issue_terms": text_profile.get("frequent_issue_terms", [])[:10],
+        "quality_flags": report.get("quality_flags", quality_report),
+        "warnings": report.get("warnings", _report_warnings()),
+        "next_step": report.get(
+            "next_step",
+            "Proceed to Phase 2A-6C Retail curated seed creation after reviewing EDA.",
+        ),
+    }
+
+
 def build_dry_run_summary(args: argparse.Namespace) -> dict[str, Any]:
+    dataset_names = build_hf_dataset_names(str(args.category))
     return {
         "mode": "dry_run",
         "phase": PHASE,
@@ -903,6 +1206,8 @@ def build_dry_run_summary(args: argparse.Namespace) -> dict[str, Any]:
         },
         "planned_outputs": {
             "output_report": str(args.output_report),
+            "output_reviews_sample": str(args.output_reviews_sample),
+            "output_metadata_sample": str(args.output_metadata_sample),
             "field_profile_output": str(args.field_profile_output),
             "text_profile_output": str(args.text_profile_output),
             "quality_report_output": str(args.quality_report_output),
@@ -915,6 +1220,8 @@ def build_dry_run_summary(args: argparse.Namespace) -> dict[str, Any]:
             "target_exploration_sample_size": 1000,
             "target_metadata_sample_size": 1000,
             "initial_category_priority": ["All_Beauty", "Home_and_Kitchen", "Electronics"],
+            "default_reviews_config": dataset_names["reviews_config"],
+            "default_metadata_config": dataset_names["metadata_config"],
         },
         "warnings": _report_warnings(),
         "next_step": (
@@ -929,8 +1236,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--write-schema-samples", action="store_true")
     parser.add_argument("--explore-local", action="store_true")
     parser.add_argument("--summarize-local", action="store_true")
+    parser.add_argument("--load-from-huggingface", action="store_true")
     parser.add_argument("--reviews-input", default=str(DEFAULT_REVIEWS_INPUT))
     parser.add_argument("--metadata-input", default=str(DEFAULT_METADATA_INPUT))
+    parser.add_argument("--output-reviews-sample", default=str(DEFAULT_OUTPUT_REVIEWS_SAMPLE))
+    parser.add_argument("--output-metadata-sample", default=str(DEFAULT_OUTPUT_METADATA_SAMPLE))
     parser.add_argument("--output-report", default=str(DEFAULT_OUTPUT_REPORT))
     parser.add_argument("--field-profile-output", default=str(DEFAULT_FIELD_PROFILE_OUTPUT))
     parser.add_argument("--text-profile-output", default=str(DEFAULT_TEXT_PROFILE_OUTPUT))
@@ -938,7 +1248,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--plots-dir", default=str(DEFAULT_PLOTS_DIR))
     parser.add_argument("--word-views-dir", default=str(DEFAULT_WORD_VIEWS_DIR))
     parser.add_argument("--sample-limit", type=int, default=1000)
+    parser.add_argument("--metadata-limit", type=int, default=1000)
     parser.add_argument("--category", default="All_Beauty")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--streaming", dest="streaming", action="store_true", default=True)
+    parser.add_argument("--no-streaming", dest="streaming", action="store_false")
+    parser.add_argument("--reviews-config", default=None)
+    parser.add_argument("--metadata-config", default=None)
     return parser
 
 
@@ -950,11 +1266,12 @@ def main(argv: list[str] | None = None) -> int:
         args.write_schema_samples,
         args.explore_local,
         args.summarize_local,
+        args.load_from_huggingface,
     ]
     if sum(1 for enabled in modes if enabled) != 1:
         parser.error(
             "Exactly one mode is required: --dry-run, --write-schema-samples, "
-            "--explore-local, or --summarize-local."
+            "--explore-local, --summarize-local, or --load-from-huggingface."
         )
 
     try:
@@ -962,11 +1279,13 @@ def main(argv: list[str] | None = None) -> int:
             summary = build_dry_run_summary(args)
         elif args.write_schema_samples:
             summary = write_schema_samples()
+        elif args.load_from_huggingface:
+            summary = run_huggingface_load(args)
         elif args.explore_local:
             summary = run_local_exploration(args, mode="explore_local")
         else:
             summary = run_local_exploration(args, mode="summarize_local")
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
 
