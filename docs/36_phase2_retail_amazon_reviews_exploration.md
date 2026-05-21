@@ -151,19 +151,63 @@ deterministic `user_id_hash` instead. After loading, the script automatically
 runs the same local EDA pipeline and produces the report, field profile, text
 profile, quality report, plots, and word views.
 
-Default config names are inferred from the category:
+Direct Parquet file names are inferred from the category:
 
-- reviews: `raw_review_<category>`
-- metadata: `raw_meta_<category>`
+- reviews: `raw_review_<category>/full-00000-of-00001.parquet`
+- metadata: `raw_meta_<category>/full-00000-of-00001.parquet`
 
-If Hugging Face config names differ, inspect the dataset page and rerun with
-explicit `--reviews-config` and `--metadata-config` values.
+If the file names differ, inspect the dataset page and rerun with explicit
+`--reviews-file` and `--metadata-file` values.
 
 Controlled load command:
 
 ```text
 python scripts/phase2/explore_retail_amazon_reviews.py --load-from-huggingface --category All_Beauty --sample-limit 1000 --metadata-limit 1000
 ```
+
+## Direct Parquet Loading
+
+The Amazon Reviews 2023 Hugging Face repository includes a dataset script, and
+some modern environments reject scripted dataset loading with an error such as
+`Dataset scripts are no longer supported`. The project therefore uses direct
+Parquet loading by default through `huggingface_hub` and `pyarrow`, not
+`datasets.load_dataset`.
+
+Example source files for `All_Beauty`:
+
+- `raw_review_All_Beauty/full-00000-of-00001.parquet`
+- `raw_meta_All_Beauty/full-00000-of-00001.parquet`
+
+The loader still applies strict row limits and writes generated JSONL samples
+only under ignored local paths. Raw `user_id` values are not written; review
+rows use deterministic `user_id_hash` values.
+
+Some live repository categories expose metadata as Parquet but reviews as raw
+JSONL files under `raw/review_categories/`. When a preferred Parquet review file
+is unavailable, the loader uses the direct JSONL file as a controlled fallback
+and records that fallback in the summary/report warnings.
+
+Install the optional loader dependencies when needed:
+
+```text
+python -m pip install -e ".[retail]"
+```
+
+Controlled direct load:
+
+```text
+python scripts/phase2/explore_retail_amazon_reviews.py --load-from-huggingface --category All_Beauty --sample-limit 100 --metadata-limit 100
+```
+
+Controlled direct load with explicit files:
+
+```text
+python scripts/phase2/explore_retail_amazon_reviews.py --load-from-huggingface --reviews-file raw_review_All_Beauty/full-00000-of-00001.parquet --metadata-file raw_meta_All_Beauty/full-00000-of-00001.parquet --sample-limit 100 --metadata-limit 100
+```
+
+Troubleshooting: if the optional `datasets` loader fails with
+`Dataset scripts are no longer supported`, rerun without `--use-datasets-loader`.
+Direct Parquet loading is the default path.
 
 Explore existing local generated samples:
 

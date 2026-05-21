@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import importlib
 import json
+import os
 import re
 import string
 import sys
@@ -177,6 +178,140 @@ def build_hf_dataset_names(category: str) -> dict[str, str]:
     }
 
 
+def build_hf_parquet_filenames(category: str) -> dict[str, str]:
+    normalized_category = category.strip() or "All_Beauty"
+    return {
+        "reviews_file": f"raw_review_{normalized_category}/full-00000-of-00001.parquet",
+        "metadata_file": f"raw_meta_{normalized_category}/full-00000-of-00001.parquet",
+    }
+
+
+def build_hf_jsonl_fallback_filenames(category: str) -> dict[str, str]:
+    normalized_category = category.strip() or "All_Beauty"
+    return {
+        "reviews_file": f"raw/review_categories/{normalized_category}.jsonl",
+        "metadata_file": f"raw/meta_categories/meta_{normalized_category}.jsonl",
+    }
+
+
+def download_hf_dataset_file(repo_id: str, filename: str) -> Path:
+    try:
+        hub_module = importlib.import_module("huggingface_hub")
+    except ImportError as exc:
+        raise RuntimeError(
+            "huggingface_hub is required for direct Parquet loading. Install "
+            "huggingface_hub and pyarrow, or provide local JSONL files to --explore-local."
+        ) from exc
+
+    hf_hub_download = getattr(hub_module, "hf_hub_download", None)
+    if hf_hub_download is None:
+        raise RuntimeError(
+            "huggingface_hub.hf_hub_download is required for direct Parquet loading. "
+            "Install a current huggingface_hub release or provide local JSONL files to "
+            "--explore-local."
+        )
+
+    os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+    try:
+        return Path(
+            str(
+                hf_hub_download(
+                    repo_id=repo_id,
+                    repo_type="dataset",
+                    filename=filename,
+                )
+            )
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to download Hugging Face dataset file {filename!r} from {repo_id!r}: {exc}"
+        ) from exc
+
+
+def hf_cache_display_path(filename: str) -> str:
+    return f"huggingface_hub_cache/{filename}"
+
+
+def read_parquet_limited(path: Path, limit: int) -> list[dict[str, Any]]:
+    if limit < 1:
+        return []
+    try:
+        parquet_module = importlib.import_module("pyarrow.parquet")
+    except ImportError as exc:
+        raise RuntimeError(
+            "pyarrow is required for direct Parquet loading. Install pyarrow or provide "
+            "local JSONL files to --explore-local."
+        ) from exc
+
+    parquet_file = parquet_module.ParquetFile(path)
+    batch_size = max(1, min(limit, 1000))
+    rows: list[dict[str, Any]] = []
+    for batch in parquet_file.iter_batches(batch_size=batch_size):
+        for row in batch.to_pylist():
+            rows.append(dict(row))
+            if len(rows) >= limit:
+                return rows
+    return rows
+
+
+def read_downloaded_sample_limited(
+    path: Path,
+    limit: int,
+    source_format: str,
+) -> list[dict[str, Any]]:
+    if source_format == "parquet":
+        return read_parquet_limited(path, limit)
+    if source_format == "jsonl":
+        return read_jsonl_limited(path, limit)
+    raise RuntimeError(f"Unsupported downloaded sample format: {source_format}")
+
+
+def _source_format_from_filename(filename: str) -> str:
+    lowered = filename.lower()
+    if lowered.endswith(".parquet"):
+        return "parquet"
+    if lowered.endswith(".jsonl"):
+        return "jsonl"
+    raise RuntimeError(
+        f"Unsupported Hugging Face dataset file extension for {filename!r}. "
+        "Use a .parquet or .jsonl file."
+    )
+
+
+def download_hf_dataset_file_with_fallback(
+    *,
+    repo_id: str,
+    preferred_filename: str,
+    fallback_filename: str | None,
+    explicit_filename: bool,
+) -> tuple[Path, str, str, list[str]]:
+    try:
+        path = download_hf_dataset_file(repo_id, preferred_filename)
+        return path, preferred_filename, _source_format_from_filename(preferred_filename), []
+    except RuntimeError as first_error:
+        if explicit_filename or fallback_filename is None:
+            raise
+        try:
+            fallback_path = download_hf_dataset_file(repo_id, fallback_filename)
+        except RuntimeError as second_error:
+            raise RuntimeError(
+                "Failed to download both preferred and fallback Hugging Face source files. "
+                f"Preferred {preferred_filename!r} error: {first_error}. "
+                f"Fallback {fallback_filename!r} error: {second_error}."
+            ) from second_error
+        return (
+            fallback_path,
+            fallback_filename,
+            _source_format_from_filename(fallback_filename),
+            [
+                (
+                    f"Preferred Parquet file {preferred_filename} was unavailable; "
+                    f"used direct fallback file {fallback_filename}."
+                )
+            ],
+        )
+
+
 def _hash_user_id(user_id: Any) -> str | None:
     if user_id is None or user_id == "":
         return None
@@ -209,14 +344,14 @@ def _import_hf_load_dataset() -> Any:
         datasets_module = importlib.import_module("datasets")
     except ImportError as exc:
         raise RuntimeError(
-            "Install datasets to use --load-from-huggingface, or provide local JSONL files "
-            "to --explore-local."
+            "Install datasets to use --use-datasets-loader, or provide local JSONL files "
+            "to --explore-local. Direct Parquet loading is the default loader."
         ) from exc
     load_dataset = getattr(datasets_module, "load_dataset", None)
     if load_dataset is None:
         raise RuntimeError(
-            "Install datasets to use --load-from-huggingface, or provide local JSONL files "
-            "to --explore-local."
+            "Install datasets to use --use-datasets-loader, or provide local JSONL files "
+            "to --explore-local. Direct Parquet loading is the default loader."
         )
     return load_dataset
 
@@ -757,7 +892,10 @@ def write_plots_or_summaries(
     ]
 
     try:
-        import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
     except Exception:
         _write_text_lines(
             plots_dir / "rating_distribution.txt",
@@ -1070,7 +1208,7 @@ def run_local_exploration(args: argparse.Namespace, mode: str) -> dict[str, Any]
         )
 
     reviews = read_jsonl_limited(reviews_input, int(args.sample_limit))
-    metadata = read_jsonl_limited(metadata_input, int(args.sample_limit))
+    metadata = read_jsonl_limited(metadata_input, int(args.metadata_limit))
     field_profile = {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
@@ -1128,26 +1266,34 @@ def run_local_exploration(args: argparse.Namespace, mode: str) -> dict[str, Any]
     }
 
 
-def run_huggingface_load(args: argparse.Namespace) -> dict[str, Any]:
+def run_huggingface_datasets_load(args: argparse.Namespace) -> dict[str, Any]:
     load_dataset_func = _import_hf_load_dataset()
     output_reviews_sample = Path(args.output_reviews_sample)
     output_metadata_sample = Path(args.output_metadata_sample)
-    reviews = load_hf_review_sample(
-        load_dataset_func=load_dataset_func,
-        category=str(args.category),
-        sample_limit=int(args.sample_limit),
-        reviews_config=args.reviews_config,
-        streaming=bool(args.streaming),
-        seed=int(args.seed),
-    )
-    metadata = load_hf_metadata_sample(
-        load_dataset_func=load_dataset_func,
-        category=str(args.category),
-        metadata_limit=int(args.metadata_limit),
-        metadata_config=args.metadata_config,
-        streaming=bool(args.streaming),
-        seed=int(args.seed),
-    )
+    try:
+        reviews = load_hf_review_sample(
+            load_dataset_func=load_dataset_func,
+            category=str(args.category),
+            sample_limit=int(args.sample_limit),
+            reviews_config=args.reviews_config,
+            streaming=bool(args.streaming),
+            seed=int(args.seed),
+        )
+        metadata = load_hf_metadata_sample(
+            load_dataset_func=load_dataset_func,
+            category=str(args.category),
+            metadata_limit=int(args.metadata_limit),
+            metadata_config=args.metadata_config,
+            streaming=bool(args.streaming),
+            seed=int(args.seed),
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "The optional datasets loader failed. Amazon Reviews 2023 uses a dataset "
+            "script in some environments; direct Parquet loading is now the default and "
+            "recommended path. Rerun without --use-datasets-loader. Original error: "
+            f"{exc}"
+        ) from exc
     write_jsonl(output_reviews_sample, reviews)
     write_jsonl(output_metadata_sample, metadata)
 
@@ -1162,6 +1308,8 @@ def run_huggingface_load(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "mode": "load_from_huggingface",
         "phase": PHASE,
+        "loader": "datasets",
+        "hf_repo_id": HF_DATASET_NAME,
         "category": str(args.category),
         "reviews_config": args.reviews_config
         or build_hf_dataset_names(str(args.category))["reviews_config"],
@@ -1190,8 +1338,123 @@ def run_huggingface_load(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def run_huggingface_parquet_load(args: argparse.Namespace) -> dict[str, Any]:
+    output_reviews_sample = Path(args.output_reviews_sample)
+    output_metadata_sample = Path(args.output_metadata_sample)
+    default_files = build_hf_parquet_filenames(str(args.category))
+    fallback_files = build_hf_jsonl_fallback_filenames(str(args.category))
+    reviews_file = str(args.reviews_file or default_files["reviews_file"])
+    metadata_file = str(args.metadata_file or default_files["metadata_file"])
+    hf_repo_id = str(args.hf_repo_id)
+
+    (
+        local_reviews_source_path,
+        resolved_reviews_file,
+        reviews_source_format,
+        reviews_warnings,
+    ) = download_hf_dataset_file_with_fallback(
+        repo_id=hf_repo_id,
+        preferred_filename=reviews_file,
+        fallback_filename=fallback_files["reviews_file"],
+        explicit_filename=args.reviews_file is not None,
+    )
+    (
+        local_metadata_source_path,
+        resolved_metadata_file,
+        metadata_source_format,
+        metadata_warnings,
+    ) = download_hf_dataset_file_with_fallback(
+        repo_id=hf_repo_id,
+        preferred_filename=metadata_file,
+        fallback_filename=fallback_files["metadata_file"],
+        explicit_filename=args.metadata_file is not None,
+    )
+    reviews = [
+        sanitize_review_row(row)
+        for row in read_downloaded_sample_limited(
+            local_reviews_source_path,
+            int(args.sample_limit),
+            reviews_source_format,
+        )
+    ]
+    metadata = [
+        sanitize_metadata_row(row)
+        for row in read_downloaded_sample_limited(
+            local_metadata_source_path,
+            int(args.metadata_limit),
+            metadata_source_format,
+        )
+    ]
+    write_jsonl(output_reviews_sample, reviews)
+    write_jsonl(output_metadata_sample, metadata)
+
+    local_args = argparse.Namespace(**vars(args))
+    local_args.reviews_input = str(output_reviews_sample)
+    local_args.metadata_input = str(output_metadata_sample)
+    exploration_summary = run_local_exploration(local_args, mode="load_from_huggingface")
+    text_profile = json.loads(Path(args.text_profile_output).read_text(encoding="utf-8"))
+    quality_report = json.loads(Path(args.quality_report_output).read_text(encoding="utf-8"))
+    report = json.loads(Path(args.output_report).read_text(encoding="utf-8"))
+    extra_warnings = [*reviews_warnings, *metadata_warnings]
+    if extra_warnings:
+        report["warnings"] = [*report.get("warnings", _report_warnings()), *extra_warnings]
+        write_json(Path(args.output_report), report)
+
+    return {
+        "mode": "load_from_huggingface",
+        "phase": PHASE,
+        "loader": "direct_parquet",
+        "hf_repo_id": hf_repo_id,
+        "category": str(args.category),
+        "reviews_file": resolved_reviews_file,
+        "metadata_file": resolved_metadata_file,
+        "requested_reviews_file": reviews_file,
+        "requested_metadata_file": metadata_file,
+        "reviews_source_format": reviews_source_format,
+        "metadata_source_format": metadata_source_format,
+        "local_reviews_parquet_path": (
+            hf_cache_display_path(resolved_reviews_file)
+            if reviews_source_format == "parquet"
+            else None
+        ),
+        "local_metadata_parquet_path": (
+            hf_cache_display_path(resolved_metadata_file)
+            if metadata_source_format == "parquet"
+            else None
+        ),
+        "local_reviews_source_path": hf_cache_display_path(resolved_reviews_file),
+        "local_metadata_source_path": hf_cache_display_path(resolved_metadata_file),
+        "reviews_sample_count": len(reviews),
+        "metadata_sample_count": len(metadata),
+        "output_reviews_sample": str(output_reviews_sample),
+        "output_metadata_sample": str(output_metadata_sample),
+        "output_report": exploration_summary["output_report"],
+        "field_profile_output": exploration_summary["field_profile_output"],
+        "text_profile_output": exploration_summary["text_profile_output"],
+        "quality_report_output": exploration_summary["quality_report_output"],
+        "plots_dir": exploration_summary["plots_dir"],
+        "word_views_dir": exploration_summary["word_views_dir"],
+        "rating_distribution": text_profile.get("rating_distribution", {}),
+        "top_issue_terms": text_profile.get("frequent_issue_terms", [])[:10],
+        "quality_flags": report.get("quality_flags", quality_report),
+        "warnings": report.get("warnings", _report_warnings()),
+        "next_step": report.get(
+            "next_step",
+            "Proceed to Phase 2A-6C Retail curated seed creation after reviewing EDA.",
+        ),
+    }
+
+
+def run_huggingface_load(args: argparse.Namespace) -> dict[str, Any]:
+    if bool(args.use_datasets_loader):
+        return run_huggingface_datasets_load(args)
+    return run_huggingface_parquet_load(args)
+
+
 def build_dry_run_summary(args: argparse.Namespace) -> dict[str, Any]:
     dataset_names = build_hf_dataset_names(str(args.category))
+    parquet_files = build_hf_parquet_filenames(str(args.category))
+    fallback_files = build_hf_jsonl_fallback_filenames(str(args.category))
     return {
         "mode": "dry_run",
         "phase": PHASE,
@@ -1217,11 +1480,17 @@ def build_dry_run_summary(args: argparse.Namespace) -> dict[str, Any]:
         "sampling_plan": {
             "do_not_download_full_dataset": True,
             "controlled_sampling_required": True,
+            "default_loader": "direct_parquet",
+            "hf_repo_id": str(args.hf_repo_id),
             "target_exploration_sample_size": 1000,
             "target_metadata_sample_size": 1000,
             "initial_category_priority": ["All_Beauty", "Home_and_Kitchen", "Electronics"],
             "default_reviews_config": dataset_names["reviews_config"],
             "default_metadata_config": dataset_names["metadata_config"],
+            "default_reviews_file": parquet_files["reviews_file"],
+            "default_metadata_file": parquet_files["metadata_file"],
+            "fallback_reviews_file": fallback_files["reviews_file"],
+            "fallback_metadata_file": fallback_files["metadata_file"],
         },
         "warnings": _report_warnings(),
         "next_step": (
@@ -1253,8 +1522,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--streaming", dest="streaming", action="store_true", default=True)
     parser.add_argument("--no-streaming", dest="streaming", action="store_false")
+    parser.add_argument("--hf-repo-id", default=HF_DATASET_NAME)
+    parser.add_argument("--reviews-file", default=None)
+    parser.add_argument("--metadata-file", default=None)
     parser.add_argument("--reviews-config", default=None)
     parser.add_argument("--metadata-config", default=None)
+    parser.add_argument("--use-datasets-loader", action="store_true")
     return parser
 
 

@@ -206,35 +206,101 @@ def test_sanitize_metadata_row_preserves_expected_fields() -> None:
     assert sanitized["sanitized"] is True
 
 
-def test_hf_loader_missing_datasets_graceful() -> None:
+def test_build_hf_parquet_filenames_all_beauty() -> None:
     module = _load_module()
 
-    with mock.patch.object(module.importlib, "import_module", side_effect=ImportError):
-        try:
-            module._import_hf_load_dataset()
-        except RuntimeError as exc:
-            assert "Install datasets to use --load-from-huggingface" in str(exc)
-            assert "--explore-local" in str(exc)
-        else:
-            raise AssertionError("expected RuntimeError")
+    filenames = module.build_hf_parquet_filenames("All_Beauty")
+
+    assert filenames["reviews_file"] == "raw_review_All_Beauty/full-00000-of-00001.parquet"
+    assert filenames["metadata_file"] == "raw_meta_All_Beauty/full-00000-of-00001.parquet"
 
 
-def test_load_from_huggingface_cli_dry_failure_without_datasets(tmp_path: Path) -> None:
-    if importlib.util.find_spec("datasets") is not None:
-        module = _load_module()
+def test_read_parquet_limited_with_mock_pyarrow() -> None:
+    module = _load_module()
+    captured: dict[str, Any] = {}
 
-        def fake_load_dataset(
-            _dataset_name: str,
-            config_name: str,
-            split: str,
-            streaming: bool,
-        ) -> list[dict[str, Any]]:
-            _ = (config_name, split, streaming)
-            return [
+    class FakeBatch:
+        def to_pylist(self) -> list[dict[str, Any]]:
+            return [{"row": 1}, {"row": 2}, {"row": 3}]
+
+    class FakeParquetFile:
+        def __init__(self, path: Path) -> None:
+            captured["path"] = path
+
+        def iter_batches(self, batch_size: int) -> list[FakeBatch]:
+            captured["batch_size"] = batch_size
+            return [FakeBatch()]
+
+    class FakePyArrowParquet:
+        ParquetFile = FakeParquetFile
+
+    original_import_module = module.importlib.import_module
+
+    def fake_import_module(name: str) -> Any:
+        if name == "pyarrow.parquet":
+            return FakePyArrowParquet
+        return original_import_module(name)
+
+    with mock.patch.object(module.importlib, "import_module", side_effect=fake_import_module):
+        rows = module.read_parquet_limited(Path("reviews.parquet"), 2)
+
+    assert rows == [{"row": 1}, {"row": 2}]
+    assert captured["path"] == Path("reviews.parquet")
+    assert captured["batch_size"] == 2
+
+
+def _load_from_huggingface_args(
+    module: Any,
+    tmp_path: Path,
+    extra_args: list[str] | None = None,
+) -> Any:
+    args = [
+        "--load-from-huggingface",
+        "--sample-limit",
+        "1",
+        "--metadata-limit",
+        "1",
+        "--output-reviews-sample",
+        str(tmp_path / "reviews.jsonl"),
+        "--output-metadata-sample",
+        str(tmp_path / "metadata.jsonl"),
+        "--output-report",
+        str(tmp_path / "report.json"),
+        "--field-profile-output",
+        str(tmp_path / "field.json"),
+        "--text-profile-output",
+        str(tmp_path / "text.json"),
+        "--quality-report-output",
+        str(tmp_path / "quality.json"),
+        "--plots-dir",
+        str(tmp_path / "plots"),
+        "--word-views-dir",
+        str(tmp_path / "word_views"),
+    ]
+    if extra_args:
+        args.extend(extra_args)
+    return module.build_parser().parse_args(args)
+
+
+def _run_mocked_parquet_load(
+    module: Any,
+    tmp_path: Path,
+    extra_args: list[str] | None = None,
+) -> tuple[dict[str, Any], list[str]]:
+    args = _load_from_huggingface_args(module, tmp_path, extra_args)
+    downloaded_files: list[str] = []
+
+    def fake_download(_repo_id: str, filename: str) -> Path:
+        downloaded_files.append(filename)
+        return tmp_path / filename.replace("/", "_")
+
+    def fake_read(path: Path, limit: int) -> list[dict[str, Any]]:
+        if "raw_review" in path.name or "reviews" in path.name:
+            rows = [
                 {
                     "rating": 5,
                     "title": "Works",
-                    "text": "Works well",
+                    "text": "Works well for the sampled product.",
                     "asin": "A1",
                     "parent_asin": "P1",
                     "user_id": "raw_user",
@@ -243,45 +309,86 @@ def test_load_from_huggingface_cli_dry_failure_without_datasets(tmp_path: Path) 
                     "helpful_vote": 0,
                 }
             ]
+        else:
+            rows = [
+                {
+                    "main_category": "All_Beauty",
+                    "title": "Sample Product",
+                    "parent_asin": "P1",
+                    "features": ["feature"],
+                }
+            ]
+        return rows[:limit]
 
-        rows = module.load_hf_review_sample(
-            load_dataset_func=fake_load_dataset,
-            category="All_Beauty",
-            sample_limit=1,
-            reviews_config=None,
-            streaming=True,
-            seed=42,
-        )
-        assert len(rows) == 1
-        assert "user_id" not in rows[0]
-        assert rows[0]["user_id_hash"]
-        return
+    with (
+        mock.patch.object(module, "download_hf_dataset_file", side_effect=fake_download),
+        mock.patch.object(module, "read_parquet_limited", side_effect=fake_read),
+        mock.patch.object(
+            module,
+            "_import_hf_load_dataset",
+            side_effect=AssertionError("datasets loader should not be used"),
+        ),
+    ):
+        summary = module.run_huggingface_load(args)
 
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(SCRIPT_PATH),
-            "--load-from-huggingface",
-            "--sample-limit",
-            "1",
-            "--metadata-limit",
-            "1",
-            "--output-reviews-sample",
-            str(tmp_path / "reviews.jsonl"),
-            "--output-metadata-sample",
-            str(tmp_path / "metadata.jsonl"),
-            "--output-report",
-            str(tmp_path / "report.json"),
-        ],
-        cwd=ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
+    return summary, downloaded_files
+
+
+def test_hf_loader_missing_datasets_graceful() -> None:
+    module = _load_module()
+
+    with mock.patch.object(module.importlib, "import_module", side_effect=ImportError):
+        try:
+            module._import_hf_load_dataset()
+        except RuntimeError as exc:
+            assert "Install datasets to use --use-datasets-loader" in str(exc)
+            assert "--explore-local" in str(exc)
+        else:
+            raise AssertionError("expected RuntimeError")
+
+
+def test_load_from_huggingface_uses_direct_parquet_by_default(tmp_path: Path) -> None:
+    module = _load_module()
+
+    summary, downloaded_files = _run_mocked_parquet_load(module, tmp_path)
+    rows = _read_jsonl(tmp_path / "reviews.jsonl")
+
+    assert summary["loader"] == "direct_parquet"
+    assert summary["hf_repo_id"] == "McAuley-Lab/Amazon-Reviews-2023"
+    assert summary["reviews_sample_count"] == 1
+    assert summary["metadata_sample_count"] == 1
+    assert downloaded_files == [
+        "raw_review_All_Beauty/full-00000-of-00001.parquet",
+        "raw_meta_All_Beauty/full-00000-of-00001.parquet",
+    ]
+    assert "user_id" not in rows[0]
+    assert rows[0]["user_id_hash"]
+
+
+def test_reviews_file_override(tmp_path: Path) -> None:
+    module = _load_module()
+
+    summary, downloaded_files = _run_mocked_parquet_load(
+        module,
+        tmp_path,
+        ["--reviews-file", "custom/reviews.parquet"],
     )
 
-    assert result.returncode != 0
-    assert "Install datasets to use --load-from-huggingface" in result.stderr
-    assert "Traceback" not in result.stderr
+    assert summary["reviews_file"] == "custom/reviews.parquet"
+    assert downloaded_files[0] == "custom/reviews.parquet"
+
+
+def test_metadata_file_override(tmp_path: Path) -> None:
+    module = _load_module()
+
+    summary, downloaded_files = _run_mocked_parquet_load(
+        module,
+        tmp_path,
+        ["--metadata-file", "custom/metadata.parquet"],
+    )
+
+    assert summary["metadata_file"] == "custom/metadata.parquet"
+    assert downloaded_files[1] == "custom/metadata.parquet"
 
 
 def test_dry_run_cli() -> None:
@@ -521,3 +628,12 @@ def test_docs_include_2a6b_loader() -> None:
     assert "--load-from-huggingface" in docs
     assert "user_id_hash" in docs
     assert "controlled real-data loading" in docs.lower()
+
+
+def test_docs_include_direct_parquet_loading() -> None:
+    docs = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "Direct Parquet Loading" in docs
+    assert "huggingface_hub" in docs
+    assert "pyarrow" in docs
+    assert "Dataset scripts are no longer supported" in docs
