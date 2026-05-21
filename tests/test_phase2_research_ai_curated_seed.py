@@ -1,7 +1,6 @@
 import json
-import subprocess
-import sys
 from collections import Counter
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +20,15 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
             assert isinstance(parsed, dict)
             rows.append(parsed)
     return rows
+
+
+def _load_curation_module() -> Any:
+    spec = spec_from_file_location("curate_research_ai_seed", SCRIPT_PATH)
+    assert spec is not None
+    assert spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_research_ai_curated_files_exist() -> None:
@@ -165,16 +173,24 @@ def test_research_ai_no_private_paths() -> None:
 
 
 def test_research_ai_curation_report_shape() -> None:
-    if not REPORT_PATH.exists():
-        result = subprocess.run(
-            [sys.executable, str(SCRIPT_PATH), "--build-curated-samples"],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        assert result.returncode == 0, result.stderr
-    report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    prompts = _read_jsonl(PROMPT_PATH)
+    kb_records = _read_jsonl(KB_PATH)
+    gold_records = _read_jsonl(GOLD_PATH)
+    source_paper_count = len(
+        {
+            str(paper_id)
+            for prompt in prompts
+            for paper_id in prompt.get("source_paper_ids", [])
+            if paper_id
+        }
+    )
+    report = _load_curation_module().build_curation_report(
+        prompts,
+        kb_records,
+        gold_records,
+        [],
+        source_paper_count,
+    )
 
     assert report["prompt_record_count"] == 40
     assert report["kb_record_count"] >= 30
