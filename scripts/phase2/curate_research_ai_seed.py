@@ -236,6 +236,27 @@ def first_sentence(text: str, max_chars: int = 260) -> str:
     return excerpt_text(sentence, max_chars)
 
 
+ORPHAN_ENDING_WORDS = {
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "by",
+    "for",
+    "from",
+    "in",
+    "of",
+    "on",
+    "or",
+    "the",
+    "their",
+    "to",
+    "towards",
+    "with",
+    "causing",
+}
+
 SECTION_HEADING_RE = re.compile(
     r"^(?:\d+(?:\.\d+)*\s+)?(?:"
     r"abstract|introduction|related work|background|method|methods|approach|"
@@ -273,6 +294,49 @@ CONTRIBUTION_MARKERS = (
     "shows",
     "demonstrates",
 )
+
+
+def clean_reference_text(text: str) -> str:
+    clean = sanitize_text(text)
+    artifact_replacements = (
+        (r"\bcalledAgentHarm\b", "called AgentHarm"),
+        (r"\bcalledAgentTrek\b", "called AgentTrek"),
+        (r"\bcalledDELTA\b", "called DelTA"),
+        (r"\bcalledDelTA\b", "called DelTA"),
+        (r"\bproposeDELTA\b", "propose DelTA"),
+        (r"\bproposesDELTA\b", "proposes DelTA"),
+        (r"\bproposedDELTA\b", "proposed DelTA"),
+        (r"\bintroduceDELTA\b", "introduce DelTA"),
+        (r"\bintroducedDELTA\b", "introduced DelTA"),
+        (r"\bD ELTA\b", "DelTA"),
+        (r"\bDocument-levEL\b", "Document-level"),
+        (r"\bmeasuresbasic\b", "measures basic"),
+    )
+    for pattern, replacement in artifact_replacements:
+        clean = re.sub(pattern, replacement, clean)
+    clean = re.sub(r"(?<=[a-z])(?=AgentHarm\b|AgentTrek\b|DelTA\b|DELTA\b)", " ", clean)
+    clean = re.sub(r"(?<=[,;:])(?=[A-Za-z])", " ", clean)
+    clean = re.sub(r"\s+([,.;:!?])", r"\1", clean)
+    clean = re.sub(r"\s{2,}", " ", clean)
+    return clean.strip()
+
+
+def trim_evidence_sentence(text: str, max_words: int = 45) -> str:
+    clean = clean_reference_text(text)
+    if not clean:
+        return ""
+    sentence_match = re.search(r"^(.+?[.!?])(?:\s|$)", clean)
+    if sentence_match and len(sentence_match.group(1).split()) <= max_words:
+        return clean_reference_text(sentence_match.group(1))
+    words = clean.split()
+    if len(words) > max_words:
+        words = words[:max_words]
+    while words and words[-1].strip(".,;:!?").lower() in ORPHAN_ENDING_WORDS:
+        words.pop()
+    trimmed = " ".join(words).rstrip(" ,;:-")
+    if trimmed and not re.search(r"[.!?]$", trimmed):
+        trimmed += "."
+    return clean_reference_text(trimmed)
 
 
 def title_keywords(title: str) -> list[str]:
@@ -315,7 +379,7 @@ def clean_sentence_candidate(sentence: str) -> str:
         clean,
         flags=re.IGNORECASE,
     )
-    return sanitize_text(clean)
+    return clean_reference_text(clean)
 
 
 def is_useful_evidence_sentence(sentence: str) -> bool:
@@ -395,12 +459,13 @@ def evidence_summary(
         terms.extend(title_keywords(str(paper.get("title") or "")))
     sentences = split_evidence_sentences(str(kb_record.get("body") or ""))
     if not sentences:
-        return first_sentence(str(kb_record.get("body") or ""), max_chars)
+        return trim_evidence_sentence(first_sentence(str(kb_record.get("body") or ""), max_chars))
     ranked = sorted(
         enumerate(sentences),
         key=lambda item: (-sentence_score(item[1], terms), item[0]),
     )
-    return excerpt_text(ranked[0][1], max_chars)
+    max_words = max(18, min(70, max_chars // 6))
+    return trim_evidence_sentence(ranked[0][1], max_words=max_words)
 
 
 def table_like_method_summary(kb_record: dict[str, Any]) -> str | None:
@@ -424,7 +489,8 @@ def second_evidence_summary(
 ) -> str:
     sentences = split_evidence_sentences(str(kb_record.get("body") or ""))
     if len(sentences) >= 2:
-        return excerpt_text(sentences[1], max_chars)
+        max_words = max(18, min(70, max_chars // 6))
+        return trim_evidence_sentence(sentences[1], max_words=max_words)
     return evidence_summary(kb_record, paper, max_chars)
 
 
@@ -477,11 +543,10 @@ def concept_reference_answer(paper: dict[str, Any], evidence: list[dict[str, Any
         ["we present", "introduce", "propose", "contribution", "framework", "benchmark"],
     )
     return (
-        f"The paper frames the problem as follows: {problem} Its contribution is grounded "
-        f"in {evidence_record_label(contribution_record)}: {contribution} In short, "
-        f"{method_or_system_name(paper)} helps researchers study "
-        f"{paper['raw_topic'] or paper['topic']} "
-        "with traceable paper evidence rather than a generic summary."
+        f"{paper['title']} studies this problem: {problem} The evidence describes "
+        f"the contribution: {contribution} "
+        "A grounded answer should explain this contribution using the cited "
+        "abstract or introduction rather than adding unsupported claims."
     )
 
 
@@ -494,10 +559,9 @@ def method_reference_answer(paper: dict[str, Any], evidence: list[dict[str, Any]
         ["we present", "our approach", "method", "pipeline", "framework", "algorithm"],
     )
     return (
-        f"{method_or_system_name(paper)} is the method or system focus. "
-        f"{evidence_record_label(method_record)} describes it this way: {summary} "
-        "A grounded answer should cite that section and avoid adding implementation details "
-        "that are not in the selected KB excerpt."
+        f"The method described in the cited section is {method_or_system_name(paper)}. "
+        f"It works as follows: {summary} The answer should cite the method or evidence section "
+        "and avoid adding implementation details not present in the selected evidence."
     )
 
 
@@ -510,10 +574,9 @@ def results_reference_answer(paper: dict[str, Any], evidence: list[dict[str, Any
         ["results", "evaluation", "experiment", "benchmark", "metric", "compare", "show"],
     )
     return (
-        f"For {paper['title']}, the relevant evaluation evidence is "
-        f"{evidence_record_label(result_record)}. It reports: {summary} "
-        "The reference answer should stay at the level of the cited setup or result claim "
-        "and should not invent additional metrics."
+        f"The cited evidence supports the evaluation claim for {paper['title']}: "
+        f"{summary} The reference answer should mention only the result claims "
+        "present in the selected evidence."
     )
 
 
@@ -544,7 +607,7 @@ def structured_reference_answer(paper: dict[str, Any], evidence: list[dict[str, 
             "task_or_benchmark": evidence_detail,
             "result_or_claim": evidence_detail,
             "limitation": limitation,
-            "evidence_summary": f"{evidence_record_label(method_record)}: {method_summary}",
+            "evidence_summary": method_summary,
             "evidence_id": method_record["doc_id"],
         },
         sort_keys=True,
@@ -557,10 +620,11 @@ def citation_lookup_reference_answer(
 ) -> str:
     record = evidence[0]
     summary = evidence_summary(record, paper, 280, ["claim", "results", "method", "limitations"])
+    evidence_labels = ", ".join(str(item["doc_id"]) for item in evidence)
     return (
-        f"The supporting KB record is {evidence_record_label(record)} for {paper['title']}. "
-        f"It says: {summary} The citation should point to {citation_for(record)}, and the "
-        "answer should not substitute evidence from another paper."
+        f"For {paper['title']}, the answer should cite the selected evidence records "
+        f"({evidence_labels}). The most direct support is the {section_types([record])[0]} "
+        f"section, which says: {summary} Do not substitute evidence from another paper."
     )
 
 
@@ -843,7 +907,7 @@ def make_gold_record(
         "vertical": VERTICAL,
         "task_type": prompt["task_type"],
         "expected_status": prompt["expected_status"],
-        "reference_answer": sanitize_text(reference_answer),
+        "reference_answer": clean_reference_text(reference_answer),
         "must_include": [sanitize_text(item) for item in must_include if sanitize_text(item)],
         "must_not_include": [
             sanitize_text(item)
@@ -970,6 +1034,10 @@ def pair_prompt_specs(
             rows = []
             for paper in selected_papers:
                 record = evidence_for_paper(paper, evidence)
+                record_section_types = section_types([record])
+                record_section_type = (
+                    record_section_types[0] if record_section_types else "evidence"
+                )
                 summary = table_like_method_summary(record) or evidence_summary(
                     record,
                     paper,
@@ -980,10 +1048,10 @@ def pair_prompt_specs(
                     f"{paper['title']} | "
                     f"{paper['raw_topic'] or paper['topic']} | "
                     f"{summary} | "
-                    f"{record['doc_id']} |"
+                    f"cited {record_section_type} |"
                 )
             answer = (
-                "| Paper | Comparison dimension | Evidence-specific summary | Evidence ID |\n"
+                "| Paper | Comparison dimension | Evidence-specific summary | Evidence basis |\n"
                 "|---|---|---|---|\n" + "\n".join(rows)
             )
         else:

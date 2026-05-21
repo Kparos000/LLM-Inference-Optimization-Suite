@@ -272,3 +272,74 @@ def test_research_ai_negative_status_answers_are_safe() -> None:
             assert "general model memory" in " ".join(record["must_not_include"])
         else:
             assert "insufficient" in lowered_answer or "expert review" in lowered_answer
+
+
+def test_research_ai_reference_answers_have_no_spacing_artifacts() -> None:
+    forbidden_fragments = [
+        "calledAgent",
+        "proposeDELTA",
+        "calledDELTA",
+        "  ",
+    ]
+    gold = _read_jsonl(GOLD_PATH)
+
+    for record in gold:
+        answer = str(record.get("reference_answer") or "")
+        for fragment in forbidden_fragments:
+            assert fragment not in answer
+
+
+def test_research_ai_reference_answers_avoid_internal_plumbing_style() -> None:
+    forbidden_phrases = [
+        "Its contribution is grounded in",
+        "The paper frames the problem as follows",
+        "with traceable paper evidence rather than a generic summary",
+    ]
+    gold = _read_jsonl(GOLD_PATH)
+
+    for record in gold:
+        if record["expected_status"] != "answer":
+            continue
+        if record["metadata"]["prompt_category"] == "structured_extraction":
+            continue
+        answer = str(record.get("reference_answer") or "")
+        for phrase in forbidden_phrases:
+            assert phrase not in answer
+
+
+def test_research_ai_reference_answers_do_not_end_with_orphan_fragments() -> None:
+    orphan_endings = ("and", "or", "the", "their", "of", "to", "on their")
+    gold = _read_jsonl(GOLD_PATH)
+
+    for record in gold:
+        if record["expected_status"] != "answer":
+            continue
+        if record["metadata"]["prompt_category"] == "structured_extraction":
+            continue
+        answer = str(record.get("reference_answer") or "").strip().lower()
+        normalized = answer.rstrip(" .|")
+        assert not normalized.endswith(orphan_endings)
+
+
+def test_research_ai_reference_answers_still_grounded() -> None:
+    gold = _read_jsonl(GOLD_PATH)
+
+    for record in gold:
+        if record["expected_status"] != "answer":
+            continue
+        assert record.get("required_doc_ids")
+        assert record.get("required_citations")
+        assert record.get("must_include")
+        answer = str(record.get("reference_answer") or "").lower()
+        source_titles = record.get("metadata", {}).get("source_titles", [])
+        leading_tokens = [
+            str(title).replace(":", " ").split()[0].lower()
+            for title in source_titles
+            if str(title).split()
+        ]
+        must_include_terms = [
+            str(term).lower()
+            for term in record.get("must_include", [])
+            if len(str(term).strip()) >= 4
+        ]
+        assert any(term in answer for term in [*leading_tokens, *must_include_terms])

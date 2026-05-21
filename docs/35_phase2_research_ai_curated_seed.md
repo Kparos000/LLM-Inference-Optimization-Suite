@@ -80,6 +80,8 @@ supporting evidence record rather than using generic paper-summary boilerplate.
 Structured extraction answers include a JSON-shaped reference with
 `method_or_system`, `evidence_summary`, and `evidence_id` fields so downstream
 evaluation can check both content and grounding.
+Reference-answer generation also applies conservative cleanup for common PDF text
+spacing artifacts and avoids dangling evidence fragments.
 
 ## Boundary Behavior
 
