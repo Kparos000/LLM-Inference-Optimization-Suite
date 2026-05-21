@@ -236,6 +236,334 @@ def first_sentence(text: str, max_chars: int = 260) -> str:
     return excerpt_text(sentence, max_chars)
 
 
+SECTION_HEADING_RE = re.compile(
+    r"^(?:\d+(?:\.\d+)*\s+)?(?:"
+    r"abstract|introduction|related work|background|method|methods|approach|"
+    r"experiments?|experimental results|evaluation|results|analysis|limitations?|"
+    r"discussion|conclusions?|references|appendix|data|method ref"
+    r")\.?$",
+    flags=re.IGNORECASE,
+)
+
+SENTENCE_NOISE_RE = re.compile(
+    r"published as a conference paper|^--- page \d+ ---$|^\d+$",
+    flags=re.IGNORECASE,
+)
+
+CONTRIBUTION_MARKERS = (
+    "we present",
+    "we introduce",
+    "we propose",
+    "we develop",
+    "we evaluate",
+    "we explicitly",
+    "we use",
+    "we construct",
+    "we collect",
+    "we build",
+    "our approach",
+    "our method",
+    "our framework",
+    "benchmark",
+    "pipeline",
+    "framework",
+    "results",
+    "evaluation",
+    "experiments",
+    "shows",
+    "demonstrates",
+)
+
+
+def title_keywords(title: str) -> list[str]:
+    ignored = {
+        "with",
+        "from",
+        "that",
+        "this",
+        "paper",
+        "large",
+        "language",
+        "model",
+        "models",
+        "using",
+        "based",
+    }
+    return [
+        word
+        for word in re.findall(r"[A-Za-z][A-Za-z0-9-]{3,}", sanitize_text(title))
+        if word.lower() not in ignored
+    ][:6]
+
+
+def clean_sentence_candidate(sentence: str) -> str:
+    clean = sanitize_text(sentence)
+    clean = re.sub(r"--- Page \d+ ---", " ", clean, flags=re.IGNORECASE)
+    clean = re.sub(
+        r"\bPublished as a conference paper at ICLR 2025\b",
+        " ",
+        clean,
+        flags=re.IGNORECASE,
+    )
+    clean = re.sub(r"\s*Additional Affiliations:.*$", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"(?<=\w)-\s+(?=\w)", "", clean)
+    clean = re.sub(r"^\d+(?:\.\d+)*\s+", "", clean)
+    clean = re.sub(
+        r"^(?:M ETHOD|R ESULTS|E XPERIMENTAL RESULTS|O VERALL RESULTS|"
+        r"A BSTRACT|I NTRODUCTION|C ONCLUSION|L IMITATIONS)\s+",
+        "",
+        clean,
+        flags=re.IGNORECASE,
+    )
+    return sanitize_text(clean)
+
+
+def is_useful_evidence_sentence(sentence: str) -> bool:
+    clean = clean_sentence_candidate(sentence)
+    if not clean:
+        return False
+    words = re.findall(r"[A-Za-z0-9]+", clean)
+    if len(words) < 6:
+        return False
+    if len(clean) < 45:
+        return False
+    if SECTION_HEADING_RE.match(clean):
+        return False
+    if SENTENCE_NOISE_RE.search(clean):
+        return False
+    if re.search(r"code and data .* released at https?://", clean, flags=re.IGNORECASE):
+        return False
+    if "</" in clean or "<" in clean:
+        return False
+    if clean.count("(") > 8 and clean.count(")") > 8:
+        return False
+    return True
+
+
+def split_evidence_sentences(text: str) -> list[str]:
+    clean = sanitize_text(text)
+    clean = re.sub(r"--- Page \d+ ---", ". ", clean, flags=re.IGNORECASE)
+    raw_parts = re.split(r"(?<=[.!?])\s+", clean)
+    sentences: list[str] = []
+    for part in raw_parts:
+        candidate = clean_sentence_candidate(part)
+        if is_useful_evidence_sentence(candidate):
+            sentences.append(candidate)
+    return sentences
+
+
+def sentence_score(sentence: str, preferred_terms: list[str]) -> int:
+    lowered = sentence.lower()
+    score = 0
+    for term in preferred_terms:
+        normalized = sanitize_text(term).lower()
+        if len(normalized) >= 4 and normalized in lowered:
+            score += 4
+    for marker in CONTRIBUTION_MARKERS:
+        if marker in lowered:
+            score += 2
+    if any(
+        marker in lowered
+        for marker in (
+            "we present",
+            "we introduce",
+            "we propose",
+            "we explicitly",
+            "our approach",
+            "our method",
+            "our framework",
+        )
+    ):
+        score += 4
+    if lowered.startswith(("we ", "our ", "this work", "the paper")):
+        score += 1
+    if re.match(r"^\(?20\d{2}\)?", lowered):
+        score -= 4
+    if "proposed bells" in lowered:
+        score -= 12
+    return score
+
+
+def evidence_summary(
+    kb_record: dict[str, Any],
+    paper: dict[str, Any] | None = None,
+    max_chars: int = 280,
+    preferred_terms: list[str] | None = None,
+) -> str:
+    terms = list(preferred_terms or [])
+    if paper is not None:
+        terms.extend(title_keywords(str(paper.get("title") or "")))
+    sentences = split_evidence_sentences(str(kb_record.get("body") or ""))
+    if not sentences:
+        return first_sentence(str(kb_record.get("body") or ""), max_chars)
+    ranked = sorted(
+        enumerate(sentences),
+        key=lambda item: (-sentence_score(item[1], terms), item[0]),
+    )
+    return excerpt_text(ranked[0][1], max_chars)
+
+
+def table_like_method_summary(kb_record: dict[str, Any]) -> str | None:
+    body = sanitize_text(kb_record.get("body"))
+    if re.search(
+        r"Model Selection.*Code Snippet.*Code\s+Ex\s*ecution",
+        body,
+        flags=re.IGNORECASE,
+    ):
+        return (
+            "The selected method excerpt identifies a modular workflow with model selection, "
+            "code snippet extraction, argument mapping, and code execution."
+        )
+    return None
+
+
+def second_evidence_summary(
+    kb_record: dict[str, Any],
+    paper: dict[str, Any] | None = None,
+    max_chars: int = 260,
+) -> str:
+    sentences = split_evidence_sentences(str(kb_record.get("body") or ""))
+    if len(sentences) >= 2:
+        return excerpt_text(sentences[1], max_chars)
+    return evidence_summary(kb_record, paper, max_chars)
+
+
+def method_or_system_name(paper: dict[str, Any]) -> str:
+    title = str(paper.get("title") or "")
+    name = title.split(":", 1)[0].strip()
+    return sanitize_text(name or title)
+
+
+def evidence_record_label(kb_record: dict[str, Any]) -> str:
+    types = section_types([kb_record])
+    section_label = types[0] if types else "evidence"
+    return f"{kb_record['doc_id']} ({section_label})"
+
+
+def evidence_for_paper(
+    paper: dict[str, Any],
+    evidence: list[dict[str, Any]],
+) -> dict[str, Any]:
+    for record in evidence:
+        metadata = record.get("metadata", {})
+        if isinstance(metadata, dict) and metadata.get("paper_id") == paper.get("paper_id"):
+            return record
+    return evidence[0]
+
+
+def first_evidence_by_type(
+    evidence: list[dict[str, Any]],
+    preferred_types: set[str],
+) -> dict[str, Any]:
+    for record in evidence:
+        if set(section_types([record])) & preferred_types:
+            return record
+    return evidence[0]
+
+
+def concept_reference_answer(paper: dict[str, Any], evidence: list[dict[str, Any]]) -> str:
+    problem_record = evidence[0]
+    contribution_record = evidence[-1]
+    problem = evidence_summary(
+        problem_record,
+        paper,
+        240,
+        ["problem", "challenge", "need", "benchmark", "evaluation"],
+    )
+    contribution = evidence_summary(
+        contribution_record,
+        paper,
+        260,
+        ["we present", "introduce", "propose", "contribution", "framework", "benchmark"],
+    )
+    return (
+        f"The paper frames the problem as follows: {problem} Its contribution is grounded "
+        f"in {evidence_record_label(contribution_record)}: {contribution} In short, "
+        f"{method_or_system_name(paper)} helps researchers study "
+        f"{paper['raw_topic'] or paper['topic']} "
+        "with traceable paper evidence rather than a generic summary."
+    )
+
+
+def method_reference_answer(paper: dict[str, Any], evidence: list[dict[str, Any]]) -> str:
+    method_record = first_evidence_by_type(evidence, {"method", "approach"})
+    summary = table_like_method_summary(method_record) or evidence_summary(
+        method_record,
+        paper,
+        300,
+        ["we present", "our approach", "method", "pipeline", "framework", "algorithm"],
+    )
+    return (
+        f"{method_or_system_name(paper)} is the method or system focus. "
+        f"{evidence_record_label(method_record)} describes it this way: {summary} "
+        "A grounded answer should cite that section and avoid adding implementation details "
+        "that are not in the selected KB excerpt."
+    )
+
+
+def results_reference_answer(paper: dict[str, Any], evidence: list[dict[str, Any]]) -> str:
+    result_record = first_evidence_by_type(evidence, {"results", "evaluation", "experiments"})
+    summary = evidence_summary(
+        result_record,
+        paper,
+        300,
+        ["results", "evaluation", "experiment", "benchmark", "metric", "compare", "show"],
+    )
+    return (
+        f"For {paper['title']}, the relevant evaluation evidence is "
+        f"{evidence_record_label(result_record)}. It reports: {summary} "
+        "The reference answer should stay at the level of the cited setup or result claim "
+        "and should not invent additional metrics."
+    )
+
+
+def structured_reference_answer(paper: dict[str, Any], evidence: list[dict[str, Any]]) -> str:
+    method_record = first_evidence_by_type(evidence, {"method", "approach", "abstract"})
+    result_record = first_evidence_by_type(
+        evidence,
+        {"results", "evaluation", "experiments", "abstract"},
+    )
+    limitation_record = first_evidence_by_type(evidence, {"limitations"})
+    method_summary = table_like_method_summary(method_record) or evidence_summary(
+        method_record,
+        paper,
+        240,
+        ["method", "approach", "pipeline", "framework", "we present"],
+    )
+    evidence_detail = evidence_summary(result_record, paper, 240, ["results", "evaluation"])
+    limitation = (
+        evidence_summary(limitation_record, paper, 200, ["limitations", "future work"])
+        if set(section_types([limitation_record])) & {"limitations"}
+        else "not stated in the required evidence"
+    )
+    return json.dumps(
+        {
+            "paper_title": paper["title"],
+            "method_or_system": method_or_system_name(paper),
+            "method": method_summary,
+            "task_or_benchmark": evidence_detail,
+            "result_or_claim": evidence_detail,
+            "limitation": limitation,
+            "evidence_summary": f"{evidence_record_label(method_record)}: {method_summary}",
+            "evidence_id": method_record["doc_id"],
+        },
+        sort_keys=True,
+    )
+
+
+def citation_lookup_reference_answer(
+    paper: dict[str, Any],
+    evidence: list[dict[str, Any]],
+) -> str:
+    record = evidence[0]
+    summary = evidence_summary(record, paper, 280, ["claim", "results", "method", "limitations"])
+    return (
+        f"The supporting KB record is {evidence_record_label(record)} for {paper['title']}. "
+        f"It says: {summary} The citation should point to {citation_for(record)}, and the "
+        "answer should not substitute evidence from another paper."
+    )
+
+
 def author_text(record: dict[str, Any]) -> str:
     authors = record.get("authors_enriched") or record.get("authors") or []
     if isinstance(authors, list) and authors:
@@ -574,20 +902,14 @@ def single_paper_prompt_specs(
                 f"Using the cited paper evidence, explain the main research problem and "
                 f"contribution of {paper['title']} in plain language."
             )
-            answer = (
-                f"{paper['title']} addresses its stated research problem by focusing on "
-                f"{first_sentence(evidence[0]['body'])}"
-            )
+            answer = concept_reference_answer(paper, evidence)
             difficulty = "easy"
         elif category == "paper_method":
             evidence = select_evidence(paper, grouped_kb, ["method", "approach"])
             if not evidence or section_types(evidence)[0] not in {"method", "approach"}:
                 continue
             question = f"What method or approach does {paper['title']} describe?"
-            answer = (
-                f"The method evidence for {paper['title']} states: "
-                f"{first_sentence(evidence[0]['body'])}"
-            )
+            answer = method_reference_answer(paper, evidence)
             difficulty = "medium"
         elif category == "results_evaluation":
             evidence = select_evidence(paper, grouped_kb, ["results", "evaluation", "experiments"])
@@ -598,10 +920,7 @@ def single_paper_prompt_specs(
             }:
                 continue
             question = f"What evaluation setup or result is reported for {paper['title']}?"
-            answer = (
-                f"The cited evaluation evidence for {paper['title']} states: "
-                f"{first_sentence(evidence[0]['body'])}"
-            )
+            answer = results_reference_answer(paper, evidence)
             difficulty = "medium"
         elif category == "structured_extraction":
             evidence = select_evidence(
@@ -611,20 +930,7 @@ def single_paper_prompt_specs(
                 f"Extract a JSON object for {paper['title']} with paper_title, method, "
                 "task_or_benchmark, result_or_claim, limitation, and evidence_id."
             )
-            answer = json.dumps(
-                {
-                    "paper_title": paper["title"],
-                    "method": first_sentence(evidence[0]["body"], 180),
-                    "task_or_benchmark": first_sentence(evidence[-1]["body"], 180),
-                    "result_or_claim": first_sentence(evidence[-1]["body"], 180),
-                    "limitation": (
-                        "Use only cited limitations evidence if available; "
-                        "otherwise mark not stated."
-                    ),
-                    "evidence_id": evidence[0]["doc_id"],
-                },
-                sort_keys=True,
-            )
+            answer = structured_reference_answer(paper, evidence)
             difficulty = "hard"
         elif category == "evidence_citation_lookup":
             evidence = select_evidence(paper, grouped_kb, ["limitations", "results", "method"])
@@ -632,10 +938,7 @@ def single_paper_prompt_specs(
                 f"Which cited evidence record supports a claim about {paper['title']}, "
                 "and what does that evidence say?"
             )
-            answer = (
-                f"Evidence {evidence[0]['doc_id']} supports the claim: "
-                f"{first_sentence(evidence[0]['body'])}"
-            )
+            answer = citation_lookup_reference_answer(paper, evidence)
             difficulty = "easy"
         else:
             continue
@@ -664,10 +967,24 @@ def pair_prompt_specs(
                 f"Compare {selected_papers[0]['title']} and {selected_papers[1]['title']} "
                 "in a markdown table with columns for paper, method focus, evidence, and caveat."
             )
+            rows = []
+            for paper in selected_papers:
+                record = evidence_for_paper(paper, evidence)
+                summary = table_like_method_summary(record) or evidence_summary(
+                    record,
+                    paper,
+                    210,
+                )
+                rows.append(
+                    "| "
+                    f"{paper['title']} | "
+                    f"{paper['raw_topic'] or paper['topic']} | "
+                    f"{summary} | "
+                    f"{record['doc_id']} |"
+                )
             answer = (
-                f"| Paper | Evidence summary |\n|---|---|\n"
-                f"| {selected_papers[0]['title']} | {first_sentence(evidence[0]['body'])} |\n"
-                f"| {selected_papers[1]['title']} | {first_sentence(evidence[-1]['body'])} |"
+                "| Paper | Comparison dimension | Evidence-specific summary | Evidence ID |\n"
+                "|---|---|---|---|\n" + "\n".join(rows)
             )
         else:
             third = papers[(index + 2) % len(papers)]
@@ -679,9 +996,24 @@ def pair_prompt_specs(
                 "Create a literature table for the cited Research AI papers with columns "
                 "paper, task, method, evidence record, and limitation or caveat."
             )
-            answer = "| Paper | Evidence record | Summary |\n|---|---|---|\n" + "\n".join(
-                f"| {paper['title']} | {record['doc_id']} | {first_sentence(record['body'], 160)} |"
-                for paper, record in zip(selected_papers, evidence, strict=False)
+            rows = []
+            for paper in selected_papers:
+                record = evidence_for_paper(paper, evidence)
+                summary = table_like_method_summary(record) or evidence_summary(
+                    record,
+                    paper,
+                    170,
+                )
+                rows.append(
+                    "| "
+                    f"{paper['title']} | "
+                    f"{paper['raw_topic'] or paper['topic']} | "
+                    f"{summary} | "
+                    f"{record['doc_id']} |"
+                )
+            answer = (
+                "| Paper | Topic | Method or contribution | Evidence |\n"
+                "|---|---|---|---|\n" + "\n".join(rows)
             )
         specs.append((selected_papers, evidence, question, answer, "hard"))
         if len(specs) == count:
@@ -726,10 +1058,12 @@ def build_prompt_and_gold_records(
                 include = (
                     [
                         "paper_title",
+                        "method_or_system",
                         "method",
                         "task_or_benchmark",
                         "result_or_claim",
                         "limitation",
+                        "evidence_summary",
                         "evidence_id",
                     ]
                     if category == "structured_extraction"
@@ -781,8 +1115,11 @@ def build_prompt_and_gold_records(
                     make_gold_record(
                         prompt,
                         (
-                            "The available paper evidence is insufficient for that claim and "
-                            "requires expert review before making a production prediction."
+                            f"The question is in scope because it asks about {paper['title']}, "
+                            "but the selected Research AI evidence does not establish future "
+                            "production dominance. Mark the response as insufficient corpus "
+                            "evidence, request additional paper or deployment evidence, and use "
+                            "expert review rather than guessing."
                         ),
                         evidence,
                         ["insufficient corpus evidence", "expert review"],
@@ -809,12 +1146,14 @@ def build_prompt_and_gold_records(
                 make_gold_record(
                     prompt,
                     (
-                        "The question is outside the Research AI corpus and should not be "
-                        "answered from general model memory."
+                        "The question is outside the Research AI corpus. A grounded system "
+                        "should not answer it from general model memory or fabricate a "
+                        "citation; it should return out_of_scope and ask for relevant "
+                        "Research AI evidence if the user wants corpus-grounded help."
                     ),
                     [],
                     ["outside the Research AI corpus"],
-                    ["general model memory", "sports schedule answer"],
+                    ["general model memory", "sports schedule answer", "fabricated citation"],
                     expected_escalation=False,
                 )
             )

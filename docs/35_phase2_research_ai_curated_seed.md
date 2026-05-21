@@ -74,6 +74,13 @@ Comparison and literature-table records require evidence from multiple papers.
 Insufficient-evidence records require the answer to acknowledge missing evidence
 or escalate for expert review.
 
+Reference answers are intentionally fluent but evidence-specific. They should
+name the relevant paper, summarize only the selected KB excerpt, and identify the
+supporting evidence record rather than using generic paper-summary boilerplate.
+Structured extraction answers include a JSON-shaped reference with
+`method_or_system`, `evidence_summary`, and `evidence_id` fields so downstream
+evaluation can check both content and grounding.
+
 ## Boundary Behavior
 
 The out-of-scope seed record is intentionally unrelated to the Research AI paper

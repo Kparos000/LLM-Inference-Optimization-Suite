@@ -180,3 +180,95 @@ def test_research_ai_curation_report_shape() -> None:
     assert report["kb_record_count"] >= 30
     assert report["gold_record_count"] == 40
     assert report["next_step"]
+
+
+def test_research_ai_reference_answers_not_mechanical() -> None:
+    mechanical_phrases = [
+        "addresses its stated research problem by focusing on",
+        "using the cited paper evidence",
+        "This paper is about",
+    ]
+    gold = _read_jsonl(GOLD_PATH)
+
+    for record in gold:
+        answer = record.get("reference_answer", "")
+        for phrase in mechanical_phrases:
+            assert phrase not in answer
+
+
+def test_research_ai_reference_answers_are_substantive() -> None:
+    gold = _read_jsonl(GOLD_PATH)
+
+    for record in gold:
+        if record["expected_status"] != "answer":
+            continue
+        prompt_category = record["metadata"]["prompt_category"]
+        answer = str(record.get("reference_answer") or "")
+        if prompt_category == "structured_extraction":
+            continue
+        answer_words = answer.split()
+        assert len(answer_words) >= 20
+
+        must_include_terms = [
+            str(term).lower()
+            for term in record.get("must_include", [])
+            if len(str(term).strip()) >= 4
+        ]
+        source_title_terms: list[str] = []
+        for title in record["metadata"].get("source_titles", []):
+            source_title_terms.extend(
+                word.lower()
+                for word in str(title).replace(":", " ").replace("-", " ").split()
+                if len(word) >= 5
+            )
+        lowered_answer = answer.lower()
+        assert any(term in lowered_answer for term in [*must_include_terms, *source_title_terms])
+
+
+def test_research_ai_structured_reference_answers_parse_or_have_json_shape() -> None:
+    gold = _read_jsonl(GOLD_PATH)
+    required_keys = {
+        "paper_title",
+        "method_or_system",
+        "evidence_summary",
+        "evidence_id",
+    }
+
+    for record in gold:
+        if record["metadata"]["prompt_category"] != "structured_extraction":
+            continue
+        answer = str(record.get("reference_answer") or "")
+        try:
+            parsed = json.loads(answer)
+        except json.JSONDecodeError:
+            for key in required_keys:
+                assert key in answer
+        else:
+            assert isinstance(parsed, dict)
+            assert required_keys.issubset(parsed)
+
+
+def test_research_ai_negative_status_answers_are_safe() -> None:
+    gold = _read_jsonl(GOLD_PATH)
+    negative_records = [
+        record
+        for record in gold
+        if record["expected_status"] in {"insufficient_evidence", "escalate", "out_of_scope"}
+    ]
+
+    assert len(negative_records) == 3
+    for record in negative_records:
+        answer = str(record.get("reference_answer") or "")
+        lowered_answer = answer.lower()
+        assert "will outperform all future systems" not in lowered_answer
+        assert "guess" in " ".join(record.get("must_not_include", [])).lower() or (
+            "general model memory" in " ".join(record.get("must_not_include", [])).lower()
+        )
+        if record["expected_status"] == "out_of_scope":
+            assert (
+                "outside the research ai corpus" in lowered_answer
+                or "outside selected corpus" in lowered_answer
+            )
+            assert "general model memory" in " ".join(record["must_not_include"])
+        else:
+            assert "insufficient" in lowered_answer or "expert review" in lowered_answer
