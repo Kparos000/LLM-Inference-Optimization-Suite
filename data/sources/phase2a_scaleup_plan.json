@@ -7,7 +7,12 @@
     "research_ai",
     "retail"
   ],
-  "approved_total_prompt_cap": 10000,
+  "approved_total_prompt_cap": 25000,
+  "approved_max_prompts_per_vertical": 5000,
+  "approved_max_total_prompts": 25000,
+  "near_term_main_checkpoint": "checkpoint_2000",
+  "gpu_stress_checkpoint": "checkpoint_4000",
+  "max_expanded_checkpoint": "checkpoint_5000",
   "checkpoints": {
     "checkpoint_seed": {
       "prompts_per_vertical": 40,
@@ -29,7 +34,17 @@
     "checkpoint_2000": {
       "prompts_per_vertical": 2000,
       "total_prompts": 10000,
-      "purpose": "full Phase 2A dataset before Phase 2B/RAG"
+      "purpose": "near-term main Phase 2A dataset before Phase 2B/RAG"
+    },
+    "checkpoint_4000": {
+      "prompts_per_vertical": 4000,
+      "total_prompts": 20000,
+      "purpose": "GPU-backed stress benchmark tier"
+    },
+    "checkpoint_5000": {
+      "prompts_per_vertical": 5000,
+      "total_prompts": 25000,
+      "purpose": "maximum expanded benchmark capacity"
     }
   },
   "vertical_scale_strategy": {
@@ -38,6 +53,8 @@
       "checkpoint_250": 250,
       "checkpoint_1000": 1000,
       "checkpoint_2000": 2000,
+      "checkpoint_4000": 4000,
+      "checkpoint_5000": 5000,
       "kb_target_250": {
         "min": 250,
         "max": 400
@@ -50,9 +67,18 @@
         "min": 1500,
         "max": 2500
       },
+      "kb_target_4000": {
+        "min": 2500,
+        "max": 4500
+      },
+      "kb_target_5000": {
+        "min": 3500,
+        "max": 6000
+      },
       "source_expansion": [
-        "use current 8-company SEC/XBRL corpus",
+        "use current 8-company SEC/XBRL corpus first",
         "expand section coverage across 10-K, 10-Q, and 8-K",
+        "add more companies or filing years only if evidence reuse becomes repetitive",
         "include single-filing, multi-filing, XBRL numeric, table, trend, risk, compare-company, insufficient-evidence, and escalation prompts"
       ]
     },
@@ -61,6 +87,8 @@
       "checkpoint_250": 250,
       "checkpoint_1000": 1000,
       "checkpoint_2000": 2000,
+      "checkpoint_4000": 4000,
+      "checkpoint_5000": 5000,
       "kb_target_250": {
         "min": 75,
         "max": 120
@@ -73,9 +101,18 @@
         "min": 300,
         "max": 500
       },
+      "kb_target_4000": {
+        "min": 600,
+        "max": 900
+      },
+      "kb_target_5000": {
+        "min": 800,
+        "max": 1200
+      },
       "source_expansion": [
         "expand synthetic ticket generator",
         "expand synthetic/public-inspired policy KB",
+        "expand synthetic ticket/policy generator with deterministic variations",
         "maintain answer/escalate/spam-fraud split",
         "include booking, refunds, changes, baggage, partner airline, accessibility, travel documents, loyalty, and disruption"
       ]
@@ -85,6 +122,8 @@
       "checkpoint_250": 250,
       "checkpoint_1000": 1000,
       "checkpoint_2000": 2000,
+      "checkpoint_4000": 4000,
+      "checkpoint_5000": 5000,
       "kb_target_250": {
         "min": 75,
         "max": 120
@@ -97,11 +136,20 @@
         "min": 300,
         "max": 500
       },
+      "kb_target_4000": {
+        "min": 600,
+        "max": 900
+      },
+      "kb_target_5000": {
+        "min": 800,
+        "max": 1200
+      },
       "source_expansion": [
         "expand synthetic admin tickets",
         "expand policy KB",
         "maintain admin-only safety boundary",
-        "include privacy, identity verification, billing, scheduling, records, referrals, portal, telehealth, and urgent clinical boundary"
+        "preserve admin-only/safety-boundary design",
+        "include privacy, identity verification, billing, scheduling, records, referrals, portal, telehealth, and urgent clinical boundary handling"
       ]
     },
     "research_ai": {
@@ -109,6 +157,8 @@
       "checkpoint_250": 250,
       "checkpoint_1000": 1000,
       "checkpoint_2000": 2000,
+      "checkpoint_4000": 4000,
+      "checkpoint_5000": 5000,
       "kb_target_250": {
         "min": 300,
         "max": 500
@@ -121,9 +171,18 @@
         "min": 1000,
         "max": 1800
       },
+      "kb_target_4000": {
+        "min": 1600,
+        "max": 2800
+      },
+      "kb_target_5000": {
+        "min": 2000,
+        "max": 3500
+      },
       "source_expansion": [
         "current 20 papers are enough for 250 prompts if section coverage remains good",
         "expand to 40 papers before 1000 and 2000 prompt checkpoints",
+        "expand to roughly 60-80 papers before 4000 and 5000 prompt checkpoints",
         "preserve method, results, limitations, comparison, and citation tasks",
         "include inference optimization, RAG/context, agentic systems, efficient models, and evaluation"
       ]
@@ -133,6 +192,8 @@
       "checkpoint_250": 250,
       "checkpoint_1000": 1000,
       "checkpoint_2000": 2000,
+      "checkpoint_4000": 4000,
+      "checkpoint_5000": 5000,
       "kb_target_250": {
         "min": 150,
         "max": 250
@@ -145,8 +206,17 @@
         "min": 1000,
         "max": 2000
       },
+      "kb_target_4000": {
+        "min": 2000,
+        "max": 4000
+      },
+      "kb_target_5000": {
+        "min": 2500,
+        "max": 5000
+      },
       "source_expansion": [
         "current All_Beauty sample is enough for 250 prompts",
+        "expand beyond All_Beauty to multiple categories before 1000+ scale",
         "expand to 3 categories before 1000 prompts",
         "expand to 5 categories before 2000 prompts",
         "use metadata, reviews, and synthetic benchmark policy overlay",
@@ -161,19 +231,41 @@
     "answerable_records_require_evidence_ids": true,
     "negative_status_records_require_must_not_include": true,
     "checkpoint_2000_total_gold_records_across_all_verticals": 10000,
+    "checkpoint_4000_total_gold_records_across_all_verticals": 20000,
+    "checkpoint_5000_total_gold_records_across_all_verticals": 25000,
+    "review_targets_by_checkpoint": {
+      "checkpoint_2000": {
+        "total_prompts": 10000,
+        "gold_review_subset_target": 1000,
+        "deep_review_subset_target": 300
+      },
+      "checkpoint_4000": {
+        "total_prompts": 20000,
+        "gold_review_subset_target": 1500,
+        "deep_review_subset_target": 500
+      },
+      "checkpoint_5000": {
+        "total_prompts": 25000,
+        "gold_review_subset_target": 2000,
+        "deep_review_subset_target": 750
+      }
+    },
     "gold_review_subset": {
       "target_count": 1000,
+      "checkpoint": "checkpoint_2000",
       "stratify_by": [
         "vertical",
         "expected_status",
         "task_type",
         "output_format",
         "difficulty",
-        "context_length_bucket"
+        "context_length_bucket",
+        "source_document_type"
       ]
     },
     "deep_review_subset": {
       "target_count": 300,
+      "checkpoint": "checkpoint_2000",
       "emphasis": [
         "finance numeric and multi-document prompts",
         "research method, results, and comparison prompts",
@@ -192,8 +284,16 @@
       "negative_or_boundary": {
         "min_percent": 8,
         "max_percent": 12
-      }
+      },
+      "larger_tier_requirement": "Preserve this distribution at every checkpoint, including 2000, 4000, and 5000 prompts per vertical."
     },
+    "validation_rules": [
+      "each checkpoint must include answer records",
+      "each checkpoint must include structured JSON records",
+      "each checkpoint must include citation or evidence lookup records",
+      "each vertical must include at least one negative or boundary status class where appropriate",
+      "no vertical may be 100% answer-only"
+    ],
     "finance": {
       "answer": {
         "min_percent": 90,
@@ -250,6 +350,7 @@
     "preserve prompt/gold one-to-one alignment",
     "preserve KB evidence coverage for answerable prompts",
     "preserve negative and boundary status coverage",
+    "preserve structured JSON, citation/evidence lookup, and non-answer-only mixes at every checkpoint",
     "keep raw/generated source data local unless intentionally curated",
     "do not build RAG, retrieval, embeddings, prompt assembly, model calls, or inference in Phase 2A scale-up planning"
   ]

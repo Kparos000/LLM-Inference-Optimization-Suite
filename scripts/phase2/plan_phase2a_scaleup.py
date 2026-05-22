@@ -86,21 +86,37 @@ def checkpoint_prompt_targets(plan: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def ordered_checkpoint_names(plan: dict[str, Any], *, include_seed: bool = False) -> list[str]:
+    checkpoints = plan["checkpoints"]
+    names = sorted(
+        checkpoints,
+        key=lambda name: int(checkpoints[name].get("prompts_per_vertical", 0)),
+    )
+    if include_seed:
+        return names
+    return [name for name in names if name != "checkpoint_seed"]
+
+
 def build_matrix_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     checkpoints = plan["checkpoints"]
     for vertical, strategy in plan["vertical_scale_strategy"].items():
-        for checkpoint in ("checkpoint_250", "checkpoint_1000", "checkpoint_2000"):
+        for checkpoint in ordered_checkpoint_names(plan, include_seed=True):
             kb_key = checkpoint.replace("checkpoint_", "kb_target_")
-            kb_range = strategy[kb_key]
+            kb_range = strategy.get(kb_key, {})
+            prompt_count = (
+                strategy.get("current_seed_prompts")
+                if checkpoint == "checkpoint_seed"
+                else strategy[checkpoint]
+            )
             rows.append(
                 {
                     "vertical": vertical,
                     "checkpoint": checkpoint,
-                    "prompts": strategy[checkpoint],
+                    "prompts": prompt_count,
                     "total_prompts": checkpoints[checkpoint]["total_prompts"],
-                    "kb_min": kb_range["min"],
-                    "kb_max": kb_range["max"],
+                    "kb_min": kb_range.get("min", ""),
+                    "kb_max": kb_range.get("max", ""),
                     "purpose": checkpoints[checkpoint]["purpose"],
                 }
             )
@@ -109,14 +125,15 @@ def build_matrix_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
 
 def estimated_kb_record_ranges(plan: dict[str, Any]) -> dict[str, dict[str, int]]:
     totals: dict[str, dict[str, int]] = {}
-    for checkpoint in ("250", "1000", "2000"):
+    for checkpoint in ordered_checkpoint_names(plan):
+        checkpoint_suffix = checkpoint.replace("checkpoint_", "")
         min_total = 0
         max_total = 0
         for strategy in plan["vertical_scale_strategy"].values():
-            kb_range = strategy[f"kb_target_{checkpoint}"]
+            kb_range = strategy[f"kb_target_{checkpoint_suffix}"]
             min_total += int(kb_range["min"])
             max_total += int(kb_range["max"])
-        totals[f"checkpoint_{checkpoint}"] = {"min": min_total, "max": max_total}
+        totals[checkpoint] = {"min": min_total, "max": max_total}
     return totals
 
 
@@ -125,15 +142,30 @@ def build_report(
 ) -> dict[str, Any]:
     all_ready = not blockers
     checkpoints = plan["checkpoints"]
+    near_term_checkpoint = plan.get("near_term_main_checkpoint", "checkpoint_2000")
+    gpu_stress_checkpoint = plan.get("gpu_stress_checkpoint", "checkpoint_4000")
+    max_expanded_checkpoint = plan.get("max_expanded_checkpoint", "checkpoint_5000")
+    checkpoint_total_prompts = {
+        name: values["total_prompts"] for name, values in checkpoints.items()
+    }
     report = {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
         "current_seed_status": checkpoints["checkpoint_seed"],
         "approved_checkpoints": checkpoints,
-        "total_target_prompts": checkpoints["checkpoint_2000"]["total_prompts"],
-        "total_target_gold_records": checkpoints["checkpoint_2000"]["total_prompts"],
+        "approved_max_prompts_per_vertical": plan["approved_max_prompts_per_vertical"],
+        "approved_max_total_prompts": plan["approved_max_total_prompts"],
+        "near_term_main_checkpoint": near_term_checkpoint,
+        "gpu_stress_checkpoint": gpu_stress_checkpoint,
+        "max_expanded_checkpoint": max_expanded_checkpoint,
+        "checkpoint_total_prompts": checkpoint_total_prompts,
+        "total_target_prompts": checkpoints[max_expanded_checkpoint]["total_prompts"],
+        "total_target_gold_records": checkpoints[max_expanded_checkpoint]["total_prompts"],
+        "near_term_main_target_prompts": checkpoints[near_term_checkpoint]["total_prompts"],
+        "gpu_stress_target_prompts": checkpoints[gpu_stress_checkpoint]["total_prompts"],
         "estimated_kb_record_ranges": estimated_kb_record_ranges(plan),
         "per_vertical_targets": plan["vertical_scale_strategy"],
+        "gold_review_targets_by_checkpoint": plan["gold_strategy"]["review_targets_by_checkpoint"],
         "gold_review_subset_plan": plan["gold_strategy"]["gold_review_subset"],
         "deep_review_subset_plan": plan["gold_strategy"]["deep_review_subset"],
         "readiness_from_qa": qa_report.get("scale_up_readiness", {}),
@@ -141,7 +173,8 @@ def build_report(
         "warnings": warnings,
         "recommend_generation": all_ready,
         "next_step": (
-            "Proceed to Phase 2A-9 250-record scale-up generator foundation."
+            "Proceed with Phase 2A-9 generator expansion, starting at 250 per vertical "
+            "and scaffolding toward 2000, 4000, and 5000 per vertical checkpoints."
             if all_ready
             else "Resolve blockers and rerun Phase 2A-7 before generating checkpoint_250."
         ),
@@ -166,6 +199,11 @@ def write_report(args: argparse.Namespace) -> dict[str, Any]:
         "warning_count": len(report["warnings"]),
         "total_target_prompts": report["total_target_prompts"],
         "total_target_gold_records": report["total_target_gold_records"],
+        "approved_max_prompts_per_vertical": report["approved_max_prompts_per_vertical"],
+        "approved_max_total_prompts": report["approved_max_total_prompts"],
+        "near_term_main_checkpoint": report["near_term_main_checkpoint"],
+        "gpu_stress_checkpoint": report["gpu_stress_checkpoint"],
+        "max_expanded_checkpoint": report["max_expanded_checkpoint"],
         "output_report": str(args.output_report),
         "output_matrix_csv": str(args.output_matrix_csv),
         "next_step": report["next_step"],
