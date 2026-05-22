@@ -122,6 +122,30 @@ def test_dry_run_2000() -> None:
     assert summary["checkpoint"] == "checkpoint_2000"
 
 
+def test_dry_run_2000_reports_planning_only() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--target-per-vertical",
+            "2000",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    for vertical in summary["verticals"].values():
+        assert vertical["generation_scope"] == "planning_only"
+        assert vertical["ready_for_actual_generation"] is False
+        assert "generation_not_implemented_for_vertical_target" in vertical["blockers"]
+        assert "large_target_generation_requires_checkpoint_review" in vertical["blockers"]
+
+
 def test_generate_plan_cli() -> None:
     result = subprocess.run(
         [
@@ -146,6 +170,55 @@ def test_generate_plan_cli() -> None:
     assert (REPORT_DIR / "phase2a_scaleup_generation_plan_250.json").exists()
 
 
+def test_airline_250_has_no_generation_blocker() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-plan",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    airline = summary["verticals"]["airline"]
+    assert airline["generation_implemented"] is True
+    assert airline["ready_for_actual_generation"] is True
+    assert airline["blocker_count"] == 0
+    assert airline["blockers"] == []
+
+
+def test_non_airline_250_has_generation_not_implemented_blocker() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-plan",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    for vertical_name in ["finance", "healthcare_admin", "research_ai", "retail"]:
+        vertical = summary["verticals"][vertical_name]
+        assert vertical["generation_implemented"] is False
+        assert vertical["generation_scope"] == "planning_only"
+        assert vertical["ready_for_actual_generation"] is False
+        assert "generation_not_implemented_for_vertical_target" in vertical["blockers"]
+
+
 def test_generate_plan_5000() -> None:
     result = subprocess.run(
         [
@@ -167,6 +240,31 @@ def test_generate_plan_5000() -> None:
     assert summary["total_target_prompts"] == 25000
     assert summary["checkpoint"] == "checkpoint_5000"
     assert (REPORT_DIR / "phase2a_scaleup_generation_plan_5000.json").exists()
+
+
+def test_generate_plan_5000_reports_generation_blockers() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-plan",
+            "--target-per-vertical",
+            "5000",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    for vertical in summary["verticals"].values():
+        assert vertical["generation_implemented"] is False
+        assert vertical["ready_for_actual_generation"] is False
+        assert vertical["blocker_count"] > 0
+        assert "generation_not_implemented_for_vertical_target" in vertical["blockers"]
+        assert "large_target_generation_requires_checkpoint_review" in vertical["blockers"]
 
 
 def test_large_generation_blocked_without_explicit_support() -> None:

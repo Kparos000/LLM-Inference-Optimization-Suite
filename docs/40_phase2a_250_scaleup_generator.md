@@ -27,6 +27,12 @@ Large targets are planning/scaffolding targets unless a vertical implementation
 explicitly supports generation at that size. This prevents accidental large,
 low-quality duplication.
 
+QA readiness is not the same as generation readiness. A vertical can be
+QA-clean and have source files available while still being planning-only because
+record generation has not been implemented for that vertical and target pair.
+Planning manifests therefore report QA readiness, source-artifact readiness,
+generation implementation readiness, and actual generation readiness separately.
+
 ## Modes
 
 Dry-run mode reads the scale-up plan and latest cross-vertical QA report, then
@@ -102,6 +108,12 @@ Before any expanded dataset is committed, generated records must pass:
 
 `--allow-large-local-generation` exists for future explicit implementations. It
 does not bypass target support or quality gates.
+
+Planning-only manifests include blockers such as
+`generation_not_implemented_for_vertical_target` and, for larger targets,
+`large_target_generation_requires_checkpoint_review`. These blockers do not
+cause `--generate-plan` to fail; they make it clear that no generated records
+should be expected until implementation and prior checkpoint review are complete.
 
 ## Source Readiness
 

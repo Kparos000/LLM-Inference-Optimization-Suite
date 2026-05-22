@@ -375,6 +375,7 @@ def source_readiness(vertical: str, target_per_vertical: int) -> dict[str, Any]:
     seed_files = VERTICAL_FILES[vertical]
     missing_seed_files = [str(path) for path in seed_files.values() if not path.exists()]
     blockers = [f"missing_seed_file:{path}" for path in missing_seed_files]
+    planning_notes: list[str] = []
     optional_artifacts: dict[str, bool] = {}
 
     if vertical == "finance":
@@ -426,19 +427,32 @@ def source_readiness(vertical: str, target_per_vertical: int) -> dict[str, Any]:
     generation_implemented = target_per_vertical in IMPLEMENTED_GENERATION_TARGETS.get(
         vertical, set()
     )
-    actual_generation_ready = not blockers and generation_implemented
+    source_artifacts_ready = not missing_seed_files
+    if not generation_implemented:
+        blockers.append("generation_not_implemented_for_vertical_target")
+        planning_notes.append(
+            "Planning is available, but actual record generation requires explicit implementation."
+        )
+    if target_per_vertical > 250 and not generation_implemented:
+        blockers.append("large_target_generation_requires_checkpoint_review")
+        planning_notes.append(
+            "Large target generation requires successful review of prior checkpoints."
+        )
+    actual_generation_ready = source_artifacts_ready and generation_implemented
     return {
         "vertical": vertical,
         "target_per_vertical": target_per_vertical,
         "seed_files": {name: str(path) for name, path in seed_files.items()},
         "missing_seed_files": missing_seed_files,
         "optional_local_artifacts": optional_artifacts,
+        "source_artifacts_ready": source_artifacts_ready,
         "ready_for_actual_generation": actual_generation_ready,
         "generation_implemented": generation_implemented,
         "generation_scope": (
             "local_candidate_generation" if generation_implemented else "planning_only"
         ),
         "blockers": blockers,
+        "planning_notes": planning_notes,
     }
 
 
@@ -455,8 +469,10 @@ def build_generation_manifest(
     readiness = source_readiness(vertical, target_per_vertical)
     qa_ready = qa_ready_for_vertical(qa_status, vertical)
     blockers = list(readiness["blockers"])
+    planning_notes = list(readiness["planning_notes"])
     if qa_ready is False:
         blockers.append(f"phase2a_qa_not_ready_for_{target_per_vertical}_scale")
+        planning_notes.append("Phase 2A QA must pass before actual record generation.")
     checkpoint = plan.get("checkpoints", {}).get(checkpoint_name, {})
     kb_range = (
         plan.get("vertical_scale_strategy", {})
@@ -482,14 +498,19 @@ def build_generation_manifest(
         "source_readiness": readiness,
         "qa_ready_for_250_scale": qa_ready,
         "qa_ready_for_scale": qa_ready,
+        "source_artifacts_ready": readiness["source_artifacts_ready"],
         "generation_scope": (
             "local_candidate_generation" if generation_implemented else "planning_only"
         ),
         "generation_implemented": generation_implemented,
+        "ready_for_actual_generation": (
+            qa_ready is not False and readiness["ready_for_actual_generation"]
+        ),
         "recommended_previous_checkpoint": recommended_previous_checkpoint(target_per_vertical),
         "promotion_required_before_next_checkpoint": next_checkpoint(target_per_vertical),
         "warnings": warnings,
         "blockers": blockers,
+        "planning_notes": planning_notes,
         "source_inputs": readiness["seed_files"],
         "outputs_are_local_and_ignored": True,
         "next_step": (
@@ -560,9 +581,8 @@ def generate_plan(args: argparse.Namespace) -> dict[str, Any]:
         manifests[vertical] = {
             "manifest_path": str(manifest_path),
             "blocker_count": len(manifest["blockers"]),
-            "ready_for_actual_generation": manifest["source_readiness"][
-                "ready_for_actual_generation"
-            ],
+            "blockers": manifest["blockers"],
+            "ready_for_actual_generation": manifest["ready_for_actual_generation"],
             "generation_implemented": manifest["generation_implemented"],
             "generation_scope": manifest["generation_scope"],
         }
