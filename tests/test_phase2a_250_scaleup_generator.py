@@ -78,6 +78,33 @@ def test_distribution_counts_sum_for_all_targets() -> None:
             assert sum(distributions["difficulty"].values()) == target
 
 
+def test_healthcare_distribution_counts_sum_to_250() -> None:
+    module = _load_module()
+
+    distributions = module.calculate_distribution_counts("healthcare_admin", 250)
+    assert distributions["expected_status"] == {
+        "answer": 220,
+        "escalate": 20,
+        "safety_boundary": 5,
+        "spam_or_fraud": 3,
+        "out_of_scope": 2,
+    }
+    assert distributions["expected_output_format"] == {
+        "text": 195,
+        "json": 35,
+        "markdown_table": 20,
+    }
+    assert distributions["task_type"] == {
+        "answer_grounded": 120,
+        "policy_reasoning": 55,
+        "extract_structured": 30,
+        "escalation_response": 25,
+        "safety_boundary": 10,
+        "quality_boundary": 10,
+    }
+    assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],
@@ -194,6 +221,54 @@ def test_airline_250_has_no_generation_blocker() -> None:
     assert airline["blockers"] == []
 
 
+def test_dry_run_marks_healthcare_ready_for_250() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    healthcare = summary["verticals"]["healthcare_admin"]
+    assert healthcare["generation_implemented"] is True
+    assert healthcare["generation_scope"] == "local_candidate_generation"
+    assert healthcare["ready_for_actual_generation"] is True
+    assert healthcare["blockers"] == []
+
+
+def test_generate_plan_healthcare_blocker_count_zero_for_250() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-plan",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    healthcare = summary["verticals"]["healthcare_admin"]
+    assert healthcare["generation_implemented"] is True
+    assert healthcare["ready_for_actual_generation"] is True
+    assert healthcare["blocker_count"] == 0
+    assert healthcare["blockers"] == []
+
+
 def test_non_airline_250_has_generation_not_implemented_blocker() -> None:
     result = subprocess.run(
         [
@@ -211,7 +286,7 @@ def test_non_airline_250_has_generation_not_implemented_blocker() -> None:
 
     assert result.returncode == 0, result.stderr
     summary = json.loads(result.stdout)
-    for vertical_name in ["finance", "healthcare_admin", "research_ai", "retail"]:
+    for vertical_name in ["finance", "research_ai", "retail"]:
         vertical = summary["verticals"][vertical_name]
         assert vertical["generation_implemented"] is False
         assert vertical["generation_scope"] == "planning_only"
@@ -327,6 +402,106 @@ def test_airline_pilot_generation_cli() -> None:
     module = _load_module()
     assert module.validate_prompt_gold_alignment(prompts, gold) == []
     assert module.validate_evidence_coverage(gold, kb) == []
+
+
+def test_healthcare_generation_cli() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "healthcare_admin",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["vertical"] == "healthcare_admin"
+    assert summary["prompt_count"] == 250
+    assert summary["gold_count"] == 250
+    assert summary["kb_count"] >= 25
+    assert (ROOT / summary["report_path"]).exists()
+
+
+def test_healthcare_generated_counts_and_alignment() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "healthcare_admin",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+    assert len(prompts) == 250
+    assert len(gold) == 250
+    assert prompts[0]["prompt_id"] == "healthcare_admin_scaleup_250_0001"
+    assert prompts[-1]["prompt_id"] == "healthcare_admin_scaleup_250_0250"
+
+    module = _load_module()
+    assert module.validate_prompt_gold_alignment(prompts, gold) == []
+    assert module.validate_evidence_coverage(gold, kb) == []
+    assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
+
+
+def test_healthcare_negative_and_safety_statuses_present() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "healthcare_admin",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    status_counts: dict[str, int] = {}
+    for prompt in prompts:
+        status = str(prompt["expected_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    assert status_counts == {
+        "answer": 220,
+        "escalate": 20,
+        "safety_boundary": 5,
+        "spam_or_fraud": 3,
+        "out_of_scope": 2,
+    }
+    assert all(
+        "medical advice" in gold_row["must_not_include"]
+        for gold_row in gold
+        if gold_row["expected_status"] in {"safety_boundary", "escalate"}
+    )
+    assert any("urgent clinical boundary" in prompt["question"] for prompt in prompts)
 
 
 def test_generated_outputs_are_ignored() -> None:

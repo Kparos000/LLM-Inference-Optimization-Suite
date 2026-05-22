@@ -61,6 +61,16 @@ policy KB are deterministic and synthetic/public-inspired.
 python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical airline --target-per-vertical 250
 ```
 
+Healthcare Admin 250 generation is also implemented. It uses deterministic
+synthetic MapleCare Health admin policies and keeps the administrative boundary
+explicit: generated answers must not provide clinical diagnosis, treatment
+instructions, medication advice, or urgent-care guidance beyond the configured
+support escalation boundary.
+
+```powershell
+python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical healthcare_admin --target-per-vertical 250
+```
+
 Requests such as Airline at 2,000 records are intentionally blocked until a
 future patch implements and reviews that generator target.
 
@@ -72,6 +82,13 @@ The Airline 250 pilot writes local ignored files:
 - `data/generated/phase2a/scaleup/airline/airline_gold_250.jsonl`
 - `data/generated/phase2a/scaleup/airline/airline_kb_250.jsonl`
 - `data/generated/phase2a/scaleup_reports/airline_scaleup_250_report.json`
+
+The Healthcare Admin 250 generator writes local ignored files:
+
+- `data/generated/phase2a/scaleup/healthcare_admin/healthcare_admin_prompts_250.jsonl`
+- `data/generated/phase2a/scaleup/healthcare_admin/healthcare_admin_gold_250.jsonl`
+- `data/generated/phase2a/scaleup/healthcare_admin/healthcare_admin_kb_250.jsonl`
+- `data/generated/phase2a/scaleup_reports/healthcare_admin_scaleup_250_report.json`
 
 Plan manifests are written under:
 
@@ -122,6 +139,7 @@ all five verticals. They also record local artifact readiness where future full
 generation will need additional sources, such as SEC manifests, Research AI
 paper sections, and Retail sampled review/metadata files.
 
-Only the Airline 250 target is enabled for local candidate generation in this
-foundation patch. Other verticals and larger targets should use `--generate-plan`
-until their dedicated deterministic expansion logic is implemented.
+Only Airline 250 and Healthcare Admin 250 are enabled for local candidate
+generation. Healthcare remains synthetic and admin-only, with no clinical
+advice. Other verticals and larger targets should use `--generate-plan` until
+their dedicated deterministic expansion logic is implemented.

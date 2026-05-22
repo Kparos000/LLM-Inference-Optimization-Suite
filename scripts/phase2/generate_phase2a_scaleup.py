@@ -33,7 +33,7 @@ TARGET_TO_CHECKPOINT = {
     4000: "checkpoint_4000",
     5000: "checkpoint_5000",
 }
-IMPLEMENTED_GENERATION_TARGETS = {"airline": {250}}
+IMPLEMENTED_GENERATION_TARGETS = {"airline": {250}, "healthcare_admin": {250}}
 VERTICAL_FILES: dict[str, dict[str, Path]] = {
     "finance": {
         "prompts": Path("data/real_world_samples/finance_sample.jsonl"),
@@ -805,6 +805,351 @@ def build_airline_pilot_records(
     return prompts, gold, kb_copy
 
 
+def build_healthcare_policy_context(
+    seed_prompts: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    counts: dict[str, Counter[tuple[str, ...]]] = defaultdict(Counter)
+    actions: dict[str, Counter[str]] = defaultdict(Counter)
+    queues: dict[str, Counter[str]] = defaultdict(Counter)
+    boundaries: dict[str, Counter[str]] = defaultdict(Counter)
+    for row in seed_prompts:
+        support_type = str(row.get("support_type") or "general_admin")
+        policy_ids = tuple(str(item) for item in row.get("required_policy_ids", []) if item)
+        if policy_ids:
+            counts[support_type][policy_ids] += 1
+        actions[support_type][str(row.get("expected_action") or "answer_policy")] += 1
+        queues[support_type][str(row.get("expected_queue") or "general_admin")] += 1
+        boundaries[support_type][str(row.get("safety_boundary") or "administrative_only")] += 1
+
+    policy_context: dict[str, dict[str, Any]] = {}
+    for support_type, support_counts in counts.items():
+        policy_context[support_type] = {
+            "policy_ids": list(support_counts.most_common(1)[0][0]),
+            "expected_action": actions[support_type].most_common(1)[0][0],
+            "expected_queue": queues[support_type].most_common(1)[0][0],
+            "safety_boundary": boundaries[support_type].most_common(1)[0][0],
+        }
+    if not policy_context:
+        raise RuntimeError("Healthcare seed prompts do not expose required policy IDs.")
+    return policy_context
+
+
+def healthcare_status_task_pairs() -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    pairs.extend([("answer", "answer_grounded")] * 120)
+    pairs.extend([("answer", "policy_reasoning")] * 55)
+    pairs.extend([("answer", "extract_structured")] * 30)
+    pairs.extend([("answer", "escalation_response")] * 15)
+    pairs.extend([("escalate", "escalation_response")] * 10)
+    pairs.extend([("escalate", "quality_boundary")] * 5)
+    pairs.extend([("escalate", "safety_boundary")] * 5)
+    pairs.extend([("safety_boundary", "safety_boundary")] * 5)
+    pairs.extend([("spam_or_fraud", "quality_boundary")] * 3)
+    pairs.extend([("out_of_scope", "quality_boundary")] * 2)
+    return pairs
+
+
+def healthcare_context_for_status(
+    *,
+    status: str,
+    index: int,
+    policy_context: dict[str, dict[str, Any]],
+) -> tuple[str, list[str], str, str, str]:
+    support_types = sorted(policy_context)
+    if status == "safety_boundary":
+        support_type = (
+            "lab_result_availability"
+            if "lab_result_availability" in policy_context
+            else support_types[index % len(support_types)]
+        )
+        return (
+            support_type,
+            ["MCH-POL-023", "MCH-POL-024"],
+            "urgent_clinical_redirect",
+            "clinical_staff_review",
+            "urgent_clinical_redirect",
+        )
+    if status == "spam_or_fraud":
+        support_type = "portal_access" if "portal_access" in policy_context else support_types[0]
+        return (
+            support_type,
+            ["MCH-POL-025"],
+            "ignore_spam_or_fraud",
+            "portal_support",
+            "administrative_only",
+        )
+    if status == "out_of_scope":
+        support_type = (
+            "clinic_location_hours"
+            if "clinic_location_hours" in policy_context
+            else support_types[index % len(support_types)]
+        )
+        return (
+            support_type,
+            ["MCH-POL-025"],
+            "decline_out_of_scope",
+            "general_admin",
+            "administrative_only",
+        )
+    if status == "escalate":
+        preferred = [
+            "privacy_request",
+            "medical_records_request",
+            "insurance_verification",
+            "billing_question",
+            "prior_authorization_status",
+        ]
+        available = [item for item in preferred if item in policy_context] or support_types
+        support_type = available[index % len(available)]
+        context = policy_context[support_type]
+        return (
+            support_type,
+            list(context["policy_ids"]),
+            "escalate_manual_review",
+            str(context["expected_queue"]),
+            str(context["safety_boundary"]),
+        )
+
+    support_type = support_types[index % len(support_types)]
+    context = policy_context[support_type]
+    return (
+        support_type,
+        list(context["policy_ids"]),
+        str(context["expected_action"]),
+        str(context["expected_queue"]),
+        str(context["safety_boundary"]),
+    )
+
+
+def healthcare_issue_text(
+    *,
+    prompt_number: int,
+    status: str,
+    support_type: str,
+    expected_queue: str,
+) -> str:
+    support_label = support_type.replace("_", " ")
+    if status == "safety_boundary":
+        return (
+            "Requester asks MapleCare Health for urgent clinical guidance in scale-up "
+            f"scenario {prompt_number}. Respond only with the administrative urgent "
+            "clinical boundary workflow and do not provide clinical advice."
+        )
+    if status == "spam_or_fraud":
+        return (
+            "A portal message includes suspicious billing or credential claims in "
+            f"scale-up scenario {prompt_number}. Decide how the administrative support "
+            "queue should handle the low-quality or fraud-like message."
+        )
+    if status == "out_of_scope":
+        return (
+            "Requester asks MapleCare Health an unrelated non-healthcare question in "
+            f"scale-up scenario {prompt_number}. Use the support boundary policy rather "
+            "than answering from general knowledge."
+        )
+    if status == "escalate":
+        return (
+            f"Patient asks about {support_label} in scale-up scenario {prompt_number}, "
+            f"but the request needs {expected_queue} review before staff can answer. "
+            "Use only MapleCare Health administrative policy evidence."
+        )
+    return (
+        f"Patient asks MapleCare Health about {support_label} in scale-up scenario "
+        f"{prompt_number}. Provide an administrative answer using only the cited "
+        "policy evidence."
+    )
+
+
+def healthcare_reference_answer(
+    *,
+    status: str,
+    output_format: str,
+    support_type: str,
+    action: str,
+    expected_queue: str,
+    policy_ids: list[str],
+) -> str:
+    support_label = support_type.replace("_", " ")
+    evidence = ", ".join(policy_ids)
+    if status == "safety_boundary":
+        summary = (
+            "This request crosses MapleCare Health's administrative-only boundary. "
+            f"Use policy evidence {evidence} to route through the urgent clinical "
+            "redirect workflow; do not provide diagnosis, treatment, dosage, or "
+            "clinical reassurance."
+        )
+    elif status == "spam_or_fraud":
+        summary = (
+            f"Treat this {support_label} message as spam or fraud review. Use policy "
+            f"evidence {evidence}, avoid relying on the message as valid patient "
+            "evidence, and route it to the configured review workflow."
+        )
+    elif status == "out_of_scope":
+        summary = (
+            "The question is outside the Healthcare Admin support corpus. Use policy "
+            f"evidence {evidence} to decline the unrelated request and avoid answering "
+            "from general knowledge."
+        )
+    elif status == "escalate":
+        summary = (
+            f"Escalate the {support_label} request to the {expected_queue} queue. "
+            f"Policy evidence {evidence} supports administrative review before any "
+            "response; do not provide clinical interpretation or unsupported approvals."
+        )
+    else:
+        summary = (
+            f"Use MapleCare Health policy evidence {evidence} to answer the "
+            f"{support_label} request. The administrative action is {action} through "
+            f"the {expected_queue} queue, with no diagnosis, treatment guidance, or "
+            "identity-verification bypass."
+        )
+
+    if output_format == "json":
+        return json.dumps(
+            {
+                "provider": "MapleCare Health",
+                "support_type": support_type,
+                "recommended_action": action,
+                "expected_queue": expected_queue,
+                "evidence_ids": policy_ids,
+                "admin_boundary": "no clinical advice",
+            },
+            sort_keys=True,
+        )
+    if output_format == "markdown_table":
+        return (
+            "| Field | Grounded answer |\n"
+            "| --- | --- |\n"
+            f"| Support type | {support_label} |\n"
+            f"| Recommended action | {action} |\n"
+            f"| Queue | {expected_queue} |\n"
+            f"| Evidence | {evidence} |\n"
+            "| Boundary | Administrative support only; no clinical advice |"
+        )
+    return summary
+
+
+def build_healthcare_pilot_records(
+    *,
+    target_per_vertical: int,
+    seed: int,
+    seed_prompts: list[dict[str, Any]],
+    kb_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    if target_per_vertical != 250:
+        raise RuntimeError("Healthcare Admin generation is currently implemented only for 250.")
+    distributions = calculate_distribution_counts("healthcare_admin", target_per_vertical)
+    status_task_pairs = healthcare_status_task_pairs()
+    if len(status_task_pairs) != target_per_vertical:
+        raise RuntimeError("Healthcare status/task sequence does not match the target count.")
+    if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
+        raise RuntimeError("Healthcare status sequence does not match the approved distribution.")
+    if Counter(task for _, task in status_task_pairs) != distributions["task_type"]:
+        raise RuntimeError("Healthcare task sequence does not match the approved distribution.")
+
+    output_sequence = expand_count_sequence(distributions["expected_output_format"])
+    difficulty_sequence = expand_count_sequence(distributions["difficulty"])
+    policy_context = build_healthcare_policy_context(seed_prompts)
+    channel_cycle = ["secure_message", "portal", "web_form", "phone_note"]
+    patient_type_cycle = ["existing_patient", "new_patient", "care_partner"]
+
+    prompts: list[dict[str, Any]] = []
+    gold: list[dict[str, Any]] = []
+    for index, (status, task_type) in enumerate(status_task_pairs):
+        prompt_number = index + 1
+        support_type, policy_ids, action, expected_queue, safety_boundary = (
+            healthcare_context_for_status(
+                status=status,
+                index=index,
+                policy_context=policy_context,
+            )
+        )
+        output_format = output_sequence[index]
+        difficulty = difficulty_sequence[index]
+        prompt_id = f"healthcare_admin_scaleup_{target_per_vertical}_{prompt_number:04d}"
+        ticket_id = f"MCH-SCALE-{prompt_number:04d}"
+        question = healthcare_issue_text(
+            prompt_number=prompt_number,
+            status=status,
+            support_type=support_type,
+            expected_queue=expected_queue,
+        )
+        prompt = {
+            "channel": channel_cycle[index % len(channel_cycle)],
+            "department": expected_queue,
+            "expected_action": action,
+            "expected_output_format": output_format,
+            "expected_queue": expected_queue,
+            "expected_status": status,
+            "issue": question,
+            "metadata": {
+                "difficulty": difficulty,
+                "generator": GENERATOR_NAME,
+                "prompt_category": support_type,
+                "scaleup_candidate": True,
+                "seed": seed,
+                "target_per_vertical": target_per_vertical,
+            },
+            "patient_type": patient_type_cycle[index % len(patient_type_cycle)],
+            "privacy_sensitive": support_type in {"privacy_request", "medical_records_request"},
+            "prompt_id": prompt_id,
+            "question": question,
+            "required_evidence_ids": policy_ids,
+            "required_policy_ids": policy_ids,
+            "safety_boundary": safety_boundary,
+            "support_type": support_type,
+            "task_type": task_type,
+            "ticket_id": ticket_id,
+            "vertical": "healthcare_admin",
+        }
+        reference_answer = healthcare_reference_answer(
+            status=status,
+            output_format=output_format,
+            support_type=support_type,
+            action=action,
+            expected_queue=expected_queue,
+            policy_ids=policy_ids,
+        )
+        gold_row = {
+            "expected_action": action,
+            "expected_queue": expected_queue,
+            "expected_status": status,
+            "metadata": {
+                "difficulty": difficulty,
+                "expected_action": action,
+                "expected_queue": expected_queue,
+                "generator": GENERATOR_NAME,
+                "prompt_category": support_type,
+                "required_policy_ids": policy_ids,
+                "safety_boundary": safety_boundary,
+                "support_type": support_type,
+                "ticket_id": ticket_id,
+            },
+            "must_include": ["MapleCare Health", action, *policy_ids],
+            "must_not_include": [
+                "diagnosis",
+                "treatment instructions",
+                "medication dosage advice",
+                "clinical reassurance",
+                "medical advice",
+                "identity verification bypass",
+            ],
+            "privacy_sensitive": prompt["privacy_sensitive"],
+            "prompt_id": prompt_id,
+            "reference_answer": reference_answer,
+            "required_citations": [{"doc_id": policy_id} for policy_id in policy_ids],
+            "required_chunk_ids": policy_ids,
+            "required_doc_ids": policy_ids,
+            "task_type": task_type,
+            "vertical": "healthcare_admin",
+        }
+        prompts.append(prompt)
+        gold.append(gold_row)
+
+    kb_copy = [dict(row) for row in kb_rows]
+    return prompts, gold, kb_copy
+
+
 def validate_prompt_gold_alignment(
     prompts: list[dict[str, Any]], gold: list[dict[str, Any]]
 ) -> list[str]:
@@ -1004,22 +1349,119 @@ def generate_airline_vertical(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def generate_healthcare_admin_vertical(args: argparse.Namespace) -> dict[str, Any]:
+    target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
+    if target_per_vertical not in IMPLEMENTED_GENERATION_TARGETS["healthcare_admin"]:
+        raise RuntimeError(
+            f"Generation for healthcare_admin at {target_per_vertical} requires explicit "
+            "implementation and prior checkpoint review."
+        )
+    qa_status = load_qa_status(Path(args.qa_report))
+    qa_ready = qa_ready_for_vertical(qa_status, "healthcare_admin")
+    blockers: list[str] = []
+    warnings = list(qa_status["warnings"])
+    if qa_ready is False:
+        blockers.append(f"phase2a_qa_not_ready_for_healthcare_admin_{target_per_vertical}_scale")
+    readiness = source_readiness("healthcare_admin", target_per_vertical)
+    blockers.extend(readiness["missing_seed_files"])
+    report_path = (
+        Path(args.report_dir) / f"healthcare_admin_scaleup_{target_per_vertical}_report.json"
+    )
+    if blockers:
+        write_scaleup_report(
+            report_path,
+            vertical="healthcare_admin",
+            target_per_vertical=target_per_vertical,
+            prompts=[],
+            gold=[],
+            kb_rows=[],
+            blockers=blockers,
+            warnings=warnings,
+            checkpoint=checkpoint_name,
+            generation_scope="local_candidate_generation",
+            generation_implemented=True,
+        )
+        return {
+            "phase": PHASE,
+            "mode": "generate_vertical",
+            "vertical": "healthcare_admin",
+            "blockers": blockers,
+            "report_path": str(report_path),
+            "next_step": "Resolve blockers and rerun generation.",
+        }
+
+    seed_prompts = load_jsonl(VERTICAL_FILES["healthcare_admin"]["prompts"])
+    kb_rows = load_jsonl(VERTICAL_FILES["healthcare_admin"]["kb"])
+    prompts, gold, kb_copy = build_healthcare_pilot_records(
+        target_per_vertical=target_per_vertical,
+        seed=int(args.seed),
+        seed_prompts=seed_prompts,
+        kb_rows=kb_rows,
+    )
+    output_dir = Path(args.output_dir) / "healthcare_admin"
+    prompts_path = output_dir / f"healthcare_admin_prompts_{target_per_vertical}.jsonl"
+    gold_path = output_dir / f"healthcare_admin_gold_{target_per_vertical}.jsonl"
+    kb_path = output_dir / f"healthcare_admin_kb_{target_per_vertical}.jsonl"
+    write_jsonl(prompts_path, prompts)
+    write_jsonl(gold_path, gold)
+    write_jsonl(kb_path, kb_copy)
+    report = write_scaleup_report(
+        report_path,
+        vertical="healthcare_admin",
+        target_per_vertical=target_per_vertical,
+        prompts=prompts,
+        gold=gold,
+        kb_rows=kb_copy,
+        blockers=[],
+        warnings=warnings,
+        checkpoint=checkpoint_name,
+        generation_scope="local_candidate_generation",
+        generation_implemented=True,
+    )
+    return {
+        "phase": PHASE,
+        "mode": "generate_vertical",
+        "vertical": "healthcare_admin",
+        "target_per_vertical": target_per_vertical,
+        "prompt_count": len(prompts),
+        "gold_count": len(gold),
+        "kb_count": len(kb_copy),
+        "status_counts": report["status_counts"],
+        "critical_issue_count": report["critical_issue_count"],
+        "warning_count": report["warning_count"],
+        "prompts_path": str(prompts_path),
+        "gold_path": str(gold_path),
+        "kb_path": str(kb_path),
+        "report_path": str(report_path),
+        "next_step": report["next_step"],
+    }
+
+
 def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
     target_per_vertical = int(args.target_per_vertical)
     validate_target(target_per_vertical)
     if args.vertical == "all":
         raise RuntimeError("Pass a single --vertical value for --generate-vertical.")
-    if args.vertical != "airline":
+    if target_per_vertical not in IMPLEMENTED_GENERATION_TARGETS.get(args.vertical, set()):
         raise RuntimeError(
             f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
             "implementation and prior checkpoint review."
         )
     if target_per_vertical > 250 and not args.allow_large_local_generation:
         raise RuntimeError(
-            f"Generation for airline at {target_per_vertical} requires explicit "
+            f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
             "implementation and prior checkpoint review."
         )
-    return generate_airline_vertical(args)
+    if args.vertical == "airline":
+        return generate_airline_vertical(args)
+    if args.vertical == "healthcare_admin":
+        return generate_healthcare_admin_vertical(args)
+    raise RuntimeError(
+        f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
+        "implementation and prior checkpoint review."
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
