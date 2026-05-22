@@ -133,6 +133,33 @@ def test_retail_distribution_counts_sum_to_250() -> None:
     assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
 
 
+def test_research_ai_distribution_counts_sum_to_250() -> None:
+    module = _load_module()
+
+    distributions = module.calculate_distribution_counts("research_ai", 250)
+    assert distributions["expected_status"] == {
+        "answer": 225,
+        "insufficient_evidence": 10,
+        "escalate": 10,
+        "out_of_scope": 5,
+    }
+    assert distributions["expected_output_format"] == {
+        "text": 180,
+        "json": 35,
+        "markdown_table": 35,
+    }
+    assert distributions["task_type"] == {
+        "answer_grounded": 90,
+        "paper_method": 45,
+        "results_evaluation": 35,
+        "extract_structured": 30,
+        "compare_papers": 25,
+        "literature_table": 15,
+        "escalation_response": 10,
+    }
+    assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],
@@ -297,6 +324,30 @@ def test_dry_run_marks_retail_ready_for_250() -> None:
     assert retail["blockers"] == []
 
 
+def test_dry_run_marks_research_ai_ready_for_250() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    research_ai = summary["verticals"]["research_ai"]
+    assert research_ai["generation_implemented"] is True
+    assert research_ai["generation_scope"] == "local_candidate_generation"
+    assert research_ai["ready_for_actual_generation"] is True
+    assert research_ai["blockers"] == []
+
+
 def test_generate_plan_healthcare_blocker_count_zero_for_250() -> None:
     result = subprocess.run(
         [
@@ -345,7 +396,7 @@ def test_generate_plan_retail_blocker_count_zero_for_250() -> None:
     assert retail["blockers"] == []
 
 
-def test_non_airline_250_has_generation_not_implemented_blocker() -> None:
+def test_generate_plan_research_ai_blocker_count_zero_for_250() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -362,12 +413,35 @@ def test_non_airline_250_has_generation_not_implemented_blocker() -> None:
 
     assert result.returncode == 0, result.stderr
     summary = json.loads(result.stdout)
-    for vertical_name in ["finance", "research_ai"]:
-        vertical = summary["verticals"][vertical_name]
-        assert vertical["generation_implemented"] is False
-        assert vertical["generation_scope"] == "planning_only"
-        assert vertical["ready_for_actual_generation"] is False
-        assert "generation_not_implemented_for_vertical_target" in vertical["blockers"]
+    research_ai = summary["verticals"]["research_ai"]
+    assert research_ai["generation_implemented"] is True
+    assert research_ai["ready_for_actual_generation"] is True
+    assert research_ai["blocker_count"] == 0
+    assert research_ai["blockers"] == []
+
+
+def test_finance_250_has_generation_not_implemented_blocker() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-plan",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    vertical = summary["verticals"]["finance"]
+    assert vertical["generation_implemented"] is False
+    assert vertical["generation_scope"] == "planning_only"
+    assert vertical["ready_for_actual_generation"] is False
+    assert "generation_not_implemented_for_vertical_target" in vertical["blockers"]
 
 
 def test_generate_plan_5000() -> None:
@@ -703,6 +777,174 @@ def test_retail_no_raw_user_ids_or_generic_titles() -> None:
     assert "synthetic benchmark policy, not Amazon policy" in combined_text
 
 
+def test_research_ai_generation_cli() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "research_ai",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["vertical"] == "research_ai"
+    assert summary["prompt_count"] == 250
+    assert summary["gold_count"] == 250
+    assert summary["kb_count"] >= 141
+    assert summary["critical_issue_count"] == 0
+    assert (ROOT / summary["prompts_path"]).exists()
+    assert (ROOT / summary["gold_path"]).exists()
+    assert (ROOT / summary["kb_path"]).exists()
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+    assert report["vertical"] == "research_ai"
+    assert report["prompt_count"] == 250
+    assert report["gold_count"] == 250
+
+
+def test_research_ai_generated_counts_and_alignment() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "research_ai",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+    assert len(prompts) == 250
+    assert len(gold) == 250
+    assert prompts[0]["prompt_id"] == "research_ai_scaleup_250_0001"
+    assert prompts[-1]["prompt_id"] == "research_ai_scaleup_250_0250"
+
+    module = _load_module()
+    assert module.validate_prompt_gold_alignment(prompts, gold) == []
+    assert module.validate_evidence_coverage(gold, kb) == []
+    assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
+
+
+def test_research_ai_negative_statuses_present() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "research_ai",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    status_counts: dict[str, int] = {}
+    for prompt in prompts:
+        status = str(prompt["expected_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    assert status_counts == {
+        "answer": 225,
+        "insufficient_evidence": 10,
+        "escalate": 10,
+        "out_of_scope": 5,
+    }
+    assert {
+        "insufficient_evidence",
+        "escalate",
+        "out_of_scope",
+    }.issubset(status_counts)
+    assert all(
+        gold_row["must_not_include"] for gold_row in gold if gold_row["expected_status"] != "answer"
+    )
+
+
+def test_research_ai_answerable_gold_has_evidence() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "research_ai",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    for gold_row in gold:
+        if gold_row["expected_status"] != "answer":
+            continue
+        assert gold_row["required_doc_ids"]
+        assert gold_row["required_chunk_ids"]
+        assert gold_row["required_citations"]
+        assert gold_row["reference_answer"]
+
+
+def test_research_ai_no_private_paths_or_general_memory() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "research_ai",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+    combined_text = json.dumps([prompts, gold, kb], ensure_ascii=True).lower()
+    assert "c:\\\\users" not in combined_text
+    assert "/home/" not in combined_text
+    assert "kparo" not in combined_text
+    assert "akpoogaga" not in combined_text
+    assert "local_text_path" not in combined_text
+    assert "general model memory" not in combined_text
+
+
 def test_generated_outputs_are_ignored() -> None:
     gitignore = GITIGNORE_PATH.read_text(encoding="utf-8")
 
@@ -717,6 +959,7 @@ def test_docs_include_commands() -> None:
     assert "--dry-run --target-per-vertical 2000" in docs
     assert "--generate-plan --target-per-vertical 2000" in docs
     assert "--generate-vertical --vertical airline --target-per-vertical 250" in docs
+    assert "--generate-vertical --vertical research_ai --target-per-vertical 250" in docs
     assert "no RAG" in docs
 
 

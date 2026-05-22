@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 PHASE = "2A-9"
-GENERATOR_NAME = "phase2a_9_scaleup_airline_pilot"
+GENERATOR_NAME = "phase2a_9_scaleup_local_candidates"
 
 DEFAULT_SCALEUP_PLAN = Path("data/sources/phase2a_scaleup_plan.json")
 DEFAULT_QA_REPORT = Path("data/generated/phase2a/phase2a_cross_vertical_qa_report.json")
@@ -36,6 +36,7 @@ TARGET_TO_CHECKPOINT = {
 IMPLEMENTED_GENERATION_TARGETS = {
     "airline": {250},
     "healthcare_admin": {250},
+    "research_ai": {250},
     "retail": {250},
 }
 VERTICAL_FILES: dict[str, dict[str, Path]] = {
@@ -408,11 +409,17 @@ def source_readiness(vertical: str, target_per_vertical: int) -> dict[str, Any]:
             "approved_paper_registry": Path(
                 "data/sources/research_ai_approved_papers.jsonl"
             ).exists(),
+            "enriched_paper_registry": Path(
+                "data/generated/research_ai/enriched_paper_registry.jsonl"
+            ).exists(),
             "paper_text_manifest": Path(
                 "data/processed/research_ai/paper_text_manifest.jsonl"
             ).exists(),
             "paper_sections_manifest": Path(
                 "data/processed/research_ai/paper_sections_manifest.jsonl"
+            ).exists(),
+            "section_quality_report": Path(
+                "data/generated/research_ai/research_ai_section_quality_report.json"
             ).exists(),
         }
     elif vertical == "retail":
@@ -1548,6 +1555,595 @@ def build_retail_pilot_records(
     return prompts, gold, kb_copy
 
 
+def research_ai_status_task_pairs() -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    pairs.extend([("answer", "answer_grounded")] * 85)
+    pairs.extend([("answer", "paper_method")] * 45)
+    pairs.extend([("answer", "results_evaluation")] * 35)
+    pairs.extend([("answer", "extract_structured")] * 30)
+    pairs.extend([("answer", "compare_papers")] * 25)
+    pairs.extend([("answer", "literature_table")] * 5)
+    pairs.extend([("insufficient_evidence", "literature_table")] * 10)
+    pairs.extend([("escalate", "escalation_response")] * 10)
+    pairs.extend([("out_of_scope", "answer_grounded")] * 5)
+    return pairs
+
+
+def research_ai_output_for_task(
+    *,
+    task_type: str,
+    output_counts: dict[str, int],
+) -> str:
+    if task_type == "extract_structured" and output_counts["json"] < 30:
+        output_counts["json"] += 1
+        return "json"
+    if task_type == "paper_method" and output_counts["json"] < 35:
+        output_counts["json"] += 1
+        return "json"
+    if task_type == "compare_papers" and output_counts["markdown_table"] < 20:
+        output_counts["markdown_table"] += 1
+        return "markdown_table"
+    if task_type == "literature_table" and output_counts["markdown_table"] < 35:
+        output_counts["markdown_table"] += 1
+        return "markdown_table"
+    output_counts["text"] += 1
+    return "text"
+
+
+def research_ai_metadata(row: dict[str, Any]) -> dict[str, Any]:
+    metadata = row.get("metadata")
+    if isinstance(metadata, dict):
+        return metadata
+    return {}
+
+
+def research_ai_contexts_by_paper(kb_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    contexts_by_paper: dict[str, dict[str, Any]] = {}
+    for row in kb_rows:
+        metadata = research_ai_metadata(row)
+        paper_id = str(metadata.get("paper_id") or row.get("paper_id") or "")
+        doc_id = str(row.get("doc_id") or "")
+        if not paper_id or not doc_id:
+            continue
+        context = contexts_by_paper.setdefault(
+            paper_id,
+            {
+                "authors": [],
+                "citation_by_doc_id": {},
+                "chunk_by_doc_id": {},
+                "doc_ids_by_section_type": defaultdict(list),
+                "paper_id": paper_id,
+                "provenance_url": "",
+                "section_type_by_doc_id": {},
+                "title": "",
+                "topic": "",
+                "venue": "",
+                "year": "",
+            },
+        )
+        title = str(metadata.get("title") or row.get("title") or context["title"])
+        provenance_url = str(
+            metadata.get("provenance_url") or row.get("provenance_url") or context["provenance_url"]
+        )
+        context["title"] = title
+        context["provenance_url"] = provenance_url
+        context["topic"] = str(metadata.get("topic") or context["topic"])
+        context["venue"] = str(metadata.get("venue") or context["venue"])
+        context["year"] = str(metadata.get("year") or context["year"])
+        authors = metadata.get("authors")
+        if isinstance(authors, list):
+            context["authors"] = [str(author) for author in authors if author]
+
+        section_type = str(metadata.get("section_type") or "").lower()
+        if not section_type:
+            document_type = str(row.get("document_type") or "")
+            evidence_type = str(metadata.get("evidence_type") or "")
+            if document_type == "paper_abstract" or evidence_type == "abstract":
+                section_type = "abstract"
+            elif document_type == "paper_metadata" or evidence_type == "metadata":
+                section_type = "metadata"
+            else:
+                section_type = evidence_type or document_type or "evidence"
+        context["doc_ids_by_section_type"][section_type].append(doc_id)
+        context["section_type_by_doc_id"][doc_id] = section_type
+        chunk_id = str(metadata.get("section_record_id") or doc_id)
+        context["chunk_by_doc_id"][doc_id] = chunk_id
+        context["citation_by_doc_id"][doc_id] = (
+            f"{provenance_url}#{chunk_id}" if provenance_url else chunk_id
+        )
+
+    contexts = [
+        context
+        for context in contexts_by_paper.values()
+        if context.get("title") and context.get("doc_ids_by_section_type")
+    ]
+    return sorted(contexts, key=lambda item: (str(item["title"]), str(item["paper_id"])))
+
+
+def research_ai_select_doc_ids(
+    context: dict[str, Any],
+    preferred_section_types: list[str],
+    *,
+    max_docs: int,
+) -> list[str]:
+    selected: list[str] = []
+    doc_ids_by_section_type = context["doc_ids_by_section_type"]
+    for section_type in preferred_section_types:
+        for doc_id in doc_ids_by_section_type.get(section_type, []):
+            if doc_id not in selected:
+                selected.append(str(doc_id))
+            if len(selected) >= max_docs:
+                return selected
+    fallback_types = [
+        "abstract",
+        "introduction",
+        "method",
+        "results",
+        "evaluation",
+        "experiments",
+        "limitations",
+        "metadata",
+    ]
+    for section_type in fallback_types:
+        for doc_id in doc_ids_by_section_type.get(section_type, []):
+            if doc_id not in selected:
+                selected.append(str(doc_id))
+            if len(selected) >= max_docs:
+                return selected
+    for doc_ids in doc_ids_by_section_type.values():
+        for doc_id in doc_ids:
+            if doc_id not in selected:
+                selected.append(str(doc_id))
+            if len(selected) >= max_docs:
+                return selected
+    return selected
+
+
+def research_ai_context_window(
+    *,
+    contexts: list[dict[str, Any]],
+    index: int,
+    size: int,
+) -> list[dict[str, Any]]:
+    if not contexts:
+        raise RuntimeError("Research AI KB does not expose paper contexts.")
+    return [contexts[(index + offset) % len(contexts)] for offset in range(size)]
+
+
+def research_ai_doc_ids_for_task(
+    *,
+    status: str,
+    task_type: str,
+    contexts: list[dict[str, Any]],
+) -> list[str]:
+    if status == "out_of_scope":
+        return []
+    if task_type == "paper_method":
+        return research_ai_select_doc_ids(
+            contexts[0], ["method", "approach", "abstract"], max_docs=2
+        )
+    if task_type == "results_evaluation":
+        return research_ai_select_doc_ids(
+            contexts[0], ["results", "evaluation", "experiments", "abstract"], max_docs=2
+        )
+    if task_type == "extract_structured":
+        return research_ai_select_doc_ids(
+            contexts[0],
+            ["method", "results", "evaluation", "experiments", "limitations", "abstract"],
+            max_docs=4,
+        )
+    if task_type == "compare_papers":
+        doc_ids: list[str] = []
+        for context in contexts[:2]:
+            doc_ids.extend(
+                research_ai_select_doc_ids(
+                    context,
+                    ["method", "results", "evaluation", "experiments", "abstract"],
+                    max_docs=2,
+                )
+            )
+        return doc_ids
+    if task_type == "literature_table":
+        doc_ids = []
+        for context in contexts[:3]:
+            doc_ids.extend(
+                research_ai_select_doc_ids(
+                    context,
+                    ["method", "results", "evaluation", "experiments", "abstract"],
+                    max_docs=2,
+                )
+            )
+        return doc_ids[:5]
+    if status == "escalate":
+        return research_ai_select_doc_ids(contexts[0], ["abstract", "metadata"], max_docs=1)
+    return research_ai_select_doc_ids(
+        contexts[0], ["abstract", "introduction", "method"], max_docs=2
+    )
+
+
+def research_ai_title_terms(title: str) -> list[str]:
+    terms = [
+        term
+        for term in re.findall(r"[A-Za-z0-9]+", title)
+        if len(term) > 2 and term.lower() not in {"the", "and", "for", "with", "via"}
+    ]
+    return terms[:3] or [title.split()[0]]
+
+
+def research_ai_prompt_category(
+    *,
+    status: str,
+    task_type: str,
+    index: int,
+) -> str:
+    if status == "insufficient_evidence":
+        return "insufficient_evidence"
+    if status == "escalate":
+        return "escalation"
+    if status == "out_of_scope":
+        return "out_of_scope"
+    if task_type == "answer_grounded" and index % 7 == 0:
+        return "evidence_citation_lookup"
+    return {
+        "answer_grounded": "concept_explanation",
+        "paper_method": "paper_method",
+        "results_evaluation": "results_evaluation",
+        "extract_structured": "structured_extraction",
+        "compare_papers": "compare_papers",
+        "literature_table": "literature_table",
+        "escalation_response": "escalation",
+    }.get(task_type, task_type)
+
+
+def research_ai_question_text(
+    *,
+    prompt_number: int,
+    status: str,
+    task_type: str,
+    prompt_category: str,
+    contexts: list[dict[str, Any]],
+    required_doc_ids: list[str],
+) -> str:
+    if status == "out_of_scope":
+        return (
+            "A user asks for a current sports schedule and ticket advice in Research AI "
+            f"scale-up scenario {prompt_number}. Apply the out-of-scope boundary instead "
+            "of answering from outside knowledge."
+        )
+
+    title = str(contexts[0]["title"])
+    if status == "insufficient_evidence":
+        cited = ", ".join(required_doc_ids)
+        return (
+            "Can the available Research AI paper evidence prove that the cited papers "
+            "will outperform all future production systems? If not, state that the "
+            f"evidence is insufficient and cite only these records: {cited}."
+        )
+    if status == "escalate":
+        return (
+            f"A benchmark owner asks whether {title} should be certified for high-stakes "
+            f"production deployment in scenario {prompt_number}. Use only the cited paper "
+            "evidence and escalate if the evidence is not enough for that decision."
+        )
+    if task_type == "paper_method":
+        return (
+            f"Using only the cited method evidence, explain the research method used by "
+            f"{title} and name the evidence records that support the answer."
+        )
+    if task_type == "results_evaluation":
+        return (
+            f"Using only the cited results or evaluation evidence, summarize what {title} "
+            "reports about evaluation and avoid adding unsupported numeric claims."
+        )
+    if task_type == "extract_structured":
+        return (
+            f"Extract a JSON object for {title} with paper_title, method_or_setup, "
+            "result_or_evaluation, limitation_or_caveat, and evidence_ids."
+        )
+    if task_type == "compare_papers":
+        other_title = str(contexts[1]["title"])
+        return (
+            f"Compare {title} and {other_title} using only cited method and evaluation "
+            "evidence. Keep the comparison grounded in the listed evidence records."
+        )
+    if task_type == "literature_table":
+        titles = ", ".join(str(context["title"]) for context in contexts[:3])
+        return (
+            "Create a compact literature table for these Research AI papers using only "
+            f"the cited evidence: {titles}."
+        )
+    if prompt_category == "evidence_citation_lookup":
+        return (
+            f"Which cited evidence record supports a claim about {title}, and what should "
+            "a grounded answer say about the evidence boundary?"
+        )
+    return (
+        f"Using the cited paper evidence, explain the main research problem and contribution "
+        f"of {title} in plain language."
+    )
+
+
+def research_ai_required_chunks_and_citations(
+    *,
+    contexts: list[dict[str, Any]],
+    required_doc_ids: list[str],
+) -> tuple[list[str], list[str], list[str]]:
+    chunk_ids: list[str] = []
+    citations: list[str] = []
+    section_types: list[str] = []
+    for doc_id in required_doc_ids:
+        for context in contexts:
+            chunk_by_doc_id = context["chunk_by_doc_id"]
+            if doc_id not in chunk_by_doc_id:
+                continue
+            chunk_ids.append(str(chunk_by_doc_id[doc_id]))
+            citations.append(str(context["citation_by_doc_id"][doc_id]))
+            section_types.append(str(context["section_type_by_doc_id"].get(doc_id, "evidence")))
+            break
+    return chunk_ids, citations, section_types
+
+
+def research_ai_reference_answer(
+    *,
+    status: str,
+    task_type: str,
+    output_format: str,
+    contexts: list[dict[str, Any]],
+    required_doc_ids: list[str],
+    section_types: list[str],
+) -> str:
+    titles = [str(context["title"]) for context in contexts]
+    evidence = ", ".join(required_doc_ids) if required_doc_ids else "no in-corpus evidence"
+    sections = ", ".join(dict.fromkeys(section_types)) if section_types else "none"
+    if status == "out_of_scope":
+        summary = (
+            "This request is outside the Research AI paper corpus. The answer should mark "
+            "the request out_of_scope, avoid current-events or ticket advice, and not "
+            "invent paper citations."
+        )
+    elif status == "insufficient_evidence":
+        summary = (
+            f"The available Research AI evidence ({evidence}) is insufficient to prove "
+            "future production superiority. The answer should state insufficient_evidence, "
+            "cite the available records, and avoid unsupported projections."
+        )
+    elif status == "escalate":
+        summary = (
+            f"Escalate the deployment-certification request for {titles[0]}. Evidence "
+            f"{evidence} can support paper-level discussion, but it is not enough by "
+            "itself to approve high-stakes production use."
+        )
+    else:
+        summary = (
+            f"Use {titles[0]} and cited {sections} evidence ({evidence}) to answer the "
+            f"{task_type} request. The answer should name the paper, cite the required "
+            "records, and avoid claims outside the selected paper evidence."
+        )
+
+    if output_format == "json":
+        return json.dumps(
+            {
+                "status": status,
+                "task_type": task_type,
+                "paper_titles": titles,
+                "evidence_ids": required_doc_ids,
+                "grounding_rule": "use only cited Research AI KB evidence",
+                "answer_boundary": summary,
+            },
+            sort_keys=True,
+        )
+    if output_format == "markdown_table":
+        rows = [
+            "| Paper | Task | Evidence | Boundary |",
+            "| --- | --- | --- | --- |",
+        ]
+        for context in contexts:
+            title = str(context["title"])
+            context_doc_ids = [
+                doc_id for doc_id in required_doc_ids if doc_id in context["section_type_by_doc_id"]
+            ]
+            rows.append(
+                f"| {title} | {task_type} | {', '.join(context_doc_ids)} | "
+                "Cite only selected evidence |"
+            )
+        return "\n".join(rows)
+    return summary
+
+
+def build_research_ai_pilot_records(
+    *,
+    target_per_vertical: int,
+    seed: int,
+    seed_prompts: list[dict[str, Any]],
+    seed_gold: list[dict[str, Any]],
+    kb_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    if target_per_vertical != 250:
+        raise RuntimeError("Research AI generation is currently implemented only for 250.")
+    seed_prompt_ids = {str(row.get("prompt_id") or "") for row in seed_prompts}
+    seed_gold_ids = {str(row.get("prompt_id") or "") for row in seed_gold}
+    if not seed_prompt_ids or seed_prompt_ids != seed_gold_ids:
+        raise RuntimeError("Research AI seed prompt/gold IDs are not aligned.")
+
+    distributions = calculate_distribution_counts("research_ai", target_per_vertical)
+    status_task_pairs = research_ai_status_task_pairs()
+    if len(status_task_pairs) != target_per_vertical:
+        raise RuntimeError("Research AI status/task sequence does not match the target count.")
+    if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
+        raise RuntimeError("Research AI status sequence does not match the approved distribution.")
+    if Counter(task for _, task in status_task_pairs) != distributions["task_type"]:
+        raise RuntimeError("Research AI task sequence does not match the approved distribution.")
+
+    difficulty_sequence = expand_count_sequence(distributions["difficulty"])
+    output_counts = {"text": 0, "json": 0, "markdown_table": 0}
+    paper_contexts = research_ai_contexts_by_paper(kb_rows)
+    if len(paper_contexts) < 10:
+        raise RuntimeError("Research AI KB does not expose enough paper contexts for 250 scale.")
+    kb_doc_ids = {str(row.get("doc_id") or "") for row in kb_rows}
+
+    prompts: list[dict[str, Any]] = []
+    gold: list[dict[str, Any]] = []
+    for index, (status, task_type) in enumerate(status_task_pairs):
+        prompt_number = index + 1
+        context_count = 3 if task_type == "literature_table" else 2
+        contexts = research_ai_context_window(
+            contexts=paper_contexts,
+            index=index,
+            size=context_count,
+        )
+        if task_type not in {"compare_papers", "literature_table"}:
+            contexts = contexts[:1]
+        required_doc_ids = [
+            doc_id
+            for doc_id in research_ai_doc_ids_for_task(
+                status=status,
+                task_type=task_type,
+                contexts=contexts,
+            )
+            if doc_id in kb_doc_ids
+        ]
+        if status == "answer" and not required_doc_ids:
+            raise RuntimeError(f"Research AI prompt {prompt_number} has no valid evidence IDs.")
+
+        output_format = research_ai_output_for_task(
+            task_type=task_type,
+            output_counts=output_counts,
+        )
+        difficulty = difficulty_sequence[index]
+        prompt_category = research_ai_prompt_category(
+            status=status,
+            task_type=task_type,
+            index=index,
+        )
+        prompt_id = f"research_ai_scaleup_{target_per_vertical}_{prompt_number:04d}"
+        required_chunk_ids, required_citations, section_types = (
+            research_ai_required_chunks_and_citations(
+                contexts=contexts,
+                required_doc_ids=required_doc_ids,
+            )
+        )
+        source_titles = (
+            [] if status == "out_of_scope" else [str(context["title"]) for context in contexts]
+        )
+        source_paper_ids = (
+            [] if status == "out_of_scope" else [str(context["paper_id"]) for context in contexts]
+        )
+        topics = (
+            []
+            if status == "out_of_scope"
+            else sorted({str(context["topic"]) for context in contexts if context["topic"]})
+        )
+        question = research_ai_question_text(
+            prompt_number=prompt_number,
+            status=status,
+            task_type=task_type,
+            prompt_category=prompt_category,
+            contexts=contexts,
+            required_doc_ids=required_doc_ids,
+        )
+        expected_action = {
+            "answer": "answer_with_citations",
+            "insufficient_evidence": "state_insufficient_evidence",
+            "escalate": "escalate_for_review",
+            "out_of_scope": "decline_out_of_scope",
+        }[status]
+        prompt = {
+            "expected_action": expected_action,
+            "expected_output_format": output_format,
+            "expected_status": status,
+            "metadata": {
+                "difficulty": difficulty,
+                "evidence_type": section_types,
+                "generator": GENERATOR_NAME,
+                "prompt_category": prompt_category,
+                "requires_citation": bool(required_doc_ids),
+                "scaleup_candidate": True,
+                "seed": seed,
+                "source_titles": source_titles,
+                "target_per_vertical": target_per_vertical,
+                "topics": topics,
+            },
+            "prompt_id": prompt_id,
+            "question": question,
+            "required_chunk_ids": required_chunk_ids,
+            "required_citations": required_citations,
+            "required_doc_ids": required_doc_ids,
+            "required_evidence_ids": required_doc_ids,
+            "required_paper_ids": source_paper_ids,
+            "source_paper_ids": source_paper_ids,
+            "task_type": task_type,
+            "topic": topics[0] if topics else "research_ai",
+            "vertical": "research_ai",
+        }
+        reference_answer = research_ai_reference_answer(
+            status=status,
+            task_type=task_type,
+            output_format=output_format,
+            contexts=contexts,
+            required_doc_ids=required_doc_ids,
+            section_types=section_types,
+        )
+        must_include = (
+            [*research_ai_title_terms(source_titles[0]), *required_doc_ids[:2]]
+            if status == "answer"
+            else [status, *required_doc_ids[:1]]
+        )
+        must_not_include = [
+            "unsupported claims",
+            "uncited claims",
+            "fabricated citations",
+            "claims outside selected paper evidence",
+            "private file paths",
+        ]
+        if status in {"insufficient_evidence", "escalate"}:
+            must_not_include.extend(
+                [
+                    "future production superiority guarantee",
+                    "deployment approval from paper evidence alone",
+                    "unsupported numeric claims",
+                ]
+            )
+        if status == "out_of_scope":
+            must_not_include.extend(
+                [
+                    "sports schedule answer",
+                    "ticket purchasing advice",
+                    "invented Research AI citation",
+                ]
+            )
+        gold_row = {
+            "expected_action": expected_action,
+            "expected_escalation": status == "escalate",
+            "expected_status": status,
+            "metadata": {
+                "expected_output_format": output_format,
+                "prompt_category": prompt_category,
+                "required_evidence_ids": required_doc_ids,
+                "required_paper_ids": source_paper_ids,
+                "required_section_types": section_types,
+                "source_titles": source_titles,
+            },
+            "must_include": must_include,
+            "must_not_include": must_not_include,
+            "prompt_id": prompt_id,
+            "reference_answer": reference_answer,
+            "required_chunk_ids": required_chunk_ids,
+            "required_citations": required_citations,
+            "required_doc_ids": required_doc_ids,
+            "task_type": task_type,
+            "vertical": "research_ai",
+        }
+        prompts.append(prompt)
+        gold.append(gold_row)
+
+    if output_counts != distributions["expected_output_format"]:
+        raise RuntimeError(
+            "Research AI output format sequence does not match approved distribution."
+        )
+    kb_copy = [dict(row) for row in kb_rows]
+    return prompts, gold, kb_copy
+
+
 def validate_prompt_gold_alignment(
     prompts: list[dict[str, Any]], gold: list[dict[str, Any]]
 ) -> list[str]:
@@ -1837,6 +2433,96 @@ def generate_healthcare_admin_vertical(args: argparse.Namespace) -> dict[str, An
     }
 
 
+def generate_research_ai_vertical(args: argparse.Namespace) -> dict[str, Any]:
+    target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
+    if target_per_vertical not in IMPLEMENTED_GENERATION_TARGETS["research_ai"]:
+        raise RuntimeError(
+            f"Generation for research_ai at {target_per_vertical} requires explicit "
+            "implementation and prior checkpoint review."
+        )
+    qa_status = load_qa_status(Path(args.qa_report))
+    qa_ready = qa_ready_for_vertical(qa_status, "research_ai")
+    blockers: list[str] = []
+    warnings = list(qa_status["warnings"])
+    if qa_ready is False:
+        blockers.append(f"phase2a_qa_not_ready_for_research_ai_{target_per_vertical}_scale")
+    readiness = source_readiness("research_ai", target_per_vertical)
+    blockers.extend(readiness["missing_seed_files"])
+    report_path = Path(args.report_dir) / f"research_ai_scaleup_{target_per_vertical}_report.json"
+    if blockers:
+        write_scaleup_report(
+            report_path,
+            vertical="research_ai",
+            target_per_vertical=target_per_vertical,
+            prompts=[],
+            gold=[],
+            kb_rows=[],
+            blockers=blockers,
+            warnings=warnings,
+            checkpoint=checkpoint_name,
+            generation_scope="local_candidate_generation",
+            generation_implemented=True,
+        )
+        return {
+            "phase": PHASE,
+            "mode": "generate_vertical",
+            "vertical": "research_ai",
+            "blockers": blockers,
+            "report_path": str(report_path),
+            "next_step": "Resolve blockers and rerun generation.",
+        }
+
+    seed_prompts = load_jsonl(VERTICAL_FILES["research_ai"]["prompts"])
+    seed_gold = load_jsonl(VERTICAL_FILES["research_ai"]["gold"])
+    kb_rows = load_jsonl(VERTICAL_FILES["research_ai"]["kb"])
+    prompts, gold, kb_copy = build_research_ai_pilot_records(
+        target_per_vertical=target_per_vertical,
+        seed=int(args.seed),
+        seed_prompts=seed_prompts,
+        seed_gold=seed_gold,
+        kb_rows=kb_rows,
+    )
+    output_dir = Path(args.output_dir) / "research_ai"
+    prompts_path = output_dir / f"research_ai_prompts_{target_per_vertical}.jsonl"
+    gold_path = output_dir / f"research_ai_gold_{target_per_vertical}.jsonl"
+    kb_path = output_dir / f"research_ai_kb_{target_per_vertical}.jsonl"
+    write_jsonl(prompts_path, prompts)
+    write_jsonl(gold_path, gold)
+    write_jsonl(kb_path, kb_copy)
+    report = write_scaleup_report(
+        report_path,
+        vertical="research_ai",
+        target_per_vertical=target_per_vertical,
+        prompts=prompts,
+        gold=gold,
+        kb_rows=kb_copy,
+        blockers=[],
+        warnings=warnings,
+        checkpoint=checkpoint_name,
+        generation_scope="local_candidate_generation",
+        generation_implemented=True,
+    )
+    return {
+        "phase": PHASE,
+        "mode": "generate_vertical",
+        "vertical": "research_ai",
+        "target_per_vertical": target_per_vertical,
+        "prompt_count": len(prompts),
+        "gold_count": len(gold),
+        "kb_count": len(kb_copy),
+        "status_counts": report["status_counts"],
+        "critical_issue_count": report["critical_issue_count"],
+        "warning_count": report["warning_count"],
+        "prompts_path": str(prompts_path),
+        "gold_path": str(gold_path),
+        "kb_path": str(kb_path),
+        "report_path": str(report_path),
+        "next_step": report["next_step"],
+    }
+
+
 def generate_retail_vertical(args: argparse.Namespace) -> dict[str, Any]:
     target_per_vertical = int(args.target_per_vertical)
     validate_target(target_per_vertical)
@@ -1944,6 +2630,8 @@ def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
         return generate_airline_vertical(args)
     if args.vertical == "healthcare_admin":
         return generate_healthcare_admin_vertical(args)
+    if args.vertical == "research_ai":
+        return generate_research_ai_vertical(args)
     if args.vertical == "retail":
         return generate_retail_vertical(args)
     raise RuntimeError(

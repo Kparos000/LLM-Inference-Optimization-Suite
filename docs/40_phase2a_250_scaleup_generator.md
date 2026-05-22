@@ -80,6 +80,16 @@ that are explicitly not Amazon policy.
 python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical retail --target-per-vertical 250
 ```
 
+Research AI 250 generation is implemented from the committed Research AI seed
+prompt, KB, and gold files. The current approved 20-paper set is acceptable for
+the 250-candidate checkpoint because the curated section coverage is strong
+enough for local candidate generation. Paper-registry expansion is required
+before 1,000+ Research AI generation.
+
+```powershell
+python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical research_ai --target-per-vertical 250
+```
+
 Requests such as Airline at 2,000 records are intentionally blocked until a
 future patch implements and reviews that generator target.
 
@@ -105,6 +115,13 @@ The Retail 250 generator writes local ignored files:
 - `data/generated/phase2a/scaleup/retail/retail_gold_250.jsonl`
 - `data/generated/phase2a/scaleup/retail/retail_kb_250.jsonl`
 - `data/generated/phase2a/scaleup_reports/retail_scaleup_250_report.json`
+
+The Research AI 250 generator writes local ignored files:
+
+- `data/generated/phase2a/scaleup/research_ai/research_ai_prompts_250.jsonl`
+- `data/generated/phase2a/scaleup/research_ai/research_ai_gold_250.jsonl`
+- `data/generated/phase2a/scaleup/research_ai/research_ai_kb_250.jsonl`
+- `data/generated/phase2a/scaleup_reports/research_ai_scaleup_250_report.json`
 
 Plan manifests are written under:
 
@@ -155,9 +172,12 @@ all five verticals. They also record local artifact readiness where future full
 generation will need additional sources, such as SEC manifests, Research AI
 paper sections, and Retail sampled review/metadata files.
 
-Only Airline 250, Healthcare Admin 250, and Retail 250 are enabled for local
-candidate generation. Healthcare remains synthetic and admin-only, with no
-clinical advice. Retail uses sanitized product/review evidence and synthetic
-benchmark policies, not Amazon policy. Other verticals and larger targets
-should use `--generate-plan` until their dedicated deterministic expansion logic
-is implemented.
+Only Airline 250, Healthcare Admin 250, Research AI 250, and Retail 250 are
+enabled for local candidate generation. Healthcare remains synthetic and
+admin-only, with no clinical advice. Retail uses sanitized product/review
+evidence and synthetic benchmark policies, not Amazon policy. Research AI 250
+uses the existing paper KB and section evidence only; it does not expand the
+paper registry, assemble RAG prompts, build embeddings, call models, run GPU
+inference, or generate records beyond the 250 local candidate checkpoint. Other
+verticals and larger targets should use `--generate-plan` until their dedicated
+deterministic expansion logic is implemented.
