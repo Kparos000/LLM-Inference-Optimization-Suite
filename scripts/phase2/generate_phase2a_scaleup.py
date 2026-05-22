@@ -33,7 +33,11 @@ TARGET_TO_CHECKPOINT = {
     4000: "checkpoint_4000",
     5000: "checkpoint_5000",
 }
-IMPLEMENTED_GENERATION_TARGETS = {"airline": {250}, "healthcare_admin": {250}}
+IMPLEMENTED_GENERATION_TARGETS = {
+    "airline": {250},
+    "healthcare_admin": {250},
+    "retail": {250},
+}
 VERTICAL_FILES: dict[str, dict[str, Path]] = {
     "finance": {
         "prompts": Path("data/real_world_samples/finance_sample.jsonl"),
@@ -79,11 +83,11 @@ STATUS_DISTRIBUTION_BASIS_POINTS: dict[str, dict[str, int]] = {
         "out_of_scope": 200,
     },
     "retail": {
-        "answer": 8900,
-        "insufficient_evidence": 350,
-        "escalate": 350,
-        "spam_or_low_quality": 300,
-        "out_of_scope": 100,
+        "answer": 8880,
+        "insufficient_evidence": 360,
+        "escalate": 360,
+        "spam_or_low_quality": 280,
+        "out_of_scope": 120,
     },
 }
 
@@ -1150,6 +1154,400 @@ def build_healthcare_pilot_records(
     return prompts, gold, kb_copy
 
 
+def retail_contexts_by_role(seed_prompts: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    contexts: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in seed_prompts:
+        context = {
+            "category": row.get("category") or "All_Beauty",
+            "expected_action": row.get("expected_action") or "answer",
+            "issue_type": row.get("issue_type") or row.get("metadata", {}).get("prompt_category"),
+            "product_id": row.get("product_id") or row.get("source_product_ids", ["retail"])[0],
+            "product_title": row.get("product_title")
+            or row.get("metadata", {}).get("source_titles", ["Retail product evidence"])[0],
+            "required_doc_ids": list(
+                row.get("required_doc_ids") or row.get("required_evidence_ids") or []
+            ),
+            "source_parent_asins": list(
+                row.get("source_parent_asins")
+                or row.get("metadata", {}).get("source_parent_asins")
+                or []
+            ),
+            "source_product_ids": list(row.get("source_product_ids") or []),
+            "seed_task_type": row.get("task_type"),
+            "seed_status": row.get("expected_status"),
+        }
+        task_type = str(row.get("task_type") or "")
+        issue_type = str(row.get("issue_type") or "")
+        status = str(row.get("expected_status") or "")
+        if status == "answer":
+            contexts["answer"].append(context)
+        if task_type == "compare_products":
+            contexts["compare_products"].append(context)
+        if task_type == "extract_structured":
+            contexts["extract_structured"].append(context)
+        if task_type == "policy_reasoning":
+            contexts["policy_reasoning"].append(context)
+        if issue_type == "quality_complaint":
+            contexts["issue_identification"].append(context)
+        if status == "spam_or_low_quality" or issue_type == "suspicious_review":
+            contexts["spam_or_low_quality"].append(context)
+        if status in {"insufficient_evidence", "escalate"}:
+            contexts["escalation"].append(context)
+        if status == "out_of_scope":
+            contexts["out_of_scope"].append(context)
+
+    if not contexts["answer"]:
+        raise RuntimeError("Retail seed prompts do not expose answerable product evidence.")
+    return dict(contexts)
+
+
+def retail_status_task_pairs() -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    pairs.extend([("answer", "answer_grounded")] * 95)
+    pairs.extend([("answer", "issue_identification")] * 45)
+    pairs.extend([("answer", "extract_structured")] * 35)
+    pairs.extend([("answer", "policy_reasoning")] * 27)
+    pairs.extend([("answer", "compare_products")] * 20)
+    pairs.extend([("insufficient_evidence", "policy_reasoning")] * 3)
+    pairs.extend([("insufficient_evidence", "escalation_response")] * 6)
+    pairs.extend([("escalate", "escalation_response")] * 4)
+    pairs.extend([("escalate", "compare_products")] * 5)
+    pairs.extend([("spam_or_low_quality", "quality_boundary")] * 7)
+    pairs.extend([("out_of_scope", "quality_boundary")] * 3)
+    return pairs
+
+
+def retail_output_for_task(
+    *,
+    task_type: str,
+    output_counts: dict[str, int],
+) -> str:
+    if task_type == "extract_structured" and output_counts["json"] < 35:
+        output_counts["json"] += 1
+        return "json"
+    if task_type == "policy_reasoning" and output_counts["json"] < 40:
+        output_counts["json"] += 1
+        return "json"
+    if task_type == "compare_products" and output_counts["markdown_table"] < 25:
+        output_counts["markdown_table"] += 1
+        return "markdown_table"
+    output_counts["text"] += 1
+    return "text"
+
+
+def retail_context_for_pair(
+    *,
+    status: str,
+    task_type: str,
+    index: int,
+    contexts: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    if status == "spam_or_low_quality":
+        candidates = contexts.get("spam_or_low_quality") or contexts["answer"]
+    elif status in {"insufficient_evidence", "escalate"}:
+        candidates = (
+            contexts.get("escalation") or contexts.get("policy_reasoning") or contexts["answer"]
+        )
+    elif status == "out_of_scope":
+        candidates = contexts.get("out_of_scope") or contexts["answer"]
+    elif task_type in contexts:
+        candidates = contexts[task_type]
+    else:
+        candidates = contexts["answer"]
+    return dict(candidates[index % len(candidates)])
+
+
+def retail_required_docs_for_status(
+    *,
+    status: str,
+    task_type: str,
+    context: dict[str, Any],
+) -> list[str]:
+    required_doc_ids = [str(item) for item in context.get("required_doc_ids", []) if item]
+    if status == "spam_or_low_quality":
+        return ["retail_policy_low_quality_review_handling", *required_doc_ids]
+    if status == "out_of_scope":
+        return ["retail_policy_out_of_scope_rules"]
+    if status in {"insufficient_evidence", "escalate"}:
+        if "retail_policy_escalation_rules" not in required_doc_ids:
+            return ["retail_policy_escalation_rules", *required_doc_ids]
+    if task_type == "policy_reasoning" and not any(
+        doc_id.startswith("retail_policy_") for doc_id in required_doc_ids
+    ):
+        return ["retail_policy_return_refund_triage", *required_doc_ids]
+    return required_doc_ids
+
+
+def retail_issue_text(
+    *,
+    prompt_number: int,
+    status: str,
+    task_type: str,
+    product_id: str,
+    product_title: str,
+) -> str:
+    if status == "spam_or_low_quality":
+        return (
+            f"Assess whether the cited review evidence for {product_title} ({product_id}) "
+            "should be treated as low-quality or spam-like before using it as product "
+            f"support evidence in scenario {prompt_number}."
+        )
+    if status == "insufficient_evidence":
+        return (
+            f"Determine whether the selected evidence is sufficient to resolve a support "
+            f"request for {product_title} ({product_id}) in scenario {prompt_number}."
+        )
+    if status == "escalate":
+        return (
+            f"Decide whether the cited product and policy evidence for {product_title} "
+            f"({product_id}) requires support escalation in scenario {prompt_number}."
+        )
+    if status == "out_of_scope":
+        return (
+            "A user asks an unrelated question outside the selected retail product and "
+            f"support-policy corpus in scenario {prompt_number}. Apply the out-of-scope "
+            "boundary instead of answering from general memory."
+        )
+    if task_type == "issue_identification":
+        return (
+            f"Identify the main support issue themes in the cited review evidence for "
+            f"{product_title} ({product_id})."
+        )
+    if task_type == "extract_structured":
+        return (
+            f"Extract a JSON support record for {product_title} ({product_id}) with the "
+            "issue type, evidence summary, recommended action, and evidence IDs."
+        )
+    if task_type == "policy_reasoning":
+        return (
+            f"Apply the synthetic benchmark support policy to the cited review evidence "
+            f"for {product_title} ({product_id}); do not treat it as Amazon policy."
+        )
+    if task_type == "compare_products":
+        return (
+            f"Compare the cited retail evidence for {product_title} ({product_id}) using "
+            "a compact support-ready table."
+        )
+    return (
+        f"Summarize the available retail review evidence for {product_title} "
+        f"({product_id}) in support-ready language."
+    )
+
+
+def retail_reference_answer(
+    *,
+    status: str,
+    task_type: str,
+    output_format: str,
+    product_id: str,
+    product_title: str,
+    issue_type: str,
+    required_doc_ids: list[str],
+) -> str:
+    evidence = ", ".join(required_doc_ids)
+    if output_format == "json":
+        return json.dumps(
+            {
+                "product_id": product_id,
+                "product_title": product_title,
+                "issue_type": issue_type,
+                "evidence_summary": (
+                    "Use only the cited sanitized product, review, and policy evidence."
+                ),
+                "recommended_action": status,
+                "evidence_ids": required_doc_ids,
+            },
+            sort_keys=True,
+        )
+    if output_format == "markdown_table":
+        return (
+            "| Field | Grounded retail answer |\n"
+            "| --- | --- |\n"
+            f"| Product | {product_title} ({product_id}) |\n"
+            f"| Task | {task_type} |\n"
+            f"| Issue type | {issue_type} |\n"
+            f"| Evidence | {evidence} |"
+        )
+    if status == "spam_or_low_quality":
+        return (
+            f"Flag the cited evidence for {product_title} ({product_id}) as low-quality "
+            f"or spam-like. Use evidence {evidence}, and do not treat the review as "
+            "strong product evidence without moderation or support review."
+        )
+    if status == "insufficient_evidence":
+        return (
+            f"The selected evidence for {product_title} ({product_id}) is insufficient "
+            f"to resolve the support request. Use evidence {evidence}, ask for the "
+            "missing order or product context, and do not guess."
+        )
+    if status == "escalate":
+        return (
+            f"Escalate the {product_title} ({product_id}) support request because the "
+            f"selected evidence {evidence} requires policy or account review. Do not "
+            "promise refunds, replacements, or safety conclusions."
+        )
+    if status == "out_of_scope":
+        return (
+            "The question is outside the Retail support corpus. A grounded system should "
+            f"use evidence {evidence} to mark it out_of_scope and should not answer from "
+            "general model memory or fabricate citations."
+        )
+    if task_type == "policy_reasoning":
+        return (
+            f"Apply the synthetic benchmark policy to {product_title} ({product_id}) "
+            f"using evidence {evidence}. The answer may recommend support review, but "
+            "must not claim to be Amazon policy or guarantee a resolution."
+        )
+    return (
+        f"Use the cited sanitized evidence {evidence} to answer about {product_title} "
+        f"({product_id}). Keep the answer limited to observed review or metadata signals "
+        "and avoid unsupported product claims."
+    )
+
+
+def build_retail_pilot_records(
+    *,
+    target_per_vertical: int,
+    seed: int,
+    seed_prompts: list[dict[str, Any]],
+    kb_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    if target_per_vertical != 250:
+        raise RuntimeError("Retail generation is currently implemented only for 250.")
+    distributions = calculate_distribution_counts("retail", target_per_vertical)
+    status_task_pairs = retail_status_task_pairs()
+    if len(status_task_pairs) != target_per_vertical:
+        raise RuntimeError("Retail status/task sequence does not match the target count.")
+    if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
+        raise RuntimeError("Retail status sequence does not match the approved distribution.")
+    if Counter(task for _, task in status_task_pairs) != distributions["task_type"]:
+        raise RuntimeError("Retail task sequence does not match the approved distribution.")
+
+    difficulty_sequence = expand_count_sequence(distributions["difficulty"])
+    contexts = retail_contexts_by_role(seed_prompts)
+    output_counts = {"text": 0, "json": 0, "markdown_table": 0}
+    kb_doc_ids = {str(row.get("doc_id") or "") for row in kb_rows}
+
+    prompts: list[dict[str, Any]] = []
+    gold: list[dict[str, Any]] = []
+    for index, (status, task_type) in enumerate(status_task_pairs):
+        prompt_number = index + 1
+        context = retail_context_for_pair(
+            status=status,
+            task_type=task_type,
+            index=index,
+            contexts=contexts,
+        )
+        product_id = str(context.get("product_id") or "retail_policy_only")
+        product_title = str(context.get("product_title") or "Synthetic Retail policy evidence")
+        issue_type = str(context.get("issue_type") or task_type)
+        required_doc_ids = [
+            doc_id
+            for doc_id in retail_required_docs_for_status(
+                status=status,
+                task_type=task_type,
+                context=context,
+            )
+            if doc_id in kb_doc_ids
+        ]
+        if not required_doc_ids:
+            raise RuntimeError(f"Retail prompt {prompt_number} has no valid evidence IDs.")
+        output_format = retail_output_for_task(
+            task_type=task_type,
+            output_counts=output_counts,
+        )
+        difficulty = difficulty_sequence[index]
+        prompt_id = f"retail_scaleup_{target_per_vertical}_{prompt_number:04d}"
+        question = retail_issue_text(
+            prompt_number=prompt_number,
+            status=status,
+            task_type=task_type,
+            product_id=product_id,
+            product_title=product_title,
+        )
+        source_parent_asins = list(context.get("source_parent_asins") or [product_id])
+        source_product_ids = list(context.get("source_product_ids") or [product_id])
+        prompt = {
+            "category": context.get("category") or "All_Beauty",
+            "expected_action": "answer" if status == "answer" else status,
+            "expected_output_format": output_format,
+            "expected_status": status,
+            "issue_type": issue_type,
+            "metadata": {
+                "category": context.get("category") or "All_Beauty",
+                "difficulty": difficulty,
+                "evidence_type": "retail_scaleup_candidate",
+                "generator": GENERATOR_NAME,
+                "prompt_category": issue_type,
+                "requires_citation": True,
+                "scaleup_candidate": True,
+                "seed": seed,
+                "source_parent_asins": source_parent_asins,
+                "source_titles": [product_title],
+                "synthetic_policy_not_amazon_policy": task_type == "policy_reasoning",
+                "target_per_vertical": target_per_vertical,
+            },
+            "product_id": product_id,
+            "product_title": product_title,
+            "prompt_id": prompt_id,
+            "question": question,
+            "required_doc_ids": required_doc_ids,
+            "required_evidence_ids": required_doc_ids,
+            "source_parent_asins": source_parent_asins,
+            "source_product_ids": source_product_ids,
+            "task_type": task_type,
+            "vertical": "retail",
+        }
+        reference_answer = retail_reference_answer(
+            status=status,
+            task_type=task_type,
+            output_format=output_format,
+            product_id=product_id,
+            product_title=product_title,
+            issue_type=issue_type,
+            required_doc_ids=required_doc_ids,
+        )
+        must_not_include = [
+            "unsupported claims",
+            "raw user IDs",
+            "customer identifiers",
+            "Amazon policy guarantee",
+            "claims outside selected product evidence",
+        ]
+        if status != "answer":
+            must_not_include.extend(["guessing missing details", "general model memory"])
+        gold_row = {
+            "expected_escalation": status in {"insufficient_evidence", "escalate"},
+            "expected_status": status,
+            "metadata": {
+                "evidence_types": ["review", "metadata", "policy"],
+                "expected_output_format": output_format,
+                "prompt_category": issue_type,
+                "required_evidence_ids": required_doc_ids,
+                "required_parent_asins": source_parent_asins,
+                "source_titles": [product_title],
+            },
+            "must_include": [product_id, product_title.split()[0], issue_type, *required_doc_ids],
+            "must_not_include": must_not_include,
+            "prompt_id": prompt_id,
+            "reference_answer": reference_answer,
+            "required_chunk_ids": required_doc_ids,
+            "required_citations": [
+                f"retail://All_Beauty/{product_id}#{doc_id}" for doc_id in required_doc_ids
+            ],
+            "required_doc_ids": required_doc_ids,
+            "task_type": task_type,
+            "vertical": "retail",
+        }
+        prompts.append(prompt)
+        gold.append(gold_row)
+
+    if output_counts != distributions["expected_output_format"]:
+        raise RuntimeError("Retail output format sequence does not match approved distribution.")
+    kb_copy = [dict(row) for row in kb_rows]
+    return prompts, gold, kb_copy
+
+
 def validate_prompt_gold_alignment(
     prompts: list[dict[str, Any]], gold: list[dict[str, Any]]
 ) -> list[str]:
@@ -1439,6 +1837,94 @@ def generate_healthcare_admin_vertical(args: argparse.Namespace) -> dict[str, An
     }
 
 
+def generate_retail_vertical(args: argparse.Namespace) -> dict[str, Any]:
+    target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
+    if target_per_vertical not in IMPLEMENTED_GENERATION_TARGETS["retail"]:
+        raise RuntimeError(
+            f"Generation for retail at {target_per_vertical} requires explicit "
+            "implementation and prior checkpoint review."
+        )
+    qa_status = load_qa_status(Path(args.qa_report))
+    qa_ready = qa_ready_for_vertical(qa_status, "retail")
+    blockers: list[str] = []
+    warnings = list(qa_status["warnings"])
+    if qa_ready is False:
+        blockers.append(f"phase2a_qa_not_ready_for_retail_{target_per_vertical}_scale")
+    readiness = source_readiness("retail", target_per_vertical)
+    blockers.extend(readiness["missing_seed_files"])
+    report_path = Path(args.report_dir) / f"retail_scaleup_{target_per_vertical}_report.json"
+    if blockers:
+        write_scaleup_report(
+            report_path,
+            vertical="retail",
+            target_per_vertical=target_per_vertical,
+            prompts=[],
+            gold=[],
+            kb_rows=[],
+            blockers=blockers,
+            warnings=warnings,
+            checkpoint=checkpoint_name,
+            generation_scope="local_candidate_generation",
+            generation_implemented=True,
+        )
+        return {
+            "phase": PHASE,
+            "mode": "generate_vertical",
+            "vertical": "retail",
+            "blockers": blockers,
+            "report_path": str(report_path),
+            "next_step": "Resolve blockers and rerun generation.",
+        }
+
+    seed_prompts = load_jsonl(VERTICAL_FILES["retail"]["prompts"])
+    kb_rows = load_jsonl(VERTICAL_FILES["retail"]["kb"])
+    prompts, gold, kb_copy = build_retail_pilot_records(
+        target_per_vertical=target_per_vertical,
+        seed=int(args.seed),
+        seed_prompts=seed_prompts,
+        kb_rows=kb_rows,
+    )
+    output_dir = Path(args.output_dir) / "retail"
+    prompts_path = output_dir / f"retail_prompts_{target_per_vertical}.jsonl"
+    gold_path = output_dir / f"retail_gold_{target_per_vertical}.jsonl"
+    kb_path = output_dir / f"retail_kb_{target_per_vertical}.jsonl"
+    write_jsonl(prompts_path, prompts)
+    write_jsonl(gold_path, gold)
+    write_jsonl(kb_path, kb_copy)
+    report = write_scaleup_report(
+        report_path,
+        vertical="retail",
+        target_per_vertical=target_per_vertical,
+        prompts=prompts,
+        gold=gold,
+        kb_rows=kb_copy,
+        blockers=[],
+        warnings=warnings,
+        checkpoint=checkpoint_name,
+        generation_scope="local_candidate_generation",
+        generation_implemented=True,
+    )
+    return {
+        "phase": PHASE,
+        "mode": "generate_vertical",
+        "vertical": "retail",
+        "target_per_vertical": target_per_vertical,
+        "prompt_count": len(prompts),
+        "gold_count": len(gold),
+        "kb_count": len(kb_copy),
+        "status_counts": report["status_counts"],
+        "critical_issue_count": report["critical_issue_count"],
+        "warning_count": report["warning_count"],
+        "prompts_path": str(prompts_path),
+        "gold_path": str(gold_path),
+        "kb_path": str(kb_path),
+        "report_path": str(report_path),
+        "next_step": report["next_step"],
+    }
+
+
 def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
     target_per_vertical = int(args.target_per_vertical)
     validate_target(target_per_vertical)
@@ -1458,6 +1944,8 @@ def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
         return generate_airline_vertical(args)
     if args.vertical == "healthcare_admin":
         return generate_healthcare_admin_vertical(args)
+    if args.vertical == "retail":
+        return generate_retail_vertical(args)
     raise RuntimeError(
         f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
         "implementation and prior checkpoint review."

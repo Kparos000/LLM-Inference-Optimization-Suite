@@ -105,6 +105,34 @@ def test_healthcare_distribution_counts_sum_to_250() -> None:
     assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
 
 
+def test_retail_distribution_counts_sum_to_250() -> None:
+    module = _load_module()
+
+    distributions = module.calculate_distribution_counts("retail", 250)
+    assert distributions["expected_status"] == {
+        "answer": 222,
+        "insufficient_evidence": 9,
+        "escalate": 9,
+        "spam_or_low_quality": 7,
+        "out_of_scope": 3,
+    }
+    assert distributions["expected_output_format"] == {
+        "text": 185,
+        "json": 40,
+        "markdown_table": 25,
+    }
+    assert distributions["task_type"] == {
+        "answer_grounded": 95,
+        "issue_identification": 45,
+        "compare_products": 25,
+        "extract_structured": 35,
+        "policy_reasoning": 30,
+        "quality_boundary": 10,
+        "escalation_response": 10,
+    }
+    assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],
@@ -245,6 +273,30 @@ def test_dry_run_marks_healthcare_ready_for_250() -> None:
     assert healthcare["blockers"] == []
 
 
+def test_dry_run_marks_retail_ready_for_250() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    retail = summary["verticals"]["retail"]
+    assert retail["generation_implemented"] is True
+    assert retail["generation_scope"] == "local_candidate_generation"
+    assert retail["ready_for_actual_generation"] is True
+    assert retail["blockers"] == []
+
+
 def test_generate_plan_healthcare_blocker_count_zero_for_250() -> None:
     result = subprocess.run(
         [
@@ -269,6 +321,30 @@ def test_generate_plan_healthcare_blocker_count_zero_for_250() -> None:
     assert healthcare["blockers"] == []
 
 
+def test_generate_plan_retail_blocker_count_zero_for_250() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-plan",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    retail = summary["verticals"]["retail"]
+    assert retail["generation_implemented"] is True
+    assert retail["ready_for_actual_generation"] is True
+    assert retail["blocker_count"] == 0
+    assert retail["blockers"] == []
+
+
 def test_non_airline_250_has_generation_not_implemented_blocker() -> None:
     result = subprocess.run(
         [
@@ -286,7 +362,7 @@ def test_non_airline_250_has_generation_not_implemented_blocker() -> None:
 
     assert result.returncode == 0, result.stderr
     summary = json.loads(result.stdout)
-    for vertical_name in ["finance", "research_ai", "retail"]:
+    for vertical_name in ["finance", "research_ai"]:
         vertical = summary["verticals"][vertical_name]
         assert vertical["generation_implemented"] is False
         assert vertical["generation_scope"] == "planning_only"
@@ -502,6 +578,129 @@ def test_healthcare_negative_and_safety_statuses_present() -> None:
         if gold_row["expected_status"] in {"safety_boundary", "escalate"}
     )
     assert any("urgent clinical boundary" in prompt["question"] for prompt in prompts)
+
+
+def test_retail_generation_cli() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "retail",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["vertical"] == "retail"
+    assert summary["prompt_count"] == 250
+    assert summary["gold_count"] == 250
+    assert summary["kb_count"] >= 25
+    assert (ROOT / summary["report_path"]).exists()
+
+
+def test_retail_generated_counts_and_alignment() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "retail",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+    assert len(prompts) == 250
+    assert len(gold) == 250
+    assert prompts[0]["prompt_id"] == "retail_scaleup_250_0001"
+    assert prompts[-1]["prompt_id"] == "retail_scaleup_250_0250"
+
+    module = _load_module()
+    assert module.validate_prompt_gold_alignment(prompts, gold) == []
+    assert module.validate_evidence_coverage(gold, kb) == []
+    assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
+
+
+def test_retail_negative_statuses_present() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "retail",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    status_counts: dict[str, int] = {}
+    for prompt in prompts:
+        status = str(prompt["expected_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    assert status_counts == {
+        "answer": 222,
+        "insufficient_evidence": 9,
+        "escalate": 9,
+        "spam_or_low_quality": 7,
+        "out_of_scope": 3,
+    }
+
+
+def test_retail_no_raw_user_ids_or_generic_titles() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "retail",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+    combined_text = json.dumps([prompts, gold, kb], ensure_ascii=True)
+    assert "raw user_id" not in combined_text.lower()
+    assert "user_id" not in combined_text.lower()
+    assert "All_Beauty product B" not in combined_text
+    assert "Retail product B" not in combined_text
+    assert "synthetic benchmark policy, not Amazon policy" in combined_text
 
 
 def test_generated_outputs_are_ignored() -> None:
