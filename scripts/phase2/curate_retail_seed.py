@@ -289,6 +289,19 @@ def short_product_title(title: str, fallback: str) -> str:
     return truncate_words(cleaned, 90)
 
 
+def is_generic_retail_title(title: str, category: str) -> bool:
+    cleaned = clean_text(title)
+    if not cleaned or cleaned.lower() in {"none", "null", "n/a"}:
+        return True
+    escaped_category = re.escape(category).replace("_", r"[_ ]")
+    generic_patterns = [
+        rf"{escaped_category}\s+product\s+B[0-9A-Z]{{7,12}}",
+        r"retail\s+product\s+B[0-9A-Z]{7,12}",
+        r"product\s+B[0-9A-Z]{7,12}",
+    ]
+    return any(re.fullmatch(pattern, cleaned, flags=re.IGNORECASE) for pattern in generic_patterns)
+
+
 def metadata_details(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return value
@@ -300,6 +313,125 @@ def metadata_details(value: Any) -> dict[str, Any]:
         if isinstance(parsed, dict):
             return parsed
     return {}
+
+
+def _extract_asin_values(value: Any) -> set[str]:
+    values: set[str] = set()
+    if isinstance(value, str):
+        stripped = value.strip()
+        if re.fullmatch(r"B[0-9A-Z]{7,12}", stripped, flags=re.IGNORECASE):
+            values.add(stripped.upper())
+        return values
+    if isinstance(value, list | tuple | set):
+        for item in value:
+            values.update(_extract_asin_values(item))
+        return values
+    if isinstance(value, dict):
+        for nested_value in value.values():
+            values.update(_extract_asin_values(nested_value))
+    return values
+
+
+def _metadata_index_keys(row: dict[str, Any]) -> set[str]:
+    keys: set[str] = set()
+    for field in ("parent_asin", "asin", "parentAsin", "parentASIN"):
+        keys.update(_extract_asin_values(row.get(field)))
+    for key, value in row.items():
+        normalized_key = key.lower().replace("-", "_")
+        if normalized_key == "asin" or normalized_key.endswith("_asin"):
+            keys.update(_extract_asin_values(value))
+    details = metadata_details(row.get("details"))
+    for key, value in details.items():
+        normalized_key = str(key).lower().replace("-", "_")
+        if normalized_key == "asin" or normalized_key.endswith("_asin"):
+            keys.update(_extract_asin_values(value))
+    return keys
+
+
+def metadata_row_quality_score(row: dict[str, Any], category: str = "All_Beauty") -> int:
+    score = 0
+    title = clean_text(row.get("title"))
+    if title and not is_generic_retail_title(title, category):
+        score += 10
+    for field, weight in (
+        ("features", 2),
+        ("description", 2),
+        ("categories", 1),
+        ("store", 1),
+        ("average_rating", 1),
+        ("rating_number", 1),
+    ):
+        value = row.get(field)
+        if value not in (None, "", [], {}, "None"):
+            score += weight
+    return score
+
+
+def build_product_metadata_index(
+    metadata_rows: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    index: dict[str, dict[str, Any]] = {}
+    for row in metadata_rows:
+        for key in _metadata_index_keys(row):
+            current = index.get(key)
+            if current is None or metadata_row_quality_score(row) > metadata_row_quality_score(
+                current
+            ):
+                index[key] = row
+    return index
+
+
+def build_metadata_index(metadata_rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return build_product_metadata_index(metadata_rows)
+
+
+def resolve_product_title(
+    parent_asin: str,
+    asin: str | None,
+    metadata_index: dict[str, dict[str, Any]],
+    category: str,
+) -> tuple[str, dict[str, Any]]:
+    fallback = f"{category} product {parent_asin}"
+    source_keys = [parent_asin]
+    if asin:
+        source_keys.append(asin)
+    for source_key in dict.fromkeys(key.upper() for key in source_keys if key):
+        metadata_row = metadata_index.get(source_key)
+        if not metadata_row:
+            continue
+        title = clean_text(metadata_row.get("title"))
+        if title and not is_generic_retail_title(title, category):
+            return (
+                short_product_title(title, fallback),
+                {
+                    "title_resolution": "metadata_title",
+                    "title_source_key": source_key,
+                    "metadata_found": True,
+                    "parent_asin": parent_asin,
+                },
+            )
+        if any(
+            metadata_row.get(field) not in (None, "", [], {}, "None")
+            for field in ("features", "description", "store", "categories", "main_category")
+        ):
+            return (
+                fallback,
+                {
+                    "title_resolution": "metadata_partial",
+                    "title_source_key": source_key,
+                    "metadata_found": True,
+                    "parent_asin": parent_asin,
+                },
+            )
+    return (
+        fallback,
+        {
+            "title_resolution": "generic_fallback",
+            "title_source_key": parent_asin,
+            "metadata_found": False,
+            "parent_asin": parent_asin,
+        },
+    )
 
 
 def validate_inputs(args: argparse.Namespace) -> None:
@@ -325,15 +457,6 @@ def validate_reviews(reviews: list[dict[str, Any]]) -> None:
         )
 
 
-def build_metadata_index(metadata_rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    index: dict[str, dict[str, Any]] = {}
-    for row in metadata_rows:
-        parent_asin = str(row.get("parent_asin") or "").strip()
-        if parent_asin and parent_asin not in index:
-            index[parent_asin] = row
-    return index
-
-
 def is_low_quality_review(text: str) -> bool:
     tokens = tokenize(text)
     if len(tokens) < 5:
@@ -347,8 +470,9 @@ def is_low_quality_review(text: str) -> bool:
 
 def build_review_candidates(
     reviews: list[dict[str, Any]],
-    metadata_by_parent: dict[str, dict[str, Any]],
+    metadata_index: dict[str, dict[str, Any]],
     max_review_body_chars: int,
+    category: str = "All_Beauty",
 ) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
     for index, row in enumerate(reviews, start=1):
@@ -364,10 +488,11 @@ def build_review_candidates(
         rating = rating_value(row.get("rating"))
         if rating is None or rating < 1 or rating > 5:
             continue
-        product_meta = metadata_by_parent.get(parent_asin, {})
-        product_title = short_product_title(
-            str(product_meta.get("title") or ""),
-            f"All_Beauty product {parent_asin}",
+        product_title, title_resolution = resolve_product_title(
+            parent_asin,
+            asin,
+            metadata_index,
+            category,
         )
         review_id = f"retail_review_{index:04d}_{stable_hash(parent_asin + asin + title, 8)}"
         terms = issue_terms_for_text(combined_text)
@@ -379,6 +504,9 @@ def build_review_candidates(
                 "asin": asin,
                 "parent_asin": parent_asin,
                 "product_title": product_title,
+                "title_resolution": title_resolution["title_resolution"],
+                "title_source_key": title_resolution["title_source_key"],
+                "metadata_found": title_resolution["metadata_found"],
                 "rating": rating,
                 "review_title": title,
                 "review_text": truncate_words(text, max_review_body_chars),
@@ -530,6 +658,10 @@ def build_kb_records(
                 "allowed_to_commit": True,
                 "metadata": {
                     "parent_asin": candidate["parent_asin"],
+                    "product_title": candidate["title"],
+                    "title_resolution": "metadata_title",
+                    "title_source_key": candidate["parent_asin"],
+                    "metadata_found": True,
                     "category": "All_Beauty",
                     "evidence_type": "metadata",
                     "source_quality": "real_sample_sanitized",
@@ -557,6 +689,10 @@ def build_kb_records(
                 "metadata": {
                     "parent_asin": candidate["parent_asin"],
                     "asin": candidate["asin"],
+                    "product_title": candidate["product_title"],
+                    "title_resolution": candidate["title_resolution"],
+                    "title_source_key": candidate["title_source_key"],
+                    "metadata_found": candidate["metadata_found"],
                     "rating": candidate["rating"],
                     "verified_purchase": candidate["verified_purchase"],
                     "helpful_vote": candidate["helpful_vote"],
@@ -599,6 +735,10 @@ def build_kb_records(
                 "allowed_to_commit": True,
                 "metadata": {
                     "parent_asin": parent_asin,
+                    "product_title": title,
+                    "title_resolution": rows[0]["title_resolution"],
+                    "title_source_key": rows[0]["title_source_key"],
+                    "metadata_found": rows[0]["metadata_found"],
                     "category": "All_Beauty",
                     "evidence_type": "summary",
                     "source_quality": "real_sample_sanitized",
@@ -642,8 +782,31 @@ def make_prompt(
     difficulty: str,
     requires_citation: bool,
     issue_type: str,
+    title_resolutions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     product_title = " vs ".join(titles[:2]) if titles else "Retail evidence"
+    resolution_rows = title_resolutions or [
+        {
+            "parent_asin": parent_asin,
+            "product_title": title,
+            "title_resolution": (
+                "policy_context"
+                if str(parent_asin).startswith("retail_")
+                else (
+                    "generic_fallback"
+                    if is_generic_retail_title(title, "All_Beauty")
+                    else "metadata_title"
+                )
+            ),
+            "title_source_key": parent_asin,
+            "metadata_found": (
+                False
+                if str(parent_asin).startswith("retail_")
+                else not is_generic_retail_title(title, "All_Beauty")
+            ),
+        }
+        for parent_asin, title in zip(parent_asins, titles, strict=False)
+    ]
     return {
         "prompt_id": prompt_id,
         "vertical": VERTICAL,
@@ -665,6 +828,7 @@ def make_prompt(
             "category": "All_Beauty",
             "source_parent_asins": parent_asins,
             "source_titles": titles,
+            "title_resolution": resolution_rows,
             "evidence_type": "retail_curated_seed",
             "difficulty": difficulty,
             "requires_citation": requires_citation,
@@ -702,6 +866,7 @@ def make_gold(
             "required_evidence_ids": evidence_ids,
             "expected_output_format": prompt["expected_output_format"],
             "source_titles": prompt["metadata"]["source_titles"],
+            "title_resolution": prompt["metadata"].get("title_resolution", []),
             "evidence_types": [
                 kb_by_id[doc_id].get("metadata", {}).get("evidence_type", "unknown")
                 for doc_id in evidence_ids
@@ -716,6 +881,9 @@ def context_from_review(candidate: dict[str, Any]) -> dict[str, Any]:
         "parent_asin": candidate["parent_asin"],
         "asin": candidate["asin"],
         "product_title": candidate["product_title"],
+        "title_resolution": candidate["title_resolution"],
+        "title_source_key": candidate["title_source_key"],
+        "metadata_found": candidate["metadata_found"],
         "rating": candidate["rating"],
         "review_title": candidate["review_title"],
         "review_text": candidate["review_text"],
@@ -723,6 +891,29 @@ def context_from_review(candidate: dict[str, Any]) -> dict[str, Any]:
         "review_doc_id": candidate["review_doc_id"],
         "summary_doc_id": candidate.get("summary_doc_id"),
     }
+
+
+def title_resolution_from_context(context: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "parent_asin": context["parent_asin"],
+        "product_title": context["product_title"],
+        "title_resolution": context.get("title_resolution", "generic_fallback"),
+        "title_source_key": context.get("title_source_key", context["parent_asin"]),
+        "metadata_found": bool(context.get("metadata_found")),
+    }
+
+
+def review_selection_sort_key(row: dict[str, Any]) -> tuple[int, int, int]:
+    resolution_priority = {
+        "metadata_title": 0,
+        "metadata_partial": 1,
+        "generic_fallback": 2,
+    }
+    return (
+        resolution_priority.get(str(row.get("title_resolution")), 3),
+        -len(row.get("issue_terms") or []),
+        int(row.get("row_index") or 0),
+    )
 
 
 def build_prompt_and_gold_records(
@@ -774,6 +965,7 @@ def build_prompt_and_gold_records(
             difficulty="easy",
             requires_citation=True,
             issue_type="review_summary",
+            title_resolutions=[title_resolution_from_context(ctx)],
         )
         answer = (
             f"The cited evidence for {ctx['product_title']} ({ctx['parent_asin']}) "
@@ -815,6 +1007,7 @@ def build_prompt_and_gold_records(
             difficulty="easy",
             requires_citation=True,
             issue_type="quality_complaint",
+            title_resolutions=[title_resolution_from_context(ctx)],
         )
         answer = (
             f"The cited review supports the theme {issue_text} for {ctx['product_title']} "
@@ -854,6 +1047,10 @@ def build_prompt_and_gold_records(
             difficulty="medium",
             requires_citation=True,
             issue_type="recommendation",
+            title_resolutions=[
+                title_resolution_from_context(left),
+                title_resolution_from_context(right),
+            ],
         )
         answer = (
             "| Product | Cited rating | Evidence theme |\n"
@@ -897,6 +1094,7 @@ def build_prompt_and_gold_records(
             difficulty="medium",
             requires_citation=True,
             issue_type="catalog_metadata",
+            title_resolutions=[title_resolution_from_context(ctx)],
         )
         answer_obj = {
             "product_id": ctx["parent_asin"],
@@ -950,6 +1148,7 @@ def build_prompt_and_gold_records(
             difficulty="medium",
             requires_citation=True,
             issue_type=issue_type,
+            title_resolutions=[title_resolution_from_context(ctx)],
         )
         answer = (
             f"Under the synthetic benchmark policy, the assistant should summarize the cited "
@@ -989,6 +1188,7 @@ def build_prompt_and_gold_records(
             difficulty="easy",
             requires_citation=True,
             issue_type="product_question",
+            title_resolutions=[title_resolution_from_context(ctx)],
         )
         answer = (
             f"The supporting evidence is {ctx['review_doc_id']} for {ctx['product_title']} "
@@ -1024,6 +1224,7 @@ def build_prompt_and_gold_records(
             difficulty="medium",
             requires_citation=True,
             issue_type="suspicious_review",
+            title_resolutions=[title_resolution_from_context(ctx)],
         )
         answer = (
             "The cited review is too short or unclear to use as strong product evidence. "
@@ -1134,6 +1335,24 @@ def build_prompt_and_gold_records(
     return prompts, gold
 
 
+def collect_product_title_resolution_rows(
+    prompts: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    priority = {"metadata_title": 0, "metadata_partial": 1, "generic_fallback": 2}
+    by_parent: dict[str, dict[str, Any]] = {}
+    for prompt in prompts:
+        for row in prompt.get("metadata", {}).get("title_resolution", []):
+            parent_asin = str(row.get("parent_asin") or "").strip()
+            if not parent_asin or parent_asin.startswith("retail_"):
+                continue
+            current = by_parent.get(parent_asin)
+            if current is None or priority.get(str(row.get("title_resolution")), 9) < priority.get(
+                str(current.get("title_resolution")), 9
+            ):
+                by_parent[parent_asin] = row
+    return list(by_parent.values())
+
+
 def build_curation_report(
     prompts: list[dict[str, Any]],
     kb_records: list[dict[str, Any]],
@@ -1154,6 +1373,47 @@ def build_curation_report(
         for doc_id in prompt.get("required_evidence_ids", [])
         if str(doc_id).startswith("retail_review_")
     }
+    title_resolution_rows = collect_product_title_resolution_rows(prompts)
+    title_resolution_counts = Counter(
+        row.get("title_resolution", "unknown") for row in title_resolution_rows
+    )
+    metadata_title_count = int(title_resolution_counts.get("metadata_title", 0))
+    metadata_partial_title_count = int(title_resolution_counts.get("metadata_partial", 0))
+    generic_product_title_count = int(title_resolution_counts.get("generic_fallback", 0))
+    title_resolution_total = max(len(title_resolution_rows), 1)
+    product_metadata_join_rate = round(
+        (metadata_title_count + metadata_partial_title_count) / title_resolution_total,
+        3,
+    )
+    products_with_generic_titles = [
+        {
+            "parent_asin": row.get("parent_asin"),
+            "product_title": row.get("product_title"),
+            "title_source_key": row.get("title_source_key"),
+        }
+        for row in title_resolution_rows
+        if row.get("title_resolution") == "generic_fallback"
+    ]
+    warnings = [
+        "This is a curated Retail seed dataset, not the full 5,000-10,000 prompt dataset.",
+        (
+            "RAG, retrieval, embeddings, prompt assembly, and inference are deferred "
+            "until all five Phase 2A vertical datasets are prepared."
+        ),
+        "Generated real Amazon samples remain local and are not committed.",
+        "Synthetic support policy records are benchmark policies, not Amazon policy claims.",
+        "Raw customer identifiers are not included in committed records.",
+    ]
+    if generic_product_title_count:
+        warnings.append(
+            "Some curated products still use generic fallback titles; run a larger metadata "
+            "sample or targeted metadata retrieval for selected parent_asins before scaling."
+        )
+    if product_metadata_join_rate < 0.8:
+        warnings.append(
+            "Product metadata join coverage is weak; improve targeted metadata coverage before "
+            "Phase 2A scale-up."
+        )
     return {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
@@ -1176,19 +1436,16 @@ def build_curation_report(
         "source_metadata_count": source_metadata_count,
         "source_products_used_count": len(products_used),
         "review_evidence_used_count": len(review_evidence_used),
+        "product_title_resolution_counts": dict(title_resolution_counts),
+        "generic_product_title_count": generic_product_title_count,
+        "metadata_title_count": metadata_title_count,
+        "metadata_partial_title_count": metadata_partial_title_count,
+        "products_with_generic_titles": products_with_generic_titles,
+        "product_metadata_join_rate": product_metadata_join_rate,
         "policy_record_count": sum(
             1 for row in kb_records if row.get("document_type") == "support_policy"
         ),
-        "warnings": [
-            "This is a curated Retail seed dataset, not the full 5,000-10,000 prompt dataset.",
-            (
-                "RAG, retrieval, embeddings, prompt assembly, and inference are deferred "
-                "until all five Phase 2A vertical datasets are prepared."
-            ),
-            "Generated real Amazon samples remain local and are not committed.",
-            "Synthetic support policy records are benchmark policies, not Amazon policy claims.",
-            "Raw customer identifiers are not included in committed records.",
-        ],
+        "warnings": warnings,
         "next_step": (
             "Proceed to Phase 2A-7 cross-vertical data QA and scale-up planning after "
             "reviewing Retail curated samples."
@@ -1234,14 +1491,21 @@ def build_curated_samples(args: argparse.Namespace) -> dict[str, Any]:
     if len(review_candidates) < 40 or len(metadata_candidates) < 10:
         raise RuntimeError("Not enough sanitized Retail evidence to build the curated seed.")
 
-    issue_reviews = [
-        row for row in review_candidates if row["issue_terms"] and not row["low_quality"]
-    ]
-    safe_reviews = [row for row in review_candidates if not row["low_quality"]]
-    low_quality_reviews = [row for row in review_candidates if row["low_quality"]]
+    issue_reviews = sorted(
+        [row for row in review_candidates if row["issue_terms"] and not row["low_quality"]],
+        key=review_selection_sort_key,
+    )
+    non_issue_safe_reviews = sorted(
+        [row for row in review_candidates if not row["low_quality"] and not row["issue_terms"]],
+        key=review_selection_sort_key,
+    )
+    low_quality_reviews = sorted(
+        [row for row in review_candidates if row["low_quality"]],
+        key=review_selection_sort_key,
+    )
     selected_reviews = []
     seen_reviews: set[str] = set()
-    for pool in (issue_reviews[:24], safe_reviews[:18], low_quality_reviews[:5]):
+    for pool in (issue_reviews[:24], non_issue_safe_reviews[:8], low_quality_reviews[:3]):
         for row in pool:
             if row["review_id"] not in seen_reviews:
                 selected_reviews.append(row)
@@ -1272,6 +1536,9 @@ def build_curated_samples(args: argparse.Namespace) -> dict[str, Any]:
         "gold_record_count": len(gold_records),
         "prompt_counts_by_category": report["prompt_counts_by_category"],
         "prompt_counts_by_expected_status": report["prompt_counts_by_expected_status"],
+        "product_title_resolution_counts": report["product_title_resolution_counts"],
+        "generic_product_title_count": report["generic_product_title_count"],
+        "product_metadata_join_rate": report["product_metadata_join_rate"],
         "output_prompts": str(args.output_prompts),
         "output_kb": str(args.output_kb),
         "output_gold": str(args.output_gold),

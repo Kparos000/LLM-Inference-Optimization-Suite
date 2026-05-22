@@ -58,6 +58,19 @@ The KB contains derived records for:
 Review evidence uses sanitized Phase 2A-6B sample rows only. Raw customer
 identifier fields are not committed. PII-like review text is filtered out.
 
+## Product Title Quality
+
+Retail curation resolves product titles from the metadata sample by indexing
+metadata rows with `parent_asin`, `asin`, and alternate ASIN-like metadata
+fields. Prompts, KB records, and gold metadata preserve the title resolution
+status so generic fallbacks are visible during QA.
+
+The local curation report includes `product_title_resolution_counts`,
+`generic_product_title_count`, `products_with_generic_titles`, and
+`product_metadata_join_rate`. If generic titles remain, run a larger metadata
+sample or targeted metadata retrieval for selected `parent_asin` values before
+scaling.
+
 ## Support Policy Simulation
 
 Support policy records are synthetic benchmark policies. They are not Amazon

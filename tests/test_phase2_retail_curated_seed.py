@@ -222,6 +222,51 @@ def test_retail_policy_records_marked_synthetic() -> None:
         assert record["metadata"]["not_amazon_policy"] is True
 
 
+def test_build_product_metadata_index_uses_parent_asin() -> None:
+    module = _load_curation_module()
+    row = {"parent_asin": "B000TEST1", "title": "Rosemary Mint Hair Oil"}
+
+    index = module.build_product_metadata_index([row])
+
+    assert index["B000TEST1"] == row
+
+
+def test_resolve_product_title_prefers_metadata_title() -> None:
+    module = _load_curation_module()
+    index = module.build_product_metadata_index(
+        [{"parent_asin": "B000TEST1", "title": "Rosemary Mint Hair Oil"}]
+    )
+
+    title, resolution = module.resolve_product_title(
+        "B000TEST1",
+        None,
+        index,
+        "All_Beauty",
+    )
+
+    assert title == "Rosemary Mint Hair Oil"
+    assert resolution["title_resolution"] == "metadata_title"
+    assert resolution["metadata_found"] is True
+
+
+def test_resolve_product_title_tracks_generic_fallback() -> None:
+    module = _load_curation_module()
+
+    title, resolution = module.resolve_product_title("B000TEST1", None, {}, "All_Beauty")
+
+    assert "B000TEST1" in title
+    assert resolution["title_resolution"] == "generic_fallback"
+    assert resolution["metadata_found"] is False
+
+
+def test_is_generic_retail_title() -> None:
+    module = _load_curation_module()
+
+    assert module.is_generic_retail_title("All_Beauty product B081TJ8YS3", "All_Beauty")
+    assert module.is_generic_retail_title("Retail product B000TEST", "All_Beauty")
+    assert not module.is_generic_retail_title("Rosemary Mint Hair Oil", "All_Beauty")
+
+
 def test_retail_curation_report_shape() -> None:
     prompts = _read_jsonl(PROMPT_PATH)
     kb_records = _read_jsonl(KB_PATH)
@@ -237,7 +282,51 @@ def test_retail_curation_report_shape() -> None:
     assert report["prompt_record_count"] == 40
     assert report["kb_record_count"] >= 40
     assert report["gold_record_count"] == 40
+    assert "product_title_resolution_counts" in report
+    assert "generic_product_title_count" in report
+    assert "product_metadata_join_rate" in report
     assert report["next_step"]
+
+
+def test_retail_curation_report_includes_title_quality() -> None:
+    prompts = _read_jsonl(PROMPT_PATH)
+    kb_records = _read_jsonl(KB_PATH)
+    gold_records = _read_jsonl(GOLD_PATH)
+    report = _load_curation_module().build_curation_report(
+        prompts,
+        kb_records,
+        gold_records,
+        1000,
+        1000,
+    )
+
+    assert isinstance(report["product_title_resolution_counts"], dict)
+    assert report["generic_product_title_count"] >= 0
+    assert 0 <= report["product_metadata_join_rate"] <= 1
+
+
+def test_retail_committed_prompts_have_title_resolution_metadata() -> None:
+    for prompt in _read_jsonl(PROMPT_PATH):
+        metadata = prompt["metadata"]
+        assert metadata.get("source_titles")
+        assert "title_resolution" in metadata
+
+
+def test_retail_generic_title_warning_when_present() -> None:
+    prompts = _read_jsonl(PROMPT_PATH)
+    kb_records = _read_jsonl(KB_PATH)
+    gold_records = _read_jsonl(GOLD_PATH)
+    report = _load_curation_module().build_curation_report(
+        prompts,
+        kb_records,
+        gold_records,
+        1000,
+        1000,
+    )
+
+    if report["generic_product_title_count"] > 0:
+        warnings = " ".join(report["warnings"]).lower()
+        assert "richer metadata" in warnings or "targeted metadata retrieval" in warnings
 
 
 def test_docs_include_retail_curated_seed() -> None:
