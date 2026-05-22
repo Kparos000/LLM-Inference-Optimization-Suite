@@ -161,6 +161,7 @@ PRIVATE_HYGIENE_PATTERNS = [
         r"raw user_id",
     ]
 ]
+LINGUISTIC_VARIATION_THRESHOLD = 0.60
 
 
 def utc_now() -> str:
@@ -218,6 +219,107 @@ def flatten_text(value: Any) -> str:
     if isinstance(value, list | tuple | set):
         return " ".join(flatten_text(item) for item in value)
     return str(value)
+
+
+def choose_phrase_variant(index: int, variants: list[str]) -> str:
+    if not variants:
+        raise ValueError("At least one phrase variant is required.")
+    return variants[index % len(variants)]
+
+
+def dynamic_question_values(prompt: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    direct_fields = [
+        "airline",
+        "department",
+        "expected_queue",
+        "issue_type",
+        "product_id",
+        "product_title",
+        "prompt_id",
+        "route",
+        "support_type",
+        "ticket_id",
+        "travel_type",
+    ]
+    for field in direct_fields:
+        value = prompt.get(field)
+        if isinstance(value, str) and len(value) >= 4:
+            values.append(value)
+            values.append(value.replace("_", " "))
+
+    metadata = prompt.get("metadata")
+    if isinstance(metadata, dict):
+        for field in [
+            "prompt_category",
+            "source_titles",
+            "source_parent_asins",
+            "topics",
+        ]:
+            value = metadata.get(field)
+            if isinstance(value, str):
+                values.append(value)
+                values.append(value.replace("_", " "))
+            elif isinstance(value, list):
+                values.extend(str(item) for item in value if len(str(item)) >= 4)
+
+    for field in [
+        "required_chunk_ids",
+        "required_citations",
+        "required_doc_ids",
+        "required_evidence_ids",
+        "required_paper_ids",
+        "source_parent_asins",
+        "source_paper_ids",
+        "source_product_ids",
+    ]:
+        value = prompt.get(field)
+        if isinstance(value, str):
+            values.append(value)
+        elif isinstance(value, list):
+            values.extend(str(item) for item in value if len(str(item)) >= 4)
+
+    return sorted(set(values), key=len, reverse=True)
+
+
+def normalized_question_template(prompt: dict[str, Any]) -> str:
+    question = str(prompt.get("question") or prompt.get("issue") or "")
+    normalized = question.lower()
+    for value in dynamic_question_values(prompt):
+        lowered = value.lower()
+        if len(lowered) >= 4:
+            normalized = re.sub(re.escape(lowered), "<value>", normalized)
+
+    normalized = re.sub(r"\b[a-z]{3}-[a-z]{3}\b", "<route>", normalized)
+    normalized = re.sub(r"\b[a-z]{2,8}-[a-z0-9-]{2,}\b", "<id>", normalized)
+    normalized = re.sub(r"\bresearch_ai_[a-z0-9_]+\b", "<id>", normalized)
+    normalized = re.sub(r"\bretail_[a-z0-9_]+\b", "<id>", normalized)
+    normalized = re.sub(r"\bmch-pol-\d+\b", "<id>", normalized)
+    normalized = re.sub(r"\bca-scale-\d+\b", "<id>", normalized)
+    normalized = re.sub(r"\b[a-z0-9]{10}\b", "<id>", normalized)
+    normalized = re.sub(r"\d+(?:\.\d+)?", "<num>", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.strip()
+
+
+def calculate_question_template_diversity(prompts: list[dict[str, Any]]) -> dict[str, Any]:
+    templates = [normalized_question_template(prompt) for prompt in prompts]
+    if not templates:
+        return {
+            "linguistic_variation_rate": 0.0,
+            "most_common_question_template_count": 0,
+            "most_common_question_template_share": 0.0,
+            "unique_question_template_count": 0,
+        }
+    template_counts = Counter(templates)
+    most_common_count = template_counts.most_common(1)[0][1]
+    most_common_share = most_common_count / len(templates)
+    return {
+        "linguistic_variation_rate": round(1.0 - most_common_share, 6),
+        "most_common_question_template_count": most_common_count,
+        "most_common_question_template_share": round(most_common_share, 6),
+        "unique_question_template_count": len(template_counts),
+    }
 
 
 def supported_targets_message() -> str:
@@ -664,6 +766,100 @@ def airline_task_for_status(status: str, fallback_task: str) -> str:
     return fallback_task
 
 
+def airline_issue_text(
+    *,
+    prompt_number: int,
+    status: str,
+    support_type: str,
+    route: str,
+    policy_ids: list[str],
+) -> str:
+    support_label = support_type.replace("_", " ")
+    evidence = ", ".join(policy_ids)
+    if status == "spam_or_fraud":
+        variants = [
+            (
+                "A Canada Air support agent is reviewing a suspicious "
+                f"{support_label} request for scenario {prompt_number}. Use policy "
+                f"records {evidence} to decide the fraud-review path."
+            ),
+            (
+                f"What should support do when a traveler presents a possible "
+                f"{support_label} issue on {route}? Ground the response in {evidence}."
+            ),
+            (
+                f"A passenger asks for help with {support_label}, but the case may need "
+                f"fraud review. Apply only the cited Canada Air policies: {evidence}."
+            ),
+            (
+                "Using only Canada Air policy records, classify this suspicious "
+                f"{support_label} scenario and name the next support action."
+            ),
+            (
+                f"For scenario {prompt_number}, determine whether the {support_label} "
+                "message should be routed away from normal support and into fraud review."
+            ),
+        ]
+        question = choose_phrase_variant(prompt_number - 1, variants)
+        if f"scenario {prompt_number}" not in question.lower():
+            question = f"{question} Scenario {prompt_number}."
+        return question
+    elif status == "escalate":
+        variants = [
+            (
+                f"A passenger on route {route} needs help with {support_label}. Decide "
+                f"whether the cited Canada Air records {evidence} require manual review."
+            ),
+            (
+                f"Using only the cited policy records, explain why this {support_label} "
+                "case should be escalated before promising an outcome."
+            ),
+            (
+                f"A Canada Air customer is asking about {support_label}; what should the "
+                "support agent do when the request needs manual review?"
+            ),
+            (
+                f"Review the {support_label} request in scenario {prompt_number} and "
+                "state the escalation path supported by the cited policies."
+            ),
+            (
+                f"What is the grounded support response for a {support_label} case on "
+                f"{route} when policy evidence points to manual review?"
+            ),
+        ]
+        question = choose_phrase_variant(prompt_number - 1, variants)
+        if f"scenario {prompt_number}" not in question.lower():
+            question = f"{question} Scenario {prompt_number}."
+        return question
+    else:
+        variants = [
+            (
+                f"A traveler needs help with {support_label} on Canada Air route {route}. "
+                "Answer using only the cited policy evidence."
+            ),
+            (
+                f"A Canada Air customer is asking about {support_label}. Explain the "
+                f"policy-backed support action using records {evidence}."
+            ),
+            (
+                f"Using only the cited policy records, explain how support should handle "
+                f"this {support_label} request."
+            ),
+            (
+                f"A passenger on route {route} wants to know what Canada Air can do for "
+                f"{support_label}. Keep the answer grounded in policy evidence."
+            ),
+            (
+                f"What should the support agent do when a traveler reports {support_label} "
+                f"in scenario {prompt_number}? Cite the relevant Canada Air records."
+            ),
+        ]
+        question = choose_phrase_variant(prompt_number - 1, variants)
+        if f"scenario {prompt_number}" not in question.lower():
+            question = f"{question} Scenario {prompt_number}."
+        return question
+
+
 def airline_reference_answer(
     *,
     status: str,
@@ -745,10 +941,13 @@ def build_airline_pilot_records(
         difficulty = difficulty_sequence[index]
         prompt_id = f"airline_scaleup_{target_per_vertical}_{prompt_number:04d}"
         ticket_id = f"CA-SCALE-{prompt_number:04d}"
-        support_label = support_type.replace("_", " ")
-        issue = (
-            f"Traveler asks Canada Air for {support_label} help in scale-up scenario "
-            f"{prompt_number}. Use only the cited policy evidence."
+        route = route_cycle[index % len(route_cycle)]
+        issue = airline_issue_text(
+            prompt_number=prompt_number,
+            status=status,
+            support_type=support_type,
+            route=route,
+            policy_ids=policy_ids,
         )
         prompt = {
             "airline": "Canada Air",
@@ -769,7 +968,7 @@ def build_airline_pilot_records(
             "question": issue,
             "required_evidence_ids": policy_ids,
             "required_policy_ids": policy_ids,
-            "route": route_cycle[index % len(route_cycle)],
+            "route": route,
             "support_type": support_type,
             "task_type": task_type,
             "ticket_id": ticket_id,
@@ -941,34 +1140,121 @@ def healthcare_issue_text(
 ) -> str:
     support_label = support_type.replace("_", " ")
     if status == "safety_boundary":
-        return (
-            "Requester asks MapleCare Health for urgent clinical guidance in scale-up "
-            f"scenario {prompt_number}. Respond only with the administrative urgent "
-            "clinical boundary workflow and do not provide clinical advice."
-        )
+        variants = [
+            (
+                "A patient asks MapleCare Health for urgent clinical guidance. Respond "
+                "only with the administrative urgent clinical boundary workflow."
+            ),
+            (
+                "Using the admin policy evidence, determine how staff should handle an "
+                "urgent clinical boundary request without giving clinical advice."
+            ),
+            (
+                f"A caller raises an urgent {support_label} concern in scenario "
+                f"{prompt_number}; route it through the admin boundary process."
+            ),
+            (
+                "What should staff do when a message asks for urgent care guidance but "
+                "the support team can provide only administrative routing?"
+            ),
+            (
+                "Should this urgent clinic request be handled directly or redirected? "
+                "Use only the MapleCare Health administrative boundary policy."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if status == "spam_or_fraud":
-        return (
-            "A portal message includes suspicious billing or credential claims in "
-            f"scale-up scenario {prompt_number}. Decide how the administrative support "
-            "queue should handle the low-quality or fraud-like message."
-        )
+        variants = [
+            (
+                "A portal message includes suspicious billing or credential claims. "
+                "Decide how the administrative queue should handle it."
+            ),
+            (
+                "Using the admin policy evidence, classify this low-quality or fraud-like "
+                "portal request before any staff action."
+            ),
+            (
+                f"A caller needs help with {support_label}, but the message includes "
+                "signals that require fraud or spam review."
+            ),
+            (
+                "What should staff do when a portal request looks unreliable and asks "
+                "for billing or credential handling?"
+            ),
+            (
+                f"For scenario {prompt_number}, determine whether the suspicious "
+                "administrative message should be handled as normal support."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if status == "out_of_scope":
-        return (
-            "Requester asks MapleCare Health an unrelated non-healthcare question in "
-            f"scale-up scenario {prompt_number}. Use the support boundary policy rather "
-            "than answering from general knowledge."
-        )
+        variants = [
+            (
+                "A requester asks MapleCare Health an unrelated non-healthcare question. "
+                "Apply the support boundary policy."
+            ),
+            (
+                "Using the admin policy evidence, determine how to decline a question "
+                "outside the clinic support corpus."
+            ),
+            (
+                f"A caller needs help with a topic unrelated to {support_label}; respond "
+                "from the support boundary, not general knowledge."
+            ),
+            (
+                "What should staff do when an administrative channel receives a request "
+                "that is outside MapleCare Health support?"
+            ),
+            (
+                f"Should scenario {prompt_number} be answered directly or marked "
+                "out-of-scope under the administrative support policy?"
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if status == "escalate":
-        return (
-            f"Patient asks about {support_label} in scale-up scenario {prompt_number}, "
-            f"but the request needs {expected_queue} review before staff can answer. "
-            "Use only MapleCare Health administrative policy evidence."
-        )
-    return (
-        f"Patient asks MapleCare Health about {support_label} in scale-up scenario "
-        f"{prompt_number}. Provide an administrative answer using only the cited "
-        "policy evidence."
-    )
+        variants = [
+            (
+                f"A patient asks the clinic admin team about {support_label}; decide "
+                f"whether {expected_queue} review is required before answering."
+            ),
+            (
+                f"Using the admin policy evidence, determine the escalation path for a "
+                f"{support_label} request."
+            ),
+            (
+                f"A caller needs help with {support_label}, but the case may require "
+                f"{expected_queue} review. What should staff do?"
+            ),
+            (
+                f"What should staff do when a {support_label} request cannot be resolved "
+                "directly by the front administrative team?"
+            ),
+            (
+                f"Should this {support_label} request be handled directly or escalated "
+                f"to {expected_queue}? Use only MapleCare Health policy evidence."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    variants = [
+        (
+            f"A patient asks MapleCare Health about {support_label}. Provide an "
+            "administrative answer using only the cited policy evidence."
+        ),
+        (
+            f"Using the admin policy evidence, determine how staff should respond to a "
+            f"{support_label} request."
+        ),
+        (
+            f"A caller needs help with {support_label}; identify the policy-backed "
+            "administrative action and queue."
+        ),
+        (f"What should staff do when an existing patient asks about {support_label}?"),
+        (
+            f"Should the clinic admin team answer this {support_label} request directly, "
+            "and what policy evidence supports that action?"
+        ),
+    ]
+    return choose_phrase_variant(prompt_number - 1, variants)
 
 
 def healthcare_reference_answer(
@@ -1294,51 +1580,214 @@ def retail_issue_text(
     product_title: str,
 ) -> str:
     if status == "spam_or_low_quality":
-        return (
-            f"Assess whether the cited review evidence for {product_title} ({product_id}) "
-            "should be treated as low-quality or spam-like before using it as product "
-            f"support evidence in scenario {prompt_number}."
-        )
+        variants = [
+            (
+                f"Should the cited review evidence for {product_title} ({product_id}) "
+                "be treated as reliable support evidence or spam-like content?"
+            ),
+            (
+                f"A support agent is reviewing a suspicious complaint about "
+                f"{product_title}. Determine whether moderation is needed first."
+            ),
+            (
+                f"Using only the product and review evidence, decide whether "
+                f"{product_id} has low-quality review signals."
+            ),
+            (
+                f"Assess the reliability of the cited review for {product_title} before "
+                "using it to support a customer-facing answer."
+            ),
+            (
+                f"For scenario {prompt_number}, classify whether the available retail "
+                "evidence should be filtered as spam-like or low quality."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if status == "insufficient_evidence":
-        return (
-            f"Determine whether the selected evidence is sufficient to resolve a support "
-            f"request for {product_title} ({product_id}) in scenario {prompt_number}."
-        )
+        variants = [
+            (
+                f"Is the selected evidence sufficient to resolve a support request for "
+                f"{product_title} ({product_id})?"
+            ),
+            (
+                f"A support agent is reviewing limited evidence about {product_title}; "
+                "state what is missing before answering."
+            ),
+            (
+                f"Using only product and review evidence, determine whether the "
+                f"{product_id} request can be answered without guessing."
+            ),
+            (
+                f"Based on the review evidence, decide if the support team has enough "
+                f"context to respond about {product_title}."
+            ),
+            (
+                f"For scenario {prompt_number}, mark whether the retail evidence is "
+                "insufficient and identify the boundary."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if status == "escalate":
-        return (
-            f"Decide whether the cited product and policy evidence for {product_title} "
-            f"({product_id}) requires support escalation in scenario {prompt_number}."
-        )
+        variants = [
+            (
+                f"Should the cited evidence for {product_title} ({product_id}) be "
+                "handled directly or escalated to support review?"
+            ),
+            (
+                f"A support agent is reviewing a complaint about {product_title}; "
+                "determine whether policy review is required."
+            ),
+            (
+                f"Using only the product, review, and policy evidence, identify the "
+                f"escalation path for {product_id}."
+            ),
+            (
+                f"Based on the available evidence for {product_title}, decide whether "
+                "support should avoid promising a resolution."
+            ),
+            (
+                f"For scenario {prompt_number}, state why the retail support case needs "
+                "escalation before a final answer."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if status == "out_of_scope":
-        return (
-            "A user asks an unrelated question outside the selected retail product and "
-            f"support-policy corpus in scenario {prompt_number}. Apply the out-of-scope "
-            "boundary instead of answering from general memory."
-        )
+        variants = [
+            (
+                "A user asks an unrelated question outside the selected retail product "
+                "and support-policy corpus. Apply the out-of-scope boundary."
+            ),
+            (
+                "Using only the retail support policy evidence, determine how to decline "
+                "a request that is not about the cited product."
+            ),
+            (
+                f"A support agent receives a question unrelated to {product_title}; "
+                "respond from the support boundary rather than outside knowledge."
+            ),
+            (
+                "What should support do when the request is outside the retail product "
+                "and review evidence?"
+            ),
+            (
+                f"For scenario {prompt_number}, decide whether the user request should "
+                "be marked out-of-scope."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "issue_identification":
-        return (
-            f"Identify the main support issue themes in the cited review evidence for "
-            f"{product_title} ({product_id})."
-        )
+        variants = [
+            (
+                f"Based on the review evidence, identify the main support issue themes "
+                f"for {product_title} ({product_id})."
+            ),
+            (
+                f"A support agent is reviewing feedback about {product_title}; extract "
+                "the customer issue categories."
+            ),
+            (
+                f"Using only the product and review evidence, name the support problems "
+                f"connected to {product_id}."
+            ),
+            (f"What support issue is most visible in the cited evidence for {product_title}?"),
+            (
+                f"For scenario {prompt_number}, summarize the retail complaint themes "
+                "without adding unsupported product claims."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "extract_structured":
-        return (
-            f"Extract a JSON support record for {product_title} ({product_id}) with the "
-            "issue type, evidence summary, recommended action, and evidence IDs."
-        )
+        variants = [
+            (
+                f"Extract a JSON support record for {product_title} ({product_id}) with "
+                "issue type, summary, action, and evidence IDs."
+            ),
+            (
+                f"Using only the product/review evidence, create a structured support "
+                f"case for {product_title}."
+            ),
+            (
+                f"A support agent needs a JSON triage note for {product_id}; include the "
+                "evidence boundary and recommended action."
+            ),
+            (
+                f"Convert the cited retail evidence for {product_title} into a compact "
+                "structured support record."
+            ),
+            (
+                f"For scenario {prompt_number}, output the product issue, evidence "
+                "summary, and action as JSON."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "policy_reasoning":
-        return (
-            f"Apply the synthetic benchmark support policy to the cited review evidence "
-            f"for {product_title} ({product_id}); do not treat it as Amazon policy."
-        )
+        variants = [
+            (
+                f"Apply the synthetic benchmark support policy to the cited review "
+                f"evidence for {product_title} ({product_id})."
+            ),
+            (
+                f"A support agent is checking policy fit for {product_title}; explain "
+                "what the benchmark policy allows."
+            ),
+            (
+                f"Using only product, review, and policy evidence, determine the support "
+                f"action for {product_id}."
+            ),
+            (
+                f"Based on the available evidence for {product_title}, reason through "
+                "the synthetic support-policy boundary."
+            ),
+            (
+                f"For scenario {prompt_number}, explain the policy-backed retail "
+                "response without treating it as Amazon policy."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "compare_products":
-        return (
-            f"Compare the cited retail evidence for {product_title} ({product_id}) using "
-            "a compact support-ready table."
-        )
-    return (
-        f"Summarize the available retail review evidence for {product_title} "
-        f"({product_id}) in support-ready language."
-    )
+        variants = [
+            (
+                f"Compare the available retail evidence for {product_title} "
+                f"({product_id}) in a compact support-ready table."
+            ),
+            (
+                f"A support agent needs a side-by-side evidence view for {product_title}; "
+                "prepare the comparison table."
+            ),
+            (
+                f"Using only cited product and review records, compare the support "
+                f"signals for {product_id}."
+            ),
+            (
+                f"What does the cited evidence show when comparing retail signals for "
+                f"{product_title}?"
+            ),
+            (
+                f"For scenario {prompt_number}, create a table comparing the relevant "
+                "retail evidence and caveats."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    variants = [
+        (
+            f"Based on the review evidence, summarize the available support signal for "
+            f"{product_title} ({product_id})."
+        ),
+        (
+            f"A support agent is reviewing a complaint about {product_title}; write a "
+            "grounded answer from the cited evidence."
+        ),
+        (f"Using only the product/review evidence, explain what can be said about {product_id}."),
+        (
+            f"What should support say about {product_title} when limited to the selected "
+            "retail evidence?"
+        ),
+        (
+            f"For scenario {prompt_number}, summarize the product evidence in "
+            "support-ready language."
+        ),
+    ]
+    return choose_phrase_variant(prompt_number - 1, variants)
 
 
 def retail_reference_answer(
@@ -1805,62 +2254,231 @@ def research_ai_question_text(
     required_doc_ids: list[str],
 ) -> str:
     if status == "out_of_scope":
-        return (
-            "A user asks for a current sports schedule and ticket advice in Research AI "
-            f"scale-up scenario {prompt_number}. Apply the out-of-scope boundary instead "
-            "of answering from outside knowledge."
-        )
+        variants = [
+            (
+                "A user asks for a current sports schedule and ticket advice in the "
+                "Research AI channel. Apply the out-of-scope boundary."
+            ),
+            (
+                "Using only the Research AI corpus boundary, determine how to decline a "
+                "request that is not about the cited papers."
+            ),
+            (
+                f"Scenario {prompt_number} asks for non-paper current-event advice; "
+                "mark it out-of-scope rather than answering from outside knowledge."
+            ),
+            (
+                "What should the benchmark answer do when a question falls outside the "
+                "Research AI paper evidence?"
+            ),
+            (
+                "A request asks for ticket guidance instead of paper analysis. State the "
+                "out-of-scope boundary without inventing citations."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
 
     title = str(contexts[0]["title"])
     if status == "insufficient_evidence":
         cited = ", ".join(required_doc_ids)
-        return (
-            "Can the available Research AI paper evidence prove that the cited papers "
-            "will outperform all future production systems? If not, state that the "
-            f"evidence is insufficient and cite only these records: {cited}."
-        )
+        variants = [
+            (
+                "Can the available Research AI paper evidence prove that the cited papers "
+                f"will outperform all future production systems? Cite only {cited}."
+            ),
+            (
+                f"Using only records {cited}, decide whether the evidence is sufficient "
+                "to make a future-production superiority claim."
+            ),
+            (
+                "A reviewer asks for a guarantee about future systems. State whether the "
+                f"cited Research AI evidence is sufficient: {cited}."
+            ),
+            (
+                "Does the selected paper evidence support a broad deployment prediction, "
+                "or should the answer mark insufficient evidence?"
+            ),
+            (
+                f"For scenario {prompt_number}, explain why the cited records cannot be "
+                "used to prove future production performance."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if status == "escalate":
-        return (
-            f"A benchmark owner asks whether {title} should be certified for high-stakes "
-            f"production deployment in scenario {prompt_number}. Use only the cited paper "
-            "evidence and escalate if the evidence is not enough for that decision."
-        )
+        variants = [
+            (
+                f"A benchmark owner asks whether {title} should be certified for "
+                "high-stakes production deployment. Use only the cited paper evidence."
+            ),
+            (
+                f"Using the cited paper evidence, determine whether a deployment decision "
+                f"about {title} needs escalation."
+            ),
+            (
+                f"A reviewer wants to approve {title} for production use; explain the "
+                "evidence boundary and escalation need."
+            ),
+            (
+                f"What should the benchmark answer do when evidence about {title} is not "
+                "enough for certification?"
+            ),
+            (
+                f"For scenario {prompt_number}, decide whether the Research AI evidence "
+                "supports direct approval or manual review."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "paper_method":
-        return (
-            f"Using only the cited method evidence, explain the research method used by "
-            f"{title} and name the evidence records that support the answer."
-        )
+        variants = [
+            (f"Using only the cited method evidence, explain the research method used by {title}."),
+            (
+                f"What method does the paper describe for {title}, and which evidence "
+                "records support that summary?"
+            ),
+            (
+                f"Extract the key method evidence about {title} without adding claims "
+                "outside the cited sections."
+            ),
+            (
+                f"A reviewer needs a grounded method summary for {title}; cite the "
+                "selected evidence records."
+            ),
+            (
+                f"For scenario {prompt_number}, describe the paper's method using only "
+                "the provided Research AI KB records."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "results_evaluation":
-        return (
-            f"Using only the cited results or evaluation evidence, summarize what {title} "
-            "reports about evaluation and avoid adding unsupported numeric claims."
-        )
+        variants = [
+            (
+                f"Using only the cited results or evaluation evidence, summarize what "
+                f"{title} reports about evaluation."
+            ),
+            (
+                f"What evaluation evidence does {title} provide, and what should the "
+                "answer avoid overstating?"
+            ),
+            (
+                f"Extract the key evidence about results for {title} without adding "
+                "unsupported numeric claims."
+            ),
+            (
+                f"A reviewer asks for a grounded evaluation summary of {title}; use only "
+                "the selected sections."
+            ),
+            (
+                f"For scenario {prompt_number}, state what the cited results evidence "
+                "supports and what remains outside the evidence."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "extract_structured":
-        return (
-            f"Extract a JSON object for {title} with paper_title, method_or_setup, "
-            "result_or_evaluation, limitation_or_caveat, and evidence_ids."
-        )
+        variants = [
+            (
+                f"Extract a JSON object for {title} with paper_title, method_or_setup, "
+                "result_or_evaluation, limitation_or_caveat, and evidence_ids."
+            ),
+            (f"Using the cited paper evidence, create a structured record for {title}."),
+            (
+                f"Convert the selected sections for {title} into JSON with method, "
+                "evaluation, caveat, and evidence IDs."
+            ),
+            (
+                f"A reviewer needs structured evidence about {title}; include only fields "
+                "supported by cited records."
+            ),
+            (
+                f"For scenario {prompt_number}, extract the key method and result "
+                "evidence into a compact JSON answer."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "compare_papers":
         other_title = str(contexts[1]["title"])
-        return (
-            f"Compare {title} and {other_title} using only cited method and evaluation "
-            "evidence. Keep the comparison grounded in the listed evidence records."
-        )
+        variants = [
+            (
+                f"Create a grounded comparison between {title} and {other_title} using "
+                "only cited method and evaluation evidence."
+            ),
+            (
+                f"Compare the available evidence for {title} and {other_title}; keep the "
+                "answer limited to listed records."
+            ),
+            (
+                f"What differs between {title} and {other_title} according to the cited "
+                "Research AI sections?"
+            ),
+            (
+                "Using only the selected paper evidence, prepare a compact comparison of "
+                f"{title} versus {other_title}."
+            ),
+            (
+                f"For scenario {prompt_number}, compare the two papers and name the "
+                "evidence boundary for each."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if task_type == "literature_table":
         titles = ", ".join(str(context["title"]) for context in contexts[:3])
-        return (
-            "Create a compact literature table for these Research AI papers using only "
-            f"the cited evidence: {titles}."
-        )
+        variants = [
+            (
+                "Create a compact literature table for these Research AI papers using "
+                f"only the cited evidence: {titles}."
+            ),
+            (f"Using selected paper evidence, build a literature table covering: {titles}."),
+            (f"Extract table-ready method and evaluation evidence for these papers: {titles}."),
+            (
+                "A reviewer needs a grounded literature table. Include only the cited "
+                f"records for: {titles}."
+            ),
+            (
+                f"For scenario {prompt_number}, summarize the cited Research AI papers "
+                "in table form with evidence IDs."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
     if prompt_category == "evidence_citation_lookup":
-        return (
-            f"Which cited evidence record supports a claim about {title}, and what should "
-            "a grounded answer say about the evidence boundary?"
-        )
-    return (
-        f"Using the cited paper evidence, explain the main research problem and contribution "
-        f"of {title} in plain language."
-    )
+        variants = [
+            (
+                f"Which cited section supports a claim about {title}, and what should a "
+                "grounded answer say about the evidence boundary?"
+            ),
+            (
+                f"Identify the evidence record for {title} that can support the answer, "
+                "then state the citation boundary."
+            ),
+            (
+                f"Using the cited paper evidence, name one record that supports a claim "
+                f"about {title}."
+            ),
+            (
+                f"A reviewer asks where the claim about {title} comes from; cite the "
+                "supporting Research AI record."
+            ),
+            (
+                f"For scenario {prompt_number}, point to the cited section that supports "
+                "the paper-level claim."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    variants = [
+        (
+            f"Using the cited paper evidence, explain the main research problem and "
+            f"contribution of {title} in plain language."
+        ),
+        (f"What does {title} contribute, according to the selected Research AI evidence?"),
+        (f"Extract the key evidence about the problem and contribution in {title}."),
+        (
+            f"A reviewer needs a grounded concept explanation for {title}; use only the "
+            "cited records."
+        ),
+        (
+            f"For scenario {prompt_number}, summarize the paper's contribution without "
+            "using outside knowledge."
+        ),
+    ]
+    return choose_phrase_variant(prompt_number - 1, variants)
 
 
 def research_ai_required_chunks_and_citations(
@@ -2212,11 +2830,21 @@ def write_scaleup_report(
     generation_scope: str,
     generation_implemented: bool,
 ) -> dict[str, Any]:
+    report_warnings = list(warnings)
     validation_issues = (
         validate_prompt_gold_alignment(prompts, gold)
         + validate_evidence_coverage(gold, kb_rows)
         + validate_no_private_hygiene_terms(prompts + gold + kb_rows)
     )
+    linguistic_metrics = calculate_question_template_diversity(prompts)
+    if prompts and linguistic_metrics["linguistic_variation_rate"] < LINGUISTIC_VARIATION_THRESHOLD:
+        issue = (
+            "linguistic_variation_warning:"
+            f"rate_below_{LINGUISTIC_VARIATION_THRESHOLD:.2f}:"
+            f"{linguistic_metrics['linguistic_variation_rate']:.3f}"
+        )
+        validation_issues.append(issue)
+        report_warnings.append(issue)
     report = {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
@@ -2232,16 +2860,24 @@ def write_scaleup_report(
         "prompt_count": len(prompts),
         "gold_count": len(gold),
         "kb_count": len(kb_rows),
+        "linguistic_variation_rate": linguistic_metrics["linguistic_variation_rate"],
+        "most_common_question_template_count": linguistic_metrics[
+            "most_common_question_template_count"
+        ],
+        "most_common_question_template_share": linguistic_metrics[
+            "most_common_question_template_share"
+        ],
+        "unique_question_template_count": linguistic_metrics["unique_question_template_count"],
         "status_counts": dict(Counter(str(row.get("expected_status")) for row in prompts)),
         "task_type_counts": dict(Counter(str(row.get("task_type")) for row in prompts)),
         "output_format_counts": dict(
             Counter(str(row.get("expected_output_format")) for row in prompts)
         ),
         "critical_issue_count": len(validation_issues) + len(blockers),
-        "warning_count": len(warnings),
+        "warning_count": len(report_warnings),
         "validation_issues": validation_issues,
         "blockers": blockers,
-        "warnings": warnings,
+        "warnings": report_warnings,
         "next_step": (
             f"Review local {vertical} {target_per_vertical}-scale candidates before "
             "promoting or extending generation."

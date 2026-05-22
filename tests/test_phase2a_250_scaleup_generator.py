@@ -32,6 +32,29 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _generate_vertical(vertical: str) -> dict[str, Any]:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            vertical,
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert isinstance(summary, dict)
+    return summary
+
+
 def test_scaleup_generator_script_exists() -> None:
     assert SCRIPT_PATH.exists()
 
@@ -158,6 +181,41 @@ def test_research_ai_distribution_counts_sum_to_250() -> None:
         "escalation_response": 10,
     }
     assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
+
+
+def test_question_template_diversity_helper() -> None:
+    module = _load_module()
+    repeated_prompts = [
+        {
+            "question": f"Traveler asks Canada Air for baggage delay help in scenario {index}.",
+            "support_type": "baggage_delay",
+            "airline": "Canada Air",
+        }
+        for index in range(10)
+    ]
+    varied_prompts = [
+        {"question": "A traveler needs help with baggage delay.", "support_type": "baggage_delay"},
+        {
+            "question": "What should support do for a baggage issue?",
+            "support_type": "baggage_delay",
+        },
+        {
+            "question": "Using policy records, explain the baggage delay workflow.",
+            "support_type": "baggage_delay",
+        },
+        {"question": "A passenger asks about delayed bags.", "support_type": "baggage_delay"},
+        {
+            "question": "Determine the support action for delayed baggage.",
+            "support_type": "baggage_delay",
+        },
+    ]
+
+    repeated = module.calculate_question_template_diversity(repeated_prompts)
+    varied = module.calculate_question_template_diversity(varied_prompts)
+    assert repeated["unique_question_template_count"] == 1
+    assert repeated["linguistic_variation_rate"] == 0.0
+    assert varied["unique_question_template_count"] == 5
+    assert varied["linguistic_variation_rate"] >= 0.60
 
 
 def test_dry_run_cli() -> None:
@@ -554,6 +612,21 @@ def test_airline_pilot_generation_cli() -> None:
     assert module.validate_evidence_coverage(gold, kb) == []
 
 
+def test_airline_250_linguistic_variation() -> None:
+    summary = _generate_vertical("airline")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+
+    assert report["linguistic_variation_rate"] >= 0.60
+    assert report["most_common_question_template_share"] <= 0.40
+    assert report["most_common_question_template_count"] <= 100
+    assert report["unique_question_template_count"] > 1
+    assert not [
+        issue
+        for issue in report["validation_issues"]
+        if str(issue).startswith("linguistic_variation_warning")
+    ]
+
+
 def test_healthcare_generation_cli() -> None:
     result = subprocess.run(
         [
@@ -611,6 +684,21 @@ def test_healthcare_generated_counts_and_alignment() -> None:
     assert module.validate_prompt_gold_alignment(prompts, gold) == []
     assert module.validate_evidence_coverage(gold, kb) == []
     assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
+
+
+def test_healthcare_250_linguistic_variation() -> None:
+    summary = _generate_vertical("healthcare_admin")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+
+    assert report["linguistic_variation_rate"] >= 0.60
+    assert report["most_common_question_template_share"] <= 0.40
+    assert report["most_common_question_template_count"] <= 100
+    assert report["unique_question_template_count"] > 1
+    assert not [
+        issue
+        for issue in report["validation_issues"]
+        if str(issue).startswith("linguistic_variation_warning")
+    ]
 
 
 def test_healthcare_negative_and_safety_statuses_present() -> None:
@@ -711,6 +799,21 @@ def test_retail_generated_counts_and_alignment() -> None:
     assert module.validate_prompt_gold_alignment(prompts, gold) == []
     assert module.validate_evidence_coverage(gold, kb) == []
     assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
+
+
+def test_retail_250_linguistic_variation() -> None:
+    summary = _generate_vertical("retail")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+
+    assert report["linguistic_variation_rate"] >= 0.60
+    assert report["most_common_question_template_share"] <= 0.40
+    assert report["most_common_question_template_count"] <= 100
+    assert report["unique_question_template_count"] > 1
+    assert not [
+        issue
+        for issue in report["validation_issues"]
+        if str(issue).startswith("linguistic_variation_warning")
+    ]
 
 
 def test_retail_negative_statuses_present() -> None:
@@ -843,6 +946,21 @@ def test_research_ai_generated_counts_and_alignment() -> None:
     assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
 
 
+def test_research_ai_250_linguistic_variation() -> None:
+    summary = _generate_vertical("research_ai")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+
+    assert report["linguistic_variation_rate"] >= 0.60
+    assert report["most_common_question_template_share"] <= 0.40
+    assert report["most_common_question_template_count"] <= 100
+    assert report["unique_question_template_count"] > 1
+    assert not [
+        issue
+        for issue in report["validation_issues"]
+        if str(issue).startswith("linguistic_variation_warning")
+    ]
+
+
 def test_research_ai_negative_statuses_present() -> None:
     result = subprocess.run(
         [
@@ -943,6 +1061,20 @@ def test_research_ai_no_private_paths_or_general_memory() -> None:
     assert "akpoogaga" not in combined_text
     assert "local_text_path" not in combined_text
     assert "general model memory" not in combined_text
+
+
+def test_scaleup_reports_include_linguistic_metrics() -> None:
+    required_fields = {
+        "linguistic_variation_rate",
+        "most_common_question_template_count",
+        "most_common_question_template_share",
+        "unique_question_template_count",
+    }
+    for vertical in ["airline", "healthcare_admin", "retail", "research_ai"]:
+        summary = _generate_vertical(vertical)
+        report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+        assert required_fields.issubset(report)
+        assert report["linguistic_variation_rate"] >= 0.60
 
 
 def test_generated_outputs_are_ignored() -> None:

@@ -156,6 +156,28 @@ Before any expanded dataset is committed, generated records must pass:
 - review of the previous checkpoint before generating the next checkpoint
 - cross-vertical QA after candidates are promoted from generated output
 
+## Linguistic Variation Quality Gate
+
+The 250-scale generators also check prompt wording diversity. Structural
+validity is not enough: if every generated question repeats one base template,
+the benchmark starts to look artificially templated and can reward systems that
+overfit phrasing rather than grounding behavior.
+
+The quality gate normalizes generated questions, replaces numbers and practical
+dynamic values such as IDs, routes, product names, support labels, and paper
+titles with placeholders, then measures the dominant template family. At least
+60% of prompts should differ linguistically from the most common normalized
+template, which is equivalent to requiring the most common template share to be
+at most 40%.
+
+Variation is deterministic. The generator chooses phrasing from fixed variant
+sets using prompt index, status, task type, support type, product metadata, or
+paper metadata. It does not use LLMs or uncontrolled randomness. Each scale-up
+report includes `linguistic_variation_rate`,
+`most_common_question_template_count`, `most_common_question_template_share`,
+and `unique_question_template_count`. A failing variation gate is reported as a
+warning-style validation issue while still writing the local report for review.
+
 `--allow-large-local-generation` exists for future explicit implementations. It
 does not bypass target support or quality gates.
 
