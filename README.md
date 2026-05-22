@@ -104,6 +104,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 2A-5A AI research paper discovery](docs/34_phase2_research_ai_paper_discovery.md)
 - [Phase 2A-5B Research AI curated seed](docs/35_phase2_research_ai_curated_seed.md)
 - [Phase 2A-6A Retail Amazon Reviews exploration](docs/36_phase2_retail_amazon_reviews_exploration.md)
+- [Phase 2A-6C Retail curated seed](docs/37_phase2_retail_curated_seed.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

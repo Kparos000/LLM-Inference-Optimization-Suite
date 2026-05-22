@@ -80,6 +80,7 @@ data/generated/retail/amazon_reviews_exploration_report.json
 data/generated/retail/amazon_reviews_field_profile.json
 data/generated/retail/amazon_reviews_text_profile.json
 data/generated/retail/amazon_reviews_quality_report.json
+data/generated/retail/retail_curation_report.json
 data/generated/retail/plots/
 data/generated/retail/word_views/
 
