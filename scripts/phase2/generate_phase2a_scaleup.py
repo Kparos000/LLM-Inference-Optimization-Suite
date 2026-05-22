@@ -1,4 +1,4 @@
-"""Generate Phase 2A 250-scale planning artifacts and local pilot candidates.
+"""Generate Phase 2A scale-up planning artifacts and local pilot candidates.
 
 This script is data-generation scaffolding only. It does not build RAG,
 retrieval indexes, embeddings, prompt assembly, model calls, GPU runs, or
@@ -25,6 +25,15 @@ DEFAULT_OUTPUT_DIR = Path("data/generated/phase2a/scaleup")
 DEFAULT_REPORT_DIR = Path("data/generated/phase2a/scaleup_reports")
 
 VERTICALS = ["finance", "airline", "healthcare_admin", "research_ai", "retail"]
+SUPPORTED_TARGETS = [250, 1000, 2000, 4000, 5000]
+TARGET_TO_CHECKPOINT = {
+    250: "checkpoint_250",
+    1000: "checkpoint_1000",
+    2000: "checkpoint_2000",
+    4000: "checkpoint_4000",
+    5000: "checkpoint_5000",
+}
+IMPLEMENTED_GENERATION_TARGETS = {"airline": {250}}
 VERTICAL_FILES: dict[str, dict[str, Path]] = {
     "finance": {
         "prompts": Path("data/real_world_samples/finance_sample.jsonl"),
@@ -53,28 +62,28 @@ VERTICAL_FILES: dict[str, dict[str, Path]] = {
     },
 }
 
-STATUS_DISTRIBUTION_250: dict[str, dict[str, int]] = {
-    "finance": {"answer": 230, "insufficient_evidence": 10, "escalate": 10},
-    "airline": {"answer": 225, "escalate": 20, "spam_or_fraud": 5},
+STATUS_DISTRIBUTION_BASIS_POINTS: dict[str, dict[str, int]] = {
+    "finance": {"answer": 9200, "insufficient_evidence": 400, "escalate": 400},
+    "airline": {"answer": 9000, "escalate": 800, "spam_or_fraud": 200},
     "healthcare_admin": {
-        "answer": 220,
-        "escalate": 20,
-        "safety_boundary": 5,
-        "spam_or_fraud": 3,
-        "out_of_scope": 2,
+        "answer": 8800,
+        "escalate": 800,
+        "safety_boundary": 200,
+        "spam_or_fraud": 100,
+        "out_of_scope": 100,
     },
     "research_ai": {
-        "answer": 225,
-        "insufficient_evidence": 10,
-        "escalate": 10,
-        "out_of_scope": 5,
+        "answer": 9000,
+        "insufficient_evidence": 400,
+        "escalate": 400,
+        "out_of_scope": 200,
     },
     "retail": {
-        "answer": 222,
-        "escalate": 9,
-        "insufficient_evidence": 9,
-        "spam_or_low_quality": 7,
-        "out_of_scope": 3,
+        "answer": 8900,
+        "insufficient_evidence": 350,
+        "escalate": 350,
+        "spam_or_low_quality": 300,
+        "out_of_scope": 100,
     },
 }
 
@@ -123,15 +132,15 @@ TASK_DISTRIBUTION_250: dict[str, dict[str, int]] = {
     },
 }
 
-OUTPUT_FORMAT_DISTRIBUTION_250: dict[str, dict[str, int]] = {
-    "finance": {"text": 155, "json": 50, "markdown_table": 45},
-    "airline": {"text": 190, "json": 35, "markdown_table": 25},
-    "healthcare_admin": {"text": 195, "json": 35, "markdown_table": 20},
-    "research_ai": {"text": 180, "json": 35, "markdown_table": 35},
-    "retail": {"text": 185, "json": 40, "markdown_table": 25},
+OUTPUT_FORMAT_BASIS_POINTS: dict[str, dict[str, int]] = {
+    "finance": {"text": 6200, "json": 2000, "markdown_table": 1800},
+    "airline": {"text": 7600, "json": 1400, "markdown_table": 1000},
+    "healthcare_admin": {"text": 7800, "json": 1400, "markdown_table": 800},
+    "research_ai": {"text": 7200, "json": 1400, "markdown_table": 1400},
+    "retail": {"text": 7400, "json": 1600, "markdown_table": 1000},
 }
 
-DIFFICULTY_DISTRIBUTION_250 = {"easy": 80, "medium": 130, "hard": 40}
+DIFFICULTY_BASIS_POINTS = {"easy": 3200, "medium": 5200, "hard": 1600}
 
 PRIVATE_HYGIENE_PATTERNS = [
     re.compile(pattern, flags=re.IGNORECASE)
@@ -206,6 +215,57 @@ def flatten_text(value: Any) -> str:
     return str(value)
 
 
+def supported_targets_message() -> str:
+    return ", ".join(str(target) for target in SUPPORTED_TARGETS)
+
+
+def validate_target(target_per_vertical: int) -> None:
+    if target_per_vertical not in SUPPORTED_TARGETS:
+        raise ValueError(
+            f"Unsupported target_per_vertical: {target_per_vertical}. "
+            f"Supported targets: {supported_targets_message()}."
+        )
+
+
+def get_checkpoint_for_target(target_per_vertical: int) -> str:
+    validate_target(target_per_vertical)
+    return TARGET_TO_CHECKPOINT[target_per_vertical]
+
+
+def calculate_total_prompts(target_per_vertical: int, vertical_count: int = 5) -> int:
+    validate_target(target_per_vertical)
+    return target_per_vertical * vertical_count
+
+
+def recommended_previous_checkpoint(target_per_vertical: int) -> str | None:
+    validate_target(target_per_vertical)
+    ordered = SUPPORTED_TARGETS
+    index = ordered.index(target_per_vertical)
+    if index == 0:
+        return "checkpoint_seed"
+    return get_checkpoint_for_target(ordered[index - 1])
+
+
+def next_checkpoint(target_per_vertical: int) -> str | None:
+    validate_target(target_per_vertical)
+    ordered = SUPPORTED_TARGETS
+    index = ordered.index(target_per_vertical)
+    if index == len(ordered) - 1:
+        return None
+    return get_checkpoint_for_target(ordered[index + 1])
+
+
+def target_warnings(target_per_vertical: int) -> list[str]:
+    if target_per_vertical in {4000, 5000}:
+        return [
+            "This target is a scaffolding tier. Run smaller checkpoints and QA before "
+            "attempting large local generation."
+        ]
+    if target_per_vertical == 2000:
+        return ["This is the near-term main target. Generate and review smaller checkpoints first."]
+    return []
+
+
 def scale_counts(base_counts: dict[str, int], target_total: int) -> dict[str, int]:
     base_total = sum(base_counts.values())
     if target_total <= 0:
@@ -225,18 +285,42 @@ def scale_counts(base_counts: dict[str, int], target_total: int) -> dict[str, in
     return scaled
 
 
+def percentage_counts(
+    percentages_basis_points: dict[str, int], target_total: int
+) -> dict[str, int]:
+    if target_total <= 0:
+        raise ValueError("target_per_vertical must be positive.")
+    if sum(percentages_basis_points.values()) != 10000:
+        raise ValueError("Distribution basis points must sum to 10000.")
+    scaled: dict[str, int] = {}
+    remainders: list[tuple[int, int, str]] = []
+    for index, (key, basis_points) in enumerate(percentages_basis_points.items()):
+        numerator = basis_points * target_total
+        whole = numerator // 10000
+        scaled[key] = whole
+        remainders.append((numerator % 10000, -index, key))
+    remaining = target_total - sum(scaled.values())
+    for _, _, key in sorted(remainders, reverse=True)[:remaining]:
+        scaled[key] += 1
+    return scaled
+
+
 def calculate_distribution_counts(
     vertical: str, target_per_vertical: int = 250
 ) -> dict[str, dict[str, int]]:
+    validate_target(target_per_vertical)
     if vertical not in VERTICALS:
         raise ValueError(f"Unsupported vertical: {vertical}")
     return {
-        "expected_status": scale_counts(STATUS_DISTRIBUTION_250[vertical], target_per_vertical),
+        "expected_status": percentage_counts(
+            STATUS_DISTRIBUTION_BASIS_POINTS[vertical], target_per_vertical
+        ),
         "task_type": scale_counts(TASK_DISTRIBUTION_250[vertical], target_per_vertical),
         "expected_output_format": scale_counts(
-            OUTPUT_FORMAT_DISTRIBUTION_250[vertical], target_per_vertical
+            percentage_counts(OUTPUT_FORMAT_BASIS_POINTS[vertical], 250),
+            target_per_vertical,
         ),
-        "difficulty": scale_counts(DIFFICULTY_DISTRIBUTION_250, target_per_vertical),
+        "difficulty": percentage_counts(DIFFICULTY_BASIS_POINTS, target_per_vertical),
     }
 
 
@@ -286,7 +370,8 @@ def qa_ready_for_vertical(qa_status: dict[str, Any], vertical: str) -> bool | No
     return bool(isinstance(vertical_status, dict) and vertical_status.get("ready_for_250_scale"))
 
 
-def source_readiness(vertical: str) -> dict[str, Any]:
+def source_readiness(vertical: str, target_per_vertical: int) -> dict[str, Any]:
+    validate_target(target_per_vertical)
     seed_files = VERTICAL_FILES[vertical]
     missing_seed_files = [str(path) for path in seed_files.values() if not path.exists()]
     blockers = [f"missing_seed_file:{path}" for path in missing_seed_files]
@@ -338,18 +423,21 @@ def source_readiness(vertical: str) -> dict[str, Any]:
             ).exists(),
         }
 
-    actual_generation_ready = not blockers and vertical == "airline"
-    if vertical != "airline" and not blockers:
-        blockers.append(
-            "actual_250_generation_not_implemented_in_this_foundation_patch; "
-            "use --generate-plan first"
-        )
+    generation_implemented = target_per_vertical in IMPLEMENTED_GENERATION_TARGETS.get(
+        vertical, set()
+    )
+    actual_generation_ready = not blockers and generation_implemented
     return {
         "vertical": vertical,
+        "target_per_vertical": target_per_vertical,
         "seed_files": {name: str(path) for name, path in seed_files.items()},
         "missing_seed_files": missing_seed_files,
         "optional_local_artifacts": optional_artifacts,
         "ready_for_actual_generation": actual_generation_ready,
+        "generation_implemented": generation_implemented,
+        "generation_scope": (
+            "local_candidate_generation" if generation_implemented else "planning_only"
+        ),
         "blockers": blockers,
     }
 
@@ -361,41 +449,69 @@ def build_generation_manifest(
     qa_status: dict[str, Any],
     plan: dict[str, Any],
 ) -> dict[str, Any]:
-    readiness = source_readiness(vertical)
+    validate_target(target_per_vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
+    total_target_prompts = calculate_total_prompts(target_per_vertical)
+    readiness = source_readiness(vertical, target_per_vertical)
     qa_ready = qa_ready_for_vertical(qa_status, vertical)
     blockers = list(readiness["blockers"])
     if qa_ready is False:
-        blockers.append("phase2a_qa_not_ready_for_250_scale")
-    checkpoint = plan.get("checkpoints", {}).get("checkpoint_250", {})
+        blockers.append(f"phase2a_qa_not_ready_for_{target_per_vertical}_scale")
+    checkpoint = plan.get("checkpoints", {}).get(checkpoint_name, {})
+    kb_range = (
+        plan.get("vertical_scale_strategy", {})
+        .get(vertical, {})
+        .get(f"kb_target_{target_per_vertical}", {})
+    )
+    generation_implemented = bool(readiness["generation_implemented"])
+    warnings = target_warnings(target_per_vertical)
     return {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
         "vertical": vertical,
         "target_per_vertical": target_per_vertical,
-        "checkpoint": "checkpoint_250",
+        "total_target_prompts": total_target_prompts,
+        "checkpoint": checkpoint_name,
         "checkpoint_purpose": checkpoint.get("purpose", "QA-scale deterministic dataset"),
+        "approved_targets": SUPPORTED_TARGETS,
         "distributions": calculate_distribution_counts(vertical, target_per_vertical),
+        "expected_kb_range": {
+            "min": kb_range.get("min"),
+            "max": kb_range.get("max"),
+        },
         "source_readiness": readiness,
         "qa_ready_for_250_scale": qa_ready,
+        "qa_ready_for_scale": qa_ready,
+        "generation_scope": (
+            "local_candidate_generation" if generation_implemented else "planning_only"
+        ),
+        "generation_implemented": generation_implemented,
+        "recommended_previous_checkpoint": recommended_previous_checkpoint(target_per_vertical),
+        "promotion_required_before_next_checkpoint": next_checkpoint(target_per_vertical),
+        "warnings": warnings,
         "blockers": blockers,
         "source_inputs": readiness["seed_files"],
         "outputs_are_local_and_ignored": True,
         "next_step": (
-            "Generate local airline 250-scale candidates with --generate-vertical."
-            if vertical == "airline" and not blockers
+            f"Generate local {vertical} {target_per_vertical}-scale candidates with "
+            "--generate-vertical."
+            if generation_implemented and not blockers
             else "Resolve blockers or extend the generator before producing local candidates."
         ),
     }
 
 
 def dry_run(args: argparse.Namespace) -> dict[str, Any]:
+    target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
     plan = load_json(Path(args.scaleup_plan))
     qa_status = load_qa_status(Path(args.qa_report))
     verticals = selected_verticals(args.vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
     manifests = {
         vertical: build_generation_manifest(
             vertical=vertical,
-            target_per_vertical=int(args.target_per_vertical),
+            target_per_vertical=target_per_vertical,
             qa_status=qa_status,
             plan=plan,
         )
@@ -404,30 +520,42 @@ def dry_run(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "phase": PHASE,
         "mode": "dry_run",
-        "target_per_vertical": int(args.target_per_vertical),
-        "planned_total_prompts": len(verticals) * int(args.target_per_vertical),
+        "target_per_vertical": target_per_vertical,
+        "planned_total_prompts": calculate_total_prompts(target_per_vertical, len(verticals)),
+        "full_checkpoint_total_prompts": calculate_total_prompts(target_per_vertical),
+        "checkpoint": checkpoint_name,
+        "checkpoint_purpose": plan["checkpoints"][checkpoint_name]["purpose"],
+        "approved_targets": SUPPORTED_TARGETS,
         "qa_report_exists": qa_status["qa_report_exists"],
         "qa_warnings": qa_status["warnings"],
+        "warnings": target_warnings(target_per_vertical),
         "verticals": manifests,
+        "outputs_are_local_and_ignored": True,
         "writes_generated_records": False,
-        "next_step": "Run --generate-plan, then pilot --generate-vertical --vertical airline.",
+        "next_step": (
+            "Run --generate-plan, then use implemented vertical generators only after "
+            "checkpoint review."
+        ),
     }
 
 
 def generate_plan(args: argparse.Namespace) -> dict[str, Any]:
+    target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
     plan = load_json(Path(args.scaleup_plan))
     qa_status = load_qa_status(Path(args.qa_report))
     report_dir = Path(args.report_dir)
     verticals = selected_verticals(args.vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
     manifests: dict[str, dict[str, Any]] = {}
     for vertical in verticals:
         manifest = build_generation_manifest(
             vertical=vertical,
-            target_per_vertical=int(args.target_per_vertical),
+            target_per_vertical=target_per_vertical,
             qa_status=qa_status,
             plan=plan,
         )
-        manifest_path = report_dir / f"{vertical}_scaleup_{args.target_per_vertical}_manifest.json"
+        manifest_path = report_dir / f"{vertical}_scaleup_{target_per_vertical}_manifest.json"
         write_json(manifest_path, manifest)
         manifests[vertical] = {
             "manifest_path": str(manifest_path),
@@ -435,23 +563,38 @@ def generate_plan(args: argparse.Namespace) -> dict[str, Any]:
             "ready_for_actual_generation": manifest["source_readiness"][
                 "ready_for_actual_generation"
             ],
+            "generation_implemented": manifest["generation_implemented"],
+            "generation_scope": manifest["generation_scope"],
         }
-    aggregate_path = report_dir / f"phase2a_scaleup_generation_plan_{args.target_per_vertical}.json"
+    aggregate_path = report_dir / f"phase2a_scaleup_generation_plan_{target_per_vertical}.json"
     aggregate = {
         "phase": PHASE,
         "mode": "generate_plan",
         "generated_at_utc": utc_now(),
-        "target_per_vertical": int(args.target_per_vertical),
-        "planned_total_prompts": len(verticals) * int(args.target_per_vertical),
+        "target_per_vertical": target_per_vertical,
+        "total_target_prompts": calculate_total_prompts(target_per_vertical),
+        "planned_total_prompts": calculate_total_prompts(target_per_vertical, len(verticals)),
+        "checkpoint": checkpoint_name,
+        "checkpoint_purpose": plan["checkpoints"][checkpoint_name]["purpose"],
+        "approved_targets": SUPPORTED_TARGETS,
+        "recommended_previous_checkpoint": recommended_previous_checkpoint(target_per_vertical),
+        "promotion_required_before_next_checkpoint": next_checkpoint(target_per_vertical),
         "verticals": manifests,
-        "warnings": qa_status["warnings"],
+        "warnings": [*qa_status["warnings"], *target_warnings(target_per_vertical)],
+        "outputs_are_local_and_ignored": True,
         "writes_generated_records": False,
-        "next_step": "Use --generate-vertical --vertical airline for the first local pilot.",
+        "next_step": (
+            "Use --generate-vertical only for explicitly implemented target/vertical pairs."
+        ),
     }
     write_json(aggregate_path, aggregate)
     return {
         "phase": PHASE,
         "mode": "generate_plan",
+        "target_per_vertical": target_per_vertical,
+        "total_target_prompts": aggregate["total_target_prompts"],
+        "checkpoint": checkpoint_name,
+        "approved_targets": SUPPORTED_TARGETS,
         "manifest_count": len(verticals),
         "aggregate_report": str(aggregate_path),
         "verticals": manifests,
@@ -569,7 +712,7 @@ def build_airline_pilot_records(
         task_type = airline_task_for_status(status, task_sequence[index])
         action = airline_action_for_status(status)
         difficulty = difficulty_sequence[index]
-        prompt_id = f"airline_scaleup_250_{prompt_number:04d}"
+        prompt_id = f"airline_scaleup_{target_per_vertical}_{prompt_number:04d}"
         ticket_id = f"CA-SCALE-{prompt_number:04d}"
         support_label = support_type.replace("_", " ")
         issue = (
@@ -706,6 +849,9 @@ def write_scaleup_report(
     kb_rows: list[dict[str, Any]],
     blockers: list[str],
     warnings: list[str],
+    checkpoint: str,
+    generation_scope: str,
+    generation_implemented: bool,
 ) -> dict[str, Any]:
     validation_issues = (
         validate_prompt_gold_alignment(prompts, gold)
@@ -717,6 +863,13 @@ def write_scaleup_report(
         "generated_at_utc": utc_now(),
         "vertical": vertical,
         "target_per_vertical": target_per_vertical,
+        "total_target_prompts": calculate_total_prompts(target_per_vertical),
+        "checkpoint": checkpoint,
+        "approved_targets": SUPPORTED_TARGETS,
+        "generation_scope": generation_scope,
+        "generation_implemented": generation_implemented,
+        "recommended_previous_checkpoint": recommended_previous_checkpoint(target_per_vertical),
+        "promotion_required_before_next_checkpoint": next_checkpoint(target_per_vertical),
         "prompt_count": len(prompts),
         "gold_count": len(gold),
         "kb_count": len(kb_rows),
@@ -731,8 +884,8 @@ def write_scaleup_report(
         "blockers": blockers,
         "warnings": warnings,
         "next_step": (
-            "Review local airline 250-scale candidates before extending generation "
-            "to other verticals."
+            f"Review local {vertical} {target_per_vertical}-scale candidates before "
+            "promoting or extending generation."
             if not validation_issues and not blockers
             else "Fix blockers or validation issues before using these candidates."
         ),
@@ -743,13 +896,20 @@ def write_scaleup_report(
 
 def generate_airline_vertical(args: argparse.Namespace) -> dict[str, Any]:
     target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
+    if target_per_vertical not in IMPLEMENTED_GENERATION_TARGETS["airline"]:
+        raise RuntimeError(
+            f"Generation for airline at {target_per_vertical} requires explicit "
+            "implementation and prior checkpoint review."
+        )
     qa_status = load_qa_status(Path(args.qa_report))
     qa_ready = qa_ready_for_vertical(qa_status, "airline")
     blockers: list[str] = []
     warnings = list(qa_status["warnings"])
     if qa_ready is False:
-        blockers.append("phase2a_qa_not_ready_for_airline_250_scale")
-    readiness = source_readiness("airline")
+        blockers.append(f"phase2a_qa_not_ready_for_airline_{target_per_vertical}_scale")
+    readiness = source_readiness("airline", target_per_vertical)
     blockers.extend(readiness["missing_seed_files"])
     if blockers:
         report_path = Path(args.report_dir) / f"airline_scaleup_{target_per_vertical}_report.json"
@@ -762,6 +922,9 @@ def generate_airline_vertical(args: argparse.Namespace) -> dict[str, Any]:
             kb_rows=[],
             blockers=blockers,
             warnings=warnings,
+            checkpoint=checkpoint_name,
+            generation_scope="local_candidate_generation",
+            generation_implemented=True,
         )
         return {
             "phase": PHASE,
@@ -798,6 +961,9 @@ def generate_airline_vertical(args: argparse.Namespace) -> dict[str, Any]:
         kb_rows=kb_copy,
         blockers=[],
         warnings=warnings,
+        checkpoint=checkpoint_name,
+        generation_scope="local_candidate_generation",
+        generation_implemented=True,
     )
     return {
         "phase": PHASE,
@@ -819,12 +985,19 @@ def generate_airline_vertical(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
+    target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
     if args.vertical == "all":
         raise RuntimeError("Pass a single --vertical value for --generate-vertical.")
     if args.vertical != "airline":
         raise RuntimeError(
-            "This foundation patch implements airline pilot generation only. "
-            "Use --generate-plan for other verticals."
+            f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
+            "implementation and prior checkpoint review."
+        )
+    if target_per_vertical > 250 and not args.allow_large_local_generation:
+        raise RuntimeError(
+            f"Generation for airline at {target_per_vertical} requires explicit "
+            "implementation and prior checkpoint review."
         )
     return generate_airline_vertical(args)
 
@@ -841,6 +1014,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--report-dir", type=Path, default=DEFAULT_REPORT_DIR)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--allow-large-local-generation", action="store_true")
     return parser
 
 
@@ -853,6 +1027,7 @@ def main(argv: list[str] | None = None) -> int:
     if selected_modes != 1:
         parser.error("Choose exactly one mode: --dry-run, --generate-plan, or --generate-vertical.")
     try:
+        validate_target(int(args.target_per_vertical))
         if args.dry_run:
             summary = dry_run(args)
         elif args.generate_plan:

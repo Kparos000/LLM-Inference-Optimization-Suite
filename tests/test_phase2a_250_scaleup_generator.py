@@ -36,15 +36,46 @@ def test_scaleup_generator_script_exists() -> None:
     assert SCRIPT_PATH.exists()
 
 
-def test_distribution_counts_sum_to_target() -> None:
+def test_supported_targets() -> None:
+    module = _load_module()
+
+    assert module.SUPPORTED_TARGETS == [250, 1000, 2000, 4000, 5000]
+
+
+def test_get_checkpoint_for_target() -> None:
+    module = _load_module()
+
+    assert module.get_checkpoint_for_target(250) == "checkpoint_250"
+    assert module.get_checkpoint_for_target(1000) == "checkpoint_1000"
+    assert module.get_checkpoint_for_target(2000) == "checkpoint_2000"
+    assert module.get_checkpoint_for_target(4000) == "checkpoint_4000"
+    assert module.get_checkpoint_for_target(5000) == "checkpoint_5000"
+
+
+def test_unsupported_target_fails() -> None:
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), "--dry-run", "--target-per-vertical", "333"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "Unsupported target_per_vertical: 333" in result.stderr
+    assert "250, 1000, 2000, 4000, 5000" in result.stderr
+
+
+def test_distribution_counts_sum_for_all_targets() -> None:
     module = _load_module()
 
     for vertical in ["finance", "airline", "healthcare_admin", "research_ai", "retail"]:
-        distributions = module.calculate_distribution_counts(vertical, 250)
-        assert sum(distributions["expected_status"].values()) == 250
-        assert sum(distributions["task_type"].values()) == 250
-        assert sum(distributions["expected_output_format"].values()) == 250
-        assert sum(distributions["difficulty"].values()) == 250
+        for target in module.SUPPORTED_TARGETS:
+            distributions = module.calculate_distribution_counts(vertical, target)
+            assert sum(distributions["expected_status"].values()) == target
+            assert sum(distributions["task_type"].values()) == target
+            assert sum(distributions["expected_output_format"].values()) == target
+            assert sum(distributions["difficulty"].values()) == target
 
 
 def test_dry_run_cli() -> None:
@@ -69,6 +100,28 @@ def test_dry_run_cli() -> None:
     }
 
 
+def test_dry_run_2000() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--target-per-vertical",
+            "2000",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["target_per_vertical"] == 2000
+    assert summary["planned_total_prompts"] == 10000
+    assert summary["checkpoint"] == "checkpoint_2000"
+
+
 def test_generate_plan_cli() -> None:
     result = subprocess.run(
         [
@@ -91,6 +144,53 @@ def test_generate_plan_cli() -> None:
     assert summary["manifest_count"] == 5
     assert (REPORT_DIR / "airline_scaleup_250_manifest.json").exists()
     assert (REPORT_DIR / "phase2a_scaleup_generation_plan_250.json").exists()
+
+
+def test_generate_plan_5000() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-plan",
+            "--target-per-vertical",
+            "5000",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["target_per_vertical"] == 5000
+    assert summary["total_target_prompts"] == 25000
+    assert summary["checkpoint"] == "checkpoint_5000"
+    assert (REPORT_DIR / "phase2a_scaleup_generation_plan_5000.json").exists()
+
+
+def test_large_generation_blocked_without_explicit_support() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "airline",
+            "--target-per-vertical",
+            "2000",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert (
+        "Generation for airline at 2000 requires explicit implementation and prior "
+        "checkpoint review"
+    ) in result.stderr
 
 
 def test_airline_pilot_generation_cli() -> None:
@@ -141,7 +241,16 @@ def test_generated_outputs_are_ignored() -> None:
 def test_docs_include_commands() -> None:
     docs = DOC_PATH.read_text(encoding="utf-8")
 
-    assert "python scripts/phase2/generate_phase2a_scaleup.py --dry-run" in docs
-    assert "--generate-plan --target-per-vertical 250" in docs
+    assert "--dry-run --target-per-vertical 250" in docs
+    assert "--dry-run --target-per-vertical 2000" in docs
+    assert "--generate-plan --target-per-vertical 2000" in docs
     assert "--generate-vertical --vertical airline --target-per-vertical 250" in docs
     assert "no RAG" in docs
+
+
+def test_docs_include_5000_per_vertical() -> None:
+    docs = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "5,000" in docs
+    assert "25,000" in docs
+    assert "Maximum expanded capacity" in docs
