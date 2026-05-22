@@ -83,6 +83,9 @@ data/generated/retail/amazon_reviews_quality_report.json
 data/generated/retail/retail_curation_report.json
 data/generated/retail/plots/
 data/generated/retail/word_views/
+data/generated/phase2a/phase2a_cross_vertical_qa_report.json
+data/generated/phase2a/phase2a_cross_vertical_qa_summary.csv
+data/generated/phase2a/phase2a_issue_log.jsonl
 
 # Keep result folders
 !results/raw/.gitkeep
