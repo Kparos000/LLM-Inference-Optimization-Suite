@@ -89,6 +89,8 @@ data/generated/retail/word_views/
 data/generated/phase2a/phase2a_cross_vertical_qa_report.json
 data/generated/phase2a/phase2a_cross_vertical_qa_summary.csv
 data/generated/phase2a/phase2a_issue_log.jsonl
+data/generated/phase2a/phase2a_scaleup_plan_report.json
+data/generated/phase2a/phase2a_scaleup_matrix.csv
 
 # Keep result folders
 !results/raw/.gitkeep

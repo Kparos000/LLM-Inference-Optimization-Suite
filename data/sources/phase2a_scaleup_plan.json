@@ -1,0 +1,256 @@
+{
+  "phase": "2A-8",
+  "verticals": [
+    "finance",
+    "airline",
+    "healthcare_admin",
+    "research_ai",
+    "retail"
+  ],
+  "approved_total_prompt_cap": 10000,
+  "checkpoints": {
+    "checkpoint_seed": {
+      "prompts_per_vertical": 40,
+      "total_prompts": 200,
+      "status": "complete",
+      "purpose": "reviewed Phase 2A seed dataset"
+    },
+    "checkpoint_250": {
+      "prompts_per_vertical": 250,
+      "total_prompts": 1250,
+      "purpose": "QA-scale deterministic dataset",
+      "next_generation_target": true
+    },
+    "checkpoint_1000": {
+      "prompts_per_vertical": 1000,
+      "total_prompts": 5000,
+      "purpose": "pilot benchmark dataset"
+    },
+    "checkpoint_2000": {
+      "prompts_per_vertical": 2000,
+      "total_prompts": 10000,
+      "purpose": "full Phase 2A dataset before Phase 2B/RAG"
+    }
+  },
+  "vertical_scale_strategy": {
+    "finance": {
+      "current_seed_prompts": 40,
+      "checkpoint_250": 250,
+      "checkpoint_1000": 1000,
+      "checkpoint_2000": 2000,
+      "kb_target_250": {
+        "min": 250,
+        "max": 400
+      },
+      "kb_target_1000": {
+        "min": 800,
+        "max": 1200
+      },
+      "kb_target_2000": {
+        "min": 1500,
+        "max": 2500
+      },
+      "source_expansion": [
+        "use current 8-company SEC/XBRL corpus",
+        "expand section coverage across 10-K, 10-Q, and 8-K",
+        "include single-filing, multi-filing, XBRL numeric, table, trend, risk, compare-company, insufficient-evidence, and escalation prompts"
+      ]
+    },
+    "airline": {
+      "current_seed_prompts": 40,
+      "checkpoint_250": 250,
+      "checkpoint_1000": 1000,
+      "checkpoint_2000": 2000,
+      "kb_target_250": {
+        "min": 75,
+        "max": 120
+      },
+      "kb_target_1000": {
+        "min": 150,
+        "max": 250
+      },
+      "kb_target_2000": {
+        "min": 300,
+        "max": 500
+      },
+      "source_expansion": [
+        "expand synthetic ticket generator",
+        "expand synthetic/public-inspired policy KB",
+        "maintain answer/escalate/spam-fraud split",
+        "include booking, refunds, changes, baggage, partner airline, accessibility, travel documents, loyalty, and disruption"
+      ]
+    },
+    "healthcare_admin": {
+      "current_seed_prompts": 40,
+      "checkpoint_250": 250,
+      "checkpoint_1000": 1000,
+      "checkpoint_2000": 2000,
+      "kb_target_250": {
+        "min": 75,
+        "max": 120
+      },
+      "kb_target_1000": {
+        "min": 150,
+        "max": 250
+      },
+      "kb_target_2000": {
+        "min": 300,
+        "max": 500
+      },
+      "source_expansion": [
+        "expand synthetic admin tickets",
+        "expand policy KB",
+        "maintain admin-only safety boundary",
+        "include privacy, identity verification, billing, scheduling, records, referrals, portal, telehealth, and urgent clinical boundary"
+      ]
+    },
+    "research_ai": {
+      "current_seed_prompts": 40,
+      "checkpoint_250": 250,
+      "checkpoint_1000": 1000,
+      "checkpoint_2000": 2000,
+      "kb_target_250": {
+        "min": 300,
+        "max": 500
+      },
+      "kb_target_1000": {
+        "min": 800,
+        "max": 1200
+      },
+      "kb_target_2000": {
+        "min": 1000,
+        "max": 1800
+      },
+      "source_expansion": [
+        "current 20 papers are enough for 250 prompts if section coverage remains good",
+        "expand to 40 papers before 1000 and 2000 prompt checkpoints",
+        "preserve method, results, limitations, comparison, and citation tasks",
+        "include inference optimization, RAG/context, agentic systems, efficient models, and evaluation"
+      ]
+    },
+    "retail": {
+      "current_seed_prompts": 40,
+      "checkpoint_250": 250,
+      "checkpoint_1000": 1000,
+      "checkpoint_2000": 2000,
+      "kb_target_250": {
+        "min": 150,
+        "max": 250
+      },
+      "kb_target_1000": {
+        "min": 500,
+        "max": 1000
+      },
+      "kb_target_2000": {
+        "min": 1000,
+        "max": 2000
+      },
+      "source_expansion": [
+        "current All_Beauty sample is enough for 250 prompts",
+        "expand to 3 categories before 1000 prompts",
+        "expand to 5 categories before 2000 prompts",
+        "use metadata, reviews, and synthetic benchmark policy overlay",
+        "maintain no raw user IDs",
+        "preserve product support, issue detection, comparison, structured extraction, policy reasoning, low-quality review, escalation, and out-of-scope tasks"
+      ]
+    }
+  },
+  "gold_strategy": {
+    "all_prompts_require_gold": true,
+    "gold_prompt_id_must_align": true,
+    "answerable_records_require_evidence_ids": true,
+    "negative_status_records_require_must_not_include": true,
+    "checkpoint_2000_total_gold_records_across_all_verticals": 10000,
+    "gold_review_subset": {
+      "target_count": 1000,
+      "stratify_by": [
+        "vertical",
+        "expected_status",
+        "task_type",
+        "output_format",
+        "difficulty",
+        "context_length_bucket"
+      ]
+    },
+    "deep_review_subset": {
+      "target_count": 300,
+      "emphasis": [
+        "finance numeric and multi-document prompts",
+        "research method, results, and comparison prompts",
+        "retail low-rating and policy reasoning prompts",
+        "airline escalation and fraud prompts",
+        "healthcare privacy and safety-boundary prompts"
+      ]
+    }
+  },
+  "status_distribution_targets": {
+    "global": {
+      "answer": {
+        "min_percent": 88,
+        "max_percent": 92
+      },
+      "negative_or_boundary": {
+        "min_percent": 8,
+        "max_percent": 12
+      }
+    },
+    "finance": {
+      "answer": {
+        "min_percent": 90,
+        "max_percent": 95
+      },
+      "insufficient_evidence_or_escalate": {
+        "min_percent": 5,
+        "max_percent": 10
+      }
+    },
+    "airline": {
+      "answer_percent": 90,
+      "escalate_percent": 8,
+      "spam_or_fraud_percent": 2
+    },
+    "healthcare_admin": {
+      "answer_percent": 88,
+      "escalate_percent": 8,
+      "safety_boundary_percent": 2,
+      "spam_or_fraud_or_out_of_scope_percent": 2
+    },
+    "research_ai": {
+      "answer": {
+        "min_percent": 90,
+        "max_percent": 92
+      },
+      "insufficient_evidence_or_escalate": {
+        "min_percent": 6,
+        "max_percent": 8
+      },
+      "out_of_scope_percent": 2
+    },
+    "retail": {
+      "answer": {
+        "min_percent": 88,
+        "max_percent": 90
+      },
+      "escalate_or_insufficient_evidence": {
+        "min_percent": 6,
+        "max_percent": 8
+      },
+      "spam_or_low_quality": {
+        "min_percent": 2,
+        "max_percent": 4
+      },
+      "out_of_scope": {
+        "min_percent": 1,
+        "max_percent": 2
+      }
+    }
+  },
+  "quality_gates": [
+    "run Phase 2A-7 cross-vertical data QA before each checkpoint",
+    "preserve prompt/gold one-to-one alignment",
+    "preserve KB evidence coverage for answerable prompts",
+    "preserve negative and boundary status coverage",
+    "keep raw/generated source data local unless intentionally curated",
+    "do not build RAG, retrieval, embeddings, prompt assembly, model calls, or inference in Phase 2A scale-up planning"
+  ]
+}
