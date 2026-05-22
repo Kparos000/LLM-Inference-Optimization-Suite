@@ -71,6 +71,40 @@ The local curation report includes `product_title_resolution_counts`,
 sample or targeted metadata retrieval for selected `parent_asin` values before
 scaling.
 
+## Targeted Metadata Enrichment
+
+Generic product titles can occur when the controlled 1,000-row metadata sample
+does not include the same `parent_asin` values used by curated review prompts.
+Phase 2A-6D extracts selected parent ASINs from the committed Retail prompt,
+KB, and gold files, then searches local generated metadata and any available
+cached metadata source for matching rows.
+
+No product titles are invented. If a selected product cannot be matched to
+metadata with a real title, the curation report keeps the generic fallback and
+lists the unmatched ASIN for review.
+
+Generated targeted metadata remains local and ignored:
+
+- `data/generated/retail/retail_selected_parent_asins.txt`
+- `data/generated/retail/retail_targeted_metadata_sample.jsonl`
+- `data/generated/retail/retail_targeted_metadata_enrichment_report.json`
+
+Commands:
+
+```text
+python scripts/phase2/curate_retail_seed.py --enrich-selected-metadata
+```
+
+```text
+python scripts/phase2/curate_retail_seed.py --build-curated-samples
+```
+
+```text
+python scripts/phase2/audit_phase2a_seed_data.py --run-audit
+```
+
+Retail should not scale until generic-title coverage has been reviewed.
+
 ## Support Policy Simulation
 
 Support policy records are synthetic benchmark policies. They are not Amazon

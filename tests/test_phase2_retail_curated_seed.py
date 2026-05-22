@@ -3,6 +3,7 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +31,10 @@ def _load_curation_module() -> Any:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
 
 
 def test_retail_curated_files_exist() -> None:
@@ -267,6 +272,119 @@ def test_is_generic_retail_title() -> None:
     assert not module.is_generic_retail_title("Rosemary Mint Hair Oil", "All_Beauty")
 
 
+def test_extract_selected_parent_asins_from_seed(tmp_path: Path) -> None:
+    module = _load_curation_module()
+    prompt_path = tmp_path / "prompts.jsonl"
+    kb_path = tmp_path / "kb.jsonl"
+    gold_path = tmp_path / "gold.jsonl"
+    _write_jsonl(
+        prompt_path,
+        [{"source_parent_asins": ["B000TEST1"], "source_product_ids": ["B000TEST2"]}],
+    )
+    _write_jsonl(kb_path, [{"metadata": {"parent_asin": "B000TEST3", "asin": "B000TEST4"}}])
+    _write_jsonl(gold_path, [{"metadata": {"required_parent_asins": ["B000TEST5"]}}])
+
+    selected = module.extract_selected_parent_asins_from_seed(prompt_path, kb_path, gold_path)
+
+    assert selected == {"B000TEST1", "B000TEST2", "B000TEST3", "B000TEST4", "B000TEST5"}
+
+
+def test_targeted_metadata_merge_takes_precedence() -> None:
+    module = _load_curation_module()
+    base_rows = [{"parent_asin": "B000TEST1", "title": ""}]
+    targeted_rows = [{"parent_asin": "B000TEST1", "title": "Rosemary Mint Hair Oil"}]
+
+    merged = module.merge_metadata_rows(base_rows, targeted_rows)
+    index = module.build_product_metadata_index(merged)
+    title, resolution = module.resolve_product_title(
+        "B000TEST1",
+        None,
+        index,
+        "All_Beauty",
+    )
+
+    assert title == "Rosemary Mint Hair Oil"
+    assert resolution["title_resolution"] == "metadata_title"
+
+
+def test_enrich_selected_metadata_matches_local_rows(tmp_path: Path) -> None:
+    module = _load_curation_module()
+    prompt_path = tmp_path / "prompts.jsonl"
+    kb_path = tmp_path / "kb.jsonl"
+    gold_path = tmp_path / "gold.jsonl"
+    metadata_path = tmp_path / "metadata.jsonl"
+    targeted_output = tmp_path / "targeted.jsonl"
+    selected_output = tmp_path / "selected.txt"
+    report_path = tmp_path / "report.json"
+    _write_jsonl(prompt_path, [{"source_parent_asins": ["B000TEST1"]}])
+    _write_jsonl(kb_path, [])
+    _write_jsonl(gold_path, [])
+    _write_jsonl(metadata_path, [{"parent_asin": "B000TEST1", "title": "Rosemary Mint Hair Oil"}])
+
+    summary = module.enrich_selected_metadata(
+        SimpleNamespace(
+            retail_prompts=prompt_path,
+            retail_kb=kb_path,
+            retail_gold=gold_path,
+            metadata_input=metadata_path,
+            targeted_metadata_output=targeted_output,
+            selected_parent_asins_output=selected_output,
+            targeted_report=report_path,
+            metadata_source_path=None,
+            source_scan_batch_limit=None,
+        )
+    )
+
+    rows = _read_jsonl(targeted_output)
+    assert summary["matched_metadata_count"] == 1
+    assert rows[0]["title"] == "Rosemary Mint Hair Oil"
+
+
+def test_enrich_selected_metadata_reports_unmatched(tmp_path: Path) -> None:
+    module = _load_curation_module()
+    prompt_path = tmp_path / "prompts.jsonl"
+    kb_path = tmp_path / "kb.jsonl"
+    gold_path = tmp_path / "gold.jsonl"
+    metadata_path = tmp_path / "metadata.jsonl"
+    targeted_output = tmp_path / "targeted.jsonl"
+    selected_output = tmp_path / "selected.txt"
+    report_path = tmp_path / "report.json"
+    _write_jsonl(prompt_path, [{"source_parent_asins": ["B000TEST1"]}])
+    _write_jsonl(kb_path, [])
+    _write_jsonl(gold_path, [])
+    _write_jsonl(metadata_path, [])
+
+    module.enrich_selected_metadata(
+        SimpleNamespace(
+            retail_prompts=prompt_path,
+            retail_kb=kb_path,
+            retail_gold=gold_path,
+            metadata_input=metadata_path,
+            targeted_metadata_output=targeted_output,
+            selected_parent_asins_output=selected_output,
+            targeted_report=report_path,
+            metadata_source_path=tmp_path / "missing.parquet",
+            source_scan_batch_limit=None,
+        )
+    )
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["unmatched_parent_asins"] == ["B000TEST1"]
+
+
+def test_build_curated_samples_uses_targeted_metadata_when_present() -> None:
+    module = _load_curation_module()
+    base_rows = [{"parent_asin": "B000TEST1", "title": ""}]
+    targeted_rows = [{"parent_asin": "B000TEST1", "title": "Rosemary Mint Hair Oil"}]
+    metadata = module.merge_metadata_rows(base_rows, targeted_rows)
+    index = module.build_product_metadata_index(metadata)
+
+    title, resolution = module.resolve_product_title("B000TEST1", None, index, "All_Beauty")
+
+    assert title == "Rosemary Mint Hair Oil"
+    assert resolution["title_resolution"] == "metadata_title"
+
+
 def test_retail_curation_report_shape() -> None:
     prompts = _read_jsonl(PROMPT_PATH)
     kb_records = _read_jsonl(KB_PATH)
@@ -285,6 +403,9 @@ def test_retail_curation_report_shape() -> None:
     assert "product_title_resolution_counts" in report
     assert "generic_product_title_count" in report
     assert "product_metadata_join_rate" in report
+    assert "targeted_metadata_used" in report
+    assert "targeted_metadata_record_count" in report
+    assert "unmatched_parent_asins" in report
     assert report["next_step"]
 
 

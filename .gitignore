@@ -81,6 +81,9 @@ data/generated/retail/amazon_reviews_field_profile.json
 data/generated/retail/amazon_reviews_text_profile.json
 data/generated/retail/amazon_reviews_quality_report.json
 data/generated/retail/retail_curation_report.json
+data/generated/retail/retail_targeted_metadata_enrichment_report.json
+data/generated/retail/retail_selected_parent_asins.txt
+data/generated/retail/retail_targeted_metadata_sample.jsonl
 data/generated/retail/plots/
 data/generated/retail/word_views/
 data/generated/phase2a/phase2a_cross_vertical_qa_report.json

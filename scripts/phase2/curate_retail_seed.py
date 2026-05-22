@@ -28,6 +28,15 @@ DEFAULT_OUTPUT_PROMPTS = Path("data/real_world_samples/retail_sample.jsonl")
 DEFAULT_OUTPUT_KB = Path("data/kb/retail/kb_sample.jsonl")
 DEFAULT_OUTPUT_GOLD = Path("data/eval/gold/retail_gold_sample.jsonl")
 DEFAULT_CURATION_REPORT = Path("data/generated/retail/retail_curation_report.json")
+DEFAULT_TARGETED_METADATA_INPUT = Path(
+    "data/generated/retail/retail_targeted_metadata_sample.jsonl"
+)
+DEFAULT_SELECTED_PARENT_ASINS_OUTPUT = Path(
+    "data/generated/retail/retail_selected_parent_asins.txt"
+)
+DEFAULT_TARGETED_REPORT = Path(
+    "data/generated/retail/retail_targeted_metadata_enrichment_report.json"
+)
 
 RUN_2A6B_MESSAGE = (
     "Run Phase 2A-6B first, for example:\n"
@@ -213,6 +222,11 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def write_text_lines(path: Path, values: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(values) + ("\n" if values else ""), encoding="utf-8")
 
 
 def normalize_whitespace(value: str | None) -> str:
@@ -432,6 +446,170 @@ def resolve_product_title(
             "parent_asin": parent_asin,
         },
     )
+
+
+def sanitize_metadata_row(row: dict[str, Any]) -> dict[str, Any]:
+    expected_fields = [
+        "main_category",
+        "title",
+        "average_rating",
+        "rating_number",
+        "features",
+        "description",
+        "price",
+        "images",
+        "videos",
+        "store",
+        "categories",
+        "details",
+        "parent_asin",
+        "asin",
+        "bought_together",
+    ]
+    sanitized = {field: row.get(field) for field in expected_fields if field in row}
+    sanitized["source_type"] = "real_sample"
+    sanitized["sanitized"] = True
+    return sanitized
+
+
+def merge_metadata_rows(
+    base_rows: list[dict[str, Any]],
+    targeted_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    targeted_keys = {key for row in targeted_rows for key in _metadata_index_keys(row)}
+    merged = list(targeted_rows)
+    for row in base_rows:
+        if _metadata_index_keys(row).isdisjoint(targeted_keys):
+            merged.append(row)
+    return merged
+
+
+def extract_selected_parent_asins_from_seed(
+    prompt_path: Path,
+    kb_path: Path,
+    gold_path: Path,
+) -> set[str]:
+    selected: set[str] = set()
+
+    def add_value(value: Any) -> None:
+        selected.update(_extract_asin_values(value))
+
+    if prompt_path.exists():
+        for row in read_jsonl(prompt_path):
+            add_value(row.get("source_parent_asins"))
+            add_value(row.get("source_product_ids"))
+            add_value(row.get("product_id"))
+    if kb_path.exists():
+        for row in read_jsonl(kb_path):
+            metadata = row.get("metadata", {})
+            if isinstance(metadata, dict):
+                add_value(metadata.get("parent_asin"))
+                add_value(metadata.get("asin"))
+    if gold_path.exists():
+        for row in read_jsonl(gold_path):
+            metadata = row.get("metadata", {})
+            if isinstance(metadata, dict):
+                add_value(metadata.get("required_parent_asins"))
+    return selected
+
+
+def match_metadata_rows_for_parent_asins(
+    metadata_rows: list[dict[str, Any]],
+    parent_asins: set[str],
+) -> list[dict[str, Any]]:
+    remaining = set(parent_asins)
+    matched: dict[str, dict[str, Any]] = {}
+    for row in metadata_rows:
+        row_keys = _metadata_index_keys(row)
+        for key in row_keys & remaining:
+            matched[key] = sanitize_metadata_row(row)
+        remaining -= row_keys
+        if not remaining:
+            break
+    return list(matched.values())
+
+
+def scan_metadata_source_for_parent_asins(
+    source_path: Path,
+    parent_asins: set[str],
+    limit_batches: int | None = None,
+) -> list[dict[str, Any]]:
+    if not source_path.exists():
+        raise FileNotFoundError(f"Metadata source not found: {source_path}")
+    if source_path.suffix.lower() == ".jsonl":
+        matched: dict[str, dict[str, Any]] = {}
+        remaining = set(parent_asins)
+        with source_path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                if not isinstance(row, dict):
+                    continue
+                row_keys = _metadata_index_keys(row)
+                for key in row_keys & remaining:
+                    matched[key] = sanitize_metadata_row(row)
+                remaining -= row_keys
+                if not remaining:
+                    break
+        return list(matched.values())
+    if source_path.suffix.lower() == ".parquet":
+        try:
+            import pyarrow.parquet as pq  # type: ignore[import-not-found]
+        except ImportError as exc:
+            raise RuntimeError("pyarrow is required to scan Parquet metadata sources.") from exc
+        parquet_file = pq.ParquetFile(str(source_path))
+        matched: dict[str, dict[str, Any]] = {}
+        remaining = set(parent_asins)
+        for batch_index, batch in enumerate(parquet_file.iter_batches(batch_size=5000), start=1):
+            for row in batch.to_pylist():
+                if not isinstance(row, dict):
+                    continue
+                row_keys = _metadata_index_keys(row)
+                for key in row_keys & remaining:
+                    matched[key] = sanitize_metadata_row(row)
+                remaining -= row_keys
+                if not remaining:
+                    return list(matched.values())
+            if limit_batches is not None and batch_index >= limit_batches:
+                break
+        return list(matched.values())
+    raise RuntimeError(f"Unsupported metadata source format: {source_path}")
+
+
+def discover_cached_metadata_source_path(category: str = "All_Beauty") -> Path | None:
+    relative = Path(f"raw_meta_{category}") / "full-00000-of-00001.parquet"
+    local_candidates = [
+        Path("data/raw/retail") / relative,
+        Path("data/generated/retail") / relative,
+    ]
+    for candidate in local_candidates:
+        if candidate.exists():
+            return candidate
+    cache_root = Path.home() / ".cache" / "huggingface" / "hub"
+    pattern = (
+        "datasets--McAuley-Lab--Amazon-Reviews-2023/snapshots/*/"
+        f"raw_meta_{category}/full-00000-of-00001.parquet"
+    )
+    if cache_root.exists():
+        matches = sorted(
+            cache_root.glob(pattern), key=lambda path: path.stat().st_mtime, reverse=True
+        )
+        if matches:
+            return matches[0]
+    return None
+
+
+def metadata_title_counts(rows: list[dict[str, Any]]) -> tuple[int, int]:
+    metadata_title_count = 0
+    generic_title_count = 0
+    for row in rows:
+        title = clean_text(row.get("title"))
+        if title and not is_generic_retail_title(title, "All_Beauty"):
+            metadata_title_count += 1
+        else:
+            generic_title_count += 1
+    return metadata_title_count, generic_title_count
 
 
 def validate_inputs(args: argparse.Namespace) -> None:
@@ -1359,6 +1537,9 @@ def build_curation_report(
     gold_records: list[dict[str, Any]],
     source_review_count: int,
     source_metadata_count: int,
+    targeted_metadata_used: bool = False,
+    targeted_metadata_record_count: int = 0,
+    unmatched_parent_asins: list[str] | None = None,
 ) -> dict[str, Any]:
     prompt_categories = Counter(row.get("metadata", {}).get("prompt_category") for row in prompts)
     products_used = {
@@ -1442,6 +1623,9 @@ def build_curation_report(
         "metadata_partial_title_count": metadata_partial_title_count,
         "products_with_generic_titles": products_with_generic_titles,
         "product_metadata_join_rate": product_metadata_join_rate,
+        "targeted_metadata_used": targeted_metadata_used,
+        "targeted_metadata_record_count": targeted_metadata_record_count,
+        "unmatched_parent_asins": unmatched_parent_asins or [],
         "policy_record_count": sum(
             1 for row in kb_records if row.get("document_type") == "support_policy"
         ),
@@ -1473,10 +1657,100 @@ def assert_public_hygiene(paths: list[Path]) -> None:
             raise RuntimeError(f"Public hygiene check failed for {path}: possible PII-like text.")
 
 
+def enrich_selected_metadata(args: argparse.Namespace) -> dict[str, Any]:
+    selected_parent_asins = extract_selected_parent_asins_from_seed(
+        Path(args.retail_prompts),
+        Path(args.retail_kb),
+        Path(args.retail_gold),
+    )
+    write_text_lines(Path(args.selected_parent_asins_output), sorted(selected_parent_asins))
+
+    metadata_rows = (
+        read_jsonl(Path(args.metadata_input)) if Path(args.metadata_input).exists() else []
+    )
+    matched_rows = match_metadata_rows_for_parent_asins(metadata_rows, selected_parent_asins)
+    matched_keys = {key for row in matched_rows for key in _metadata_index_keys(row)}
+    unmatched = set(selected_parent_asins) - matched_keys
+    source_scan_status = "not_needed"
+    source_path_used: str | None = None
+    if unmatched:
+        source_scan_status = "unavailable"
+        source_path = Path(args.metadata_source_path) if args.metadata_source_path else None
+        if source_path is None:
+            source_path = discover_cached_metadata_source_path()
+        if source_path is not None and source_path.exists():
+            source_path_used = str(source_path)
+            try:
+                source_matches = scan_metadata_source_for_parent_asins(
+                    source_path,
+                    unmatched,
+                    args.source_scan_batch_limit,
+                )
+            except (FileNotFoundError, RuntimeError) as exc:
+                source_scan_status = f"failed: {exc}"
+                source_matches = []
+            else:
+                source_scan_status = "scanned"
+                matched_rows = merge_metadata_rows(matched_rows, source_matches)
+                matched_keys = {key for row in matched_rows for key in _metadata_index_keys(row)}
+                unmatched = set(selected_parent_asins) - matched_keys
+
+    metadata_title_count, generic_title_count = metadata_title_counts(matched_rows)
+    write_jsonl(Path(args.targeted_metadata_output), matched_rows)
+    report = {
+        "phase": "2A-6D",
+        "generated_at_utc": utc_now(),
+        "selected_parent_asin_count": len(selected_parent_asins),
+        "matched_metadata_count": len(matched_rows),
+        "unmatched_parent_asins": sorted(unmatched),
+        "metadata_title_count": metadata_title_count,
+        "generic_title_count": generic_title_count,
+        "metadata_input": str(args.metadata_input),
+        "targeted_metadata_output": str(args.targeted_metadata_output),
+        "selected_parent_asins_output": str(args.selected_parent_asins_output),
+        "source_scan_status": source_scan_status,
+        "source_path_used": source_path_used,
+        "recommendation": (
+            "Run --build-curated-samples to regenerate Retail seed records with targeted "
+            "metadata. If unmatched ASINs remain, use a larger metadata source or targeted "
+            "metadata retrieval before scale-up."
+        ),
+    }
+    write_json(Path(args.targeted_report), report)
+    return {
+        "mode": "enrich_selected_metadata",
+        "phase": "2A-6D",
+        "selected_parent_asin_count": report["selected_parent_asin_count"],
+        "matched_metadata_count": report["matched_metadata_count"],
+        "unmatched_parent_asin_count": len(unmatched),
+        "metadata_title_count": metadata_title_count,
+        "generic_title_count": generic_title_count,
+        "targeted_metadata_output": str(args.targeted_metadata_output),
+        "selected_parent_asins_output": str(args.selected_parent_asins_output),
+        "targeted_report": str(args.targeted_report),
+        "source_scan_status": source_scan_status,
+        "recommendation": report["recommendation"],
+    }
+
+
 def build_curated_samples(args: argparse.Namespace) -> dict[str, Any]:
     validate_inputs(args)
     reviews = read_jsonl(Path(args.reviews_input))
     metadata_rows = read_jsonl(Path(args.metadata_input))
+    source_metadata_count = len(metadata_rows)
+    targeted_metadata_path = Path(args.targeted_metadata_input)
+    targeted_metadata_rows = (
+        read_jsonl(targeted_metadata_path) if targeted_metadata_path.exists() else []
+    )
+    targeted_unmatched_parent_asins: list[str] = []
+    targeted_report_path = Path(args.targeted_report)
+    if targeted_report_path.exists():
+        targeted_report = read_json(targeted_report_path)
+        unmatched = targeted_report.get("unmatched_parent_asins", [])
+        if isinstance(unmatched, list):
+            targeted_unmatched_parent_asins = [str(item) for item in unmatched]
+    if targeted_metadata_rows:
+        metadata_rows = merge_metadata_rows(metadata_rows, targeted_metadata_rows)
     _exploration_report = read_json(Path(args.exploration_report))
     _quality_report = read_json(Path(args.quality_report))
     validate_reviews(reviews)
@@ -1520,7 +1794,10 @@ def build_curated_samples(args: argparse.Namespace) -> dict[str, Any]:
         kb_records,
         gold_records,
         len(reviews),
-        len(metadata_rows),
+        source_metadata_count,
+        targeted_metadata_used=bool(targeted_metadata_rows),
+        targeted_metadata_record_count=len(targeted_metadata_rows),
+        unmatched_parent_asins=targeted_unmatched_parent_asins,
     )
 
     write_jsonl(Path(args.output_prompts), prompts)
@@ -1539,6 +1816,8 @@ def build_curated_samples(args: argparse.Namespace) -> dict[str, Any]:
         "product_title_resolution_counts": report["product_title_resolution_counts"],
         "generic_product_title_count": report["generic_product_title_count"],
         "product_metadata_join_rate": report["product_metadata_join_rate"],
+        "targeted_metadata_used": report["targeted_metadata_used"],
+        "targeted_metadata_record_count": report["targeted_metadata_record_count"],
         "output_prompts": str(args.output_prompts),
         "output_kb": str(args.output_kb),
         "output_gold": str(args.output_gold),
@@ -1551,6 +1830,7 @@ def build_curated_samples(args: argparse.Namespace) -> dict[str, Any]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-curated-samples", action="store_true")
+    parser.add_argument("--enrich-selected-metadata", action="store_true")
     parser.add_argument("--reviews-input", type=Path, default=DEFAULT_REVIEWS_INPUT)
     parser.add_argument("--metadata-input", type=Path, default=DEFAULT_METADATA_INPUT)
     parser.add_argument("--exploration-report", type=Path, default=DEFAULT_EXPLORATION_REPORT)
@@ -1558,7 +1838,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-prompts", type=Path, default=DEFAULT_OUTPUT_PROMPTS)
     parser.add_argument("--output-kb", type=Path, default=DEFAULT_OUTPUT_KB)
     parser.add_argument("--output-gold", type=Path, default=DEFAULT_OUTPUT_GOLD)
+    parser.add_argument("--retail-prompts", type=Path, default=DEFAULT_OUTPUT_PROMPTS)
+    parser.add_argument("--retail-kb", type=Path, default=DEFAULT_OUTPUT_KB)
+    parser.add_argument("--retail-gold", type=Path, default=DEFAULT_OUTPUT_GOLD)
     parser.add_argument("--curation-report", type=Path, default=DEFAULT_CURATION_REPORT)
+    parser.add_argument(
+        "--targeted-metadata-input", type=Path, default=DEFAULT_TARGETED_METADATA_INPUT
+    )
+    parser.add_argument(
+        "--targeted-metadata-output", type=Path, default=DEFAULT_TARGETED_METADATA_INPUT
+    )
+    parser.add_argument(
+        "--selected-parent-asins-output",
+        type=Path,
+        default=DEFAULT_SELECTED_PARENT_ASINS_OUTPUT,
+    )
+    parser.add_argument("--targeted-report", type=Path, default=DEFAULT_TARGETED_REPORT)
+    parser.add_argument("--metadata-source-path", type=Path, default=None)
+    parser.add_argument("--source-scan-batch-limit", type=int, default=None)
     parser.add_argument("--max-review-body-chars", type=int, default=1200)
     return parser
 
@@ -1566,10 +1863,16 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not args.build_curated_samples:
-        parser.error("Pass --build-curated-samples to create Retail Phase 2A-6C seed records.")
+    mode_count = int(args.build_curated_samples) + int(args.enrich_selected_metadata)
+    if mode_count != 1:
+        parser.error(
+            "Pass exactly one mode: --build-curated-samples or --enrich-selected-metadata."
+        )
     try:
-        summary = build_curated_samples(args)
+        if args.enrich_selected_metadata:
+            summary = enrich_selected_metadata(args)
+        else:
+            summary = build_curated_samples(args)
     except (FileNotFoundError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
