@@ -108,6 +108,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 2A-7 cross-vertical data QA](docs/38_phase2a_cross_vertical_data_qa.md)
 - [Phase 2A progressive scale-up plan](docs/39_phase2a_progressive_scaleup_plan.md)
 - [Phase 2A 250-scale generator foundation](docs/40_phase2a_250_scaleup_generator.md)
+- [Phase 2A-9A Airline 250 candidate review](docs/41_phase2a_airline_250_candidate_review.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables
