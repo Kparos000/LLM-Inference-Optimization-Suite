@@ -1359,6 +1359,27 @@ def finance_calculation_summary(context: dict[str, Any]) -> str | None:
     )
 
 
+def finance_evidence_focus(contexts: list[dict[str, Any]]) -> str:
+    if len(contexts) > 1:
+        return "the cited filings or company records on each side of the comparison"
+    context = contexts[0]
+    context_type = str(context.get("type") or "")
+    filing_form = str(context.get("filing_form") or "").strip()
+    metric_label = str(context.get("metric_label") or "").strip()
+    section_type = str(context.get("section_type") or "").replace("_", " ").strip()
+    if context_type == "sec_event":
+        return "the Form 8-K filing-event record"
+    if context_type == "seed_xbrl":
+        metric_phrase = metric_label if metric_label else "selected metric"
+        form_phrase = f" from the {filing_form}" if filing_form else ""
+        return f"the XBRL fact record for {metric_phrase}{form_phrase}"
+    if context_type == "sec_section":
+        section_phrase = section_type if section_type else "selected filing section"
+        form_phrase = f" in the {filing_form}" if filing_form else ""
+        return f"the {section_phrase} section{form_phrase}"
+    return "the selected Finance evidence record"
+
+
 def finance_reference_answer(
     *,
     status: str,
@@ -1368,29 +1389,60 @@ def finance_reference_answer(
     required_doc_ids: list[str],
 ) -> str:
     label = finance_context_label(contexts)
-    evidence = ", ".join(required_doc_ids)
+    focus = finance_evidence_focus(contexts)
+    evidence = ", ".join(required_doc_ids) if required_doc_ids else "the cited records"
     if status == "insufficient_evidence":
         summary = (
-            f"The cited public Finance evidence ({evidence}) is insufficient for the "
-            "requested private or unannounced finance detail. A grounded answer should "
-            "state insufficient_evidence and avoid unsupported financial claims."
+            f"The available Finance evidence for {label} is not enough to answer the "
+            "request reliably. The correct response is to state insufficient_evidence, "
+            f"point to the evidence boundary around {evidence}, and avoid guessing, "
+            "projecting, or adding unsupported financial claims."
         )
     elif status == "escalate":
         summary = (
-            f"Escalate the {label} request for analyst review. Evidence {evidence} can "
-            "support filing-grounded discussion, but it should not be extended into "
-            "unsupported conclusions or trade recommendations."
+            f"The {label} request should be escalated for analyst review. The selected "
+            f"records ({evidence}) may support a narrow filing-grounded discussion, "
+            "but they are not enough for a complete conclusion without review."
         )
     elif task_type == "calculation":
-        summary = finance_calculation_summary(contexts[0]) or (
-            f"Use cited XBRL evidence {evidence} to show the calculation inputs and "
-            "formula. Do not use unstated values."
+        calculation_summary = finance_calculation_summary(contexts[0])
+        if calculation_summary:
+            summary = (
+                f"{calculation_summary} The response should cite {evidence}, show the "
+                "formula clearly, and avoid inferring trends beyond the selected values."
+            )
+        else:
+            summary = (
+                f"The calculation for {label} should be based only on {evidence}. "
+                "The answer should show the formula or comparison clearly and avoid "
+                "using unstated values."
+            )
+    elif task_type == "compare_filings":
+        summary = (
+            f"The comparison for {label} should use only {evidence}. Identify the "
+            f"specific company, filing form, period or section in {focus}, and evidence record for "
+            "each side of the comparison; do not add investment conclusions or external "
+            "market commentary."
+        )
+    elif task_type == "extract_structured":
+        summary = (
+            f"The structured answer should extract the company, ticker, filing form, "
+            f"period, metric or section, and evidence ID for {label} from {focus} "
+            f"({evidence}). "
+            "It should not add fields that are not present in the cited record."
+        )
+    elif task_type == "evidence_citation_lookup":
+        summary = (
+            f"The answer should identify {evidence} as the Finance evidence supporting "
+            f"{label}. It should name the document or chunk IDs for {focus} before making any "
+            "filing-grounded statement."
         )
     else:
         summary = (
-            f"Use cited Finance evidence {evidence} to answer about {label}. Keep the "
-            "answer limited to SEC filing, XBRL, or filing-event evidence and avoid "
-            "unsupported financial claims."
+            f"The cited filing evidence supports a grounded answer for {label}. The "
+            f"response should cite {evidence}, focus on {focus}, and avoid projections, "
+            "valuation targets, or unsupported "
+            "financial claims."
         )
 
     if output_format == "json":
@@ -1412,7 +1464,8 @@ def finance_reference_answer(
         for context in contexts:
             rows.append(
                 f"| {finance_context_label([context])} | {task_type} | "
-                f"{', '.join(context.get('doc_ids', []))} | SEC/XBRL evidence only |"
+                f"{', '.join(context.get('doc_ids', []))} | Cite the listed records; "
+                "avoid projections and market commentary |"
             )
         return "\n".join(rows)
     return summary

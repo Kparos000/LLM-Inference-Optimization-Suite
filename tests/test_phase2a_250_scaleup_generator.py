@@ -2,6 +2,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -728,6 +729,54 @@ def test_finance_no_investment_advice_or_private_paths() -> None:
     assert "price target" not in answer_text
 
 
+def test_finance_gold_reference_answers_not_mechanical() -> None:
+    summary = _generate_vertical("finance")
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    blocked_phrases = [
+        "Use cited Finance evidence",
+        "to answer about",
+        "Keep the answer limited to SEC filing, XBRL, or filing-event evidence",
+    ]
+
+    for gold_row in gold:
+        reference_answer = str(gold_row["reference_answer"])
+        for phrase in blocked_phrases:
+            assert phrase not in reference_answer
+
+
+def test_finance_gold_reference_answers_remain_safe() -> None:
+    summary = _generate_vertical("finance")
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    required_exclusions = {
+        "investment recommendation",
+        "price target",
+        "fabricated citations",
+        "unsupported financial claims",
+    }
+
+    for gold_row in gold:
+        assert required_exclusions.issubset(set(gold_row["must_not_include"]))
+
+
+def test_finance_generation_still_preserves_counts() -> None:
+    summary = _generate_vertical("finance")
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+
+    assert len(prompts) == 250
+    assert len(gold) == 250
+    assert Counter(prompt["expected_status"] for prompt in prompts) == {
+        "answer": 230,
+        "insufficient_evidence": 10,
+        "escalate": 10,
+    }
+    assert Counter(prompt["expected_output_format"] for prompt in prompts) == {
+        "text": 155,
+        "json": 50,
+        "markdown_table": 45,
+    }
+
+
 def test_finance_linguistic_variation() -> None:
     summary = _generate_vertical("finance")
     report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
@@ -741,6 +790,15 @@ def test_finance_linguistic_variation() -> None:
         for issue in report["validation_issues"]
         if str(issue).startswith("linguistic_variation_warning")
     ]
+
+
+def test_finance_linguistic_variation_still_passes() -> None:
+    summary = _generate_vertical("finance")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+
+    assert report["linguistic_variation_rate"] >= 0.60
+    assert report["critical_issue_count"] == 0
+    assert report["warning_count"] == 0
 
 
 def test_airline_pilot_generation_cli() -> None:
