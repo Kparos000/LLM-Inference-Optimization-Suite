@@ -657,6 +657,33 @@ def test_finance_generation_cli() -> None:
     assert report["critical_issue_count"] == 0
 
 
+def test_generation_report_ignores_missing_qa_warning(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "finance",
+            "--target-per-vertical",
+            "250",
+            "--qa-report",
+            str(tmp_path / "missing_phase2a_qa_report.json"),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+    assert summary["warning_count"] == 0
+    assert report["warning_count"] == 0
+    assert report["warnings"] == []
+
+
 def test_finance_generated_counts_and_alignment() -> None:
     summary = _generate_vertical("finance")
     prompts = _read_jsonl(ROOT / summary["prompts_path"])

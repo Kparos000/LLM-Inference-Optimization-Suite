@@ -489,6 +489,12 @@ def qa_ready_for_vertical(qa_status: dict[str, Any], vertical: str) -> bool | No
     return bool(isinstance(vertical_status, dict) and vertical_status.get("ready_for_250_scale"))
 
 
+def generation_report_warnings(qa_status: dict[str, Any]) -> list[str]:
+    if not qa_status.get("qa_report_exists"):
+        return []
+    return list(qa_status.get("warnings", []))
+
+
 def source_readiness(vertical: str, target_per_vertical: int) -> dict[str, Any]:
     validate_target(target_per_vertical)
     seed_files = VERTICAL_FILES[vertical]
@@ -3786,7 +3792,7 @@ def generate_finance_vertical(args: argparse.Namespace) -> dict[str, Any]:
     qa_status = load_qa_status(Path(args.qa_report))
     qa_ready = qa_ready_for_vertical(qa_status, "finance")
     blockers: list[str] = []
-    warnings = list(qa_status["warnings"])
+    warnings = generation_report_warnings(qa_status)
     if qa_ready is False:
         blockers.append(f"phase2a_qa_not_ready_for_finance_{target_per_vertical}_scale")
     readiness = source_readiness("finance", target_per_vertical)
@@ -3876,7 +3882,7 @@ def generate_airline_vertical(args: argparse.Namespace) -> dict[str, Any]:
     qa_status = load_qa_status(Path(args.qa_report))
     qa_ready = qa_ready_for_vertical(qa_status, "airline")
     blockers: list[str] = []
-    warnings = list(qa_status["warnings"])
+    warnings = generation_report_warnings(qa_status)
     if qa_ready is False:
         blockers.append(f"phase2a_qa_not_ready_for_airline_{target_per_vertical}_scale")
     readiness = source_readiness("airline", target_per_vertical)
@@ -3966,7 +3972,7 @@ def generate_healthcare_admin_vertical(args: argparse.Namespace) -> dict[str, An
     qa_status = load_qa_status(Path(args.qa_report))
     qa_ready = qa_ready_for_vertical(qa_status, "healthcare_admin")
     blockers: list[str] = []
-    warnings = list(qa_status["warnings"])
+    warnings = generation_report_warnings(qa_status)
     if qa_ready is False:
         blockers.append(f"phase2a_qa_not_ready_for_healthcare_admin_{target_per_vertical}_scale")
     readiness = source_readiness("healthcare_admin", target_per_vertical)
@@ -4056,7 +4062,7 @@ def generate_research_ai_vertical(args: argparse.Namespace) -> dict[str, Any]:
     qa_status = load_qa_status(Path(args.qa_report))
     qa_ready = qa_ready_for_vertical(qa_status, "research_ai")
     blockers: list[str] = []
-    warnings = list(qa_status["warnings"])
+    warnings = generation_report_warnings(qa_status)
     if qa_ready is False:
         blockers.append(f"phase2a_qa_not_ready_for_research_ai_{target_per_vertical}_scale")
     readiness = source_readiness("research_ai", target_per_vertical)
@@ -4146,7 +4152,7 @@ def generate_retail_vertical(args: argparse.Namespace) -> dict[str, Any]:
     qa_status = load_qa_status(Path(args.qa_report))
     qa_ready = qa_ready_for_vertical(qa_status, "retail")
     blockers: list[str] = []
-    warnings = list(qa_status["warnings"])
+    warnings = generation_report_warnings(qa_status)
     if qa_ready is False:
         blockers.append(f"phase2a_qa_not_ready_for_retail_{target_per_vertical}_scale")
     readiness = source_readiness("retail", target_per_vertical)
