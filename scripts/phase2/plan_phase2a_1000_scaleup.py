@@ -1,0 +1,331 @@
+"""Plan Phase 2A 1,000-per-vertical scale-up readiness.
+
+This script writes planning/readiness artifacts only. It does not generate
+records, build RAG, retrieval indexes, embeddings, prompt assembly, model calls,
+GPU runs, or benchmark inference.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+PHASE = "2A-12A"
+TARGET_PER_VERTICAL = 1000
+TOTAL_TARGET_PROMPTS = 5000
+PREVIOUS_CHECKPOINT = "checkpoint_250"
+TARGET_CHECKPOINT = "checkpoint_1000"
+
+DEFAULT_SCALEUP_PLAN = Path("data/sources/phase2a_scaleup_plan.json")
+DEFAULT_PROMOTED_250_MANIFEST = Path("data/scaleup/phase2a_250_manifest.json")
+DEFAULT_OUTPUT_REPORT = Path(
+    "data/generated/phase2a/scaleup_reports/phase2a_1000_scaleup_readiness_report.json"
+)
+DEFAULT_OUTPUT_MATRIX_CSV = Path(
+    "data/generated/phase2a/scaleup_reports/phase2a_1000_scaleup_matrix.csv"
+)
+
+RECOMMENDED_STRATEGIES = {
+    "airline": "Extend deterministic synthetic policy/ticket generator.",
+    "healthcare_admin": "Extend deterministic synthetic admin generator.",
+    "retail": "Prepare a larger sampled review/metadata set and category expansion plan.",
+    "research_ai": (
+        "Expand to about 40 papers or increase section coverage before 1,000-scale generation."
+    ),
+    "finance": (
+        "Use the current 8-company SEC/XBRL corpus first, with evidence-reuse checks "
+        "to avoid repetitive prompts."
+    ),
+}
+SOURCE_EXPANSION_REQUIRED = {
+    "airline": False,
+    "healthcare_admin": False,
+    "retail": True,
+    "research_ai": True,
+    "finance": False,
+}
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    parsed = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(parsed, dict):
+        raise RuntimeError(f"Expected JSON object at {path}")
+    return parsed
+
+
+def write_json(path: Path, obj: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(obj, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def write_matrix_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "vertical",
+        "current_250_prompts",
+        "target_1000_prompts",
+        "additional_prompts_needed",
+        "current_kb_count",
+        "target_kb_min",
+        "target_kb_max",
+        "source_expansion_required",
+        "recommended_generator_strategy",
+        "blockers",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def require_promoted_250_manifest(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise RuntimeError(
+            f"Missing promoted 250 manifest: {path}. Run Phase 2A-11 promotion first."
+        )
+    manifest = read_json(path)
+    quality = manifest.get("quality_summary", {})
+    if manifest.get("dataset_name") != "phase2a_250_scaleup":
+        raise RuntimeError("Promoted manifest does not describe phase2a_250_scaleup.")
+    if manifest.get("total_prompt_count") != 1250 or manifest.get("total_gold_count") != 1250:
+        raise RuntimeError("Promoted 250 manifest does not have 1,250 prompts and gold records.")
+    if not isinstance(quality, dict) or quality.get("promotion_ready") is not True:
+        raise RuntimeError("Promoted 250 manifest is not marked promotion_ready.")
+    per_vertical = manifest.get("per_vertical")
+    if not isinstance(per_vertical, dict):
+        raise RuntimeError("Promoted 250 manifest is missing per_vertical counts.")
+    for vertical, metrics in per_vertical.items():
+        if not isinstance(metrics, dict):
+            raise RuntimeError(f"Promoted 250 manifest has malformed metrics for {vertical}.")
+        if metrics.get("prompt_count") != 250 or metrics.get("gold_count") != 250:
+            raise RuntimeError(f"Promoted 250 manifest is incomplete for {vertical}.")
+        if int(metrics.get("kb_count", 0)) <= 0:
+            raise RuntimeError(f"Promoted 250 manifest has no KB records for {vertical}.")
+    return manifest
+
+
+def target_kb_range(plan: dict[str, Any], vertical: str) -> dict[str, int]:
+    strategies = plan.get("vertical_scale_strategy", {})
+    if not isinstance(strategies, dict):
+        return {"min": 0, "max": 0}
+    vertical_plan = strategies.get(vertical, {})
+    if not isinstance(vertical_plan, dict):
+        return {"min": 0, "max": 0}
+    raw_range = vertical_plan.get("kb_target_1000", {})
+    if not isinstance(raw_range, dict):
+        return {"min": 0, "max": 0}
+    return {
+        "min": int(raw_range.get("min", 0)),
+        "max": int(raw_range.get("max", 0)),
+    }
+
+
+def source_requirements(plan: dict[str, Any], vertical: str) -> list[str]:
+    strategies = plan.get("vertical_scale_strategy", {})
+    if not isinstance(strategies, dict):
+        return []
+    vertical_plan = strategies.get(vertical, {})
+    if not isinstance(vertical_plan, dict):
+        return []
+    raw_requirements = vertical_plan.get("source_expansion", [])
+    if not isinstance(raw_requirements, list):
+        return []
+    return [str(item) for item in raw_requirements]
+
+
+def vertical_blockers(vertical: str, source_expansion_required: bool) -> list[str]:
+    blockers: list[str] = []
+    if source_expansion_required:
+        blockers.append("source_expansion_required_before_1000_generation")
+    if vertical == "research_ai":
+        blockers.append("expand_research_ai_to_40_papers_or_equivalent_section_coverage")
+    if vertical == "retail":
+        blockers.append("expand_retail_review_metadata_sample_and_categories")
+    return blockers
+
+
+def build_per_vertical_readiness(
+    *,
+    scaleup_plan: dict[str, Any],
+    promoted_manifest: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    per_vertical_manifest = promoted_manifest["per_vertical"]
+    readiness: dict[str, dict[str, Any]] = {}
+    for vertical in promoted_manifest["verticals"]:
+        metrics = per_vertical_manifest[vertical]
+        source_required = SOURCE_EXPANSION_REQUIRED.get(vertical, True)
+        blockers = vertical_blockers(vertical, source_required)
+        kb_range = target_kb_range(scaleup_plan, vertical)
+        readiness[vertical] = {
+            "current_250_prompts": int(metrics["prompt_count"]),
+            "target_1000_prompts": TARGET_PER_VERTICAL,
+            "additional_prompts_needed": TARGET_PER_VERTICAL - int(metrics["prompt_count"]),
+            "current_kb_count": int(metrics["kb_count"]),
+            "target_kb_range": kb_range,
+            "source_expansion_required": source_required,
+            "recommended_generator_strategy": RECOMMENDED_STRATEGIES[vertical],
+            "source_requirements": source_requirements(scaleup_plan, vertical),
+            "blockers": blockers,
+            "ready_for_1000_generation": not blockers,
+        }
+    return readiness
+
+
+def build_review_subset_plan() -> dict[str, Any]:
+    return {
+        "gold_review_subset_target": "500 to 1000",
+        "deep_review_subset_target": "150 to 300",
+        "stratify_by": [
+            "vertical",
+            "task_type",
+            "status",
+            "output_format",
+            "difficulty",
+            "evidence_type",
+        ],
+    }
+
+
+def build_report(
+    *,
+    scaleup_plan: dict[str, Any],
+    promoted_manifest: dict[str, Any],
+    promoted_manifest_path: Path,
+) -> dict[str, Any]:
+    per_vertical = build_per_vertical_readiness(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=promoted_manifest,
+    )
+    source_expansion_requirements = {
+        vertical: metrics["source_requirements"] for vertical, metrics in per_vertical.items()
+    }
+    kb_expansion_targets = {
+        vertical: metrics["target_kb_range"] for vertical, metrics in per_vertical.items()
+    }
+    blockers = [
+        f"{vertical}:{blocker}"
+        for vertical, metrics in per_vertical.items()
+        for blocker in metrics["blockers"]
+    ]
+    warnings = [
+        "finance:evidence_reuse_audit_required_before_generation",
+        "full_5000_generation_should_wait_for_blocker_resolution",
+    ]
+    return {
+        "phase": PHASE,
+        "generated_at_utc": utc_now(),
+        "target_per_vertical": TARGET_PER_VERTICAL,
+        "total_target_prompts": TOTAL_TARGET_PROMPTS,
+        "previous_checkpoint": PREVIOUS_CHECKPOINT,
+        "target_checkpoint": TARGET_CHECKPOINT,
+        "required_previous_manifest": str(promoted_manifest_path),
+        "promoted_250_found": True,
+        "per_vertical_readiness": per_vertical,
+        "source_expansion_requirements": source_expansion_requirements,
+        "kb_expansion_targets": kb_expansion_targets,
+        "gold_generation_strategy": {
+            "all_prompts_require_gold": True,
+            "answerable_records_require_evidence_ids": True,
+            "negative_records_require_must_not_include": True,
+            "reuse_phase2a_distribution_contracts": True,
+        },
+        "review_subset_plan": build_review_subset_plan(),
+        "blockers": blockers,
+        "warnings": warnings,
+        "recommend_generation": not blockers,
+        "next_step": (
+            "Implement 1,000 generation beginning with synthetic verticals, while resolving "
+            "Retail and Research AI source-expansion blockers before full 5,000-record generation."
+        ),
+    }
+
+
+def matrix_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for vertical, metrics in report["per_vertical_readiness"].items():
+        kb_range = metrics["target_kb_range"]
+        rows.append(
+            {
+                "vertical": vertical,
+                "current_250_prompts": metrics["current_250_prompts"],
+                "target_1000_prompts": metrics["target_1000_prompts"],
+                "additional_prompts_needed": metrics["additional_prompts_needed"],
+                "current_kb_count": metrics["current_kb_count"],
+                "target_kb_min": kb_range["min"],
+                "target_kb_max": kb_range["max"],
+                "source_expansion_required": metrics["source_expansion_required"],
+                "recommended_generator_strategy": metrics["recommended_generator_strategy"],
+                "blockers": ";".join(metrics["blockers"]),
+            }
+        )
+    return rows
+
+
+def run_plan(args: argparse.Namespace) -> dict[str, Any]:
+    scaleup_plan_path = Path(args.scaleup_plan)
+    promoted_manifest_path = Path(args.promoted_250_manifest)
+    if not scaleup_plan_path.exists():
+        raise RuntimeError(f"Missing scale-up plan: {scaleup_plan_path}")
+    scaleup_plan = read_json(scaleup_plan_path)
+    promoted_manifest = require_promoted_250_manifest(promoted_manifest_path)
+    report = build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=promoted_manifest,
+        promoted_manifest_path=promoted_manifest_path,
+    )
+    write_json(Path(args.output_report), report)
+    write_matrix_csv(Path(args.output_matrix_csv), matrix_rows(report))
+    return {
+        "mode": "write_report",
+        "phase": PHASE,
+        "target_per_vertical": TARGET_PER_VERTICAL,
+        "total_target_prompts": TOTAL_TARGET_PROMPTS,
+        "previous_checkpoint": PREVIOUS_CHECKPOINT,
+        "promoted_250_found": True,
+        "recommend_generation": report["recommend_generation"],
+        "blocker_count": len(report["blockers"]),
+        "warning_count": len(report["warnings"]),
+        "output_report": str(args.output_report),
+        "output_matrix_csv": str(args.output_matrix_csv),
+        "next_step": report["next_step"],
+    }
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Plan Phase 2A 1,000-scale readiness.")
+    parser.add_argument("--write-report", action="store_true")
+    parser.add_argument("--scaleup-plan", default=str(DEFAULT_SCALEUP_PLAN))
+    parser.add_argument("--promoted-250-manifest", default=str(DEFAULT_PROMOTED_250_MANIFEST))
+    parser.add_argument("--output-report", default=str(DEFAULT_OUTPUT_REPORT))
+    parser.add_argument("--output-matrix-csv", default=str(DEFAULT_OUTPUT_MATRIX_CSV))
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if not args.write_report:
+        parser.error("Use --write-report to write the Phase 2A-12A readiness report.")
+    try:
+        summary = run_plan(args)
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
