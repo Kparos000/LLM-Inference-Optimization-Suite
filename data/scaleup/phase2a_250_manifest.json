@@ -1,0 +1,81 @@
+{
+  "dataset_name": "phase2a_250_scaleup",
+  "generated_at_utc": "2026-05-23T20:49:24.437105+00:00",
+  "per_vertical": {
+    "airline": {
+      "files": {
+        "gold": "data\\scaleup\\airline\\airline_gold_250.jsonl",
+        "kb": "data\\scaleup\\airline\\airline_kb_250.jsonl",
+        "prompts": "data\\scaleup\\airline\\airline_prompts_250.jsonl"
+      },
+      "gold_count": 250,
+      "kb_count": 25,
+      "prompt_count": 250
+    },
+    "finance": {
+      "files": {
+        "gold": "data\\scaleup\\finance\\finance_gold_250.jsonl",
+        "kb": "data\\scaleup\\finance\\finance_kb_250.jsonl",
+        "prompts": "data\\scaleup\\finance\\finance_prompts_250.jsonl"
+      },
+      "gold_count": 250,
+      "kb_count": 72,
+      "prompt_count": 250
+    },
+    "healthcare_admin": {
+      "files": {
+        "gold": "data\\scaleup\\healthcare_admin\\healthcare_admin_gold_250.jsonl",
+        "kb": "data\\scaleup\\healthcare_admin\\healthcare_admin_kb_250.jsonl",
+        "prompts": "data\\scaleup\\healthcare_admin\\healthcare_admin_prompts_250.jsonl"
+      },
+      "gold_count": 250,
+      "kb_count": 25,
+      "prompt_count": 250
+    },
+    "research_ai": {
+      "files": {
+        "gold": "data\\scaleup\\research_ai\\research_ai_gold_250.jsonl",
+        "kb": "data\\scaleup\\research_ai\\research_ai_kb_250.jsonl",
+        "prompts": "data\\scaleup\\research_ai\\research_ai_prompts_250.jsonl"
+      },
+      "gold_count": 250,
+      "kb_count": 141,
+      "prompt_count": 250
+    },
+    "retail": {
+      "files": {
+        "gold": "data\\scaleup\\retail\\retail_gold_250.jsonl",
+        "kb": "data\\scaleup\\retail\\retail_kb_250.jsonl",
+        "prompts": "data\\scaleup\\retail\\retail_prompts_250.jsonl"
+      },
+      "gold_count": 250,
+      "kb_count": 75,
+      "prompt_count": 250
+    }
+  },
+  "phase": "2A-11",
+  "promoted_root": "data\\scaleup",
+  "qa_report_path": "data\\generated\\phase2a\\scaleup_reports\\phase2a_250_cross_vertical_qa_report.json",
+  "quality_summary": {
+    "critical_issue_count": 0,
+    "promotion_ready": true,
+    "warning_count": 0
+  },
+  "scaleup_notes": [
+    "no RAG",
+    "no inference",
+    "no embeddings",
+    "generated from Phase 2A deterministic local generators"
+  ],
+  "source_candidate_root": "data\\generated\\phase2a\\scaleup",
+  "total_gold_count": 1250,
+  "total_kb_count": 338,
+  "total_prompt_count": 1250,
+  "verticals": [
+    "airline",
+    "healthcare_admin",
+    "retail",
+    "research_ai",
+    "finance"
+  ]
+}
