@@ -34,6 +34,7 @@ TARGET_TO_CHECKPOINT = {
     5000: "checkpoint_5000",
 }
 IMPLEMENTED_GENERATION_TARGETS = {
+    "finance": {250},
     "airline": {250},
     "healthcare_admin": {250},
     "research_ai": {250},
@@ -193,6 +194,12 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def load_jsonl_if_exists(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    return load_jsonl(path)
+
+
 def write_json(path: Path, obj: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -234,11 +241,16 @@ def dynamic_question_values(prompt: dict[str, Any]) -> list[str]:
         "department",
         "expected_queue",
         "issue_type",
+        "company",
+        "filing_form",
+        "fiscal_period",
+        "fiscal_year",
         "product_id",
         "product_title",
         "prompt_id",
         "route",
         "support_type",
+        "ticker",
         "ticket_id",
         "travel_type",
     ]
@@ -487,11 +499,23 @@ def source_readiness(vertical: str, target_per_vertical: int) -> dict[str, Any]:
 
     if vertical == "finance":
         optional_artifacts = {
+            "selected_filings_manifest": Path(
+                "data/processed/finance/sec/selected_filings_manifest.jsonl"
+            ).exists(),
+            "selected_filing_documents_manifest": Path(
+                "data/processed/finance/sec/selected_filing_documents_manifest.jsonl"
+            ).exists(),
             "sec_filing_text_manifest": Path(
                 "data/processed/finance/sec/filing_text_manifest.jsonl"
             ).exists(),
             "sec_filing_sections_manifest": Path(
                 "data/processed/finance/sec/filing_sections_manifest.jsonl"
+            ).exists(),
+            "xbrl_concept_inventory": Path(
+                "data/processed/finance/sec/xbrl_concept_inventory.jsonl"
+            ).exists(),
+            "section_quality_report": Path(
+                "data/processed/finance/sec/finance_section_quality_report.json"
             ).exists(),
         }
     elif vertical == "airline":
@@ -733,6 +757,814 @@ def generate_plan(args: argparse.Namespace) -> dict[str, Any]:
         "verticals": manifests,
         "next_step": aggregate["next_step"],
     }
+
+
+def compact_identifier(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "", value)
+
+
+def finance_metadata(row: dict[str, Any]) -> dict[str, Any]:
+    metadata = row.get("metadata")
+    if isinstance(metadata, dict):
+        return metadata
+    return {}
+
+
+def finance_status_task_pairs() -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    pairs.extend([("answer", "answer_grounded")] * 95)
+    pairs.extend([("answer", "calculation")] * 35)
+    pairs.extend([("answer", "compare_filings")] * 35)
+    pairs.extend([("answer", "extract_structured")] * 45)
+    pairs.extend([("answer", "evidence_citation_lookup")] * 20)
+    pairs.extend([("insufficient_evidence", "escalation_response")] * 10)
+    pairs.extend([("escalate", "escalation_response")] * 10)
+    return pairs
+
+
+def finance_output_for_task(*, task_type: str, output_counts: dict[str, int]) -> str:
+    if task_type == "calculation" and output_counts["json"] < 35:
+        output_counts["json"] += 1
+        return "json"
+    if task_type == "compare_filings" and output_counts["markdown_table"] < 35:
+        output_counts["markdown_table"] += 1
+        return "markdown_table"
+    if task_type == "extract_structured" and output_counts["json"] < 50:
+        output_counts["json"] += 1
+        return "json"
+    if task_type == "extract_structured" and output_counts["markdown_table"] < 45:
+        output_counts["markdown_table"] += 1
+        return "markdown_table"
+    output_counts["text"] += 1
+    return "text"
+
+
+def finance_prompt_facts(seed_prompt: dict[str, Any]) -> list[dict[str, Any]]:
+    metadata = finance_metadata(seed_prompt)
+    facts: list[dict[str, Any]] = []
+    for key in ["fact", "revenue_fact", "net_income_fact"]:
+        value = metadata.get(key)
+        if isinstance(value, dict):
+            facts.append(value)
+    value = metadata.get("facts")
+    if isinstance(value, list):
+        facts.extend(item for item in value if isinstance(item, dict))
+
+    deduped: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for fact in facts:
+        key = (
+            str(fact.get("concept") or ""),
+            str(fact.get("end") or ""),
+            str(fact.get("value") or ""),
+        )
+        if key not in seen and key[0]:
+            seen.add(key)
+            deduped.append(fact)
+    return deduped
+
+
+def finance_fact_label(seed_prompt: dict[str, Any], concept: str) -> str:
+    metadata = finance_metadata(seed_prompt)
+    labels = metadata.get("humanized_concept_labels")
+    if isinstance(labels, dict) and concept in labels:
+        return str(labels[concept])
+    if metadata.get("raw_xbrl_concept") == concept and metadata.get("humanized_concept_label"):
+        return str(metadata["humanized_concept_label"])
+    return concept
+
+
+def finance_fact_doc_id(seed_prompt: dict[str, Any]) -> str:
+    ticker = str(seed_prompt.get("ticker") or "MULTI")
+    prompt_id = str(seed_prompt.get("prompt_id") or "finance_seed")
+    return f"finance_kb_xbrl_{ticker}_{prompt_id}_facts"
+
+
+def build_finance_xbrl_fact_rows(
+    seed_prompts: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    rows: list[dict[str, Any]] = []
+    doc_id_by_prompt_id: dict[str, str] = {}
+    for seed_prompt in seed_prompts:
+        facts = finance_prompt_facts(seed_prompt)
+        if not facts:
+            continue
+        prompt_id = str(seed_prompt.get("prompt_id") or "")
+        ticker = str(seed_prompt.get("ticker") or "MULTI")
+        company = str(seed_prompt.get("company") or ticker)
+        doc_id = finance_fact_doc_id(seed_prompt)
+        fact_summaries = []
+        concepts: list[str] = []
+        accession_numbers: list[str] = []
+        for fact in facts:
+            concept = str(fact.get("concept") or "")
+            concepts.append(concept)
+            accession = str(fact.get("accn") or "")
+            if accession:
+                accession_numbers.append(accession)
+            label = finance_fact_label(seed_prompt, concept)
+            fact_summaries.append(
+                f"{label} ({concept}) = {fact.get('value')} {fact.get('unit', '')} "
+                f"for fiscal year {fact.get('fy')} period {fact.get('fp')} "
+                f"from Form {fact.get('form')} accession {accession}"
+            )
+        body = (
+            f"Curated XBRL fact evidence for {company} ({ticker}): "
+            + "; ".join(fact_summaries)
+            + ". Use these values only as cited SEC/XBRL facts; do not infer forecasts "
+            "or analyst conclusions."
+        )
+        rows.append(
+            {
+                "allowed_to_commit": False,
+                "body": body,
+                "doc_id": doc_id,
+                "document_type": "xbrl_fact_evidence",
+                "metadata": {
+                    "accession_numbers": sorted(set(accession_numbers)),
+                    "company_name": company,
+                    "concepts": sorted(set(concepts)),
+                    "source_prompt_id": prompt_id,
+                    "ticker": ticker,
+                },
+                "source_id": "finance_sec_edgar_xbrl",
+                "source_type": "derived",
+                "tags": ["finance", "sec", "xbrl", "fact-evidence"],
+                "title": f"{ticker} curated XBRL fact evidence",
+                "version": "phase2a-9e-scaleup-v1",
+                "vertical": "finance",
+            }
+        )
+        doc_id_by_prompt_id[prompt_id] = doc_id
+    return rows, doc_id_by_prompt_id
+
+
+def build_finance_8k_event_rows() -> list[dict[str, Any]]:
+    selected_filings = load_jsonl_if_exists(
+        Path("data/processed/finance/sec/selected_filings_manifest.jsonl")
+    )
+    rows: list[dict[str, Any]] = []
+    counts_by_ticker: Counter[str] = Counter()
+    for filing in selected_filings:
+        if str(filing.get("form") or "") != "8-K":
+            continue
+        ticker = str(filing.get("ticker") or "")
+        if not ticker or counts_by_ticker[ticker] >= 3:
+            continue
+        accession = str(filing.get("accession_number") or "")
+        doc_id = f"finance_kb_sec_{ticker}_8K_{compact_identifier(accession)}_filing_event"
+        items = str(filing.get("items") or "not specified")
+        company = str(filing.get("company_name") or ticker)
+        filing_date = str(filing.get("filing_date") or "")
+        report_date = str(filing.get("report_date") or filing_date)
+        selection_reason = str(filing.get("selection_reason") or "Selected Form 8-K filing.")
+        body = (
+            f"{company} ({ticker}) filed Form 8-K on {filing_date} "
+            f"(report date {report_date}) with SEC item(s) {items}. "
+            f"The selected filing manifest notes: {selection_reason} "
+            "This evidence supports filing-event identification only and should not be "
+            "used to infer financial outcomes beyond the cited filing metadata."
+        )
+        rows.append(
+            {
+                "allowed_to_commit": False,
+                "body": body,
+                "doc_id": doc_id,
+                "document_type": "sec_filing_event",
+                "metadata": {
+                    "accession_number": accession,
+                    "company_name": company,
+                    "filing_date": filing_date,
+                    "form": "8-K",
+                    "items": items,
+                    "provenance_url": filing.get("derived_filing_url"),
+                    "report_date": report_date,
+                    "source_manifest_record_id": filing.get("record_id"),
+                    "ticker": ticker,
+                },
+                "provenance_url": filing.get("derived_filing_url"),
+                "source_id": "finance_sec_edgar_xbrl",
+                "source_type": "derived",
+                "tags": ["8-k", "finance", "sec", "filing-event"],
+                "title": f"{ticker} 8-K filing event ({filing_date})",
+                "version": "phase2a-9e-scaleup-v1",
+                "vertical": "finance",
+            }
+        )
+        counts_by_ticker[ticker] += 1
+    return rows
+
+
+def sanitize_finance_kb_row(row: dict[str, Any]) -> dict[str, Any]:
+    sanitized = dict(row)
+    body = str(sanitized.get("body") or "")
+    body = re.sub(
+        r"before deciding to purchase, hold,? or sell shares of our common stock",
+        "before making investment decisions",
+        body,
+        flags=re.IGNORECASE,
+    )
+    sanitized["body"] = body
+    return sanitized
+
+
+def finance_context_from_seed_prompt(
+    seed_prompt: dict[str, Any], fact_doc_id_by_prompt_id: dict[str, str]
+) -> dict[str, Any]:
+    prompt_id = str(seed_prompt.get("prompt_id") or "")
+    metadata = finance_metadata(seed_prompt)
+    source_doc_ids = [str(item) for item in seed_prompt.get("source_doc_ids", []) if item]
+    fact_doc_id = fact_doc_id_by_prompt_id.get(prompt_id)
+    return {
+        "company": str(seed_prompt.get("company") or seed_prompt.get("ticker") or "Finance"),
+        "comparison_tickers": [
+            str(item) for item in metadata.get("comparison_tickers", []) if item
+        ],
+        "doc_ids": [fact_doc_id] if fact_doc_id else source_doc_ids,
+        "fact_doc_id": fact_doc_id,
+        "facts": finance_prompt_facts(seed_prompt),
+        "filing_form": str(seed_prompt.get("filing_form") or ""),
+        "fiscal_period": str(seed_prompt.get("fiscal_period") or ""),
+        "fiscal_year": str(seed_prompt.get("fiscal_year") or ""),
+        "metric_label": str(
+            metadata.get("metric_label")
+            or metadata.get("humanized_concept_label")
+            or "selected financial metric"
+        ),
+        "prompt_category": str(metadata.get("prompt_category") or ""),
+        "seed_task_type": str(seed_prompt.get("task_type") or ""),
+        "source_doc_ids": source_doc_ids,
+        "ticker": str(seed_prompt.get("ticker") or "MULTI"),
+        "type": "seed_xbrl",
+    }
+
+
+def finance_section_context(row: dict[str, Any]) -> dict[str, Any]:
+    metadata = finance_metadata(row)
+    return {
+        "company": str(metadata.get("company_name") or metadata.get("ticker") or "Finance"),
+        "doc_ids": [str(row.get("doc_id") or "")],
+        "filing_date": str(metadata.get("filing_date") or ""),
+        "filing_form": str(metadata.get("form") or ""),
+        "report_date": str(metadata.get("report_date") or ""),
+        "section_record_id": str(metadata.get("section_record_id") or row.get("doc_id") or ""),
+        "section_type": str(metadata.get("section_type") or ""),
+        "ticker": str(metadata.get("ticker") or ""),
+        "title": str(row.get("title") or ""),
+        "type": "sec_section",
+    }
+
+
+def finance_event_context(row: dict[str, Any]) -> dict[str, Any]:
+    metadata = finance_metadata(row)
+    return {
+        "company": str(metadata.get("company_name") or metadata.get("ticker") or "Finance"),
+        "doc_ids": [str(row.get("doc_id") or "")],
+        "filing_date": str(metadata.get("filing_date") or ""),
+        "filing_form": "8-K",
+        "items": str(metadata.get("items") or "not specified"),
+        "report_date": str(metadata.get("report_date") or ""),
+        "ticker": str(metadata.get("ticker") or ""),
+        "title": str(row.get("title") or ""),
+        "type": "sec_event",
+    }
+
+
+def finance_context_pools(
+    *,
+    seed_prompts: list[dict[str, Any]],
+    kb_rows: list[dict[str, Any]],
+    fact_doc_id_by_prompt_id: dict[str, str],
+) -> dict[str, list[dict[str, Any]]]:
+    seed_contexts = [
+        finance_context_from_seed_prompt(seed_prompt, fact_doc_id_by_prompt_id)
+        for seed_prompt in seed_prompts
+    ]
+    section_contexts = [
+        finance_section_context(row)
+        for row in kb_rows
+        if str(row.get("document_type") or "") == "sec_filing_section"
+    ]
+    event_contexts = [
+        finance_event_context(row)
+        for row in kb_rows
+        if str(row.get("document_type") or "") == "sec_filing_event"
+    ]
+    return {
+        "calculation": [
+            context
+            for context in seed_contexts
+            if context["seed_task_type"] == "calculation_answer" and context["doc_ids"]
+        ],
+        "compare_companies": [
+            context
+            for context in seed_contexts
+            if context["seed_task_type"] == "compare_companies" and context["doc_ids"]
+        ],
+        "direct_numeric": [
+            context
+            for context in seed_contexts
+            if context["seed_task_type"] == "answer_short" and context["doc_ids"]
+        ],
+        "events": event_contexts,
+        "sections": section_contexts,
+        "sections_10k": [
+            context for context in section_contexts if context.get("filing_form") == "10-K"
+        ],
+        "sections_10q": [
+            context for context in section_contexts if context.get("filing_form") == "10-Q"
+        ],
+        "trend": [
+            context
+            for context in seed_contexts
+            if context["seed_task_type"] == "trend_summary" and context["doc_ids"]
+        ],
+    }
+
+
+def finance_select_contexts(
+    *,
+    status: str,
+    task_type: str,
+    index: int,
+    pools: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    if status in {"insufficient_evidence", "escalate"}:
+        candidates = pools["direct_numeric"] or pools["sections"]
+        return [candidates[index % len(candidates)]]
+    if task_type == "calculation":
+        candidates = pools["calculation"] or pools["direct_numeric"]
+        return [candidates[index % len(candidates)]]
+    if task_type == "extract_structured":
+        candidates = pools["events"] if index % 4 == 0 and pools["events"] else pools["sections"]
+        return [candidates[index % len(candidates)]]
+    if task_type == "evidence_citation_lookup":
+        candidates = pools["sections"] if index % 2 == 0 else pools["direct_numeric"]
+        return [candidates[index % len(candidates)]]
+    if task_type == "compare_filings":
+        if index % 3 == 0 and pools["sections_10k"] and pools["sections_10q"]:
+            q_context = pools["sections_10q"][index % len(pools["sections_10q"])]
+            matching_10k = [
+                context
+                for context in pools["sections_10k"]
+                if context["ticker"] == q_context["ticker"]
+            ]
+            return [matching_10k[index % len(matching_10k)], q_context]
+        if index % 3 == 1 and pools["compare_companies"]:
+            return [pools["compare_companies"][index % len(pools["compare_companies"])]]
+        return [
+            pools["sections_10k"][index % len(pools["sections_10k"])],
+            pools["sections_10k"][(index + 1) % len(pools["sections_10k"])],
+        ]
+    if pools["events"] and index % 7 == 0:
+        return [pools["events"][index % len(pools["events"])]]
+    if pools["trend"] and index % 5 == 0:
+        return [pools["trend"][index % len(pools["trend"])]]
+    if pools["direct_numeric"] and index % 5 == 1:
+        return [pools["direct_numeric"][index % len(pools["direct_numeric"])]]
+    return [pools["sections"][index % len(pools["sections"])]]
+
+
+def finance_doc_ids(contexts: list[dict[str, Any]]) -> list[str]:
+    doc_ids: list[str] = []
+    for context in contexts:
+        for doc_id in context.get("doc_ids", []):
+            if doc_id and doc_id not in doc_ids:
+                doc_ids.append(str(doc_id))
+    return doc_ids
+
+
+def finance_chunk_ids(
+    required_doc_ids: list[str], kb_by_doc_id: dict[str, dict[str, Any]]
+) -> list[str]:
+    chunk_ids: list[str] = []
+    for doc_id in required_doc_ids:
+        metadata = finance_metadata(kb_by_doc_id.get(doc_id, {}))
+        chunk_ids.append(
+            str(
+                metadata.get("section_record_id")
+                or metadata.get("source_manifest_record_id")
+                or metadata.get("source_prompt_id")
+                or doc_id
+            )
+        )
+    return chunk_ids
+
+
+def finance_citations(
+    required_doc_ids: list[str], kb_by_doc_id: dict[str, dict[str, Any]]
+) -> list[str]:
+    citations: list[str] = []
+    for doc_id in required_doc_ids:
+        row = kb_by_doc_id.get(doc_id, {})
+        metadata = finance_metadata(row)
+        accession = metadata.get("accession_number")
+        accessions = metadata.get("accession_numbers")
+        ticker = str(metadata.get("ticker") or "finance")
+        if accession:
+            citations.append(f"sec://{accession}#{doc_id}")
+        elif isinstance(accessions, list) and accessions:
+            citations.append(f"xbrl://{ticker}/{accessions[0]}#{doc_id}")
+        else:
+            citations.append(f"finance://{ticker}#{doc_id}")
+    return citations
+
+
+def finance_context_label(contexts: list[dict[str, Any]]) -> str:
+    if len(contexts) == 1:
+        context = contexts[0]
+        ticker = str(context.get("ticker") or "")
+        company = str(context.get("company") or ticker)
+        form = str(context.get("filing_form") or "")
+        metric = str(context.get("metric_label") or "")
+        if form:
+            return f"{company} ({ticker}) {form}".strip()
+        if metric:
+            return f"{company} ({ticker}) {metric}".strip()
+        return f"{company} ({ticker})".strip()
+    return " and ".join(
+        f"{context.get('company', context.get('ticker', 'Finance'))} "
+        f"({context.get('ticker', '')})".strip()
+        for context in contexts
+    )
+
+
+def finance_question_text(
+    *,
+    prompt_number: int,
+    status: str,
+    task_type: str,
+    contexts: list[dict[str, Any]],
+    required_doc_ids: list[str],
+) -> str:
+    label = finance_context_label(contexts)
+    evidence = ", ".join(required_doc_ids[:3])
+    if status == "insufficient_evidence":
+        variants = [
+            (
+                f"Using public SEC/XBRL evidence only, can the records for {label} reveal "
+                "a confidential internal margin target? State the evidence boundary."
+            ),
+            (
+                f"Determine whether cited Finance evidence {evidence} is sufficient to "
+                "answer a request for unannounced internal forecasts."
+            ),
+            (
+                f"A user asks for private financial planning details about {label}; "
+                "respond from the public-filing evidence boundary."
+            ),
+            (
+                f"For scenario {prompt_number}, decide whether the available SEC records "
+                "support a confidential budget claim."
+            ),
+            (
+                f"What should the answer say when public evidence for {label} does not "
+                "support the requested private finance detail?"
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    if status == "escalate":
+        variants = [
+            (
+                f"An analyst asks whether the cited evidence for {label} is enough for a "
+                "high-stakes finance conclusion. Should it be escalated for review?"
+            ),
+            (
+                f"Using only SEC/XBRL evidence {evidence}, determine whether this finance "
+                "request needs analyst review before an answer."
+            ),
+            (
+                f"A finance reviewer needs a decision about {label}; explain the evidence "
+                "limits and escalation path."
+            ),
+            (
+                f"For scenario {prompt_number}, decide whether the filing evidence can be "
+                "answered directly or requires analyst review."
+            ),
+            (
+                f"What should staff do when the cited Finance records for {label} do not "
+                "support a complete conclusion?"
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    if task_type == "calculation":
+        variants = [
+            (
+                f"Using cited XBRL facts for {label}, calculate the requested margin "
+                "and show the formula."
+            ),
+            (
+                f"What calculation can be made from the SEC/XBRL facts for {label}? "
+                "Include the formula."
+            ),
+            f"Compute the finance ratio supported by records {evidence}; avoid projections.",
+            (
+                f"For scenario {prompt_number}, calculate the grounded metric from "
+                "the cited XBRL inputs."
+            ),
+            (
+                f"Show a calculation using only the cited facts for {label}, with no "
+                "forecasted values."
+            ),
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    if task_type == "compare_filings":
+        variants = [
+            f"Compare the cited Finance evidence for {label} in a compact markdown table.",
+            f"Using only SEC/XBRL records {evidence}, create a grounded filing comparison.",
+            (
+                f"What differs between the cited filings or companies for {label}? "
+                "Keep to the evidence."
+            ),
+            (
+                f"For scenario {prompt_number}, compare 10-K, 10-Q, or company "
+                "evidence without adding claims."
+            ),
+            f"Create a table that contrasts the available filing evidence for {label}.",
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    if task_type == "extract_structured":
+        variants = [
+            (
+                f"Return JSON for {label} with ticker, filing_form, filing_date, "
+                "evidence_ids, and boundary."
+            ),
+            f"Using only cited Finance evidence, extract a structured record for {label}.",
+            f"Create a JSON evidence note for records {evidence}; do not add unsupported fields.",
+            (
+                f"For scenario {prompt_number}, structure the SEC filing evidence "
+                "into a compact JSON object."
+            ),
+            f"Extract key filing metadata and the grounded support action for {label}.",
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    if task_type == "evidence_citation_lookup":
+        variants = [
+            (
+                f"Which cited Finance record supports an answer about {label}, and "
+                "what is its evidence ID?"
+            ),
+            f"Identify the SEC or XBRL citation that should support a grounded answer for {label}.",
+            "Using only cited records, name the document and chunk ID behind the Finance claim.",
+            f"For scenario {prompt_number}, point to the evidence record that supports the answer.",
+            f"What citation should be used before answering a question about {label}?",
+        ]
+        return choose_phrase_variant(prompt_number - 1, variants)
+    variants = [
+        f"Using only cited SEC filing evidence, summarize the finance-relevant point for {label}.",
+        f"What does the cited Finance evidence say about {label}? Stay within the records.",
+        f"Summarize the selected SEC/XBRL evidence for {label} without making projections.",
+        (
+            f"For scenario {prompt_number}, answer the single-filing Finance question "
+            f"using records {evidence}."
+        ),
+        f"Explain the cited filing section or XBRL fact for {label} in finance-ready language.",
+    ]
+    return choose_phrase_variant(prompt_number - 1, variants)
+
+
+def finance_calculation_summary(context: dict[str, Any]) -> str | None:
+    facts = context.get("facts", [])
+    if not isinstance(facts, list):
+        return None
+    revenue_fact = next(
+        (
+            fact
+            for fact in facts
+            if "revenue" in str(fact.get("concept") or "").lower()
+            and isinstance(fact.get("value"), int | float)
+        ),
+        None,
+    )
+    net_income_fact = next(
+        (
+            fact
+            for fact in facts
+            if str(fact.get("concept") or "") in {"NetIncomeLoss", "ProfitLoss"}
+            and isinstance(fact.get("value"), int | float)
+        ),
+        None,
+    )
+    if not revenue_fact or not net_income_fact:
+        return None
+    revenue = float(revenue_fact["value"])
+    net_income = float(net_income_fact["value"])
+    if revenue == 0:
+        return None
+    margin = net_income / revenue * 100
+    return (
+        "Calculation: net income divided by revenue, multiplied by 100. "
+        f"Using cited XBRL values {int(net_income)} and {int(revenue)}, "
+        f"the margin is {margin:.2f}%."
+    )
+
+
+def finance_reference_answer(
+    *,
+    status: str,
+    task_type: str,
+    output_format: str,
+    contexts: list[dict[str, Any]],
+    required_doc_ids: list[str],
+) -> str:
+    label = finance_context_label(contexts)
+    evidence = ", ".join(required_doc_ids)
+    if status == "insufficient_evidence":
+        summary = (
+            f"The cited public Finance evidence ({evidence}) is insufficient for the "
+            "requested private or unannounced finance detail. A grounded answer should "
+            "state insufficient_evidence and avoid unsupported financial claims."
+        )
+    elif status == "escalate":
+        summary = (
+            f"Escalate the {label} request for analyst review. Evidence {evidence} can "
+            "support filing-grounded discussion, but it should not be extended into "
+            "unsupported conclusions or trade recommendations."
+        )
+    elif task_type == "calculation":
+        summary = finance_calculation_summary(contexts[0]) or (
+            f"Use cited XBRL evidence {evidence} to show the calculation inputs and "
+            "formula. Do not use unstated values."
+        )
+    else:
+        summary = (
+            f"Use cited Finance evidence {evidence} to answer about {label}. Keep the "
+            "answer limited to SEC filing, XBRL, or filing-event evidence and avoid "
+            "unsupported financial claims."
+        )
+
+    if output_format == "json":
+        return json.dumps(
+            {
+                "status": status,
+                "task_type": task_type,
+                "subject": label,
+                "evidence_ids": required_doc_ids,
+                "answer_boundary": summary,
+            },
+            sort_keys=True,
+        )
+    if output_format == "markdown_table":
+        rows = [
+            "| Subject | Task | Evidence | Boundary |",
+            "| --- | --- | --- | --- |",
+        ]
+        for context in contexts:
+            rows.append(
+                f"| {finance_context_label([context])} | {task_type} | "
+                f"{', '.join(context.get('doc_ids', []))} | SEC/XBRL evidence only |"
+            )
+        return "\n".join(rows)
+    return summary
+
+
+def build_finance_pilot_records(
+    *,
+    target_per_vertical: int,
+    seed: int,
+    seed_prompts: list[dict[str, Any]],
+    seed_gold: list[dict[str, Any]],
+    kb_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    if target_per_vertical != 250:
+        raise RuntimeError("Finance generation is currently implemented only for 250.")
+    seed_prompt_ids = {str(row.get("prompt_id") or "") for row in seed_prompts}
+    seed_gold_ids = {str(row.get("prompt_id") or "") for row in seed_gold}
+    if not seed_prompt_ids or seed_prompt_ids != seed_gold_ids:
+        raise RuntimeError("Finance seed prompt/gold IDs are not aligned.")
+
+    distributions = calculate_distribution_counts("finance", target_per_vertical)
+    status_task_pairs = finance_status_task_pairs()
+    if len(status_task_pairs) != target_per_vertical:
+        raise RuntimeError("Finance status/task sequence does not match the target count.")
+    if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
+        raise RuntimeError("Finance status sequence does not match the approved distribution.")
+    if Counter(task for _, task in status_task_pairs) != distributions["task_type"]:
+        raise RuntimeError("Finance task sequence does not match the approved distribution.")
+
+    fact_rows, fact_doc_id_by_prompt_id = build_finance_xbrl_fact_rows(seed_prompts)
+    event_rows = build_finance_8k_event_rows()
+    kb_copy = [sanitize_finance_kb_row(row) for row in kb_rows]
+    existing_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
+    for row in [*fact_rows, *event_rows]:
+        if str(row.get("doc_id") or "") not in existing_doc_ids:
+            kb_copy.append(row)
+            existing_doc_ids.add(str(row.get("doc_id") or ""))
+
+    pools = finance_context_pools(
+        seed_prompts=seed_prompts,
+        kb_rows=kb_copy,
+        fact_doc_id_by_prompt_id=fact_doc_id_by_prompt_id,
+    )
+    if not pools["sections"] or not pools["direct_numeric"] or not pools["calculation"]:
+        raise RuntimeError("Finance seed data does not expose enough SEC/XBRL contexts.")
+
+    difficulty_sequence = expand_count_sequence(distributions["difficulty"])
+    output_counts = {"text": 0, "json": 0, "markdown_table": 0}
+    kb_by_doc_id = {str(row.get("doc_id") or ""): row for row in kb_copy}
+
+    prompts: list[dict[str, Any]] = []
+    gold: list[dict[str, Any]] = []
+    for index, (status, task_type) in enumerate(status_task_pairs):
+        prompt_number = index + 1
+        contexts = finance_select_contexts(
+            status=status,
+            task_type=task_type,
+            index=index,
+            pools=pools,
+        )
+        required_doc_ids = [
+            doc_id for doc_id in finance_doc_ids(contexts) if doc_id in kb_by_doc_id
+        ]
+        if status == "answer" and not required_doc_ids:
+            raise RuntimeError(f"Finance prompt {prompt_number} has no valid evidence IDs.")
+
+        output_format = finance_output_for_task(task_type=task_type, output_counts=output_counts)
+        difficulty = difficulty_sequence[index]
+        prompt_id = f"finance_scaleup_{target_per_vertical}_{prompt_number:04d}"
+        question = finance_question_text(
+            prompt_number=prompt_number,
+            status=status,
+            task_type=task_type,
+            contexts=contexts,
+            required_doc_ids=required_doc_ids,
+        )
+        company = finance_context_label(contexts)
+        ticker = str(contexts[0].get("ticker") or "MULTI")
+        filing_form = str(contexts[0].get("filing_form") or "")
+        required_chunk_ids = finance_chunk_ids(required_doc_ids, kb_by_doc_id)
+        required_citations = finance_citations(required_doc_ids, kb_by_doc_id)
+        prompt = {
+            "company": company,
+            "expected_action": "answer_with_citations"
+            if status == "answer"
+            else ("escalate_for_review" if status == "escalate" else "state_insufficient_evidence"),
+            "expected_output_format": output_format,
+            "expected_status": status,
+            "filing_form": filing_form,
+            "metadata": {
+                "difficulty": difficulty,
+                "evidence_type": "sec_xbrl_filing_evidence",
+                "generator": GENERATOR_NAME,
+                "prompt_category": task_type if status == "answer" else status,
+                "requires_citation": bool(required_doc_ids),
+                "scaleup_candidate": True,
+                "seed": seed,
+                "target_per_vertical": target_per_vertical,
+            },
+            "prompt_id": prompt_id,
+            "question": question,
+            "required_chunk_ids": required_chunk_ids,
+            "required_citations": required_citations,
+            "required_doc_ids": required_doc_ids,
+            "required_evidence_ids": required_doc_ids,
+            "task_type": task_type,
+            "ticker": ticker,
+            "vertical": "finance",
+        }
+        reference_answer = finance_reference_answer(
+            status=status,
+            task_type=task_type,
+            output_format=output_format,
+            contexts=contexts,
+            required_doc_ids=required_doc_ids,
+        )
+        must_not_include = [
+            "unsupported financial claims",
+            "investment recommendation",
+            "price target",
+            "private internal targets",
+            "fabricated citations",
+            "unverifiable projections",
+            "guaranteed outcome",
+        ]
+        if status != "answer":
+            must_not_include.extend(["private budgets", "unannounced forecasts"])
+        gold_row = {
+            "expected_escalation": status == "escalate",
+            "expected_status": status,
+            "metadata": {
+                "expected_output_format": output_format,
+                "prompt_category": task_type if status == "answer" else status,
+                "required_evidence_ids": required_doc_ids,
+                "source_subject": company,
+            },
+            "must_include": [ticker, *required_doc_ids[:2]],
+            "must_not_include": must_not_include,
+            "prompt_id": prompt_id,
+            "reference_answer": reference_answer,
+            "required_chunk_ids": required_chunk_ids,
+            "required_citations": required_citations,
+            "required_doc_ids": required_doc_ids,
+            "task_type": task_type,
+            "vertical": "finance",
+        }
+        prompts.append(prompt)
+        gold.append(gold_row)
+
+    if output_counts != distributions["expected_output_format"]:
+        raise RuntimeError("Finance output format sequence does not match approved distribution.")
+    return prompts, gold, kb_copy
 
 
 def build_airline_policy_map(seed_prompts: list[dict[str, Any]]) -> dict[str, list[str]]:
@@ -2889,6 +3721,96 @@ def write_scaleup_report(
     return report
 
 
+def generate_finance_vertical(args: argparse.Namespace) -> dict[str, Any]:
+    target_per_vertical = int(args.target_per_vertical)
+    validate_target(target_per_vertical)
+    checkpoint_name = get_checkpoint_for_target(target_per_vertical)
+    if target_per_vertical not in IMPLEMENTED_GENERATION_TARGETS["finance"]:
+        raise RuntimeError(
+            f"Generation for finance at {target_per_vertical} requires explicit "
+            "implementation and prior checkpoint review."
+        )
+    qa_status = load_qa_status(Path(args.qa_report))
+    qa_ready = qa_ready_for_vertical(qa_status, "finance")
+    blockers: list[str] = []
+    warnings = list(qa_status["warnings"])
+    if qa_ready is False:
+        blockers.append(f"phase2a_qa_not_ready_for_finance_{target_per_vertical}_scale")
+    readiness = source_readiness("finance", target_per_vertical)
+    blockers.extend(readiness["missing_seed_files"])
+    report_path = Path(args.report_dir) / f"finance_scaleup_{target_per_vertical}_report.json"
+    if blockers:
+        write_scaleup_report(
+            report_path,
+            vertical="finance",
+            target_per_vertical=target_per_vertical,
+            prompts=[],
+            gold=[],
+            kb_rows=[],
+            blockers=blockers,
+            warnings=warnings,
+            checkpoint=checkpoint_name,
+            generation_scope="local_candidate_generation",
+            generation_implemented=True,
+        )
+        return {
+            "phase": PHASE,
+            "mode": "generate_vertical",
+            "vertical": "finance",
+            "blockers": blockers,
+            "report_path": str(report_path),
+            "next_step": "Resolve blockers and rerun generation.",
+        }
+
+    seed_prompts = load_jsonl(VERTICAL_FILES["finance"]["prompts"])
+    seed_gold = load_jsonl(VERTICAL_FILES["finance"]["gold"])
+    kb_rows = load_jsonl(VERTICAL_FILES["finance"]["kb"])
+    prompts, gold, kb_copy = build_finance_pilot_records(
+        target_per_vertical=target_per_vertical,
+        seed=int(args.seed),
+        seed_prompts=seed_prompts,
+        seed_gold=seed_gold,
+        kb_rows=kb_rows,
+    )
+    output_dir = Path(args.output_dir) / "finance"
+    prompts_path = output_dir / f"finance_prompts_{target_per_vertical}.jsonl"
+    gold_path = output_dir / f"finance_gold_{target_per_vertical}.jsonl"
+    kb_path = output_dir / f"finance_kb_{target_per_vertical}.jsonl"
+    write_jsonl(prompts_path, prompts)
+    write_jsonl(gold_path, gold)
+    write_jsonl(kb_path, kb_copy)
+    report = write_scaleup_report(
+        report_path,
+        vertical="finance",
+        target_per_vertical=target_per_vertical,
+        prompts=prompts,
+        gold=gold,
+        kb_rows=kb_copy,
+        blockers=[],
+        warnings=warnings,
+        checkpoint=checkpoint_name,
+        generation_scope="local_candidate_generation",
+        generation_implemented=True,
+    )
+    return {
+        "phase": PHASE,
+        "mode": "generate_vertical",
+        "vertical": "finance",
+        "target_per_vertical": target_per_vertical,
+        "prompt_count": len(prompts),
+        "gold_count": len(gold),
+        "kb_count": len(kb_copy),
+        "status_counts": report["status_counts"],
+        "critical_issue_count": report["critical_issue_count"],
+        "warning_count": report["warning_count"],
+        "prompts_path": str(prompts_path),
+        "gold_path": str(gold_path),
+        "kb_path": str(kb_path),
+        "report_path": str(report_path),
+        "next_step": report["next_step"],
+    }
+
+
 def generate_airline_vertical(args: argparse.Namespace) -> dict[str, Any]:
     target_per_vertical = int(args.target_per_vertical)
     validate_target(target_per_vertical)
@@ -3262,6 +4184,8 @@ def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
             f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
             "implementation and prior checkpoint review."
         )
+    if args.vertical == "finance":
+        return generate_finance_vertical(args)
     if args.vertical == "airline":
         return generate_airline_vertical(args)
     if args.vertical == "healthcare_admin":

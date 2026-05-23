@@ -183,6 +183,31 @@ def test_research_ai_distribution_counts_sum_to_250() -> None:
     assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
 
 
+def test_finance_distribution_counts_sum_to_250() -> None:
+    module = _load_module()
+
+    distributions = module.calculate_distribution_counts("finance", 250)
+    assert distributions["expected_status"] == {
+        "answer": 230,
+        "insufficient_evidence": 10,
+        "escalate": 10,
+    }
+    assert distributions["expected_output_format"] == {
+        "text": 155,
+        "json": 50,
+        "markdown_table": 45,
+    }
+    assert distributions["task_type"] == {
+        "answer_grounded": 95,
+        "extract_structured": 45,
+        "compare_filings": 35,
+        "calculation": 35,
+        "escalation_response": 20,
+        "evidence_citation_lookup": 20,
+    }
+    assert distributions["difficulty"] == {"easy": 80, "medium": 130, "hard": 40}
+
+
 def test_question_template_diversity_helper() -> None:
     module = _load_module()
     repeated_prompts = [
@@ -478,7 +503,31 @@ def test_generate_plan_research_ai_blocker_count_zero_for_250() -> None:
     assert research_ai["blockers"] == []
 
 
-def test_finance_250_has_generation_not_implemented_blocker() -> None:
+def test_dry_run_marks_finance_ready_for_250() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--dry-run",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    finance = summary["verticals"]["finance"]
+    assert finance["generation_implemented"] is True
+    assert finance["generation_scope"] == "local_candidate_generation"
+    assert finance["ready_for_actual_generation"] is True
+    assert finance["blockers"] == []
+
+
+def test_generate_plan_finance_blocker_count_zero_for_250() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -495,11 +544,11 @@ def test_finance_250_has_generation_not_implemented_blocker() -> None:
 
     assert result.returncode == 0, result.stderr
     summary = json.loads(result.stdout)
-    vertical = summary["verticals"]["finance"]
-    assert vertical["generation_implemented"] is False
-    assert vertical["generation_scope"] == "planning_only"
-    assert vertical["ready_for_actual_generation"] is False
-    assert "generation_not_implemented_for_vertical_target" in vertical["blockers"]
+    finance = summary["verticals"]["finance"]
+    assert finance["generation_implemented"] is True
+    assert finance["ready_for_actual_generation"] is True
+    assert finance["blocker_count"] == 0
+    assert finance["blockers"] == []
 
 
 def test_generate_plan_5000() -> None:
@@ -572,6 +621,126 @@ def test_large_generation_blocked_without_explicit_support() -> None:
         "Generation for airline at 2000 requires explicit implementation and prior "
         "checkpoint review"
     ) in result.stderr
+
+
+def test_finance_generation_cli() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--generate-vertical",
+            "--vertical",
+            "finance",
+            "--target-per-vertical",
+            "250",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["vertical"] == "finance"
+    assert summary["prompt_count"] == 250
+    assert summary["gold_count"] == 250
+    assert summary["critical_issue_count"] == 0
+    assert (ROOT / summary["prompts_path"]).exists()
+    assert (ROOT / summary["gold_path"]).exists()
+    assert (ROOT / summary["kb_path"]).exists()
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+    assert report["vertical"] == "finance"
+    assert report["prompt_count"] == 250
+    assert report["gold_count"] == 250
+    assert report["critical_issue_count"] == 0
+
+
+def test_finance_generated_counts_and_alignment() -> None:
+    summary = _generate_vertical("finance")
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+    assert len(prompts) == 250
+    assert len(gold) == 250
+    assert prompts[0]["prompt_id"] == "finance_scaleup_250_0001"
+    assert prompts[-1]["prompt_id"] == "finance_scaleup_250_0250"
+
+    module = _load_module()
+    assert module.validate_prompt_gold_alignment(prompts, gold) == []
+    assert module.validate_evidence_coverage(gold, kb) == []
+    assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
+
+
+def test_finance_negative_statuses_present() -> None:
+    summary = _generate_vertical("finance")
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    status_counts: dict[str, int] = {}
+    for prompt in prompts:
+        status = str(prompt["expected_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    assert status_counts == {
+        "answer": 230,
+        "insufficient_evidence": 10,
+        "escalate": 10,
+    }
+    assert {"insufficient_evidence", "escalate"}.issubset(status_counts)
+    assert all(
+        gold_row["must_not_include"] for gold_row in gold if gold_row["expected_status"] != "answer"
+    )
+
+
+def test_finance_answerable_gold_has_evidence() -> None:
+    summary = _generate_vertical("finance")
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    for gold_row in gold:
+        if gold_row["expected_status"] != "answer":
+            continue
+        assert gold_row["required_doc_ids"]
+        assert gold_row["required_chunk_ids"]
+        assert gold_row["required_citations"]
+        assert gold_row["reference_answer"]
+
+
+def test_finance_no_investment_advice_or_private_paths() -> None:
+    summary = _generate_vertical("finance")
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+    combined_text = json.dumps([prompts, gold, kb], ensure_ascii=True).lower()
+    assert "c:\\\\users" not in combined_text
+    assert "/home/" not in combined_text
+    assert "kparo" not in combined_text
+    assert "akpoogaga" not in combined_text
+    assert "local_text_path" not in combined_text
+    assert "investment advice" not in combined_text
+
+    answer_text = json.dumps(
+        [prompt["question"] for prompt in prompts if prompt["expected_status"] == "answer"]
+        + [row["reference_answer"] for row in gold if row["expected_status"] == "answer"],
+        ensure_ascii=True,
+    ).lower()
+    assert "recommend buying" not in answer_text
+    assert "recommend selling" not in answer_text
+    assert "should invest" not in answer_text
+    assert "price target" not in answer_text
+
+
+def test_finance_linguistic_variation() -> None:
+    summary = _generate_vertical("finance")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+
+    assert report["linguistic_variation_rate"] >= 0.60
+    assert report["most_common_question_template_share"] <= 0.40
+    assert report["most_common_question_template_count"] <= 100
+    assert report["unique_question_template_count"] > 1
+    assert not [
+        issue
+        for issue in report["validation_issues"]
+        if str(issue).startswith("linguistic_variation_warning")
+    ]
 
 
 def test_airline_pilot_generation_cli() -> None:
@@ -1070,7 +1239,7 @@ def test_scaleup_reports_include_linguistic_metrics() -> None:
         "most_common_question_template_share",
         "unique_question_template_count",
     }
-    for vertical in ["airline", "healthcare_admin", "retail", "research_ai"]:
+    for vertical in ["airline", "healthcare_admin", "retail", "research_ai", "finance"]:
         summary = _generate_vertical(vertical)
         report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
         assert required_fields.issubset(report)
@@ -1091,6 +1260,7 @@ def test_docs_include_commands() -> None:
     assert "--dry-run --target-per-vertical 2000" in docs
     assert "--generate-plan --target-per-vertical 2000" in docs
     assert "--generate-vertical --vertical airline --target-per-vertical 250" in docs
+    assert "--generate-vertical --vertical finance --target-per-vertical 250" in docs
     assert "--generate-vertical --vertical research_ai --target-per-vertical 250" in docs
     assert "no RAG" in docs
 

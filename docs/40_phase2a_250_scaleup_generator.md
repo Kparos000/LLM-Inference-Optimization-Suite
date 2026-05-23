@@ -61,6 +61,16 @@ policy KB are deterministic and synthetic/public-inspired.
 python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical airline --target-per-vertical 250
 ```
 
+Finance 250 generation is implemented from committed Finance seed prompt, KB,
+and gold files plus local SEC/XBRL/filing-derived artifacts where available.
+It creates grounded filing, XBRL fact, comparison, calculation, extraction, and
+escalation candidates. Generated answers must remain within cited SEC/XBRL
+evidence, avoid unsupported financial claims, and provide no investment advice.
+
+```powershell
+python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical finance --target-per-vertical 250
+```
+
 Healthcare Admin 250 generation is also implemented. It uses deterministic
 synthetic MapleCare Health admin policies and keeps the administrative boundary
 explicit: generated answers must not provide clinical diagnosis, treatment
@@ -101,6 +111,13 @@ The Airline 250 pilot writes local ignored files:
 - `data/generated/phase2a/scaleup/airline/airline_gold_250.jsonl`
 - `data/generated/phase2a/scaleup/airline/airline_kb_250.jsonl`
 - `data/generated/phase2a/scaleup_reports/airline_scaleup_250_report.json`
+
+The Finance 250 generator writes local ignored files:
+
+- `data/generated/phase2a/scaleup/finance/finance_prompts_250.jsonl`
+- `data/generated/phase2a/scaleup/finance/finance_gold_250.jsonl`
+- `data/generated/phase2a/scaleup/finance/finance_kb_250.jsonl`
+- `data/generated/phase2a/scaleup_reports/finance_scaleup_250_report.json`
 
 The Healthcare Admin 250 generator writes local ignored files:
 
@@ -194,12 +211,13 @@ all five verticals. They also record local artifact readiness where future full
 generation will need additional sources, such as SEC manifests, Research AI
 paper sections, and Retail sampled review/metadata files.
 
-Only Airline 250, Healthcare Admin 250, Research AI 250, and Retail 250 are
-enabled for local candidate generation. Healthcare remains synthetic and
-admin-only, with no clinical advice. Retail uses sanitized product/review
-evidence and synthetic benchmark policies, not Amazon policy. Research AI 250
-uses the existing paper KB and section evidence only; it does not expand the
-paper registry, assemble RAG prompts, build embeddings, call models, run GPU
-inference, or generate records beyond the 250 local candidate checkpoint. Other
-verticals and larger targets should use `--generate-plan` until their dedicated
-deterministic expansion logic is implemented.
+Finance 250, Airline 250, Healthcare Admin 250, Research AI 250, and Retail
+250 are enabled for local candidate generation. Finance uses SEC filing,
+filing-event, and XBRL-derived evidence and does not produce investment advice.
+Healthcare remains synthetic and admin-only, with no clinical advice. Retail
+uses sanitized product/review evidence and synthetic benchmark policies, not
+Amazon policy. Research AI 250 uses the existing paper KB and section evidence
+only; it does not expand the paper registry, assemble RAG prompts, build
+embeddings, call models, run GPU inference, or generate records beyond the 250
+local candidate checkpoint. Larger targets should use `--generate-plan` until
+their dedicated deterministic expansion logic is implemented.
