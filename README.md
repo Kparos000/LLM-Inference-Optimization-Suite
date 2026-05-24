@@ -53,7 +53,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Scaled synthetic workloads can be generated with `inference-bench generate-workloads --count 100`.
 - Reporting includes latency percentiles and aggregate throughput metadata for concurrency runs.
 - `openai-load-run` supports chunking, checkpointing, resume mode, and progress logs for long-running benchmarks.
-- Phase 2A has a promoted 10,000-record dataset EDA layer with interactive dashboard, static figures, word clouds, and vertical pages.
+- The promoted 10,000-record benchmark dataset has a public-facing EDA layer with interactive dashboard, static figures, word clouds, and vertical pages.
 
 ## Documentation
 
@@ -120,7 +120,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 2A-15 2,000-scale QA and promotion](docs/50_phase2a_2000_full_qa_promotion.md)
 - [Phase 2A-16A large-scale scaffolding](docs/51_phase2a_large_scale_scaffolding.md)
 - [Phase 2A-16B Research AI retrieval corpus](docs/52_phase2a_research_ai_retrieval_corpus.md)
-- [Phase 2A-16R promoted 10,000-record EDA](docs/53_phase2a_10000_dataset_eda.md)
+- [10,000-record dataset EDA](docs/53_phase2a_10000_dataset_eda.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables
