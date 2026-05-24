@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import importlib
 import json
@@ -15,8 +16,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean, median
 from typing import Any
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 PHASE = "2A-6B"
+MULTICATEGORY_PHASE = "2A-12B"
 SOURCE_NAME = "Amazon Reviews 2023"
 SOURCE_OWNER = "McAuley Lab"
 SOURCE_LOCATION = "Hugging Face dataset McAuley-Lab/Amazon-Reviews-2023"
@@ -32,6 +36,8 @@ DEFAULT_PLOTS_DIR = Path("data/generated/retail/plots")
 DEFAULT_WORD_VIEWS_DIR = Path("data/generated/retail/word_views")
 DEFAULT_OUTPUT_REVIEWS_SAMPLE = Path("data/generated/retail/amazon_reviews_sample.jsonl")
 DEFAULT_OUTPUT_METADATA_SAMPLE = Path("data/generated/retail/amazon_metadata_sample.jsonl")
+DEFAULT_MULTICATEGORY_OUTPUT_DIR = Path("data/generated/retail/multicategory")
+DEFAULT_MULTICATEGORY_CATEGORIES = "All_Beauty,Home_and_Kitchen,Electronics"
 REVIEW_SCHEMA_SAMPLE_PATH = Path(
     "data/real_world_samples/retail_amazon_reviews_schema_sample.jsonl"
 )
@@ -154,6 +160,14 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def read_jsonl_limited(path: Path, limit: int) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as handle:
@@ -192,6 +206,25 @@ def build_hf_jsonl_fallback_filenames(category: str) -> dict[str, str]:
         "reviews_file": f"raw/review_categories/{normalized_category}.jsonl",
         "metadata_file": f"raw/meta_categories/meta_{normalized_category}.jsonl",
     }
+
+
+def parse_categories(value: str) -> list[str]:
+    categories: list[str] = []
+    seen: set[str] = set()
+    for raw_category in value.split(","):
+        category = raw_category.strip()
+        if not category or category in seen:
+            continue
+        categories.append(category)
+        seen.add(category)
+    if not categories:
+        raise RuntimeError("At least one Retail category is required.")
+    return categories
+
+
+def category_dir_name(category: str) -> str:
+    normalized = re.sub(r"[^A-Za-z0-9_.-]+", "_", category.strip())
+    return normalized.strip("_") or "category"
 
 
 def download_hf_dataset_file(repo_id: str, filename: str) -> Path:
@@ -264,6 +297,36 @@ def read_downloaded_sample_limited(
     if source_format == "jsonl":
         return read_jsonl_limited(path, limit)
     raise RuntimeError(f"Unsupported downloaded sample format: {source_format}")
+
+
+def hf_resolve_url(repo_id: str, filename: str) -> str:
+    return f"https://huggingface.co/datasets/{repo_id}/resolve/main/{quote(filename, safe='/')}"
+
+
+def read_hf_jsonl_file_limited(repo_id: str, filename: str, limit: int) -> list[dict[str, Any]]:
+    if limit < 1:
+        return []
+    request = Request(
+        hf_resolve_url(repo_id, filename),
+        headers={"User-Agent": "llm-inference-optimization-suite-retail-loader"},
+    )
+    rows: list[dict[str, Any]] = []
+    try:
+        with urlopen(request, timeout=120) as response:
+            for raw_line in response:
+                if len(rows) >= limit:
+                    break
+                line = raw_line.decode("utf-8").strip()
+                if not line:
+                    continue
+                parsed = json.loads(line)
+                if isinstance(parsed, dict):
+                    rows.append(parsed)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to stream limited Hugging Face JSONL file {filename!r}: {exc}"
+        ) from exc
+    return rows
 
 
 def _source_format_from_filename(filename: str) -> str:
@@ -1451,6 +1514,396 @@ def run_huggingface_load(args: argparse.Namespace) -> dict[str, Any]:
     return run_huggingface_parquet_load(args)
 
 
+def product_title_coverage(metadata_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    present_count = sum(1 for row in metadata_rows if str(row.get("title") or "").strip())
+    total_count = len(metadata_rows)
+    return {
+        "metadata_row_count": total_count,
+        "product_title_present_count": present_count,
+        "product_title_missing_count": total_count - present_count,
+        "product_title_coverage": round(present_count / total_count, 6) if total_count else 0.0,
+    }
+
+
+def multicategory_category_args(
+    args: argparse.Namespace,
+    *,
+    category: str,
+    output_dir: Path,
+) -> argparse.Namespace:
+    category_dir = output_dir / category_dir_name(category)
+    category_prefix = category_dir_name(category).lower()
+    category_args = argparse.Namespace(**vars(args))
+    category_args.category = category
+    category_args.sample_limit = int(args.sample_limit_per_category)
+    category_args.metadata_limit = int(args.metadata_limit_per_category)
+    category_args.output_reviews_sample = str(category_dir / f"{category_prefix}_reviews.jsonl")
+    category_args.output_metadata_sample = str(category_dir / f"{category_prefix}_metadata.jsonl")
+    category_args.output_report = str(category_dir / f"{category_prefix}_source_report.json")
+    category_args.field_profile_output = str(category_dir / f"{category_prefix}_field_profile.json")
+    category_args.text_profile_output = str(category_dir / f"{category_prefix}_text_profile.json")
+    category_args.quality_report_output = str(
+        category_dir / f"{category_prefix}_quality_report.json"
+    )
+    category_args.plots_dir = str(category_dir / "plots")
+    category_args.word_views_dir = str(category_dir / "word_views")
+    category_args.reviews_file = None
+    category_args.metadata_file = None
+    category_args.use_datasets_loader = False
+    return category_args
+
+
+def build_multicategory_quality_report(
+    *,
+    categories: list[str],
+    category_summaries: dict[str, dict[str, Any]],
+    quality_flags_by_category: dict[str, dict[str, Any]],
+    product_title_coverage_by_category: dict[str, dict[str, Any]],
+    readiness_checks: dict[str, bool],
+    retail_ready_for_1000_source_expansion: bool,
+) -> dict[str, Any]:
+    return {
+        "phase": MULTICATEGORY_PHASE,
+        "generated_at_utc": utc_now(),
+        "categories": categories,
+        "quality_flags_by_category": quality_flags_by_category,
+        "product_title_coverage_by_category": product_title_coverage_by_category,
+        "raw_user_id_present_count": sum(
+            int(flags.get("raw_user_id_present_count", 0))
+            for flags in quality_flags_by_category.values()
+        ),
+        "sanitized_user_id_hash_present_count": sum(
+            int(flags.get("sanitized_user_id_hash_present_count", 0))
+            for flags in quality_flags_by_category.values()
+        ),
+        "pii_like_pattern_count": sum(
+            int(flags.get("pii_like_pattern_count", 0))
+            for flags in quality_flags_by_category.values()
+        ),
+        "category_output_reports": {
+            category: summary.get("output_report")
+            for category, summary in category_summaries.items()
+        },
+        "readiness_checks": readiness_checks,
+        "retail_ready_for_1000_source_expansion": retail_ready_for_1000_source_expansion,
+    }
+
+
+def build_multicategory_source_report(
+    *,
+    categories: list[str],
+    category_summaries: dict[str, dict[str, Any]],
+    quality_report_path: Path,
+    category_summary_csv_path: Path,
+    output_dir: Path,
+    readiness_checks: dict[str, bool],
+    retail_ready_for_1000_source_expansion: bool,
+) -> dict[str, Any]:
+    reviews_loaded_by_category = {
+        category: int(summary.get("reviews_sample_count", 0))
+        for category, summary in category_summaries.items()
+    }
+    metadata_loaded_by_category = {
+        category: int(summary.get("metadata_sample_count", 0))
+        for category, summary in category_summaries.items()
+    }
+    quality_flags_by_category = {
+        category: dict(summary.get("quality_flags", {}))
+        for category, summary in category_summaries.items()
+    }
+    return {
+        "phase": MULTICATEGORY_PHASE,
+        "generated_at_utc": utc_now(),
+        "mode": "load_multicategory_from_huggingface",
+        "hf_repo_id": HF_DATASET_NAME,
+        "categories": categories,
+        "reviews_loaded_by_category": reviews_loaded_by_category,
+        "metadata_loaded_by_category": metadata_loaded_by_category,
+        "total_reviews_loaded": sum(reviews_loaded_by_category.values()),
+        "total_metadata_loaded": sum(metadata_loaded_by_category.values()),
+        "raw_user_id_present_count": sum(
+            int(flags.get("raw_user_id_present_count", 0))
+            for flags in quality_flags_by_category.values()
+        ),
+        "sanitized_user_id_hash_present_count": sum(
+            int(flags.get("sanitized_user_id_hash_present_count", 0))
+            for flags in quality_flags_by_category.values()
+        ),
+        "rating_distribution_by_category": {
+            category: summary.get("rating_distribution", {})
+            for category, summary in category_summaries.items()
+        },
+        "issue_terms_by_category": {
+            category: summary.get("top_issue_terms", [])
+            for category, summary in category_summaries.items()
+        },
+        "product_title_coverage_by_category": {
+            category: summary.get("product_title_coverage", {})
+            for category, summary in category_summaries.items()
+        },
+        "pii_like_pattern_count": sum(
+            int(flags.get("pii_like_pattern_count", 0))
+            for flags in quality_flags_by_category.values()
+        ),
+        "quality_flags_by_category": quality_flags_by_category,
+        "quality_report_path": str(quality_report_path),
+        "category_summary_csv_path": str(category_summary_csv_path),
+        "output_dir": str(output_dir),
+        "word_views_dir": str(output_dir / "word_views"),
+        "plots_dir": str(output_dir / "plots"),
+        "readiness_checks": readiness_checks,
+        "recommended_next_step": (
+            "Use the multi-category Retail source pool to implement the deterministic "
+            "1,000-scale Retail generator, then run candidate QA before promotion."
+            if retail_ready_for_1000_source_expansion
+            else "Resolve source coverage, sanitization, or quality-report gaps before "
+            "implementing Retail 1,000-scale generation."
+        ),
+        "retail_ready_for_1000_source_expansion": retail_ready_for_1000_source_expansion,
+    }
+
+
+def run_huggingface_multicategory_category_load(args: argparse.Namespace) -> dict[str, Any]:
+    output_reviews_sample = Path(args.output_reviews_sample)
+    output_metadata_sample = Path(args.output_metadata_sample)
+    files = build_hf_jsonl_fallback_filenames(str(args.category))
+    hf_repo_id = str(args.hf_repo_id)
+    reviews = [
+        sanitize_review_row(row)
+        for row in read_hf_jsonl_file_limited(
+            hf_repo_id,
+            files["reviews_file"],
+            int(args.sample_limit),
+        )
+    ]
+    metadata = [
+        sanitize_metadata_row(row)
+        for row in read_hf_jsonl_file_limited(
+            hf_repo_id,
+            files["metadata_file"],
+            int(args.metadata_limit),
+        )
+    ]
+    write_jsonl(output_reviews_sample, reviews)
+    write_jsonl(output_metadata_sample, metadata)
+
+    local_args = argparse.Namespace(**vars(args))
+    local_args.reviews_input = str(output_reviews_sample)
+    local_args.metadata_input = str(output_metadata_sample)
+    exploration_summary = run_local_exploration(
+        local_args,
+        mode="load_multicategory_from_huggingface",
+    )
+    text_profile = json.loads(Path(args.text_profile_output).read_text(encoding="utf-8"))
+    report = json.loads(Path(args.output_report).read_text(encoding="utf-8"))
+
+    return {
+        "mode": "load_multicategory_from_huggingface",
+        "phase": MULTICATEGORY_PHASE,
+        "loader": "direct_jsonl_stream",
+        "hf_repo_id": hf_repo_id,
+        "category": str(args.category),
+        "reviews_file": files["reviews_file"],
+        "metadata_file": files["metadata_file"],
+        "reviews_sample_count": len(reviews),
+        "metadata_sample_count": len(metadata),
+        "output_reviews_sample": str(output_reviews_sample),
+        "output_metadata_sample": str(output_metadata_sample),
+        "output_report": exploration_summary["output_report"],
+        "field_profile_output": exploration_summary["field_profile_output"],
+        "text_profile_output": exploration_summary["text_profile_output"],
+        "quality_report_output": exploration_summary["quality_report_output"],
+        "plots_dir": exploration_summary["plots_dir"],
+        "word_views_dir": exploration_summary["word_views_dir"],
+        "rating_distribution": text_profile.get("rating_distribution", {}),
+        "top_issue_terms": text_profile.get("frequent_issue_terms", [])[:10],
+        "quality_flags": report.get("quality_flags", {}),
+        "warnings": report.get("warnings", _report_warnings()),
+        "next_step": report.get(
+            "next_step",
+            "Review multi-category Retail source expansion before 1,000-scale generation.",
+        ),
+    }
+
+
+def write_multicategory_summary_csv(
+    path: Path,
+    *,
+    categories: list[str],
+    category_summaries: dict[str, dict[str, Any]],
+) -> None:
+    rows: list[dict[str, Any]] = []
+    for category in categories:
+        summary = category_summaries[category]
+        flags = dict(summary.get("quality_flags", {}))
+        coverage = dict(summary.get("product_title_coverage", {}))
+        rows.append(
+            {
+                "category": category,
+                "reviews_loaded": int(summary.get("reviews_sample_count", 0)),
+                "metadata_loaded": int(summary.get("metadata_sample_count", 0)),
+                "raw_user_id_present_count": int(flags.get("raw_user_id_present_count", 0)),
+                "sanitized_user_id_hash_present_count": int(
+                    flags.get("sanitized_user_id_hash_present_count", 0)
+                ),
+                "pii_like_pattern_count": int(flags.get("pii_like_pattern_count", 0)),
+                "product_title_present_count": int(coverage.get("product_title_present_count", 0)),
+                "product_title_coverage": coverage.get("product_title_coverage", 0.0),
+                "output_report": summary.get("output_report", ""),
+                "quality_report_output": summary.get("quality_report_output", ""),
+            }
+        )
+    write_csv(
+        path,
+        rows,
+        [
+            "category",
+            "reviews_loaded",
+            "metadata_loaded",
+            "raw_user_id_present_count",
+            "sanitized_user_id_hash_present_count",
+            "pii_like_pattern_count",
+            "product_title_present_count",
+            "product_title_coverage",
+            "output_report",
+            "quality_report_output",
+        ],
+    )
+
+
+def write_multicategory_word_and_plot_summaries(
+    *,
+    output_dir: Path,
+    categories: list[str],
+    category_summaries: dict[str, dict[str, Any]],
+) -> None:
+    issue_lines = []
+    category_lines = []
+    for category in categories:
+        summary = category_summaries[category]
+        issue_lines.append(
+            json.dumps(
+                {
+                    "category": category,
+                    "top_issue_terms": summary.get("top_issue_terms", []),
+                },
+                sort_keys=True,
+            )
+        )
+        category_lines.append(
+            ",".join(
+                [
+                    category,
+                    str(summary.get("reviews_sample_count", 0)),
+                    str(summary.get("metadata_sample_count", 0)),
+                ]
+            )
+        )
+    _write_text_lines(output_dir / "word_views" / "multicategory_issue_terms.txt", issue_lines)
+    _write_text_lines(
+        output_dir / "plots" / "multicategory_category_counts.txt",
+        ["category,reviews,metadata", *category_lines],
+    )
+
+
+def run_huggingface_multicategory_load(args: argparse.Namespace) -> dict[str, Any]:
+    categories = parse_categories(str(args.categories))
+    output_dir = Path(args.output_dir)
+    category_summaries: dict[str, dict[str, Any]] = {}
+    product_title_coverage_by_category: dict[str, dict[str, Any]] = {}
+    quality_flags_by_category: dict[str, dict[str, Any]] = {}
+    quality_report_exists_by_category: dict[str, bool] = {}
+
+    for category in categories:
+        category_args = multicategory_category_args(args, category=category, output_dir=output_dir)
+        summary = run_huggingface_multicategory_category_load(category_args)
+        metadata_rows = read_jsonl_limited(Path(summary["output_metadata_sample"]), 0)
+        coverage = product_title_coverage(metadata_rows)
+        summary["product_title_coverage"] = coverage
+        category_summaries[category] = summary
+        product_title_coverage_by_category[category] = coverage
+        quality_flags_by_category[category] = dict(summary.get("quality_flags", {}))
+        quality_report_exists_by_category[category] = Path(
+            str(summary["quality_report_output"])
+        ).exists()
+
+    raw_user_id_present_count = sum(
+        int(flags.get("raw_user_id_present_count", 0))
+        for flags in quality_flags_by_category.values()
+    )
+    readiness_checks = {
+        "at_least_3_categories_loaded": len(categories) >= 3,
+        "reviews_at_least_1000_per_category": all(
+            int(summary.get("reviews_sample_count", 0)) >= 1000
+            for summary in category_summaries.values()
+        ),
+        "metadata_at_least_1000_per_category": all(
+            int(summary.get("metadata_sample_count", 0)) >= 1000
+            for summary in category_summaries.values()
+        ),
+        "raw_user_id_present_count_zero": raw_user_id_present_count == 0,
+        "product_title_coverage_reported": all(
+            "product_title_coverage" in coverage
+            for coverage in product_title_coverage_by_category.values()
+        ),
+        "quality_report_exists": all(quality_report_exists_by_category.values()),
+    }
+    retail_ready = all(readiness_checks.values())
+
+    quality_report_path = output_dir / "retail_multicategory_quality_report.json"
+    source_report_path = output_dir / "retail_multicategory_source_report.json"
+    category_summary_csv_path = output_dir / "retail_multicategory_category_summary.csv"
+
+    quality_report = build_multicategory_quality_report(
+        categories=categories,
+        category_summaries=category_summaries,
+        quality_flags_by_category=quality_flags_by_category,
+        product_title_coverage_by_category=product_title_coverage_by_category,
+        readiness_checks=readiness_checks,
+        retail_ready_for_1000_source_expansion=retail_ready,
+    )
+    write_json(quality_report_path, quality_report)
+    write_multicategory_summary_csv(
+        category_summary_csv_path,
+        categories=categories,
+        category_summaries=category_summaries,
+    )
+    write_multicategory_word_and_plot_summaries(
+        output_dir=output_dir,
+        categories=categories,
+        category_summaries=category_summaries,
+    )
+    source_report = build_multicategory_source_report(
+        categories=categories,
+        category_summaries=category_summaries,
+        quality_report_path=quality_report_path,
+        category_summary_csv_path=category_summary_csv_path,
+        output_dir=output_dir,
+        readiness_checks=readiness_checks,
+        retail_ready_for_1000_source_expansion=retail_ready,
+    )
+    write_json(source_report_path, source_report)
+
+    return {
+        "mode": "load_multicategory_from_huggingface",
+        "phase": MULTICATEGORY_PHASE,
+        "categories": categories,
+        "reviews_loaded_by_category": source_report["reviews_loaded_by_category"],
+        "metadata_loaded_by_category": source_report["metadata_loaded_by_category"],
+        "total_reviews_loaded": source_report["total_reviews_loaded"],
+        "total_metadata_loaded": source_report["total_metadata_loaded"],
+        "raw_user_id_present_count": source_report["raw_user_id_present_count"],
+        "sanitized_user_id_hash_present_count": source_report[
+            "sanitized_user_id_hash_present_count"
+        ],
+        "retail_ready_for_1000_source_expansion": retail_ready,
+        "output_report": str(source_report_path),
+        "quality_report": str(quality_report_path),
+        "category_summary_csv": str(category_summary_csv_path),
+        "recommended_next_step": source_report["recommended_next_step"],
+    }
+
+
 def build_dry_run_summary(args: argparse.Namespace) -> dict[str, Any]:
     dataset_names = build_hf_dataset_names(str(args.category))
     parquet_files = build_hf_parquet_filenames(str(args.category))
@@ -1506,6 +1959,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--explore-local", action="store_true")
     parser.add_argument("--summarize-local", action="store_true")
     parser.add_argument("--load-from-huggingface", action="store_true")
+    parser.add_argument("--load-multicategory-from-huggingface", action="store_true")
     parser.add_argument("--reviews-input", default=str(DEFAULT_REVIEWS_INPUT))
     parser.add_argument("--metadata-input", default=str(DEFAULT_METADATA_INPUT))
     parser.add_argument("--output-reviews-sample", default=str(DEFAULT_OUTPUT_REVIEWS_SAMPLE))
@@ -1516,9 +1970,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--quality-report-output", default=str(DEFAULT_QUALITY_REPORT_OUTPUT))
     parser.add_argument("--plots-dir", default=str(DEFAULT_PLOTS_DIR))
     parser.add_argument("--word-views-dir", default=str(DEFAULT_WORD_VIEWS_DIR))
+    parser.add_argument("--output-dir", default=str(DEFAULT_MULTICATEGORY_OUTPUT_DIR))
     parser.add_argument("--sample-limit", type=int, default=1000)
     parser.add_argument("--metadata-limit", type=int, default=1000)
+    parser.add_argument("--sample-limit-per-category", type=int, default=1000)
+    parser.add_argument("--metadata-limit-per-category", type=int, default=1000)
     parser.add_argument("--category", default="All_Beauty")
+    parser.add_argument("--categories", default=DEFAULT_MULTICATEGORY_CATEGORIES)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--streaming", dest="streaming", action="store_true", default=True)
     parser.add_argument("--no-streaming", dest="streaming", action="store_false")
@@ -1540,11 +1998,13 @@ def main(argv: list[str] | None = None) -> int:
         args.explore_local,
         args.summarize_local,
         args.load_from_huggingface,
+        args.load_multicategory_from_huggingface,
     ]
     if sum(1 for enabled in modes if enabled) != 1:
         parser.error(
             "Exactly one mode is required: --dry-run, --write-schema-samples, "
-            "--explore-local, --summarize-local, or --load-from-huggingface."
+            "--explore-local, --summarize-local, --load-from-huggingface, or "
+            "--load-multicategory-from-huggingface."
         )
 
     try:
@@ -1552,6 +2012,8 @@ def main(argv: list[str] | None = None) -> int:
             summary = build_dry_run_summary(args)
         elif args.write_schema_samples:
             summary = write_schema_samples()
+        elif args.load_multicategory_from_huggingface:
+            summary = run_huggingface_multicategory_load(args)
         elif args.load_from_huggingface:
             summary = run_huggingface_load(args)
         elif args.explore_local:

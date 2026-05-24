@@ -8,6 +8,7 @@ prompts, gold records, or run model inference.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import html
 import importlib
@@ -25,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 PHASE = "2A-5A-Text"
+EXPANSION_PHASE = "2A-12C"
 USER_AGENT = "LLM-Inference-Optimization-Suite research-paper-prep"
 PDF_EXTRACTION_DEPENDENCY_WARNING = (
     "PDF text extraction dependency is missing. Install pypdf or PyPDF2, then rerun --extract-text."
@@ -40,6 +42,21 @@ DEFAULT_REPORT_PATH = Path("data/generated/research_ai/research_ai_paper_prepara
 DEFAULT_SECTION_QUALITY_REPORT_PATH = Path(
     "data/generated/research_ai/research_ai_section_quality_report.json"
 )
+DEFAULT_40_PAPER_EXPANSION_REPORT_PATH = Path(
+    "data/generated/research_ai/research_ai_40_paper_expansion_report.json"
+)
+DEFAULT_40_PAPER_REVIEW_CSV_PATH = Path(
+    "data/generated/research_ai/research_ai_40_paper_review.csv"
+)
+DEFAULT_EXPANDED_SECTION_QUALITY_REPORT_PATH = Path(
+    "data/generated/research_ai/research_ai_expanded_section_quality_report.json"
+)
+DEFAULT_1000_SCALE_CANDIDATE_TEMPLATE_PATH = Path(
+    "data/sources/research_ai_1000_scale_candidate_papers_template.jsonl"
+)
+TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT = 40
+TARGET_RESEARCH_AI_SECTION_COUNT_MIN = 800
+TARGET_RESEARCH_AI_SECTION_COUNT_MAX = 1200
 
 PAPER_SECTION_HEADINGS = {
     "abstract": ("Abstract",),
@@ -257,6 +274,14 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8", newline="\n") as file:
         for row in rows:
             file.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -2074,6 +2099,201 @@ def audit_sections(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def is_approved_research_ai_paper(record: dict[str, Any]) -> bool:
+    if record.get("not_for_benchmark_claims") is True:
+        return False
+    if record.get("missing_pdf_or_section_text") is True:
+        return False
+    approval_status = str(record.get("approval_status") or "").lower()
+    selection_status = str(record.get("selection_status") or "").lower()
+    return approval_status == "approved" or selection_status == "approved"
+
+
+def approved_research_ai_papers(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    approved: list[dict[str, Any]] = []
+    seen_paper_ids: set[str] = set()
+    for record in records:
+        paper_id = str(record.get("paper_id") or "").strip()
+        if not paper_id or paper_id in seen_paper_ids:
+            continue
+        if not is_approved_research_ai_paper(record):
+            continue
+        approved.append(record)
+        seen_paper_ids.add(paper_id)
+    return approved
+
+
+def build_research_ai_candidate_slots(additional_papers_needed: int) -> list[dict[str, Any]]:
+    slots: list[dict[str, Any]] = []
+    for index in range(1, additional_papers_needed + 1):
+        slots.append(
+            {
+                "approval_status": "needs_review",
+                "candidate_slot": index,
+                "missing_pdf_or_section_text": True,
+                "not_for_benchmark_claims": True,
+                "paper_id": f"research_ai_1000_candidate_slot_{index:02d}",
+                "required_actions": [
+                    "replace this placeholder with real paper metadata",
+                    "verify the paper is in scope for Research AI benchmark evidence",
+                    "download or otherwise validate the full paper source",
+                    "extract text and section evidence before approval",
+                ],
+                "selection_status": "needs_review",
+                "title": f"Needs review Research AI paper slot {index:02d}",
+            }
+        )
+    return slots
+
+
+def build_research_ai_expansion_review_rows(
+    approved_records: list[dict[str, Any]], candidate_slots: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for record in approved_records:
+        rows.append(
+            {
+                "approval_status": "approved",
+                "missing_pdf_or_section_text": False,
+                "not_for_benchmark_claims": False,
+                "paper_id": record.get("paper_id", ""),
+                "slot_type": "current_approved",
+                "title": record.get("title", ""),
+                "venue": record.get("venue", ""),
+                "year": record.get("year", ""),
+            }
+        )
+    for slot in candidate_slots:
+        rows.append(
+            {
+                "approval_status": slot["approval_status"],
+                "missing_pdf_or_section_text": slot["missing_pdf_or_section_text"],
+                "not_for_benchmark_claims": slot["not_for_benchmark_claims"],
+                "paper_id": slot["paper_id"],
+                "slot_type": "needs_review_placeholder",
+                "title": slot["title"],
+                "venue": "",
+                "year": "",
+            }
+        )
+    return rows
+
+
+def build_research_ai_expanded_section_quality_report(
+    *,
+    approved_count: int,
+    section_rows: list[dict[str, Any]],
+    expansion_ready_for_1000: bool,
+    missing_requirements: list[str],
+) -> dict[str, Any]:
+    sections_by_type = Counter(str(row.get("section_type") or "unknown") for row in section_rows)
+    paper_ids_with_sections = {
+        str(row.get("paper_id") or "") for row in section_rows if row.get("paper_id")
+    }
+    return {
+        "phase": EXPANSION_PHASE,
+        "generated_at_utc": utc_now(),
+        "approved_paper_count": approved_count,
+        "papers_with_sections_count": len(paper_ids_with_sections),
+        "section_count": len(section_rows),
+        "sections_by_type": dict(sorted(sections_by_type.items())),
+        "target_section_count_range": {
+            "min": TARGET_RESEARCH_AI_SECTION_COUNT_MIN,
+            "max": TARGET_RESEARCH_AI_SECTION_COUNT_MAX,
+        },
+        "missing_requirements": missing_requirements,
+        "expansion_ready_for_1000": expansion_ready_for_1000,
+    }
+
+
+def build_research_ai_40_paper_expansion(args: argparse.Namespace) -> dict[str, Any]:
+    approved_registry = read_jsonl(args.approved_registry_path)
+    section_rows = (
+        read_jsonl(args.sections_manifest_path) if args.sections_manifest_path.exists() else []
+    )
+    approved_records = approved_research_ai_papers(approved_registry)
+    approved_count = len(approved_records)
+    additional_papers_needed = max(0, TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT - approved_count)
+    candidate_slots = build_research_ai_candidate_slots(additional_papers_needed)
+    missing_requirements: list[str] = []
+    if additional_papers_needed:
+        missing_requirements.append(f"additional_approved_papers_needed:{additional_papers_needed}")
+    if len(section_rows) < TARGET_RESEARCH_AI_SECTION_COUNT_MIN:
+        missing_requirements.append(
+            "section_coverage_below_target_min:"
+            f"{TARGET_RESEARCH_AI_SECTION_COUNT_MIN - len(section_rows)}"
+        )
+    expansion_ready_for_1000 = (
+        approved_count >= TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT
+        and len(section_rows) >= TARGET_RESEARCH_AI_SECTION_COUNT_MIN
+    )
+    if candidate_slots:
+        write_jsonl(args.candidate_template_path, candidate_slots)
+    review_rows = build_research_ai_expansion_review_rows(approved_records, candidate_slots)
+    write_csv(
+        args.expansion_review_csv_path,
+        review_rows,
+        [
+            "slot_type",
+            "paper_id",
+            "title",
+            "venue",
+            "year",
+            "approval_status",
+            "not_for_benchmark_claims",
+            "missing_pdf_or_section_text",
+        ],
+    )
+    expanded_section_quality_report = build_research_ai_expanded_section_quality_report(
+        approved_count=approved_count,
+        section_rows=section_rows,
+        expansion_ready_for_1000=expansion_ready_for_1000,
+        missing_requirements=missing_requirements,
+    )
+    write_json(args.expanded_section_quality_report_path, expanded_section_quality_report)
+    report = {
+        "phase": EXPANSION_PHASE,
+        "generated_at_utc": utc_now(),
+        "current_approved_paper_count": approved_count,
+        "target_approved_paper_count": TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT,
+        "additional_papers_needed": additional_papers_needed,
+        "current_section_count": len(section_rows),
+        "target_section_count_range": {
+            "min": TARGET_RESEARCH_AI_SECTION_COUNT_MIN,
+            "max": TARGET_RESEARCH_AI_SECTION_COUNT_MAX,
+        },
+        "expansion_ready_for_1000": expansion_ready_for_1000,
+        "missing_requirements": missing_requirements,
+        "candidate_template_path": str(args.candidate_template_path),
+        "candidate_template_placeholder_count": len(candidate_slots),
+        "placeholders_counted_as_approved": False,
+        "expansion_review_csv_path": str(args.expansion_review_csv_path),
+        "expanded_section_quality_report_path": str(args.expanded_section_quality_report_path),
+        "recommended_next_step": (
+            "Proceed to Research AI 1,000-scale generator implementation."
+            if expansion_ready_for_1000
+            else "Approve real additional papers and extract section text; do not use "
+            "placeholder slots as benchmark evidence."
+        ),
+    }
+    write_json(args.expansion_report_path, report)
+    return {
+        "mode": "build_40_paper_expansion",
+        "phase": EXPANSION_PHASE,
+        "current_approved_paper_count": approved_count,
+        "target_approved_paper_count": TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT,
+        "additional_papers_needed": additional_papers_needed,
+        "current_section_count": len(section_rows),
+        "expansion_ready_for_1000": expansion_ready_for_1000,
+        "missing_requirements": missing_requirements,
+        "expansion_report_path": str(args.expansion_report_path),
+        "candidate_template_path": str(args.candidate_template_path),
+        "expansion_review_csv_path": str(args.expansion_review_csv_path),
+        "expanded_section_quality_report_path": str(args.expanded_section_quality_report_path),
+        "recommended_next_step": report["recommended_next_step"],
+    }
+
+
 def summarize_local(args: argparse.Namespace) -> dict[str, Any]:
     approved_records = read_jsonl(args.approved_registry_path)
     enriched_records = (
@@ -2112,6 +2332,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--extract-text", action="store_true")
     parser.add_argument("--audit-sections", action="store_true")
     parser.add_argument("--summarize-local", action="store_true")
+    parser.add_argument("--build-40-paper-expansion", action="store_true")
     parser.add_argument(
         "--approved-registry-path",
         type=Path,
@@ -2133,6 +2354,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--section-quality-report-path",
         type=Path,
         default=DEFAULT_SECTION_QUALITY_REPORT_PATH,
+    )
+    parser.add_argument(
+        "--expansion-report-path",
+        type=Path,
+        default=DEFAULT_40_PAPER_EXPANSION_REPORT_PATH,
+    )
+    parser.add_argument(
+        "--expansion-review-csv-path",
+        type=Path,
+        default=DEFAULT_40_PAPER_REVIEW_CSV_PATH,
+    )
+    parser.add_argument(
+        "--expanded-section-quality-report-path",
+        type=Path,
+        default=DEFAULT_EXPANDED_SECTION_QUALITY_REPORT_PATH,
+    )
+    parser.add_argument(
+        "--candidate-template-path",
+        type=Path,
+        default=DEFAULT_1000_SCALE_CANDIDATE_TEMPLATE_PATH,
     )
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--skip-existing", action="store_true")
@@ -2159,13 +2400,15 @@ def main(argv: list[str] | None = None) -> int:
             args.extract_text,
             args.audit_sections,
             args.summarize_local,
+            args.build_40_paper_expansion,
         )
     )
     if mode_count != 1:
         print(
             (
                 "Pass exactly one mode: --dry-run, --enrich-metadata, --download-pdfs, "
-                "--extract-text, --audit-sections, or --summarize-local."
+                "--extract-text, --audit-sections, --summarize-local, or "
+                "--build-40-paper-expansion."
             ),
             file=sys.stderr,
         )
@@ -2196,6 +2439,8 @@ def main(argv: list[str] | None = None) -> int:
             summary = extract_text(args)
         elif args.audit_sections:
             summary = audit_sections(args)
+        elif args.build_40_paper_expansion:
+            summary = build_research_ai_40_paper_expansion(args)
         else:
             summary = summarize_local(args)
     except RuntimeError as exc:

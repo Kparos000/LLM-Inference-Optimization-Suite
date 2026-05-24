@@ -102,6 +102,46 @@ Inspect the local curation report:
 python -m json.tool data/generated/research_ai/research_ai_curation_report.json
 ```
 
+## Phase 2A-12C 40-Paper Expansion Readiness
+
+The 20 approved ICLR 2025 papers are enough for the promoted 250-scale Research
+AI dataset. For 1,000-scale generation, Research AI needs about 40 papers, with
+real approval and section evidence, or equivalent section coverage so prompts do
+not overuse the same paper evidence.
+
+The expansion workflow is a readiness check only. It does not generate 1,000
+prompts, does not call LLM APIs, and does not build RAG, retrieval, embeddings,
+model calls, GPU runs, or inference. In short: do not fake PDFs or sections. If
+40 real approved papers and enough extracted sections are not present, the
+report stays blocked and writes a manual review template for the missing paper
+slots.
+
+Expansion command:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion
+```
+
+Generated local outputs:
+
+- `data/generated/research_ai/research_ai_40_paper_expansion_report.json`
+- `data/generated/research_ai/research_ai_40_paper_review.csv`
+- `data/generated/research_ai/research_ai_expanded_section_quality_report.json`
+
+If more approved papers are needed, the workflow writes:
+
+- `data/sources/research_ai_1000_scale_candidate_papers_template.jsonl`
+
+Template rows are marked `approval_status: needs_review`,
+`not_for_benchmark_claims: true`, and `missing_pdf_or_section_text: true`.
+They are not counted as approved papers.
+
+After reviewing real candidate papers and extracting section evidence, rerun:
+
+```text
+python scripts/phase2/plan_phase2a_1000_scaleup.py --write-report
+```
+
 ## Next Step
 
 After reviewing the Research AI curated samples, proceed to Phase 2A-6 Retail

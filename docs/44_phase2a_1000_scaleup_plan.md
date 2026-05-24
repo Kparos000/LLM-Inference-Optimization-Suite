@@ -51,9 +51,40 @@ Retail needs a larger sampled review/metadata set and a category expansion plan
 before full 1,000-scale generation. The planner expects expansion beyond the
 current 250-scale source mix.
 
+Phase 2A-12B adds the Retail multi-category readiness report. When
+`data/generated/retail/multicategory/retail_multicategory_source_report.json`
+exists and reports `retail_ready_for_1000_source_expansion: true`, the planner
+clears the Retail source-expansion blocker and records
+`source_expansion_ready: true`. The Retail 1,000 generator implementation is
+still a separate step; this report only confirms the source pool is ready.
+
+Retail source expansion command:
+
+```powershell
+python scripts/phase2/explore_retail_amazon_reviews.py --load-multicategory-from-huggingface --categories All_Beauty,Home_and_Kitchen,Electronics --sample-limit-per-category 1000 --metadata-limit-per-category 1000
+```
+
 Research AI should expand from the current 20-paper 250 checkpoint toward about
 40 papers, or otherwise increase section coverage enough to avoid repetitive
 evidence use at 1,000 prompts.
+
+Phase 2A-12C adds a controlled Research AI 40-paper expansion readiness report.
+The 20 approved papers remain acceptable for 250-scale generation, but 1,000
+scale should have 40 real approved papers or equivalent section coverage. The
+workflow does not fake PDFs or sections; if the real expansion is missing, it
+writes a needs-review candidate template and keeps the planner blocker.
+
+Research AI expansion command:
+
+```powershell
+python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion
+```
+
+After the expansion report is ready, rerun:
+
+```powershell
+python scripts/phase2/plan_phase2a_1000_scaleup.py --write-report
+```
 
 Finance should use the current 8-company SEC/XBRL corpus first, while checking
 evidence reuse to avoid repetitive prompts before committing to the full 1,000

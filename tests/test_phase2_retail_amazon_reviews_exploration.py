@@ -3,7 +3,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -334,6 +334,62 @@ def _run_mocked_parquet_load(
     return summary, downloaded_files
 
 
+def _run_mocked_multicategory_load(
+    module: Any,
+    tmp_path: Path,
+    *,
+    sample_limit: int = 2,
+    metadata_limit: int = 2,
+) -> dict[str, Any]:
+    args = module.build_parser().parse_args(
+        [
+            "--load-multicategory-from-huggingface",
+            "--categories",
+            "All_Beauty,Home_and_Kitchen,Electronics",
+            "--sample-limit-per-category",
+            str(sample_limit),
+            "--metadata-limit-per-category",
+            str(metadata_limit),
+            "--output-dir",
+            str(tmp_path / "multicategory"),
+        ]
+    )
+
+    def fake_read(_repo_id: str, filename: str, limit: int) -> list[dict[str, Any]]:
+        category = "All_Beauty"
+        for candidate in ["Home_and_Kitchen", "Electronics"]:
+            if candidate in filename:
+                category = candidate
+        if "review_categories" in filename:
+            return [
+                {
+                    "rating": 5 if index % 2 == 0 else 2,
+                    "title": f"{category} review {index}",
+                    "text": f"{category} product arrived with quality details for review {index}.",
+                    "asin": f"{category}_A{index}",
+                    "parent_asin": f"{category}_P{index}",
+                    "user_id": f"{category}_raw_user_{index}",
+                    "timestamp": index,
+                    "verified_purchase": True,
+                    "helpful_vote": index,
+                }
+                for index in range(limit)
+            ]
+        return [
+            {
+                "main_category": category,
+                "title": f"{category} Product {index}",
+                "parent_asin": f"{category}_P{index}",
+                "features": ["feature"],
+            }
+            for index in range(limit)
+        ]
+
+    with mock.patch.object(module, "read_hf_jsonl_file_limited", side_effect=fake_read):
+        summary = module.run_huggingface_multicategory_load(args)
+    return cast(dict[str, Any], summary)
+
+
 def test_hf_loader_missing_datasets_graceful() -> None:
     module = _load_module()
 
@@ -363,6 +419,50 @@ def test_load_from_huggingface_uses_direct_parquet_by_default(tmp_path: Path) ->
     ]
     assert "user_id" not in rows[0]
     assert rows[0]["user_id_hash"]
+
+
+def test_retail_multicategory_cli_dry_or_mocked(tmp_path: Path) -> None:
+    module = _load_module()
+
+    summary = _run_mocked_multicategory_load(module, tmp_path)
+
+    assert summary["mode"] == "load_multicategory_from_huggingface"
+    assert summary["phase"] == "2A-12B"
+    assert summary["categories"] == ["All_Beauty", "Home_and_Kitchen", "Electronics"]
+    assert summary["total_reviews_loaded"] == 6
+    assert summary["total_metadata_loaded"] == 6
+
+
+def test_multicategory_report_shape(tmp_path: Path) -> None:
+    module = _load_module()
+
+    summary = _run_mocked_multicategory_load(module, tmp_path)
+    report = json.loads(Path(summary["output_report"]).read_text(encoding="utf-8"))
+
+    assert report["phase"] == "2A-12B"
+    assert set(report["reviews_loaded_by_category"]) == {
+        "All_Beauty",
+        "Home_and_Kitchen",
+        "Electronics",
+    }
+    assert "rating_distribution_by_category" in report
+    assert "issue_terms_by_category" in report
+    assert "product_title_coverage_by_category" in report
+    assert "retail_ready_for_1000_source_expansion" in report
+
+
+def test_multicategory_sanitization_no_raw_user_id(tmp_path: Path) -> None:
+    module = _load_module()
+
+    summary = _run_mocked_multicategory_load(module, tmp_path)
+    report = json.loads(Path(summary["output_report"]).read_text(encoding="utf-8"))
+    all_beauty_reviews = tmp_path / "multicategory" / "All_Beauty" / "all_beauty_reviews.jsonl"
+    rows = _read_jsonl(all_beauty_reviews)
+
+    assert report["raw_user_id_present_count"] == 0
+    assert rows
+    assert all("user_id" not in row for row in rows)
+    assert all(row.get("user_id_hash") for row in rows)
 
 
 def test_reviews_file_override(tmp_path: Path) -> None:
@@ -637,3 +737,14 @@ def test_docs_include_direct_parquet_loading() -> None:
     assert "huggingface_hub" in docs
     assert "pyarrow" in docs
     assert "Dataset scripts are no longer supported" in docs
+
+
+def test_docs_include_multicategory_commands() -> None:
+    retail_docs = DOC_PATH.read_text(encoding="utf-8")
+    plan_docs = (ROOT / "docs/44_phase2a_1000_scaleup_plan.md").read_text(encoding="utf-8")
+
+    assert "--load-multicategory-from-huggingface" in retail_docs
+    assert "All_Beauty,Home_and_Kitchen,Electronics" in retail_docs
+    assert "no raw user IDs" in retail_docs
+    assert "python scripts/phase2/plan_phase2a_1000_scaleup.py --write-report" in plan_docs
+    assert "Retail multi-category" in plan_docs

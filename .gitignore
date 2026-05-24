@@ -70,6 +70,9 @@ data/generated/research_ai/enriched_paper_registry.jsonl
 data/generated/research_ai/research_ai_paper_preparation_report.json
 data/generated/research_ai/research_ai_section_quality_report.json
 data/generated/research_ai/research_ai_curation_report.json
+data/generated/research_ai/research_ai_40_paper_expansion_report.json
+data/generated/research_ai/research_ai_40_paper_review.csv
+data/generated/research_ai/research_ai_expanded_section_quality_report.json
 data/raw/research_ai/papers/
 data/processed/research_ai/paper_text/
 data/processed/research_ai/paper_text_manifest.jsonl
@@ -84,6 +87,7 @@ data/generated/retail/retail_curation_report.json
 data/generated/retail/retail_targeted_metadata_enrichment_report.json
 data/generated/retail/retail_selected_parent_asins.txt
 data/generated/retail/retail_targeted_metadata_sample.jsonl
+data/generated/retail/multicategory/
 data/generated/retail/plots/
 data/generated/retail/word_views/
 data/generated/phase2a/phase2a_cross_vertical_qa_report.json

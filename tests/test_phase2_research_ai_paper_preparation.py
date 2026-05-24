@@ -1221,6 +1221,94 @@ def test_extract_text_missing_pdf_warning(tmp_path: Path) -> None:
     assert any(warning == expected_warning for warning in report["warnings"])
 
 
+def test_research_ai_40_paper_expansion_report_shape(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    sections_path = tmp_path / "sections.jsonl"
+    expansion_report_path = tmp_path / "expansion_report.json"
+    review_csv_path = tmp_path / "review.csv"
+    quality_report_path = tmp_path / "quality.json"
+    template_path = tmp_path / "candidate_template.jsonl"
+    module.write_jsonl(
+        approved_path,
+        [
+            {
+                "paper_id": "paper_1",
+                "title": "Paper 1",
+                "selection_status": "approved",
+            }
+        ],
+    )
+    module.write_jsonl(
+        sections_path,
+        [
+            {"paper_id": "paper_1", "section_type": "abstract"},
+            {"paper_id": "paper_1", "section_type": "method"},
+        ],
+    )
+    args = Namespace(
+        approved_registry_path=approved_path,
+        sections_manifest_path=sections_path,
+        expansion_report_path=expansion_report_path,
+        expansion_review_csv_path=review_csv_path,
+        expanded_section_quality_report_path=quality_report_path,
+        candidate_template_path=template_path,
+    )
+
+    summary = module.build_research_ai_40_paper_expansion(args)
+    report = json.loads(expansion_report_path.read_text(encoding="utf-8"))
+
+    assert summary["phase"] == "2A-12C"
+    assert report["phase"] == "2A-12C"
+    assert report["current_approved_paper_count"] == 1
+    assert report["target_approved_paper_count"] == 40
+    assert report["additional_papers_needed"] == 39
+    assert report["current_section_count"] == 2
+    assert report["target_section_count_range"] == {"min": 800, "max": 1200}
+    assert report["expansion_ready_for_1000"] is False
+    assert template_path.exists()
+    assert review_csv_path.exists()
+    assert quality_report_path.exists()
+
+
+def test_research_ai_expansion_does_not_count_placeholders_as_approved(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    sections_path = tmp_path / "sections.jsonl"
+    module.write_jsonl(
+        approved_path,
+        [
+            {
+                "paper_id": "approved_paper",
+                "title": "Approved Paper",
+                "selection_status": "approved",
+            },
+            {
+                "approval_status": "needs_review",
+                "missing_pdf_or_section_text": True,
+                "not_for_benchmark_claims": True,
+                "paper_id": "research_ai_1000_candidate_slot_01",
+                "selection_status": "needs_review",
+                "title": "Needs review Research AI paper slot 01",
+            },
+        ],
+    )
+    module.write_jsonl(sections_path, [])
+    args = Namespace(
+        approved_registry_path=approved_path,
+        sections_manifest_path=sections_path,
+        expansion_report_path=tmp_path / "expansion_report.json",
+        expansion_review_csv_path=tmp_path / "review.csv",
+        expanded_section_quality_report_path=tmp_path / "quality.json",
+        candidate_template_path=tmp_path / "candidate_template.jsonl",
+    )
+
+    summary = module.build_research_ai_40_paper_expansion(args)
+
+    assert summary["current_approved_paper_count"] == 1
+    assert summary["additional_papers_needed"] == 39
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],

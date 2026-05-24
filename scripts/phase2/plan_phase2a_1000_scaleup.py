@@ -29,6 +29,12 @@ DEFAULT_OUTPUT_REPORT = Path(
 DEFAULT_OUTPUT_MATRIX_CSV = Path(
     "data/generated/phase2a/scaleup_reports/phase2a_1000_scaleup_matrix.csv"
 )
+DEFAULT_RETAIL_MULTICATEGORY_REPORT = Path(
+    "data/generated/retail/multicategory/retail_multicategory_source_report.json"
+)
+DEFAULT_RESEARCH_AI_EXPANSION_REPORT = Path(
+    "data/generated/research_ai/research_ai_40_paper_expansion_report.json"
+)
 
 RECOMMENDED_STRATEGIES = {
     "airline": "Extend deterministic synthetic policy/ticket generator.",
@@ -81,6 +87,8 @@ def write_matrix_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "target_kb_min",
         "target_kb_max",
         "source_expansion_required",
+        "source_expansion_ready",
+        "generator_implementation_required",
         "recommended_generator_strategy",
         "blockers",
     ]
@@ -145,13 +153,40 @@ def source_requirements(plan: dict[str, Any], vertical: str) -> list[str]:
     return [str(item) for item in raw_requirements]
 
 
-def vertical_blockers(vertical: str, source_expansion_required: bool) -> list[str]:
+def retail_source_expansion_ready(report: dict[str, Any] | None) -> bool:
+    if not isinstance(report, dict):
+        return False
+    return bool(report.get("retail_ready_for_1000_source_expansion"))
+
+
+def research_ai_source_expansion_ready(report: dict[str, Any] | None) -> bool:
+    if not isinstance(report, dict):
+        return False
+    return bool(report.get("expansion_ready_for_1000"))
+
+
+def research_ai_missing_requirements(report: dict[str, Any] | None) -> list[str]:
+    if not isinstance(report, dict):
+        return [
+            "missing_research_ai_40_paper_expansion_report",
+            "additional_approved_papers_needed:unknown",
+            "section_coverage_below_target_min:unknown",
+        ]
+    missing = report.get("missing_requirements", [])
+    if not isinstance(missing, list):
+        return []
+    return [str(item) for item in missing]
+
+
+def vertical_blockers(
+    vertical: str, source_expansion_required: bool, source_expansion_ready: bool
+) -> list[str]:
     blockers: list[str] = []
-    if source_expansion_required:
+    if source_expansion_required and not source_expansion_ready:
         blockers.append("source_expansion_required_before_1000_generation")
-    if vertical == "research_ai":
+    if vertical == "research_ai" and not source_expansion_ready:
         blockers.append("expand_research_ai_to_40_papers_or_equivalent_section_coverage")
-    if vertical == "retail":
+    if vertical == "retail" and not source_expansion_ready:
         blockers.append("expand_retail_review_metadata_sample_and_categories")
     return blockers
 
@@ -160,14 +195,23 @@ def build_per_vertical_readiness(
     *,
     scaleup_plan: dict[str, Any],
     promoted_manifest: dict[str, Any],
+    retail_multicategory_report: dict[str, Any] | None = None,
+    research_ai_expansion_report: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     per_vertical_manifest = promoted_manifest["per_vertical"]
     readiness: dict[str, dict[str, Any]] = {}
     for vertical in promoted_manifest["verticals"]:
         metrics = per_vertical_manifest[vertical]
         source_required = SOURCE_EXPANSION_REQUIRED.get(vertical, True)
-        blockers = vertical_blockers(vertical, source_required)
+        if vertical == "retail":
+            source_ready = retail_source_expansion_ready(retail_multicategory_report)
+        elif vertical == "research_ai":
+            source_ready = research_ai_source_expansion_ready(research_ai_expansion_report)
+        else:
+            source_ready = not source_required
+        blockers = vertical_blockers(vertical, source_required, source_ready)
         kb_range = target_kb_range(scaleup_plan, vertical)
+        generator_required = vertical in {"retail", "research_ai"}
         readiness[vertical] = {
             "current_250_prompts": int(metrics["prompt_count"]),
             "target_1000_prompts": TARGET_PER_VERTICAL,
@@ -175,6 +219,13 @@ def build_per_vertical_readiness(
             "current_kb_count": int(metrics["kb_count"]),
             "target_kb_range": kb_range,
             "source_expansion_required": source_required,
+            "source_expansion_ready": source_ready,
+            "source_expansion_missing_requirements": (
+                research_ai_missing_requirements(research_ai_expansion_report)
+                if vertical == "research_ai" and not source_ready
+                else []
+            ),
+            "generator_implementation_required": generator_required,
             "recommended_generator_strategy": RECOMMENDED_STRATEGIES[vertical],
             "source_requirements": source_requirements(scaleup_plan, vertical),
             "blockers": blockers,
@@ -198,15 +249,31 @@ def build_review_subset_plan() -> dict[str, Any]:
     }
 
 
+def next_step_for_blockers(blockers: list[str]) -> str:
+    if not blockers:
+        return "Proceed to Phase 2A-12C implementation of 1,000-scale generators."
+    blocked_verticals = sorted({blocker.split(":", maxsplit=1)[0] for blocker in blockers})
+    return (
+        "Implement 1,000 generation for source-ready verticals while resolving "
+        f"{', '.join(blocked_verticals)} blockers before full 5,000-record generation."
+    )
+
+
 def build_report(
     *,
     scaleup_plan: dict[str, Any],
     promoted_manifest: dict[str, Any],
     promoted_manifest_path: Path,
+    retail_multicategory_report: dict[str, Any] | None = None,
+    retail_multicategory_report_path: Path | None = None,
+    research_ai_expansion_report: dict[str, Any] | None = None,
+    research_ai_expansion_report_path: Path | None = None,
 ) -> dict[str, Any]:
     per_vertical = build_per_vertical_readiness(
         scaleup_plan=scaleup_plan,
         promoted_manifest=promoted_manifest,
+        retail_multicategory_report=retail_multicategory_report,
+        research_ai_expansion_report=research_ai_expansion_report,
     )
     source_expansion_requirements = {
         vertical: metrics["source_requirements"] for vertical, metrics in per_vertical.items()
@@ -232,6 +299,21 @@ def build_report(
         "target_checkpoint": TARGET_CHECKPOINT,
         "required_previous_manifest": str(promoted_manifest_path),
         "promoted_250_found": True,
+        "retail_multicategory_source_report_path": (
+            str(retail_multicategory_report_path) if retail_multicategory_report_path else None
+        ),
+        "retail_source_expansion_ready": retail_source_expansion_ready(retail_multicategory_report),
+        "research_ai_expansion_report_path": (
+            str(research_ai_expansion_report_path) if research_ai_expansion_report_path else None
+        ),
+        "research_ai_source_expansion_ready": research_ai_source_expansion_ready(
+            research_ai_expansion_report
+        ),
+        "research_ai_missing_requirements": research_ai_missing_requirements(
+            research_ai_expansion_report
+        )
+        if not research_ai_source_expansion_ready(research_ai_expansion_report)
+        else [],
         "per_vertical_readiness": per_vertical,
         "source_expansion_requirements": source_expansion_requirements,
         "kb_expansion_targets": kb_expansion_targets,
@@ -245,10 +327,7 @@ def build_report(
         "blockers": blockers,
         "warnings": warnings,
         "recommend_generation": not blockers,
-        "next_step": (
-            "Implement 1,000 generation beginning with synthetic verticals, while resolving "
-            "Retail and Research AI source-expansion blockers before full 5,000-record generation."
-        ),
+        "next_step": next_step_for_blockers(blockers),
     }
 
 
@@ -266,6 +345,8 @@ def matrix_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                 "target_kb_min": kb_range["min"],
                 "target_kb_max": kb_range["max"],
                 "source_expansion_required": metrics["source_expansion_required"],
+                "source_expansion_ready": metrics["source_expansion_ready"],
+                "generator_implementation_required": metrics["generator_implementation_required"],
                 "recommended_generator_strategy": metrics["recommended_generator_strategy"],
                 "blockers": ";".join(metrics["blockers"]),
             }
@@ -280,10 +361,20 @@ def run_plan(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError(f"Missing scale-up plan: {scaleup_plan_path}")
     scaleup_plan = read_json(scaleup_plan_path)
     promoted_manifest = require_promoted_250_manifest(promoted_manifest_path)
+    retail_report_path = Path(args.retail_multicategory_report)
+    retail_report = read_json(retail_report_path) if retail_report_path.exists() else None
+    research_ai_report_path = Path(args.research_ai_expansion_report)
+    research_ai_report = (
+        read_json(research_ai_report_path) if research_ai_report_path.exists() else None
+    )
     report = build_report(
         scaleup_plan=scaleup_plan,
         promoted_manifest=promoted_manifest,
         promoted_manifest_path=promoted_manifest_path,
+        retail_multicategory_report=retail_report,
+        retail_multicategory_report_path=retail_report_path if retail_report else None,
+        research_ai_expansion_report=research_ai_report,
+        research_ai_expansion_report_path=(research_ai_report_path if research_ai_report else None),
     )
     write_json(Path(args.output_report), report)
     write_matrix_csv(Path(args.output_matrix_csv), matrix_rows(report))
@@ -308,6 +399,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--write-report", action="store_true")
     parser.add_argument("--scaleup-plan", default=str(DEFAULT_SCALEUP_PLAN))
     parser.add_argument("--promoted-250-manifest", default=str(DEFAULT_PROMOTED_250_MANIFEST))
+    parser.add_argument(
+        "--retail-multicategory-report", default=str(DEFAULT_RETAIL_MULTICATEGORY_REPORT)
+    )
+    parser.add_argument(
+        "--research-ai-expansion-report", default=str(DEFAULT_RESEARCH_AI_EXPANSION_REPORT)
+    )
     parser.add_argument("--output-report", default=str(DEFAULT_OUTPUT_REPORT))
     parser.add_argument("--output-matrix-csv", default=str(DEFAULT_OUTPUT_MATRIX_CSV))
     return parser

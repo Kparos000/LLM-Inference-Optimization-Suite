@@ -103,6 +103,94 @@ def test_1000_plan_per_vertical_additional_prompts_750() -> None:
         assert metrics["additional_prompts_needed"] == 750
 
 
+def test_1000_planner_clears_retail_source_blocker_when_report_ready() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+    retail_report = {
+        "phase": "2A-12B",
+        "categories": ["All_Beauty", "Home_and_Kitchen", "Electronics"],
+        "retail_ready_for_1000_source_expansion": True,
+    }
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        retail_multicategory_report=retail_report,
+        retail_multicategory_report_path=Path(
+            "data/generated/retail/multicategory/retail_multicategory_source_report.json"
+        ),
+    )
+
+    retail = report["per_vertical_readiness"]["retail"]
+    assert retail["source_expansion_ready"] is True
+    assert retail["ready_for_1000_generation"] is True
+    assert retail["blockers"] == []
+    assert not any("retail:" in blocker for blocker in report["blockers"])
+
+
+def test_1000_planner_reports_research_ai_missing_requirements() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+    research_ai_report = {
+        "phase": "2A-12C",
+        "expansion_ready_for_1000": False,
+        "missing_requirements": [
+            "additional_approved_papers_needed:20",
+            "section_coverage_below_target_min:436",
+        ],
+    }
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        research_ai_expansion_report=research_ai_report,
+        research_ai_expansion_report_path=Path(
+            "data/generated/research_ai/research_ai_40_paper_expansion_report.json"
+        ),
+    )
+
+    research_ai = report["per_vertical_readiness"]["research_ai"]
+    assert research_ai["source_expansion_ready"] is False
+    assert "source_expansion_required_before_1000_generation" in research_ai["blockers"]
+    assert report["research_ai_missing_requirements"] == [
+        "additional_approved_papers_needed:20",
+        "section_coverage_below_target_min:436",
+    ]
+
+
+def test_1000_planner_clears_research_ai_blocker_when_expansion_ready() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+    retail_report = {"retail_ready_for_1000_source_expansion": True}
+    research_ai_report = {
+        "phase": "2A-12C",
+        "expansion_ready_for_1000": True,
+        "missing_requirements": [],
+    }
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        retail_multicategory_report=retail_report,
+        research_ai_expansion_report=research_ai_report,
+        research_ai_expansion_report_path=Path(
+            "data/generated/research_ai/research_ai_40_paper_expansion_report.json"
+        ),
+    )
+
+    research_ai = report["per_vertical_readiness"]["research_ai"]
+    assert research_ai["source_expansion_ready"] is True
+    assert research_ai["ready_for_1000_generation"] is True
+    assert research_ai["blockers"] == []
+    assert not any("research_ai:" in blocker for blocker in report["blockers"])
+
+
 def test_1000_plan_docs_include_command() -> None:
     docs = DOC_PATH.read_text(encoding="utf-8")
 
@@ -110,3 +198,16 @@ def test_1000_plan_docs_include_command() -> None:
     assert "python scripts/phase2/plan_phase2a_1000_scaleup.py --write-report" in docs
     assert "no RAG" in docs
     assert "promoted 250 dataset" in docs
+
+
+def test_docs_include_40_paper_expansion_command() -> None:
+    plan_docs = DOC_PATH.read_text(encoding="utf-8")
+    research_docs = (ROOT / "docs/35_phase2_research_ai_curated_seed.md").read_text(
+        encoding="utf-8"
+    )
+
+    command = "python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion"
+    assert command in plan_docs
+    assert command in research_docs
+    assert "40 papers" in research_docs
+    assert "do not fake PDFs or sections" in research_docs

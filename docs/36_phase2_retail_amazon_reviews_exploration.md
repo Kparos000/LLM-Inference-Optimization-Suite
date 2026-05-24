@@ -209,6 +209,46 @@ Troubleshooting: if the optional `datasets` loader fails with
 `Dataset scripts are no longer supported`, rerun without `--use-datasets-loader`.
 Direct Parquet loading is the default path.
 
+## Phase 2A-12B Multi-Category Retail Expansion
+
+Retail needs multi-category source expansion before 1,000-scale generation so
+the next checkpoint is not dominated by `All_Beauty`. Phase 2A-12B prepares the
+controlled source pool for three categories:
+
+- `All_Beauty`
+- `Home_and_Kitchen`
+- `Electronics`
+
+The multi-category loader uses the same safe direct-file loading path as the
+single-category loader. It applies strict per-category review and metadata
+limits, writes only ignored local generated files, and stores deterministic
+`user_id_hash` values with no raw user IDs.
+
+Command:
+
+```text
+python scripts/phase2/explore_retail_amazon_reviews.py --load-multicategory-from-huggingface --categories All_Beauty,Home_and_Kitchen,Electronics --sample-limit-per-category 1000 --metadata-limit-per-category 1000
+```
+
+Generated outputs stay local under `data/generated/retail/multicategory/`:
+
+- `retail_multicategory_source_report.json`
+- `retail_multicategory_quality_report.json`
+- `retail_multicategory_category_summary.csv`
+- category-specific sanitized review and metadata JSONL files
+- category-specific and aggregate plots and word views
+
+The aggregate source report marks
+`retail_ready_for_1000_source_expansion: true` only after at least three
+categories load 1,000 reviews and 1,000 metadata rows each, raw `user_id` values
+are absent, product title coverage is reported, and quality reports exist.
+
+After this source expansion report is clean, rerun the 1,000-scale planner:
+
+```text
+python scripts/phase2/plan_phase2a_1000_scaleup.py --write-report
+```
+
 Explore existing local generated samples:
 
 ```text
