@@ -108,6 +108,20 @@ Research AI expansion command:
 python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion
 ```
 
+Research AI candidate validation and ingest commands:
+
+```powershell
+python scripts/phase2/prepare_research_ai_papers.py --validate-1000-scale-candidate-papers
+python scripts/phase2/prepare_research_ai_papers.py --ingest-approved-1000-scale-papers
+```
+
+The ingest workflow accepts only real approved paper metadata. Placeholder slots
+remain excluded from benchmark evidence and are not counted as approved papers.
+After ingest, PDF/text extraction and section quality checks are still required
+before Research AI can clear its 1,000-scale source blocker. This workflow makes
+no LLM calls and does not build RAG, retrieval, embeddings, model calls, GPU
+runs, or inference.
+
 After the expansion report is ready, rerun:
 
 ```powershell

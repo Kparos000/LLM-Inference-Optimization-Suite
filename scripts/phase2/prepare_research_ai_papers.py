@@ -20,7 +20,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
@@ -54,9 +54,20 @@ DEFAULT_EXPANDED_SECTION_QUALITY_REPORT_PATH = Path(
 DEFAULT_1000_SCALE_CANDIDATE_TEMPLATE_PATH = Path(
     "data/sources/research_ai_1000_scale_candidate_papers_template.jsonl"
 )
+DEFAULT_1000_SCALE_APPROVED_PAPERS_PATH = Path(
+    "data/sources/research_ai_1000_scale_approved_papers.jsonl"
+)
+DEFAULT_1000_SCALE_CANDIDATE_VALIDATION_REPORT_PATH = Path(
+    "data/generated/research_ai/research_ai_candidate_validation_report.json"
+)
+DEFAULT_1000_SCALE_CANDIDATE_INGEST_REPORT_PATH = Path(
+    "data/generated/research_ai/research_ai_candidate_ingest_report.json"
+)
 TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT = 40
 TARGET_RESEARCH_AI_SECTION_COUNT_MIN = 800
 TARGET_RESEARCH_AI_SECTION_COUNT_MAX = 1200
+RESEARCH_AI_APPROVED_PAPER_WINDOW_START = date(2024, 1, 1)
+RESEARCH_AI_APPROVED_PAPER_WINDOW_END = date(2026, 5, 30)
 
 PAPER_SECTION_HEADINGS = {
     "abstract": ("Abstract",),
@@ -2123,6 +2134,393 @@ def approved_research_ai_papers(records: list[dict[str, Any]]) -> list[dict[str,
     return approved
 
 
+def is_research_ai_candidate_placeholder(record: dict[str, Any]) -> bool:
+    approval_status = str(record.get("approval_status") or "").strip().lower()
+    paper_id = str(record.get("paper_id") or "").strip()
+    return (
+        approval_status == "needs_review"
+        and record.get("not_for_benchmark_claims") is True
+        and record.get("missing_pdf_or_section_text") is True
+        and paper_id.startswith("research_ai_1000_candidate_slot_")
+    )
+
+
+def normalized_duplicate_key(value: Any) -> str:
+    return normalize_whitespace(str(value or "")).casefold()
+
+
+def has_url_value(record: dict[str, Any], field_name: str) -> bool:
+    value = normalize_whitespace(str(record.get(field_name) or ""))
+    return value.startswith(("http://", "https://"))
+
+
+def parse_candidate_publication_date(record: dict[str, Any]) -> date | None:
+    submission_date = normalize_whitespace(str(record.get("submission_date") or ""))
+    if submission_date:
+        try:
+            return date.fromisoformat(submission_date[:10])
+        except ValueError:
+            return None
+    publication_year = record.get("publication_year")
+    if publication_year is None or publication_year == "":
+        return None
+    try:
+        return date(int(publication_year), 1, 1)
+    except (TypeError, ValueError):
+        return None
+
+
+def candidate_date_is_in_approved_window(record: dict[str, Any]) -> bool:
+    publication_date = parse_candidate_publication_date(record)
+    if publication_date is None:
+        return False
+    if "submission_date" not in record or not normalize_whitespace(
+        str(record.get("submission_date"))
+    ):
+        return (
+            RESEARCH_AI_APPROVED_PAPER_WINDOW_START.year
+            <= publication_date.year
+            <= RESEARCH_AI_APPROVED_PAPER_WINDOW_END.year
+        )
+    return (
+        RESEARCH_AI_APPROVED_PAPER_WINDOW_START
+        <= publication_date
+        <= (RESEARCH_AI_APPROVED_PAPER_WINDOW_END)
+    )
+
+
+def validation_issue(
+    *,
+    line_number: int,
+    paper_id: str,
+    field: str,
+    message: str,
+    severity: str = "error",
+) -> dict[str, Any]:
+    return {
+        "line_number": line_number,
+        "paper_id": paper_id,
+        "field": field,
+        "severity": severity,
+        "message": message,
+    }
+
+
+def validate_approved_candidate_record(
+    record: dict[str, Any], *, line_number: int
+) -> list[dict[str, Any]]:
+    paper_id = str(record.get("paper_id") or "")
+    issues: list[dict[str, Any]] = []
+    required_fields = ["paper_id", "title", "venue_or_source", "source_url", "topic"]
+    for field_name in required_fields:
+        if not normalize_whitespace(str(record.get(field_name) or "")):
+            issues.append(
+                validation_issue(
+                    line_number=line_number,
+                    paper_id=paper_id,
+                    field=field_name,
+                    message=f"Approved records must include {field_name}.",
+                )
+            )
+    if not (
+        normalize_whitespace(str(record.get("publication_year") or ""))
+        or normalize_whitespace(str(record.get("submission_date") or ""))
+    ):
+        issues.append(
+            validation_issue(
+                line_number=line_number,
+                paper_id=paper_id,
+                field="publication_year_or_submission_date",
+                message="Approved records must include publication_year or submission_date.",
+            )
+        )
+    elif not candidate_date_is_in_approved_window(record):
+        issues.append(
+            validation_issue(
+                line_number=line_number,
+                paper_id=paper_id,
+                field="publication_date",
+                message=(
+                    "Approved record date must be within the Research AI approved paper window."
+                ),
+            )
+        )
+    if str(record.get("approval_status") or "").strip().lower() != "approved":
+        issues.append(
+            validation_issue(
+                line_number=line_number,
+                paper_id=paper_id,
+                field="approval_status",
+                message="Approved candidate records must set approval_status to approved.",
+            )
+        )
+    if record.get("not_for_benchmark_claims") is not False:
+        issues.append(
+            validation_issue(
+                line_number=line_number,
+                paper_id=paper_id,
+                field="not_for_benchmark_claims",
+                message="Approved candidate records must set not_for_benchmark_claims to false.",
+            )
+        )
+    if not has_url_value(record, "source_url"):
+        issues.append(
+            validation_issue(
+                line_number=line_number,
+                paper_id=paper_id,
+                field="source_url",
+                message="Approved candidate records require source provenance via source_url.",
+            )
+        )
+    if not any(
+        has_url_value(record, field) for field in ("pdf_url", "openreview_url", "arxiv_url")
+    ):
+        issues.append(
+            validation_issue(
+                line_number=line_number,
+                paper_id=paper_id,
+                field="paper_url",
+                message="Approved records must include pdf_url, openreview_url, or arxiv_url.",
+            )
+        )
+    return issues
+
+
+def validate_research_ai_candidate_records(
+    records: list[dict[str, Any]], *, allow_placeholders: bool
+) -> dict[str, Any]:
+    issues: list[dict[str, Any]] = []
+    placeholder_count = 0
+    approved_records: list[dict[str, Any]] = []
+    paper_id_counts = Counter(
+        normalized_duplicate_key(record.get("paper_id")) for record in records
+    )
+    title_counts = Counter(normalized_duplicate_key(record.get("title")) for record in records)
+    duplicate_paper_ids = {key for key, count in paper_id_counts.items() if key and count > 1}
+    duplicate_titles = {key for key, count in title_counts.items() if key and count > 1}
+
+    for line_number, record in enumerate(records, start=1):
+        paper_id = str(record.get("paper_id") or "")
+        title = str(record.get("title") or "")
+        if normalized_duplicate_key(paper_id) in duplicate_paper_ids:
+            issues.append(
+                validation_issue(
+                    line_number=line_number,
+                    paper_id=paper_id,
+                    field="paper_id",
+                    message="Duplicate paper_id is not allowed.",
+                )
+            )
+        if normalized_duplicate_key(title) in duplicate_titles:
+            issues.append(
+                validation_issue(
+                    line_number=line_number,
+                    paper_id=paper_id,
+                    field="title",
+                    message="Duplicate title is not allowed.",
+                )
+            )
+        if is_research_ai_candidate_placeholder(record):
+            placeholder_count += 1
+            if allow_placeholders:
+                continue
+            issues.append(
+                validation_issue(
+                    line_number=line_number,
+                    paper_id=paper_id,
+                    field="approval_status",
+                    message="Placeholder records are not allowed in approved-paper ingest.",
+                )
+            )
+            continue
+        if str(record.get("approval_status") or "").strip().lower() == "approved":
+            record_issues = validate_approved_candidate_record(record, line_number=line_number)
+            issues.extend(record_issues)
+            if not record_issues:
+                approved_records.append(record)
+            continue
+        issues.append(
+            validation_issue(
+                line_number=line_number,
+                paper_id=paper_id,
+                field="approval_status",
+                message=(
+                    "Records must be approved candidate papers or explicit needs_review "
+                    "placeholders."
+                ),
+            )
+        )
+
+    validation_passed = not issues
+    return {
+        "phase": "2A-12E",
+        "generated_at_utc": utc_now(),
+        "total_record_count": len(records),
+        "placeholder_record_count": placeholder_count,
+        "approved_candidate_count": len(approved_records),
+        "approved_candidate_ids": [str(record["paper_id"]) for record in approved_records],
+        "invalid_record_count": len(issues),
+        "duplicate_paper_id_count": len(duplicate_paper_ids),
+        "duplicate_title_count": len(duplicate_titles),
+        "placeholders_counted_as_approved": False,
+        "validation_passed": validation_passed,
+        "ready_for_ingest": validation_passed and bool(approved_records),
+        "issues": issues,
+        "approved_paper_window": {
+            "start": RESEARCH_AI_APPROVED_PAPER_WINDOW_START.isoformat(),
+            "end": RESEARCH_AI_APPROVED_PAPER_WINDOW_END.isoformat(),
+        },
+        "recommended_next_step": (
+            "Ingest approved candidate papers."
+            if validation_passed and approved_records
+            else "Replace placeholders with real approved metadata before ingest."
+        ),
+    }
+
+
+def validate_1000_scale_candidate_papers(args: argparse.Namespace) -> dict[str, Any]:
+    records = read_jsonl(args.candidate_papers)
+    report = validate_research_ai_candidate_records(records, allow_placeholders=True)
+    report["candidate_papers_path"] = str(args.candidate_papers)
+    report["validation_report_path"] = str(args.validation_report)
+    write_json(args.validation_report, report)
+    return {
+        "mode": "validate_1000_scale_candidate_papers",
+        "phase": "2A-12E",
+        "candidate_papers_path": str(args.candidate_papers),
+        "total_record_count": report["total_record_count"],
+        "placeholder_record_count": report["placeholder_record_count"],
+        "approved_candidate_count": report["approved_candidate_count"],
+        "invalid_record_count": report["invalid_record_count"],
+        "placeholders_counted_as_approved": False,
+        "validation_passed": report["validation_passed"],
+        "ready_for_ingest": report["ready_for_ingest"],
+        "validation_report_path": str(args.validation_report),
+    }
+
+
+def normalized_approved_1000_scale_record(record: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(record)
+    venue_or_source = normalize_whitespace(str(normalized.get("venue_or_source") or ""))
+    publication_year = normalized.get("publication_year")
+    normalized.setdefault("selection_status", "approved")
+    normalized.setdefault("source", venue_or_source)
+    normalized.setdefault("venue", venue_or_source)
+    normalized.setdefault("provenance_url", normalized.get("source_url"))
+    normalized.setdefault("topics", [normalized.get("topic")])
+    normalized.setdefault("published", str(publication_year or ""))
+    if publication_year is not None and publication_year != "":
+        try:
+            normalized.setdefault("year", int(publication_year))
+        except (TypeError, ValueError):
+            pass
+    normalized["approval_status"] = "approved"
+    normalized["not_for_benchmark_claims"] = False
+    normalized["missing_pdf_or_section_text"] = False
+    metadata = dict(normalized.get("metadata") or {})
+    metadata.update(
+        {
+            "approval_source": "research_ai_1000_scale_approved_papers.jsonl",
+            "approval_method": "manual_1000_scale_expansion_ingest",
+            "requires_pdf_download_or_text_extraction": True,
+        }
+    )
+    normalized["metadata"] = metadata
+    return normalized
+
+
+def ingest_approved_1000_scale_papers(args: argparse.Namespace) -> dict[str, Any]:
+    approved_registry_path = args.approved_registry or args.approved_registry_path
+    if not args.approved_papers_input.exists():
+        msg = f"Missing approved papers input: {args.approved_papers_input}"
+        raise RuntimeError(msg)
+    existing_records = read_jsonl(approved_registry_path)
+    candidate_records = read_jsonl(args.approved_papers_input)
+    validation = validate_research_ai_candidate_records(candidate_records, allow_placeholders=False)
+    existing_ids = {
+        normalized_duplicate_key(record.get("paper_id"))
+        for record in existing_records
+        if normalized_duplicate_key(record.get("paper_id"))
+    }
+    existing_titles = {
+        normalized_duplicate_key(record.get("title"))
+        for record in existing_records
+        if normalized_duplicate_key(record.get("title"))
+    }
+    duplicate_existing_issues: list[dict[str, Any]] = []
+    for line_number, record in enumerate(candidate_records, start=1):
+        paper_id = normalized_duplicate_key(record.get("paper_id"))
+        title = normalized_duplicate_key(record.get("title"))
+        raw_paper_id = str(record.get("paper_id") or "")
+        if paper_id in existing_ids:
+            duplicate_existing_issues.append(
+                validation_issue(
+                    line_number=line_number,
+                    paper_id=raw_paper_id,
+                    field="paper_id",
+                    message="Candidate paper_id already exists in approved registry.",
+                )
+            )
+        if title in existing_titles:
+            duplicate_existing_issues.append(
+                validation_issue(
+                    line_number=line_number,
+                    paper_id=raw_paper_id,
+                    field="title",
+                    message="Candidate title already exists in approved registry.",
+                )
+            )
+    issues = [*validation["issues"], *duplicate_existing_issues]
+    approved_records = [
+        normalized_approved_1000_scale_record(record)
+        for record in candidate_records
+        if str(record.get("approval_status") or "").strip().lower() == "approved"
+        and not is_research_ai_candidate_placeholder(record)
+    ]
+    ingest_passed = not issues and bool(approved_records)
+    report = {
+        "phase": "2A-12E",
+        "generated_at_utc": utc_now(),
+        "approved_papers_input": str(args.approved_papers_input),
+        "approved_registry": str(approved_registry_path),
+        "existing_approved_registry_count": len(existing_records),
+        "approved_records_to_ingest": len(approved_records) if ingest_passed else 0,
+        "updated_approved_registry_count": (
+            len(existing_records) + len(approved_records)
+            if ingest_passed
+            else len(existing_records)
+        ),
+        "placeholder_record_count": validation["placeholder_record_count"],
+        "duplicate_existing_issue_count": len(duplicate_existing_issues),
+        "ingest_passed": ingest_passed,
+        "registry_updated": False,
+        "issues": issues,
+        "recommended_next_step": (
+            "Run --build-40-paper-expansion and then extract PDF text/sections."
+            if ingest_passed
+            else "Fix approved-paper input issues before ingest."
+        ),
+    }
+    if not ingest_passed:
+        write_json(args.ingest_report, report)
+        msg = "Approved Research AI paper ingest failed validation."
+        raise RuntimeError(msg)
+    merged_records = [*existing_records, *approved_records]
+    write_jsonl(approved_registry_path, merged_records)
+    report["registry_updated"] = True
+    write_json(args.ingest_report, report)
+    return {
+        "mode": "ingest_approved_1000_scale_papers",
+        "phase": "2A-12E",
+        "approved_records_ingested": len(approved_records),
+        "updated_approved_registry_count": len(merged_records),
+        "registry_updated": True,
+        "approved_registry": str(approved_registry_path),
+        "ingest_report": str(args.ingest_report),
+        "recommended_next_step": report["recommended_next_step"],
+    }
+
+
 def build_research_ai_candidate_slots(additional_papers_needed: int) -> list[dict[str, Any]]:
     slots: list[dict[str, Any]] = []
     for index in range(1, additional_papers_needed + 1):
@@ -2219,6 +2617,8 @@ def build_research_ai_40_paper_expansion(args: argparse.Namespace) -> dict[str, 
     if additional_papers_needed:
         missing_requirements.append(f"additional_approved_papers_needed:{additional_papers_needed}")
     if len(section_rows) < TARGET_RESEARCH_AI_SECTION_COUNT_MIN:
+        if approved_count >= TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT:
+            missing_requirements.append("section_extraction_required_for_approved_papers")
         missing_requirements.append(
             "section_coverage_below_target_min:"
             f"{TARGET_RESEARCH_AI_SECTION_COUNT_MIN - len(section_rows)}"
@@ -2333,6 +2733,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--audit-sections", action="store_true")
     parser.add_argument("--summarize-local", action="store_true")
     parser.add_argument("--build-40-paper-expansion", action="store_true")
+    parser.add_argument("--validate-1000-scale-candidate-papers", action="store_true")
+    parser.add_argument("--ingest-approved-1000-scale-papers", action="store_true")
     parser.add_argument(
         "--approved-registry-path",
         type=Path,
@@ -2375,6 +2777,27 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=DEFAULT_1000_SCALE_CANDIDATE_TEMPLATE_PATH,
     )
+    parser.add_argument(
+        "--candidate-papers",
+        type=Path,
+        default=DEFAULT_1000_SCALE_CANDIDATE_TEMPLATE_PATH,
+    )
+    parser.add_argument(
+        "--validation-report",
+        type=Path,
+        default=DEFAULT_1000_SCALE_CANDIDATE_VALIDATION_REPORT_PATH,
+    )
+    parser.add_argument(
+        "--approved-papers-input",
+        type=Path,
+        default=DEFAULT_1000_SCALE_APPROVED_PAPERS_PATH,
+    )
+    parser.add_argument("--approved-registry", type=Path, default=None)
+    parser.add_argument(
+        "--ingest-report",
+        type=Path,
+        default=DEFAULT_1000_SCALE_CANDIDATE_INGEST_REPORT_PATH,
+    )
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--skip-existing", action="store_true")
     parser.add_argument("--include-non-paper-pdfs", action="store_true")
@@ -2401,6 +2824,8 @@ def main(argv: list[str] | None = None) -> int:
             args.audit_sections,
             args.summarize_local,
             args.build_40_paper_expansion,
+            args.validate_1000_scale_candidate_papers,
+            args.ingest_approved_1000_scale_papers,
         )
     )
     if mode_count != 1:
@@ -2408,7 +2833,8 @@ def main(argv: list[str] | None = None) -> int:
             (
                 "Pass exactly one mode: --dry-run, --enrich-metadata, --download-pdfs, "
                 "--extract-text, --audit-sections, --summarize-local, or "
-                "--build-40-paper-expansion."
+                "--build-40-paper-expansion, --validate-1000-scale-candidate-papers, "
+                "or --ingest-approved-1000-scale-papers."
             ),
             file=sys.stderr,
         )
@@ -2441,6 +2867,10 @@ def main(argv: list[str] | None = None) -> int:
             summary = audit_sections(args)
         elif args.build_40_paper_expansion:
             summary = build_research_ai_40_paper_expansion(args)
+        elif args.validate_1000_scale_candidate_papers:
+            summary = validate_1000_scale_candidate_papers(args)
+        elif args.ingest_approved_1000_scale_papers:
+            summary = ingest_approved_1000_scale_papers(args)
         else:
             summary = summarize_local(args)
     except RuntimeError as exc:

@@ -10,6 +10,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "scripts/phase2/prepare_research_ai_papers.py"
 DOC_PATH = ROOT / "docs/34_phase2_research_ai_paper_discovery.md"
+CURATED_DOC_PATH = ROOT / "docs/35_phase2_research_ai_curated_seed.md"
+SCALEUP_PLAN_DOC_PATH = ROOT / "docs/44_phase2a_1000_scaleup_plan.md"
 
 
 class _FakeBinaryResponse:
@@ -34,6 +36,29 @@ def _load_preparation_module() -> Any:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _approved_1000_candidate(index: int = 1) -> dict[str, Any]:
+    return {
+        "approval_status": "approved",
+        "arxiv_url": f"https://arxiv.org/abs/2501.{index:05d}",
+        "not_for_benchmark_claims": False,
+        "paper_id": f"research_ai_extra_approved_{index:02d}",
+        "pdf_url": f"https://arxiv.org/pdf/2501.{index:05d}",
+        "publication_year": 2025,
+        "source_url": f"https://openreview.net/forum?id=extra{index:02d}",
+        "title": f"Additional Research AI Paper {index:02d}",
+        "topic": "llm_serving_inference_optimization",
+        "venue_or_source": "ICLR 2025",
+    }
+
+
+def _assert_runtime_error(callback: Any) -> str:
+    try:
+        callback()
+    except RuntimeError as exc:
+        return str(exc)
+    raise AssertionError("Expected RuntimeError")
 
 
 def test_prepare_script_exists() -> None:
@@ -1309,6 +1334,155 @@ def test_research_ai_expansion_does_not_count_placeholders_as_approved(tmp_path:
     assert summary["additional_papers_needed"] == 39
 
 
+def test_validate_candidate_papers_does_not_count_placeholders(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    candidate_path = tmp_path / "candidate_template.jsonl"
+    validation_report = tmp_path / "validation_report.json"
+    module.write_jsonl(candidate_path, module.build_research_ai_candidate_slots(2))
+    args = Namespace(candidate_papers=candidate_path, validation_report=validation_report)
+
+    summary = module.validate_1000_scale_candidate_papers(args)
+    report = json.loads(validation_report.read_text(encoding="utf-8"))
+
+    assert summary["validation_passed"] is True
+    assert summary["placeholder_record_count"] == 2
+    assert summary["approved_candidate_count"] == 0
+    assert summary["placeholders_counted_as_approved"] is False
+    assert report["ready_for_ingest"] is False
+
+
+def test_validate_candidate_papers_accepts_real_approved_records(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    candidate_path = tmp_path / "candidate_papers.jsonl"
+    validation_report = tmp_path / "validation_report.json"
+    module.write_jsonl(candidate_path, [_approved_1000_candidate(1), _approved_1000_candidate(2)])
+    args = Namespace(candidate_papers=candidate_path, validation_report=validation_report)
+
+    summary = module.validate_1000_scale_candidate_papers(args)
+    report = json.loads(validation_report.read_text(encoding="utf-8"))
+
+    assert summary["validation_passed"] is True
+    assert summary["approved_candidate_count"] == 2
+    assert summary["ready_for_ingest"] is True
+    assert report["invalid_record_count"] == 0
+
+
+def test_ingest_rejects_placeholders(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_input = tmp_path / "approved_input.jsonl"
+    approved_registry = tmp_path / "approved_registry.jsonl"
+    ingest_report = tmp_path / "ingest_report.json"
+    module.write_jsonl(approved_input, module.build_research_ai_candidate_slots(1))
+    module.write_jsonl(approved_registry, [{"paper_id": "existing", "title": "Existing"}])
+    args = Namespace(
+        approved_papers_input=approved_input,
+        approved_registry=approved_registry,
+        approved_registry_path=approved_registry,
+        ingest_report=ingest_report,
+    )
+
+    message = _assert_runtime_error(lambda: module.ingest_approved_1000_scale_papers(args))
+    report = json.loads(ingest_report.read_text(encoding="utf-8"))
+    registry_rows = module.read_jsonl(approved_registry)
+
+    assert "failed validation" in message
+    assert report["ingest_passed"] is False
+    assert report["registry_updated"] is False
+    assert report["placeholder_record_count"] == 1
+    assert registry_rows == [{"paper_id": "existing", "title": "Existing"}]
+
+
+def test_ingest_rejects_duplicate_papers(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_input = tmp_path / "approved_input.jsonl"
+    approved_registry = tmp_path / "approved_registry.jsonl"
+    ingest_report = tmp_path / "ingest_report.json"
+    duplicate = _approved_1000_candidate(1)
+    module.write_jsonl(approved_input, [duplicate])
+    module.write_jsonl(
+        approved_registry,
+        [{"paper_id": duplicate["paper_id"], "title": "Previously Approved Paper"}],
+    )
+    args = Namespace(
+        approved_papers_input=approved_input,
+        approved_registry=approved_registry,
+        approved_registry_path=approved_registry,
+        ingest_report=ingest_report,
+    )
+
+    _assert_runtime_error(lambda: module.ingest_approved_1000_scale_papers(args))
+    report = json.loads(ingest_report.read_text(encoding="utf-8"))
+    registry_rows = module.read_jsonl(approved_registry)
+
+    assert report["ingest_passed"] is False
+    assert report["duplicate_existing_issue_count"] == 1
+    assert report["registry_updated"] is False
+    assert len(registry_rows) == 1
+
+
+def test_ingest_merges_real_approved_records(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_input = tmp_path / "approved_input.jsonl"
+    approved_registry = tmp_path / "approved_registry.jsonl"
+    ingest_report = tmp_path / "ingest_report.json"
+    module.write_jsonl(approved_input, [_approved_1000_candidate(1), _approved_1000_candidate(2)])
+    module.write_jsonl(
+        approved_registry,
+        [{"paper_id": "existing", "selection_status": "approved", "title": "Existing"}],
+    )
+    args = Namespace(
+        approved_papers_input=approved_input,
+        approved_registry=approved_registry,
+        approved_registry_path=approved_registry,
+        ingest_report=ingest_report,
+    )
+
+    summary = module.ingest_approved_1000_scale_papers(args)
+    report = json.loads(ingest_report.read_text(encoding="utf-8"))
+    registry_rows = module.read_jsonl(approved_registry)
+
+    assert summary["approved_records_ingested"] == 2
+    assert report["registry_updated"] is True
+    assert len(registry_rows) == 3
+    assert registry_rows[-1]["selection_status"] == "approved"
+    assert registry_rows[-1]["metadata"]["requires_pdf_download_or_text_extraction"] is True
+
+
+def test_build_40_paper_expansion_detects_40_approved_but_missing_sections(
+    tmp_path: Path,
+) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    sections_path = tmp_path / "sections.jsonl"
+    module.write_jsonl(
+        approved_path,
+        [
+            {
+                **_approved_1000_candidate(index),
+                "missing_pdf_or_section_text": False,
+                "selection_status": "approved",
+            }
+            for index in range(1, 41)
+        ],
+    )
+    module.write_jsonl(sections_path, [{"paper_id": "research_ai_extra_approved_01"}])
+    args = Namespace(
+        approved_registry_path=approved_path,
+        sections_manifest_path=sections_path,
+        expansion_report_path=tmp_path / "expansion_report.json",
+        expansion_review_csv_path=tmp_path / "review.csv",
+        expanded_section_quality_report_path=tmp_path / "quality.json",
+        candidate_template_path=tmp_path / "candidate_template.jsonl",
+    )
+
+    summary = module.build_research_ai_40_paper_expansion(args)
+
+    assert summary["current_approved_paper_count"] == 40
+    assert summary["additional_papers_needed"] == 0
+    assert summary["expansion_ready_for_1000"] is False
+    assert "section_extraction_required_for_approved_papers" in summary["missing_requirements"]
+
+
 def test_dry_run_cli() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--dry-run"],
@@ -1359,3 +1533,26 @@ def test_docs_include_section_qa() -> None:
     assert "Phase 2A-5A-Text-Section-QA" in text
     assert "--audit-sections" in text
     assert "section quality" in text
+
+
+def test_docs_include_research_ai_ingest_commands() -> None:
+    curated_docs = CURATED_DOC_PATH.read_text(encoding="utf-8")
+    plan_docs = SCALEUP_PLAN_DOC_PATH.read_text(encoding="utf-8")
+
+    validate_command = (
+        "python scripts/phase2/prepare_research_ai_papers.py --validate-1000-scale-candidate-papers"
+    )
+    ingest_command = (
+        "python scripts/phase2/prepare_research_ai_papers.py --ingest-approved-1000-scale-papers"
+    )
+    expansion_command = (
+        "python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion"
+    )
+    assert validate_command in curated_docs
+    assert ingest_command in curated_docs
+    assert expansion_command in curated_docs
+    assert validate_command in plan_docs
+    assert ingest_command in plan_docs
+    assert "placeholders are not benchmark evidence" in curated_docs
+    assert "no LLM calls" in curated_docs
+    assert "section quality" in curated_docs

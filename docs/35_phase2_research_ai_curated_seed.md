@@ -136,6 +136,52 @@ Template rows are marked `approval_status: needs_review`,
 `not_for_benchmark_claims: true`, and `missing_pdf_or_section_text: true`.
 They are not counted as approved papers.
 
+## Phase 2A-12E 1,000-Scale Candidate Ingest
+
+Phase 2A-12E adds a controlled workflow for replacing the 20 placeholder slots
+with real approved paper metadata. The candidate file should contain real
+records only after human review. The key rule is that placeholders are not benchmark evidence;
+they are not counted as approved papers and must not be used for benchmark
+claims.
+
+Approved candidate records must include:
+
+- `paper_id`
+- `title`
+- `venue_or_source`
+- `publication_year` or `submission_date`
+- `source_url`
+- `pdf_url`, `openreview_url`, or `arxiv_url`
+- `topic`
+- `approval_status: approved`
+- `not_for_benchmark_claims: false`
+
+Validate candidate records before ingest:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --validate-1000-scale-candidate-papers
+```
+
+After validation, ingest real approved records from
+`data/sources/research_ai_1000_scale_approved_papers.jsonl`:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --ingest-approved-1000-scale-papers
+```
+
+Then rerun the expansion readiness report:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion
+```
+
+The ingest workflow only updates approved metadata after all new records pass
+validation. It does not download PDFs, extract text, create sections, generate
+1,000 prompts, call LLMs, build RAG, run retrieval, create embeddings, run model
+calls, run GPU jobs, or run inference. In short: no LLM calls and no fake
+papers. PDF/text extraction and section quality checks are still required after
+ingest before Research AI can become source-ready for 1,000-scale generation.
+
 After reviewing real candidate papers and extracting section evidence, rerun:
 
 ```text
