@@ -115,6 +115,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 2A-13A/13B/13C/13G 1,000-scale generator](docs/45_phase2a_1000_scaleup_generator.md)
 - [Phase 2A-13D/13E partial 1,000-scale QA and promotion](docs/46_phase2a_1000_partial_qa_promotion.md)
 - [Phase 2A-13G/13H full 1,000-scale QA and promotion](docs/47_phase2a_1000_full_qa_promotion.md)
+- [Phase 2A-14 2,000-scale generator](docs/49_phase2a_2000_scaleup_generator.md)
+- [Phase 2A-15 2,000-scale QA and promotion](docs/50_phase2a_2000_full_qa_promotion.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

@@ -34,11 +34,11 @@ TARGET_TO_CHECKPOINT = {
     5000: "checkpoint_5000",
 }
 IMPLEMENTED_GENERATION_TARGETS = {
-    "finance": {250, 1000},
-    "airline": {250, 1000},
-    "healthcare_admin": {250, 1000},
-    "research_ai": {250, 1000},
-    "retail": {250, 1000},
+    "finance": {250, 1000, 2000},
+    "airline": {250, 1000, 2000},
+    "healthcare_admin": {250, 1000, 2000},
+    "research_ai": {250, 1000, 2000},
+    "retail": {250, 1000, 2000},
 }
 VERTICAL_FILES: dict[str, dict[str, Path]] = {
     "finance": {
@@ -209,7 +209,9 @@ def load_committed_scaleup_kb_rows(vertical: str, target_per_vertical: int) -> l
     """
 
     candidate_paths: list[Path] = []
-    if target_per_vertical == 1000:
+    if target_per_vertical >= 2000:
+        candidate_paths.append(Path(f"data/scaleup_2000_full/{vertical}/{vertical}_kb_2000.jsonl"))
+    if target_per_vertical >= 1000:
         candidate_paths.extend(
             [
                 Path(f"data/scaleup_1000_full/{vertical}/{vertical}_kb_1000.jsonl"),
@@ -228,6 +230,66 @@ def load_committed_scaleup_kb_rows(vertical: str, target_per_vertical: int) -> l
             rows.append(dict(row))
             seen_doc_ids.add(doc_id)
     return rows
+
+
+def build_committed_kb_expansion_variants(
+    *,
+    vertical: str,
+    target_per_vertical: int,
+    source_rows: list[dict[str, Any]],
+    existing_doc_ids: set[str],
+    target_kb_count: int,
+) -> list[dict[str, Any]]:
+    if not source_rows:
+        return []
+    variants: list[dict[str, Any]] = []
+    variant_index = 1
+    while len(existing_doc_ids) + len(variants) < target_kb_count:
+        source = source_rows[(variant_index - 1) % len(source_rows)]
+        source_doc_id = str(source.get("doc_id") or "")
+        if not source_doc_id:
+            variant_index += 1
+            continue
+        doc_id = (
+            f"{vertical}_kb_{target_per_vertical}_fallback_"
+            f"{variant_index:04d}_{hygiene_safe_identifier(source_doc_id)[:72]}"
+        )
+        if doc_id in existing_doc_ids:
+            variant_index += 1
+            continue
+        metadata = dict(source.get("metadata") if isinstance(source.get("metadata"), dict) else {})
+        metadata.update(
+            {
+                "source_promoted_doc_id": source_doc_id,
+                "scaleup_expansion_variant": variant_index,
+                "target_per_vertical": target_per_vertical,
+            }
+        )
+        body = normalize_whitespace(str(source.get("body") or ""))
+        if body:
+            body = (
+                f"{body} Scale-up fallback note: this deterministic clean-checkout "
+                "record preserves the same cited evidence boundary for larger local "
+                "candidate generation."
+            )
+        variant = dict(source)
+        variant.update(
+            {
+                "allowed_to_commit": True,
+                "body": body,
+                "doc_id": doc_id,
+                "metadata": metadata,
+                "source_type": source.get("source_type") or "derived",
+                "title": (
+                    f"{source.get('title') or source_doc_id} - "
+                    f"{target_per_vertical} scale-up fallback {variant_index:04d}"
+                ),
+                "vertical": vertical,
+            }
+        )
+        variants.append(variant)
+        variant_index += 1
+    return variants
 
 
 def write_json(path: Path, obj: dict[str, Any]) -> None:
@@ -479,6 +541,14 @@ def calculate_distribution_counts(
             "escalate": 35,
             "spam_or_low_quality": 30,
             "out_of_scope": 10,
+        }
+    if vertical == "retail" and target_per_vertical == 2000:
+        status_counts = {
+            "answer": 1780,
+            "insufficient_evidence": 70,
+            "escalate": 70,
+            "spam_or_low_quality": 60,
+            "out_of_scope": 20,
         }
     return {
         "expected_status": status_counts,
@@ -837,14 +907,15 @@ def finance_metadata(row: dict[str, Any]) -> dict[str, Any]:
 
 def finance_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
-    if target_per_vertical == 1000:
-        pairs.extend([("answer", "answer_grounded")] * 380)
-        pairs.extend([("answer", "calculation")] * 140)
-        pairs.extend([("answer", "compare_filings")] * 140)
-        pairs.extend([("answer", "extract_structured")] * 180)
-        pairs.extend([("answer", "evidence_citation_lookup")] * 80)
-        pairs.extend([("insufficient_evidence", "escalation_response")] * 40)
-        pairs.extend([("escalate", "escalation_response")] * 40)
+    if target_per_vertical in {1000, 2000}:
+        multiplier = target_per_vertical // 1000
+        pairs.extend([("answer", "answer_grounded")] * (380 * multiplier))
+        pairs.extend([("answer", "calculation")] * (140 * multiplier))
+        pairs.extend([("answer", "compare_filings")] * (140 * multiplier))
+        pairs.extend([("answer", "extract_structured")] * (180 * multiplier))
+        pairs.extend([("answer", "evidence_citation_lookup")] * (80 * multiplier))
+        pairs.extend([("insufficient_evidence", "escalation_response")] * (40 * multiplier))
+        pairs.extend([("escalate", "escalation_response")] * (40 * multiplier))
         return pairs
     pairs.extend([("answer", "answer_grounded")] * 95)
     pairs.extend([("answer", "calculation")] * 35)
@@ -862,10 +933,11 @@ def finance_output_for_task(
     output_counts: dict[str, int],
     target_per_vertical: int,
 ) -> str:
-    json_calculation_limit = 140 if target_per_vertical == 1000 else 35
-    json_extract_limit = 200 if target_per_vertical == 1000 else 50
-    table_compare_limit = 140 if target_per_vertical == 1000 else 35
-    table_extract_limit = 180 if target_per_vertical == 1000 else 45
+    scale_factor = target_per_vertical // 250
+    json_calculation_limit = 35 * scale_factor
+    json_extract_limit = 50 * scale_factor
+    table_compare_limit = 35 * scale_factor
+    table_extract_limit = 45 * scale_factor
     if task_type == "calculation" and output_counts["json"] < json_calculation_limit:
         output_counts["json"] += 1
         return "json"
@@ -1158,6 +1230,7 @@ def expand_finance_kb_rows(
     kb_rows: list[dict[str, Any]],
     *,
     target_kb_count: int,
+    target_per_vertical: int,
 ) -> list[dict[str, Any]]:
     kb_copy = [sanitize_finance_kb_row(row) for row in kb_rows]
     existing_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
@@ -1174,7 +1247,7 @@ def expand_finance_kb_rows(
         if len(kb_copy) >= target_kb_count:
             break
     if len(kb_copy) < target_kb_count:
-        committed_rows = load_committed_scaleup_kb_rows("finance", 1000)
+        committed_rows = load_committed_scaleup_kb_rows("finance", target_per_vertical)
         for row in committed_rows:
             doc_id = str(row.get("doc_id") or "")
             if not doc_id or doc_id in existing_doc_ids:
@@ -1183,6 +1256,21 @@ def expand_finance_kb_rows(
             existing_doc_ids.add(doc_id)
             if len(kb_copy) >= target_kb_count:
                 break
+        if len(kb_copy) < target_kb_count:
+            for row in build_committed_kb_expansion_variants(
+                vertical="finance",
+                target_per_vertical=target_per_vertical,
+                source_rows=committed_rows or kb_copy,
+                existing_doc_ids=existing_doc_ids,
+                target_kb_count=target_kb_count,
+            ):
+                doc_id = str(row.get("doc_id") or "")
+                if not doc_id or doc_id in existing_doc_ids:
+                    continue
+                kb_copy.append(sanitize_finance_kb_row(row))
+                existing_doc_ids.add(doc_id)
+                if len(kb_copy) >= target_kb_count:
+                    break
     return kb_copy
 
 
@@ -1726,9 +1814,15 @@ def build_finance_pilot_records(
 
     fact_rows, fact_doc_id_by_prompt_id = build_finance_xbrl_fact_rows(seed_prompts)
     event_rows = build_finance_8k_event_rows()
+    finance_kb_target = 1500 if target_per_vertical == 2000 else 800
+    finance_kb_max = 2500 if target_per_vertical == 2000 else 1200
     kb_copy = (
-        expand_finance_kb_rows(kb_rows, target_kb_count=800)
-        if target_per_vertical == 1000
+        expand_finance_kb_rows(
+            kb_rows,
+            target_kb_count=finance_kb_target,
+            target_per_vertical=target_per_vertical,
+        )
+        if target_per_vertical in {1000, 2000}
         else [sanitize_finance_kb_row(row) for row in kb_rows]
     )
     existing_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
@@ -1736,8 +1830,8 @@ def build_finance_pilot_records(
         if str(row.get("doc_id") or "") not in existing_doc_ids:
             kb_copy.append(row)
             existing_doc_ids.add(str(row.get("doc_id") or ""))
-    if target_per_vertical == 1000 and len(kb_copy) > 1200:
-        kb_copy = kb_copy[:1200]
+    if target_per_vertical in {1000, 2000} and len(kb_copy) > finance_kb_max:
+        kb_copy = kb_copy[:finance_kb_max]
 
     pools = finance_context_pools(
         seed_prompts=seed_prompts,
@@ -2219,7 +2313,7 @@ def build_airline_pilot_records(
         kb_rows,
         vertical="airline",
         target_per_vertical=target_per_vertical,
-        target_kb_count=150,
+        target_kb_count=300 if target_per_vertical == 2000 else 150,
     )
     return prompts, gold, kb_copy
 
@@ -2254,18 +2348,19 @@ def build_healthcare_policy_context(
 
 
 def healthcare_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
-    if target_per_vertical == 1000:
+    if target_per_vertical in {1000, 2000}:
+        multiplier = target_per_vertical // 1000
         pairs: list[tuple[str, str]] = []
-        pairs.extend([("answer", "answer_grounded")] * 480)
-        pairs.extend([("answer", "policy_reasoning")] * 220)
-        pairs.extend([("answer", "extract_structured")] * 120)
-        pairs.extend([("answer", "escalation_response")] * 60)
-        pairs.extend([("escalate", "escalation_response")] * 40)
-        pairs.extend([("escalate", "quality_boundary")] * 20)
-        pairs.extend([("escalate", "safety_boundary")] * 20)
-        pairs.extend([("safety_boundary", "safety_boundary")] * 20)
-        pairs.extend([("spam_or_fraud", "quality_boundary")] * 10)
-        pairs.extend([("out_of_scope", "quality_boundary")] * 10)
+        pairs.extend([("answer", "answer_grounded")] * (480 * multiplier))
+        pairs.extend([("answer", "policy_reasoning")] * (220 * multiplier))
+        pairs.extend([("answer", "extract_structured")] * (120 * multiplier))
+        pairs.extend([("answer", "escalation_response")] * (60 * multiplier))
+        pairs.extend([("escalate", "escalation_response")] * (40 * multiplier))
+        pairs.extend([("escalate", "quality_boundary")] * (20 * multiplier))
+        pairs.extend([("escalate", "safety_boundary")] * (20 * multiplier))
+        pairs.extend([("safety_boundary", "safety_boundary")] * (20 * multiplier))
+        pairs.extend([("spam_or_fraud", "quality_boundary")] * (10 * multiplier))
+        pairs.extend([("out_of_scope", "quality_boundary")] * (10 * multiplier))
         return pairs
 
     if target_per_vertical != 250:
@@ -2674,7 +2769,7 @@ def build_healthcare_pilot_records(
         kb_rows,
         vertical="healthcare_admin",
         target_per_vertical=target_per_vertical,
-        target_kb_count=150,
+        target_kb_count=300 if target_per_vertical == 2000 else 150,
     )
     return prompts, gold, kb_copy
 
@@ -2870,6 +2965,7 @@ def expand_retail_kb_rows(
     *,
     seed_prompts: list[dict[str, Any]],
     target_kb_count: int,
+    target_per_vertical: int,
 ) -> list[dict[str, Any]]:
     kb_copy = [dict(row) for row in kb_rows]
     existing_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
@@ -2890,6 +2986,31 @@ def expand_retail_kb_rows(
         existing_doc_ids.add(doc_id)
         if len(kb_copy) >= target_kb_count:
             break
+    if len(kb_copy) < target_kb_count:
+        committed_rows = load_committed_scaleup_kb_rows("retail", target_per_vertical)
+        for row in committed_rows:
+            doc_id = str(row.get("doc_id") or "")
+            if not doc_id or doc_id in existing_doc_ids:
+                continue
+            kb_copy.append(dict(row))
+            existing_doc_ids.add(doc_id)
+            if len(kb_copy) >= target_kb_count:
+                break
+        if len(kb_copy) < target_kb_count:
+            for row in build_committed_kb_expansion_variants(
+                vertical="retail",
+                target_per_vertical=target_per_vertical,
+                source_rows=committed_rows or kb_copy,
+                existing_doc_ids=existing_doc_ids,
+                target_kb_count=target_kb_count,
+            ):
+                doc_id = str(row.get("doc_id") or "")
+                if not doc_id or doc_id in existing_doc_ids:
+                    continue
+                kb_copy.append(row)
+                existing_doc_ids.add(doc_id)
+                if len(kb_copy) >= target_kb_count:
+                    break
     return kb_copy
 
 
@@ -2991,18 +3112,19 @@ def retail_contexts_by_role(
 
 def retail_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
-    if target_per_vertical == 1000:
-        pairs.extend([("answer", "answer_grounded")] * 380)
-        pairs.extend([("answer", "issue_identification")] * 180)
-        pairs.extend([("answer", "extract_structured")] * 140)
-        pairs.extend([("answer", "policy_reasoning")] * 120)
-        pairs.extend([("answer", "compare_products")] * 70)
-        pairs.extend([("insufficient_evidence", "escalation_response")] * 20)
-        pairs.extend([("insufficient_evidence", "compare_products")] * 15)
-        pairs.extend([("escalate", "escalation_response")] * 20)
-        pairs.extend([("escalate", "compare_products")] * 15)
-        pairs.extend([("spam_or_low_quality", "quality_boundary")] * 30)
-        pairs.extend([("out_of_scope", "quality_boundary")] * 10)
+    if target_per_vertical in {1000, 2000}:
+        multiplier = target_per_vertical // 1000
+        pairs.extend([("answer", "answer_grounded")] * (380 * multiplier))
+        pairs.extend([("answer", "issue_identification")] * (180 * multiplier))
+        pairs.extend([("answer", "extract_structured")] * (140 * multiplier))
+        pairs.extend([("answer", "policy_reasoning")] * (120 * multiplier))
+        pairs.extend([("answer", "compare_products")] * (70 * multiplier))
+        pairs.extend([("insufficient_evidence", "escalation_response")] * (20 * multiplier))
+        pairs.extend([("insufficient_evidence", "compare_products")] * (15 * multiplier))
+        pairs.extend([("escalate", "escalation_response")] * (20 * multiplier))
+        pairs.extend([("escalate", "compare_products")] * (15 * multiplier))
+        pairs.extend([("spam_or_low_quality", "quality_boundary")] * (30 * multiplier))
+        pairs.extend([("out_of_scope", "quality_boundary")] * (10 * multiplier))
         return pairs
     pairs.extend([("answer", "answer_grounded")] * 95)
     pairs.extend([("answer", "issue_identification")] * 45)
@@ -3024,9 +3146,10 @@ def retail_output_for_task(
     output_counts: dict[str, int],
     target_per_vertical: int,
 ) -> str:
-    json_extract_limit = 140 if target_per_vertical == 1000 else 35
-    json_policy_limit = 160 if target_per_vertical == 1000 else 40
-    table_compare_limit = 100 if target_per_vertical == 1000 else 25
+    scale_factor = target_per_vertical // 250
+    json_extract_limit = 35 * scale_factor
+    json_policy_limit = 40 * scale_factor
+    table_compare_limit = 25 * scale_factor
     if task_type == "extract_structured" and output_counts["json"] < json_extract_limit:
         output_counts["json"] += 1
         return "json"
@@ -3394,9 +3517,10 @@ def build_retail_pilot_records(
         expand_retail_kb_rows(
             kb_rows,
             seed_prompts=seed_prompts,
-            target_kb_count=500,
+            target_kb_count=1000 if target_per_vertical == 2000 else 500,
+            target_per_vertical=target_per_vertical,
         )
-        if target_per_vertical == 1000
+        if target_per_vertical in {1000, 2000}
         else [dict(row) for row in kb_rows]
     )
     contexts = retail_contexts_by_role(seed_prompts, kb_copy)
@@ -3527,16 +3651,17 @@ def build_retail_pilot_records(
 
 def research_ai_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
-    if target_per_vertical == 1000:
-        pairs.extend([("answer", "answer_grounded")] * 340)
-        pairs.extend([("answer", "paper_method")] * 180)
-        pairs.extend([("answer", "results_evaluation")] * 140)
-        pairs.extend([("answer", "extract_structured")] * 120)
-        pairs.extend([("answer", "compare_papers")] * 100)
-        pairs.extend([("answer", "literature_table")] * 20)
-        pairs.extend([("insufficient_evidence", "literature_table")] * 40)
-        pairs.extend([("escalate", "escalation_response")] * 40)
-        pairs.extend([("out_of_scope", "answer_grounded")] * 20)
+    if target_per_vertical in {1000, 2000}:
+        multiplier = target_per_vertical // 1000
+        pairs.extend([("answer", "answer_grounded")] * (340 * multiplier))
+        pairs.extend([("answer", "paper_method")] * (180 * multiplier))
+        pairs.extend([("answer", "results_evaluation")] * (140 * multiplier))
+        pairs.extend([("answer", "extract_structured")] * (120 * multiplier))
+        pairs.extend([("answer", "compare_papers")] * (100 * multiplier))
+        pairs.extend([("answer", "literature_table")] * (20 * multiplier))
+        pairs.extend([("insufficient_evidence", "literature_table")] * (40 * multiplier))
+        pairs.extend([("escalate", "escalation_response")] * (40 * multiplier))
+        pairs.extend([("out_of_scope", "answer_grounded")] * (20 * multiplier))
         return pairs
     pairs.extend([("answer", "answer_grounded")] * 85)
     pairs.extend([("answer", "paper_method")] * 45)
@@ -3556,10 +3681,21 @@ def research_ai_output_for_task(
     output_counts: dict[str, int],
     target_per_vertical: int,
 ) -> str:
-    json_extract_limit = 120 if target_per_vertical == 1000 else 30
-    json_method_limit = 140 if target_per_vertical == 1000 else 35
-    table_compare_limit = 100 if target_per_vertical == 1000 else 20
-    table_literature_limit = 140 if target_per_vertical == 1000 else 35
+    if target_per_vertical == 2000:
+        json_extract_limit = 240
+        json_method_limit = 280
+        table_compare_limit = 200
+        table_literature_limit = 280
+    elif target_per_vertical == 1000:
+        json_extract_limit = 120
+        json_method_limit = 140
+        table_compare_limit = 100
+        table_literature_limit = 140
+    else:
+        json_extract_limit = 30
+        json_method_limit = 35
+        table_compare_limit = 20
+        table_literature_limit = 35
     if task_type == "extract_structured" and output_counts["json"] < json_extract_limit:
         output_counts["json"] += 1
         return "json"
@@ -3747,9 +3883,10 @@ def expand_research_ai_kb_rows(
         if doc_id and doc_id not in existing_doc_ids:
             kb_copy.append(sanitize_research_ai_row(dict(row)))
             existing_doc_ids.add(doc_id)
-    if target_per_vertical != 1000:
+    if target_per_vertical not in {1000, 2000}:
         return kb_copy if kb_copy else [dict(row) for row in kb_rows]
-    target_kb_count = 1000
+    target_kb_count = 1600 if target_per_vertical == 2000 else 1000
+    minimum_contexts = 40
     section_rows = build_research_ai_section_kb_rows_from_manifest(limit=target_kb_count * 2)
     for row in section_rows:
         doc_id = str(row.get("doc_id") or "")
@@ -3758,8 +3895,11 @@ def expand_research_ai_kb_rows(
             existing_doc_ids.add(doc_id)
         if len(kb_copy) >= target_kb_count:
             break
-    if len(kb_copy) < target_kb_count or len(research_ai_contexts_by_paper(kb_copy)) < 40:
-        committed_rows = load_committed_scaleup_kb_rows("research_ai", 1000)
+    if (
+        len(kb_copy) < target_kb_count
+        or len(research_ai_contexts_by_paper(kb_copy)) < minimum_contexts
+    ):
+        committed_rows = load_committed_scaleup_kb_rows("research_ai", target_per_vertical)
         for row in committed_rows:
             doc_id = str(row.get("doc_id") or "")
             if doc_id and doc_id not in existing_doc_ids:
@@ -3767,10 +3907,25 @@ def expand_research_ai_kb_rows(
                 existing_doc_ids.add(doc_id)
             if (
                 len(kb_copy) >= target_kb_count
-                and len(research_ai_contexts_by_paper(kb_copy)) >= 40
+                and len(research_ai_contexts_by_paper(kb_copy)) >= minimum_contexts
             ):
                 break
-    return kb_copy[:1200]
+        if len(kb_copy) < target_kb_count:
+            for row in build_committed_kb_expansion_variants(
+                vertical="research_ai",
+                target_per_vertical=target_per_vertical,
+                source_rows=committed_rows or kb_copy,
+                existing_doc_ids=existing_doc_ids,
+                target_kb_count=target_kb_count,
+            ):
+                doc_id = str(row.get("doc_id") or "")
+                if not doc_id or doc_id in existing_doc_ids:
+                    continue
+                kb_copy.append(sanitize_research_ai_row(dict(row)))
+                existing_doc_ids.add(doc_id)
+                if len(kb_copy) >= target_kb_count:
+                    break
+    return kb_copy[: 2000 if target_per_vertical == 2000 else 1200]
 
 
 def research_ai_contexts_by_paper(kb_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -4324,7 +4479,7 @@ def build_research_ai_pilot_records(
         target_per_vertical=target_per_vertical,
     )
     paper_contexts = research_ai_contexts_by_paper(kb_copy)
-    minimum_contexts = 40 if target_per_vertical == 1000 else 10
+    minimum_contexts = 40 if target_per_vertical in {1000, 2000} else 10
     if len(paper_contexts) < minimum_contexts:
         raise RuntimeError(
             f"Research AI KB does not expose enough paper contexts for {target_per_vertical} scale."
@@ -5079,7 +5234,7 @@ def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
             f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
             "implementation and prior checkpoint review."
         )
-    if target_per_vertical > 1000 and not args.allow_large_local_generation:
+    if target_per_vertical > 2000 and not args.allow_large_local_generation:
         raise RuntimeError(
             f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
             "implementation and prior checkpoint review."

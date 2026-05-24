@@ -288,14 +288,14 @@ def test_dry_run_2000() -> None:
     assert summary["checkpoint"] == "checkpoint_2000"
 
 
-def test_dry_run_2000_reports_planning_only() -> None:
+def test_dry_run_4000_reports_planning_only() -> None:
     result = subprocess.run(
         [
             sys.executable,
             str(SCRIPT_PATH),
             "--dry-run",
             "--target-per-vertical",
-            "2000",
+            "4000",
         ],
         cwd=ROOT,
         text=True,
@@ -609,7 +609,7 @@ def test_large_generation_blocked_without_explicit_support() -> None:
             "--vertical",
             "airline",
             "--target-per-vertical",
-            "2000",
+            "4000",
         ],
         cwd=ROOT,
         text=True,
@@ -619,7 +619,7 @@ def test_large_generation_blocked_without_explicit_support() -> None:
 
     assert result.returncode != 0
     assert (
-        "Generation for airline at 2000 requires explicit implementation and prior "
+        "Generation for airline at 4000 requires explicit implementation and prior "
         "checkpoint review"
     ) in result.stderr
 

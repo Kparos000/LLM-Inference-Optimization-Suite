@@ -356,7 +356,9 @@ def test_finance_1000_committed_kb_fallback_without_sec_artifacts() -> None:
     module.build_finance_xbrl_inventory_kb_rows = lambda limit: []
     try:
         seed_kb = _read_jsonl(ROOT / "data/kb/finance/kb_sample.jsonl")
-        expanded = module.expand_finance_kb_rows(seed_kb, target_kb_count=800)
+        expanded = module.expand_finance_kb_rows(
+            seed_kb, target_kb_count=800, target_per_vertical=1000
+        )
     finally:
         module.build_finance_section_kb_rows_from_manifest = original_section_loader
         module.build_finance_xbrl_inventory_kb_rows = original_xbrl_loader
@@ -499,7 +501,7 @@ def test_large_generation_still_blocks_unimplemented_targets() -> None:
                 "--vertical",
                 vertical,
                 "--target-per-vertical",
-                "2000",
+                "4000",
             ],
             cwd=ROOT,
             text=True,
@@ -507,7 +509,7 @@ def test_large_generation_still_blocks_unimplemented_targets() -> None:
             check=False,
         )
         assert result.returncode != 0
-        assert f"Generation for {vertical} at 2000 requires explicit implementation" in (
+        assert f"Generation for {vertical} at 4000 requires explicit implementation" in (
             result.stderr
         )
 

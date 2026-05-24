@@ -1,0 +1,85 @@
+{
+  "dataset_name": "phase2a_2000_full",
+  "generated_at_utc": "2026-05-24T17:06:55.485838+00:00",
+  "generated_source_root": "data\\generated\\phase2a\\scaleup",
+  "next_step": "Run comprehensive Phase 2A EDA before Phase 2B context engineering.",
+  "partial_dataset": false,
+  "partial_source_root": "data\\generated\\phase2a\\scaleup",
+  "per_vertical": {
+    "airline": {
+      "files": {
+        "gold": "data\\scaleup_2000_full\\airline\\airline_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\airline\\airline_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\airline\\airline_prompts_2000.jsonl"
+      },
+      "gold_count": 2000,
+      "kb_count": 300,
+      "prompt_count": 2000
+    },
+    "finance": {
+      "files": {
+        "gold": "data\\scaleup_2000_full\\finance\\finance_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\finance\\finance_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\finance\\finance_prompts_2000.jsonl"
+      },
+      "gold_count": 2000,
+      "kb_count": 1540,
+      "prompt_count": 2000
+    },
+    "healthcare_admin": {
+      "files": {
+        "gold": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_prompts_2000.jsonl"
+      },
+      "gold_count": 2000,
+      "kb_count": 300,
+      "prompt_count": 2000
+    },
+    "research_ai": {
+      "files": {
+        "gold": "data\\scaleup_2000_full\\research_ai\\research_ai_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\research_ai\\research_ai_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\research_ai\\research_ai_prompts_2000.jsonl"
+      },
+      "gold_count": 2000,
+      "kb_count": 1600,
+      "prompt_count": 2000
+    },
+    "retail": {
+      "files": {
+        "gold": "data\\scaleup_2000_full\\retail\\retail_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\retail\\retail_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\retail\\retail_prompts_2000.jsonl"
+      },
+      "gold_count": 2000,
+      "kb_count": 1000,
+      "prompt_count": 2000
+    }
+  },
+  "phase": "2A-15",
+  "promoted_root": "data\\scaleup_2000_full",
+  "qa_report_path": "data\\generated\\phase2a\\scaleup_reports\\phase2a_2000_full_qa_report.json",
+  "quality_summary": {
+    "critical_issue_count": 0,
+    "promotion_ready": true,
+    "warning_count": 0
+  },
+  "scaleup_notes": [
+    "no RAG",
+    "no inference",
+    "no embeddings",
+    "generated from Phase 2A deterministic local generators",
+    "full five-vertical 2,000-scale checkpoint"
+  ],
+  "total_gold_count": 10000,
+  "total_kb_count": 4740,
+  "total_prompt_count": 10000,
+  "verticals": [
+    "airline",
+    "healthcare_admin",
+    "retail",
+    "finance",
+    "research_ai"
+  ]
+}
