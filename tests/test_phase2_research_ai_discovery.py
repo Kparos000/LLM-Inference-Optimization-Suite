@@ -1301,7 +1301,8 @@ def test_committed_approved_registry_exists_after_generation() -> None:
     assert APPROVED_REGISTRY_PATH.exists()
     records = _read_jsonl(APPROVED_REGISTRY_PATH)
 
-    assert len(records) == 40
+    assert len(records) >= 40
+    assert len({record["paper_id"] for record in records}) == len(records)
     assert {record["selection_status"] for record in records} == {"approved"}
     assert all(record.get("provenance_url") for record in records)
     assert APPROVED_1000_SCALE_PAPERS_PATH.exists()

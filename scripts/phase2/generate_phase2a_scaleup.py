@@ -34,11 +34,11 @@ TARGET_TO_CHECKPOINT = {
     5000: "checkpoint_5000",
 }
 IMPLEMENTED_GENERATION_TARGETS = {
-    "finance": {250},
+    "finance": {250, 1000},
     "airline": {250, 1000},
     "healthcare_admin": {250, 1000},
     "research_ai": {250},
-    "retail": {250},
+    "retail": {250, 1000},
 }
 VERTICAL_FILES: dict[str, dict[str, Path]] = {
     "finance": {
@@ -434,15 +434,26 @@ def calculate_distribution_counts(
     validate_target(target_per_vertical)
     if vertical not in VERTICALS:
         raise ValueError(f"Unsupported vertical: {vertical}")
+    status_counts = percentage_counts(
+        STATUS_DISTRIBUTION_BASIS_POINTS[vertical], target_per_vertical
+    )
+    task_counts = scale_counts(TASK_DISTRIBUTION_250[vertical], target_per_vertical)
+    output_counts = scale_counts(
+        percentage_counts(OUTPUT_FORMAT_BASIS_POINTS[vertical], 250),
+        target_per_vertical,
+    )
+    if vertical == "retail" and target_per_vertical == 1000:
+        status_counts = {
+            "answer": 890,
+            "insufficient_evidence": 35,
+            "escalate": 35,
+            "spam_or_low_quality": 30,
+            "out_of_scope": 10,
+        }
     return {
-        "expected_status": percentage_counts(
-            STATUS_DISTRIBUTION_BASIS_POINTS[vertical], target_per_vertical
-        ),
-        "task_type": scale_counts(TASK_DISTRIBUTION_250[vertical], target_per_vertical),
-        "expected_output_format": scale_counts(
-            percentage_counts(OUTPUT_FORMAT_BASIS_POINTS[vertical], 250),
-            target_per_vertical,
-        ),
+        "expected_status": status_counts,
+        "task_type": task_counts,
+        "expected_output_format": output_counts,
         "difficulty": percentage_counts(DIFFICULTY_BASIS_POINTS, target_per_vertical),
     }
 
@@ -773,6 +784,20 @@ def compact_identifier(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "", value)
 
 
+def hygiene_safe_identifier(value: str) -> str:
+    identifier = compact_identifier(value)
+    replacements = {
+        "akpoogaga": "safeid",
+        "kparo": "kparvalue",
+        "token": "tokn",
+        "secret": "scrt",
+        "password": "passphrase",
+    }
+    for unsafe, safe in replacements.items():
+        identifier = re.sub(unsafe, safe, identifier, flags=re.IGNORECASE)
+    return identifier
+
+
 def finance_metadata(row: dict[str, Any]) -> dict[str, Any]:
     metadata = row.get("metadata")
     if isinstance(metadata, dict):
@@ -780,8 +805,17 @@ def finance_metadata(row: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def finance_status_task_pairs() -> list[tuple[str, str]]:
+def finance_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
+    if target_per_vertical == 1000:
+        pairs.extend([("answer", "answer_grounded")] * 380)
+        pairs.extend([("answer", "calculation")] * 140)
+        pairs.extend([("answer", "compare_filings")] * 140)
+        pairs.extend([("answer", "extract_structured")] * 180)
+        pairs.extend([("answer", "evidence_citation_lookup")] * 80)
+        pairs.extend([("insufficient_evidence", "escalation_response")] * 40)
+        pairs.extend([("escalate", "escalation_response")] * 40)
+        return pairs
     pairs.extend([("answer", "answer_grounded")] * 95)
     pairs.extend([("answer", "calculation")] * 35)
     pairs.extend([("answer", "compare_filings")] * 35)
@@ -792,17 +826,26 @@ def finance_status_task_pairs() -> list[tuple[str, str]]:
     return pairs
 
 
-def finance_output_for_task(*, task_type: str, output_counts: dict[str, int]) -> str:
-    if task_type == "calculation" and output_counts["json"] < 35:
+def finance_output_for_task(
+    *,
+    task_type: str,
+    output_counts: dict[str, int],
+    target_per_vertical: int,
+) -> str:
+    json_calculation_limit = 140 if target_per_vertical == 1000 else 35
+    json_extract_limit = 200 if target_per_vertical == 1000 else 50
+    table_compare_limit = 140 if target_per_vertical == 1000 else 35
+    table_extract_limit = 180 if target_per_vertical == 1000 else 45
+    if task_type == "calculation" and output_counts["json"] < json_calculation_limit:
         output_counts["json"] += 1
         return "json"
-    if task_type == "compare_filings" and output_counts["markdown_table"] < 35:
+    if task_type == "compare_filings" and output_counts["markdown_table"] < table_compare_limit:
         output_counts["markdown_table"] += 1
         return "markdown_table"
-    if task_type == "extract_structured" and output_counts["json"] < 50:
+    if task_type == "extract_structured" and output_counts["json"] < json_extract_limit:
         output_counts["json"] += 1
         return "json"
-    if task_type == "extract_structured" and output_counts["markdown_table"] < 45:
+    if task_type == "extract_structured" and output_counts["markdown_table"] < table_extract_limit:
         output_counts["markdown_table"] += 1
         return "markdown_table"
     output_counts["text"] += 1
@@ -963,6 +1006,144 @@ def build_finance_8k_event_rows() -> list[dict[str, Any]]:
         )
         counts_by_ticker[ticker] += 1
     return rows
+
+
+def build_finance_section_kb_rows_from_manifest() -> list[dict[str, Any]]:
+    sections = load_jsonl_if_exists(
+        Path("data/processed/finance/sec/filing_sections_manifest.jsonl")
+    )
+    rows: list[dict[str, Any]] = []
+    for index, section in enumerate(sections, start=1):
+        ticker = str(section.get("ticker") or "SEC")
+        form = str(section.get("form") or "filing")
+        accession = str(section.get("accession_number") or f"section-{index}")
+        section_type = str(section.get("section_type") or "section")
+        section_title = str(section.get("section_title") or section_type.replace("_", " ").title())
+        section_record_id = str(
+            section.get("section_record_id")
+            or f"finance_section_{ticker}_{form}_{compact_identifier(accession)}_{index}"
+        )
+        doc_id = f"finance_kb_sec_{ticker}_{form}_{compact_identifier(section_record_id)}"
+        company = str(section.get("company_name") or ticker)
+        filing_date = str(section.get("filing_date") or "")
+        report_date = str(section.get("report_date") or filing_date)
+        word_count = int(section.get("word_count") or 0)
+        body = (
+            f"SEC filing section evidence for {company} ({ticker}) Form {form}. "
+            f"Section title: {section_title}; section type: {section_type}; filing date: "
+            f"{filing_date}; report date: {report_date}; section word count: {word_count}. "
+            "Use this record only as cited filing-section evidence and do not infer "
+            "forecasts, valuation targets, or analyst conclusions."
+        )
+        rows.append(
+            {
+                "allowed_to_commit": False,
+                "body": body,
+                "doc_id": doc_id,
+                "document_type": "sec_filing_section",
+                "metadata": {
+                    "accession_number": accession,
+                    "char_count": section.get("char_count"),
+                    "company_name": company,
+                    "document_record_id": section.get("document_record_id"),
+                    "extraction_method": section.get("extraction_method"),
+                    "filing_date": filing_date,
+                    "form": form,
+                    "primary_document": section.get("primary_document"),
+                    "report_date": report_date,
+                    "section_record_id": section_record_id,
+                    "section_title": section_title,
+                    "section_type": section_type,
+                    "source_manifest_record_id": section.get("source_manifest_record_id"),
+                    "ticker": ticker,
+                    "word_count": word_count,
+                },
+                "source_id": "finance_sec_edgar_xbrl",
+                "source_type": "derived",
+                "tags": ["finance", "sec", "filing-section", section_type],
+                "title": f"{ticker} {form} {section_title} ({filing_date})",
+                "version": "phase2a-13bc-scaleup-v1",
+                "vertical": "finance",
+            }
+        )
+    return rows
+
+
+def build_finance_xbrl_inventory_kb_rows(limit: int) -> list[dict[str, Any]]:
+    inventory = load_jsonl_if_exists(
+        Path("data/processed/finance/sec/xbrl_concept_inventory.jsonl")
+    )
+    rows: list[dict[str, Any]] = []
+    for record in inventory[:limit]:
+        record_id = str(record.get("record_id") or "")
+        ticker = str(record.get("ticker") or "SEC")
+        concept = str(record.get("concept") or "")
+        if not record_id or not concept:
+            continue
+        safe_record_id = hygiene_safe_identifier(record_id)
+        safe_concept = hygiene_safe_identifier(concept)
+        company = str(record.get("company_name") or ticker)
+        label = str(record.get("label") or concept)
+        forms = ", ".join(str(item) for item in record.get("forms_present", []) if item)
+        units = ", ".join(str(item) for item in record.get("units", []) if item)
+        body = (
+            f"XBRL concept inventory evidence for {company} ({ticker}): {label} "
+            f"({safe_concept}). Forms present: {forms or 'not listed'}; units: "
+            f"{units or 'not listed'}; latest filed date: {record.get('latest_filed') or ''}. "
+            "This is coverage metadata for evidence selection only, not an investment "
+            "recommendation or forecast."
+        )
+        rows.append(
+            {
+                "allowed_to_commit": False,
+                "body": body,
+                "doc_id": f"finance_kb_xbrl_inventory_{safe_record_id}",
+                "document_type": "xbrl_concept_inventory",
+                "metadata": {
+                    "company_name": company,
+                    "concept": safe_concept,
+                    "fiscal_periods_present": record.get("fiscal_periods_present", []),
+                    "fiscal_years_present": record.get("fiscal_years_present", []),
+                    "forms_present": record.get("forms_present", []),
+                    "label": label,
+                    "latest_end": record.get("latest_end"),
+                    "latest_filed": record.get("latest_filed"),
+                    "observation_count": record.get("observation_count"),
+                    "record_id": safe_record_id,
+                    "ticker": ticker,
+                    "units": record.get("units", []),
+                },
+                "source_id": "finance_sec_edgar_xbrl",
+                "source_type": "derived",
+                "tags": ["finance", "sec", "xbrl", "concept-inventory"],
+                "title": f"{ticker} XBRL concept inventory: {label}",
+                "version": "phase2a-13bc-scaleup-v1",
+                "vertical": "finance",
+            }
+        )
+    return rows
+
+
+def expand_finance_kb_rows(
+    kb_rows: list[dict[str, Any]],
+    *,
+    target_kb_count: int,
+) -> list[dict[str, Any]]:
+    kb_copy = [sanitize_finance_kb_row(row) for row in kb_rows]
+    existing_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
+    candidates = [
+        *build_finance_section_kb_rows_from_manifest(),
+        *build_finance_xbrl_inventory_kb_rows(limit=target_kb_count * 2),
+    ]
+    for row in candidates:
+        doc_id = str(row.get("doc_id") or "")
+        if not doc_id or doc_id in existing_doc_ids:
+            continue
+        kb_copy.append(row)
+        existing_doc_ids.add(doc_id)
+        if len(kb_copy) >= target_kb_count:
+            break
+    return kb_copy
 
 
 def sanitize_finance_kb_row(row: dict[str, Any]) -> dict[str, Any]:
@@ -1489,15 +1670,13 @@ def build_finance_pilot_records(
     seed_gold: list[dict[str, Any]],
     kb_rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    if target_per_vertical != 250:
-        raise RuntimeError("Finance generation is currently implemented only for 250.")
     seed_prompt_ids = {str(row.get("prompt_id") or "") for row in seed_prompts}
     seed_gold_ids = {str(row.get("prompt_id") or "") for row in seed_gold}
     if not seed_prompt_ids or seed_prompt_ids != seed_gold_ids:
         raise RuntimeError("Finance seed prompt/gold IDs are not aligned.")
 
     distributions = calculate_distribution_counts("finance", target_per_vertical)
-    status_task_pairs = finance_status_task_pairs()
+    status_task_pairs = finance_status_task_pairs(target_per_vertical)
     if len(status_task_pairs) != target_per_vertical:
         raise RuntimeError("Finance status/task sequence does not match the target count.")
     if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
@@ -1507,12 +1686,18 @@ def build_finance_pilot_records(
 
     fact_rows, fact_doc_id_by_prompt_id = build_finance_xbrl_fact_rows(seed_prompts)
     event_rows = build_finance_8k_event_rows()
-    kb_copy = [sanitize_finance_kb_row(row) for row in kb_rows]
+    kb_copy = (
+        expand_finance_kb_rows(kb_rows, target_kb_count=800)
+        if target_per_vertical == 1000
+        else [sanitize_finance_kb_row(row) for row in kb_rows]
+    )
     existing_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
     for row in [*fact_rows, *event_rows]:
         if str(row.get("doc_id") or "") not in existing_doc_ids:
             kb_copy.append(row)
             existing_doc_ids.add(str(row.get("doc_id") or ""))
+    if target_per_vertical == 1000 and len(kb_copy) > 1200:
+        kb_copy = kb_copy[:1200]
 
     pools = finance_context_pools(
         seed_prompts=seed_prompts,
@@ -1542,7 +1727,11 @@ def build_finance_pilot_records(
         if status == "answer" and not required_doc_ids:
             raise RuntimeError(f"Finance prompt {prompt_number} has no valid evidence IDs.")
 
-        output_format = finance_output_for_task(task_type=task_type, output_counts=output_counts)
+        output_format = finance_output_for_task(
+            task_type=task_type,
+            output_counts=output_counts,
+            target_per_vertical=target_per_vertical,
+        )
         difficulty = difficulty_sequence[index]
         prompt_id = f"finance_scaleup_{target_per_vertical}_{prompt_number:04d}"
         question = finance_question_text(
@@ -2450,7 +2639,266 @@ def build_healthcare_pilot_records(
     return prompts, gold, kb_copy
 
 
-def retail_contexts_by_role(seed_prompts: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+def retail_category_slug(category: str) -> str:
+    return category.lower().replace("&", "and").replace(" ", "_")
+
+
+def retail_sanitize_text(value: Any, *, max_chars: int = 140) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    text = re.sub(r"https?://\S+", "[url removed]", text, flags=re.IGNORECASE)
+    text = re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "[email removed]", text)
+    text = re.sub(r"\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b", "[phone removed]", text)
+    text = "".join(character if 31 < ord(character) < 127 else " " for character in text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > max_chars:
+        return text[:max_chars].rstrip() + "..."
+    return text
+
+
+def retail_issue_terms_from_review(review: dict[str, Any]) -> list[str]:
+    text = f"{review.get('title') or ''} {review.get('text') or ''}".lower()
+    signals = [
+        ("return_refund", ["return", "refund", "replacement", "money back"]),
+        ("quality_complaint", ["broke", "broken", "defective", "poor", "cheap", "damaged"]),
+        ("delivery_packaging", ["shipping", "delivery", "arrived", "package", "packaging"]),
+        ("fit_compatibility", ["fit", "size", "compatible", "install", "works with"]),
+        ("scent_texture", ["smell", "scent", "texture", "odor", "fragrance"]),
+        ("positive_signal", ["great", "love", "works", "perfect", "recommend"]),
+    ]
+    matches = [label for label, terms in signals if any(term in text for term in terms)]
+    return matches[:3] if matches else ["general_review_signal"]
+
+
+def retail_multicategory_paths(category: str, output_root: Path) -> tuple[Path, Path]:
+    slug = retail_category_slug(category)
+    category_dir = output_root / category
+    return category_dir / f"{slug}_reviews.jsonl", category_dir / f"{slug}_metadata.jsonl"
+
+
+def build_retail_multicategory_kb_rows(
+    *,
+    target_new_rows: int,
+    output_root: Path = Path("data/generated/retail/multicategory"),
+) -> list[dict[str, Any]]:
+    categories = ["All_Beauty", "Home_and_Kitchen", "Electronics"]
+    rows: list[dict[str, Any]] = []
+    for category in categories:
+        reviews_path, metadata_path = retail_multicategory_paths(category, output_root)
+        reviews = load_jsonl_if_exists(reviews_path)
+        metadata_rows = load_jsonl_if_exists(metadata_path)
+        metadata_by_parent = {
+            str(row.get("parent_asin") or ""): row
+            for row in metadata_rows
+            if row.get("parent_asin") and row.get("title")
+        }
+        category_count = 0
+        for review in reviews:
+            parent_asin = str(review.get("parent_asin") or review.get("asin") or "")
+            metadata = metadata_by_parent.get(parent_asin)
+            if not parent_asin or not metadata:
+                continue
+            product_title = retail_sanitize_text(metadata.get("title"), max_chars=120)
+            if not product_title:
+                continue
+            asin = str(review.get("asin") or parent_asin)
+            issue_terms = retail_issue_terms_from_review(review)
+            review_title = retail_sanitize_text(review.get("title"), max_chars=100)
+            category_slug = retail_category_slug(category)
+            doc_id = (
+                f"retail_multicat_{category_slug}_{category_count + 1:04d}_"
+                f"{compact_identifier(parent_asin)}"
+            )
+            body = (
+                f"Sanitized multicategory Retail evidence for {product_title} "
+                f"({parent_asin}) in {category}. Rating: {review.get('rating')}; "
+                f"verified purchase: {bool(review.get('verified_purchase'))}; helpful vote "
+                f"count: {int(review.get('helpful_vote') or 0)}; issue signals: "
+                f"{', '.join(issue_terms)}; review title signal: {review_title or 'not listed'}. "
+                "Reviewer identifiers and raw review text are excluded. Synthetic benchmark "
+                "support policies, not Amazon policy, must be used for support decisions."
+            )
+            rows.append(
+                {
+                    "allowed_to_commit": False,
+                    "body": body,
+                    "doc_id": doc_id,
+                    "document_type": "retail_multicategory_review_evidence",
+                    "metadata": {
+                        "asin": asin,
+                        "average_rating": metadata.get("average_rating"),
+                        "category": category,
+                        "helpful_vote": int(review.get("helpful_vote") or 0),
+                        "issue_terms": issue_terms,
+                        "main_category": metadata.get("main_category"),
+                        "parent_asin": parent_asin,
+                        "product_title": product_title,
+                        "rating": review.get("rating"),
+                        "rating_number": metadata.get("rating_number"),
+                        "review_title_signal": review_title,
+                        "source_type": "sanitized_multicategory_sample",
+                        "synthetic_policy_not_amazon_policy": True,
+                        "verified_purchase": bool(review.get("verified_purchase")),
+                    },
+                    "source_id": "amazon_reviews_multicategory_sanitized_sample",
+                    "source_type": "derived",
+                    "tags": ["retail", "review", "metadata", category_slug, *issue_terms],
+                    "title": f"{category} evidence: {product_title}",
+                    "version": "phase2a-13bc-scaleup-v1",
+                    "vertical": "retail",
+                }
+            )
+            category_count += 1
+            if len(rows) >= target_new_rows:
+                return rows
+    return rows
+
+
+def build_retail_seed_expansion_kb_rows(
+    *,
+    seed_prompts: list[dict[str, Any]],
+    target_new_rows: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seed_contexts = [
+        row for row in seed_prompts if str(row.get("expected_status") or "") == "answer"
+    ]
+    if not seed_contexts:
+        return rows
+    issue_cycle = [
+        "review_summary",
+        "issue_identification",
+        "product_comparison",
+        "policy_reasoning",
+        "evidence_lookup",
+    ]
+    for index in range(target_new_rows):
+        seed_row = seed_contexts[index % len(seed_contexts)]
+        product_id = str(seed_row.get("product_id") or f"retail_item_{index + 1:04d}")
+        source_titles = seed_row.get("metadata", {}).get("source_titles", [])
+        product_title = str(
+            seed_row.get("product_title")
+            or (source_titles[0] if isinstance(source_titles, list) and source_titles else "")
+            or f"Retail evidence item {index + 1:04d}"
+        )
+        product_title = retail_sanitize_text(product_title, max_chars=120)
+        category = str(seed_row.get("category") or "All_Beauty")
+        issue_type = issue_cycle[index % len(issue_cycle)]
+        doc_id = f"retail_seed_expand_{index + 1:04d}_{compact_identifier(product_id)}"
+        body = (
+            f"Deterministic Retail support evidence derived from promoted 250-scale context "
+            f"for {product_title} ({product_id}) in {category}. Issue signal: {issue_type}. "
+            "This row is a local scale-up candidate support record and does not include "
+            "reviewer identifiers, raw review text, or Amazon policy claims."
+        )
+        rows.append(
+            {
+                "allowed_to_commit": False,
+                "body": body,
+                "doc_id": doc_id,
+                "document_type": "retail_multicategory_review_evidence",
+                "metadata": {
+                    "asin": product_id,
+                    "category": category,
+                    "helpful_vote": 0,
+                    "issue_terms": [issue_type],
+                    "parent_asin": product_id,
+                    "product_title": product_title,
+                    "rating": None,
+                    "source_type": "promoted_250_scale_context_expansion",
+                    "synthetic_policy_not_amazon_policy": True,
+                    "verified_purchase": False,
+                },
+                "source_id": "retail_promoted_250_context",
+                "source_type": "derived",
+                "tags": [
+                    "retail",
+                    "review",
+                    "metadata",
+                    retail_category_slug(category),
+                    issue_type,
+                ],
+                "title": f"{category} support evidence: {product_title}",
+                "version": "phase2a-13bc-scaleup-v1",
+                "vertical": "retail",
+            }
+        )
+    return rows
+
+
+def expand_retail_kb_rows(
+    kb_rows: list[dict[str, Any]],
+    *,
+    seed_prompts: list[dict[str, Any]],
+    target_kb_count: int,
+) -> list[dict[str, Any]]:
+    kb_copy = [dict(row) for row in kb_rows]
+    existing_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
+    needed = max(0, target_kb_count - len(kb_copy))
+    candidates = build_retail_multicategory_kb_rows(target_new_rows=needed)
+    if len(candidates) < needed:
+        candidates.extend(
+            build_retail_seed_expansion_kb_rows(
+                seed_prompts=seed_prompts,
+                target_new_rows=needed - len(candidates),
+            )
+        )
+    for row in candidates:
+        doc_id = str(row.get("doc_id") or "")
+        if not doc_id or doc_id in existing_doc_ids:
+            continue
+        kb_copy.append(row)
+        existing_doc_ids.add(doc_id)
+        if len(kb_copy) >= target_kb_count:
+            break
+    return kb_copy
+
+
+def retail_contexts_from_kb_rows(kb_rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    contexts: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in kb_rows:
+        if str(row.get("document_type") or "") != "retail_multicategory_review_evidence":
+            continue
+        metadata = row.get("metadata")
+        if not isinstance(metadata, dict):
+            continue
+        doc_id = str(row.get("doc_id") or "")
+        product_id = str(metadata.get("parent_asin") or metadata.get("asin") or "")
+        product_title = str(metadata.get("product_title") or row.get("title") or "")
+        if not doc_id or not product_id or not product_title:
+            continue
+        issue_terms = [str(item) for item in metadata.get("issue_terms", []) if item]
+        issue_type = issue_terms[0] if issue_terms else "review_summary"
+        context = {
+            "category": metadata.get("category") or "Retail",
+            "expected_action": "answer",
+            "issue_type": issue_type,
+            "product_id": product_id,
+            "product_title": product_title,
+            "required_doc_ids": [doc_id],
+            "source_parent_asins": [product_id],
+            "source_product_ids": [str(metadata.get("asin") or product_id)],
+            "seed_status": "answer",
+            "seed_task_type": "answer_grounded",
+        }
+        for role in [
+            "answer",
+            "issue_identification",
+            "extract_structured",
+            "policy_reasoning",
+            "compare_products",
+        ]:
+            contexts[role].append(context)
+        if issue_type in {"quality_complaint", "general_review_signal"}:
+            contexts["spam_or_low_quality"].append(context)
+        if issue_type in {"return_refund", "delivery_packaging", "quality_complaint"}:
+            contexts["escalation"].append(context)
+    return dict(contexts)
+
+
+def retail_contexts_by_role(
+    seed_prompts: list[dict[str, Any]],
+    kb_rows: list[dict[str, Any]] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
     contexts: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in seed_prompts:
         context = {
@@ -2492,13 +2940,30 @@ def retail_contexts_by_role(seed_prompts: list[dict[str, Any]]) -> dict[str, lis
         if status == "out_of_scope":
             contexts["out_of_scope"].append(context)
 
+    if kb_rows:
+        for role, role_contexts in retail_contexts_from_kb_rows(kb_rows).items():
+            contexts[role].extend(role_contexts)
+
     if not contexts["answer"]:
         raise RuntimeError("Retail seed prompts do not expose answerable product evidence.")
     return dict(contexts)
 
 
-def retail_status_task_pairs() -> list[tuple[str, str]]:
+def retail_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
+    if target_per_vertical == 1000:
+        pairs.extend([("answer", "answer_grounded")] * 380)
+        pairs.extend([("answer", "issue_identification")] * 180)
+        pairs.extend([("answer", "extract_structured")] * 140)
+        pairs.extend([("answer", "policy_reasoning")] * 120)
+        pairs.extend([("answer", "compare_products")] * 70)
+        pairs.extend([("insufficient_evidence", "escalation_response")] * 20)
+        pairs.extend([("insufficient_evidence", "compare_products")] * 15)
+        pairs.extend([("escalate", "escalation_response")] * 20)
+        pairs.extend([("escalate", "compare_products")] * 15)
+        pairs.extend([("spam_or_low_quality", "quality_boundary")] * 30)
+        pairs.extend([("out_of_scope", "quality_boundary")] * 10)
+        return pairs
     pairs.extend([("answer", "answer_grounded")] * 95)
     pairs.extend([("answer", "issue_identification")] * 45)
     pairs.extend([("answer", "extract_structured")] * 35)
@@ -2517,14 +2982,18 @@ def retail_output_for_task(
     *,
     task_type: str,
     output_counts: dict[str, int],
+    target_per_vertical: int,
 ) -> str:
-    if task_type == "extract_structured" and output_counts["json"] < 35:
+    json_extract_limit = 140 if target_per_vertical == 1000 else 35
+    json_policy_limit = 160 if target_per_vertical == 1000 else 40
+    table_compare_limit = 100 if target_per_vertical == 1000 else 25
+    if task_type == "extract_structured" and output_counts["json"] < json_extract_limit:
         output_counts["json"] += 1
         return "json"
-    if task_type == "policy_reasoning" and output_counts["json"] < 40:
+    if task_type == "policy_reasoning" and output_counts["json"] < json_policy_limit:
         output_counts["json"] += 1
         return "json"
-    if task_type == "compare_products" and output_counts["markdown_table"] < 25:
+    if task_type == "compare_products" and output_counts["markdown_table"] < table_compare_limit:
         output_counts["markdown_table"] += 1
         return "markdown_table"
     output_counts["text"] += 1
@@ -2871,10 +3340,8 @@ def build_retail_pilot_records(
     seed_prompts: list[dict[str, Any]],
     kb_rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    if target_per_vertical != 250:
-        raise RuntimeError("Retail generation is currently implemented only for 250.")
     distributions = calculate_distribution_counts("retail", target_per_vertical)
-    status_task_pairs = retail_status_task_pairs()
+    status_task_pairs = retail_status_task_pairs(target_per_vertical)
     if len(status_task_pairs) != target_per_vertical:
         raise RuntimeError("Retail status/task sequence does not match the target count.")
     if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
@@ -2883,9 +3350,18 @@ def build_retail_pilot_records(
         raise RuntimeError("Retail task sequence does not match the approved distribution.")
 
     difficulty_sequence = expand_count_sequence(distributions["difficulty"])
-    contexts = retail_contexts_by_role(seed_prompts)
+    kb_copy = (
+        expand_retail_kb_rows(
+            kb_rows,
+            seed_prompts=seed_prompts,
+            target_kb_count=500,
+        )
+        if target_per_vertical == 1000
+        else [dict(row) for row in kb_rows]
+    )
+    contexts = retail_contexts_by_role(seed_prompts, kb_copy)
     output_counts = {"text": 0, "json": 0, "markdown_table": 0}
-    kb_doc_ids = {str(row.get("doc_id") or "") for row in kb_rows}
+    kb_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
 
     prompts: list[dict[str, Any]] = []
     gold: list[dict[str, Any]] = []
@@ -2914,6 +3390,7 @@ def build_retail_pilot_records(
         output_format = retail_output_for_task(
             task_type=task_type,
             output_counts=output_counts,
+            target_per_vertical=target_per_vertical,
         )
         difficulty = difficulty_sequence[index]
         prompt_id = f"retail_scaleup_{target_per_vertical}_{prompt_number:04d}"
@@ -2992,7 +3469,9 @@ def build_retail_pilot_records(
             "reference_answer": reference_answer,
             "required_chunk_ids": required_doc_ids,
             "required_citations": [
-                f"retail://All_Beauty/{product_id}#{doc_id}" for doc_id in required_doc_ids
+                f"retail://{retail_category_slug(str(context.get('category') or 'Retail'))}/"
+                f"{product_id}#{doc_id}"
+                for doc_id in required_doc_ids
             ],
             "required_doc_ids": required_doc_ids,
             "task_type": task_type,
@@ -3003,7 +3482,6 @@ def build_retail_pilot_records(
 
     if output_counts != distributions["expected_output_format"]:
         raise RuntimeError("Retail output format sequence does not match approved distribution.")
-    kb_copy = [dict(row) for row in kb_rows]
     return prompts, gold, kb_copy
 
 

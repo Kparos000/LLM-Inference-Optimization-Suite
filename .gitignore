@@ -78,6 +78,7 @@ data/generated/research_ai/research_ai_20_paper_discovery_report.json
 data/generated/research_ai/research_ai_1000_scale_candidate_selection_report.json
 data/generated/research_ai/research_ai_candidate_validation_report.json
 data/generated/research_ai/research_ai_candidate_ingest_report.json
+data/generated/research_ai/research_ai_approved_papers_list.txt
 data/raw/research_ai/papers/
 data/processed/research_ai/paper_text/
 data/processed/research_ai/paper_text_manifest.jsonl
