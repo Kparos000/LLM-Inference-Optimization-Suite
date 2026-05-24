@@ -156,6 +156,18 @@ Approved candidate records must include:
 - `approval_status: approved`
 - `not_for_benchmark_claims: false`
 
+Discover a deterministic 20-paper candidate set from OpenReview ICLR 2025:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --discover-1000-scale-papers --target-new-papers 20
+```
+
+The discovery step writes real approved metadata to
+`data/sources/research_ai_1000_scale_approved_papers.jsonl` and writes local
+ignored discovery reports under `data/generated/research_ai/`. If live
+OpenReview discovery fails, the script writes the failure details and does not
+fake candidates.
+
 Validate candidate records before ingest:
 
 ```text
@@ -169,6 +181,14 @@ After validation, ingest real approved records from
 python scripts/phase2/prepare_research_ai_papers.py --ingest-approved-1000-scale-papers
 ```
 
+After ingest, download and extract only the newly approved papers:
+
+```text
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --new-only --skip-existing
+python scripts/phase2/prepare_research_ai_papers.py --extract-text --new-only
+python scripts/phase2/prepare_research_ai_papers.py --audit-sections
+```
+
 Then rerun the expansion readiness report:
 
 ```text
@@ -176,11 +196,12 @@ python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion
 ```
 
 The ingest workflow only updates approved metadata after all new records pass
-validation. It does not download PDFs, extract text, create sections, generate
+validation. The download and extraction modes fetch real PDFs and extract real
+section text; they do not fake PDFs or sections. None of these modes generate
 1,000 prompts, call LLMs, build RAG, run retrieval, create embeddings, run model
 calls, run GPU jobs, or run inference. In short: no LLM calls and no fake
-papers. PDF/text extraction and section quality checks are still required after
-ingest before Research AI can become source-ready for 1,000-scale generation.
+papers. PDF/text extraction and section quality checks are required after ingest
+before Research AI can become source-ready for 1,000-scale generation.
 
 After reviewing real candidate papers and extracting section evidence, rerun:
 

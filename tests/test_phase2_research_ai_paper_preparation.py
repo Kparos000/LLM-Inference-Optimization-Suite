@@ -53,6 +53,31 @@ def _approved_1000_candidate(index: int = 1) -> dict[str, Any]:
     }
 
 
+def _openreview_note(index: int = 1, title: str | None = None) -> dict[str, Any]:
+    note_id = f"note{index:03d}"
+    return {
+        "content": {
+            "abstract": {
+                "value": (
+                    "This paper studies efficient LLM inference, retrieval, agent "
+                    "evaluation, and benchmark evidence for large language models."
+                )
+            },
+            "authors": {"value": ["Jane Doe", "John Smith"]},
+            "keywords": {"value": ["LLM inference", "retrieval", "agents"]},
+            "pdf": {"value": f"/pdf/{note_id}.pdf"},
+            "primary_area": {"value": "foundation or frontier models, including LLMs"},
+            "title": {
+                "value": title
+                or f"Efficient LLM Inference and Agent Benchmarking Paper {index:02d}"
+            },
+            "venueid": {"value": "ICLR.cc/2025/Conference"},
+        },
+        "id": note_id,
+        "number": index,
+    }
+
+
 def _assert_runtime_error(callback: Any) -> str:
     try:
         callback()
@@ -1334,6 +1359,76 @@ def test_research_ai_expansion_does_not_count_placeholders_as_approved(tmp_path:
     assert summary["additional_papers_needed"] == 39
 
 
+def test_discover_1000_scale_papers_writes_real_candidate_shape(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_registry = tmp_path / "approved_registry.jsonl"
+    approved_output = tmp_path / "approved_1000.jsonl"
+    output_candidates = tmp_path / "discovered.jsonl"
+    selection_report = tmp_path / "selection_report.json"
+    candidate_selection_report = tmp_path / "candidate_selection_report.json"
+    module.write_jsonl(approved_registry, [])
+    args = Namespace(
+        approved_registry_path=approved_registry,
+        approved_papers_output=approved_output,
+        candidate_selection_report=candidate_selection_report,
+        openreview_api_url="https://api2.openreview.net/notes",
+        openreview_venue_id="ICLR.cc/2025/Conference",
+        output_candidates=output_candidates,
+        request_delay_seconds=0,
+        selection_report=selection_report,
+        source="openreview_iclr_2025",
+        target_new_papers=2,
+        timeout_seconds=1,
+    )
+
+    with mock.patch.object(
+        module,
+        "fetch_openreview_iclr_2025_notes",
+        return_value=[_openreview_note(1), _openreview_note(2), _openreview_note(3)],
+    ):
+        summary = module.discover_1000_scale_papers(args)
+
+    approved_rows = module.read_jsonl(approved_output)
+    report = json.loads(selection_report.read_text(encoding="utf-8"))
+    assert summary["selected_candidate_count"] == 2
+    assert report["discovery_succeeded"] is True
+    assert len(approved_rows) == 2
+    assert approved_rows[0]["approval_status"] == "approved"
+    assert approved_rows[0]["not_for_benchmark_claims"] is False
+    assert approved_rows[0]["source_url"].startswith("https://openreview.net/forum?id=")
+    assert approved_rows[0]["pdf_url"].startswith("https://openreview.net/pdf?id=")
+    assert approved_rows[0]["discovered_by"] == "deterministic_script"
+
+
+def test_discovered_candidates_require_provenance() -> None:
+    module = _load_preparation_module()
+    candidate = _approved_1000_candidate(1)
+    candidate.pop("source_url")
+
+    report = module.validate_research_ai_candidate_records(
+        [candidate],
+        allow_placeholders=False,
+    )
+
+    assert report["validation_passed"] is False
+    assert any(issue["field"] == "source_url" for issue in report["issues"])
+
+
+def test_discovered_candidates_deduplicate_existing_registry() -> None:
+    module = _load_preparation_module()
+    duplicate = _openreview_note(1, title="Existing Research AI Paper")
+    unique = _openreview_note(2, title="New Efficient LLM Serving Paper")
+
+    selected, _ranked = module.select_research_ai_1000_scale_candidates(
+        [duplicate, unique],
+        [{"paper_id": "existing", "title": "Existing Research AI Paper"}],
+        target_new_papers=1,
+    )
+
+    assert len(selected) == 1
+    assert selected[0]["title"] == "New Efficient LLM Serving Paper"
+
+
 def test_validate_candidate_papers_does_not_count_placeholders(tmp_path: Path) -> None:
     module = _load_preparation_module()
     candidate_path = tmp_path / "candidate_template.jsonl"
@@ -1448,6 +1543,124 @@ def test_ingest_merges_real_approved_records(tmp_path: Path) -> None:
     assert registry_rows[-1]["metadata"]["requires_pdf_download_or_text_extraction"] is True
 
 
+def test_ingest_20_new_real_papers_merges_to_40(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_input = tmp_path / "approved_input.jsonl"
+    approved_registry = tmp_path / "approved_registry.jsonl"
+    enriched_registry = tmp_path / "enriched_registry.jsonl"
+    ingest_report = tmp_path / "ingest_report.json"
+    module.write_jsonl(approved_input, [_approved_1000_candidate(index) for index in range(1, 21)])
+    module.write_jsonl(
+        approved_registry,
+        [
+            {
+                "paper_id": f"existing_{index:02d}",
+                "selection_status": "approved",
+                "title": f"Existing Paper {index:02d}",
+            }
+            for index in range(1, 21)
+        ],
+    )
+    module.write_jsonl(enriched_registry, [])
+    args = Namespace(
+        approved_papers_input=approved_input,
+        approved_registry=approved_registry,
+        approved_registry_path=approved_registry,
+        enriched_registry_path=enriched_registry,
+        ingest_report=ingest_report,
+    )
+
+    summary = module.ingest_approved_1000_scale_papers(args)
+    registry_rows = module.read_jsonl(approved_registry)
+    enriched_rows = module.read_jsonl(enriched_registry)
+
+    assert summary["updated_approved_registry_count"] == 40
+    assert summary["approved_records_ingested"] == 20
+    assert summary["enriched_registry_updated"] is True
+    assert len(registry_rows) == 40
+    assert len(enriched_rows) == 20
+    assert all(row["ready_for_text_extraction"] for row in enriched_rows)
+
+
+def test_download_new_only_filters_existing_papers(tmp_path: Path) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    approved_input = tmp_path / "approved_input.jsonl"
+    enriched_path = tmp_path / "enriched.jsonl"
+    report_path = tmp_path / "report.json"
+    records = [
+        {
+            "paper_id": "existing_paper",
+            "title": "Existing Paper",
+            "source": "OpenReview",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://openreview.net/forum?id=old",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=old",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+        {
+            "paper_id": "new_paper",
+            "title": "New Paper",
+            "source": "OpenReview",
+            "venue": "ICLR 2025",
+            "provenance_url": "https://openreview.net/forum?id=new",
+            "pdf_url_enriched": "https://openreview.net/pdf?id=new",
+            "pdf_link_type": "openreview_pdf",
+            "paper_body_available": True,
+            "ready_for_text_extraction": True,
+        },
+    ]
+    module.write_jsonl(approved_path, records)
+    module.write_jsonl(enriched_path, records)
+    module.write_jsonl(approved_input, [{"paper_id": "new_paper"}])
+    args = Namespace(
+        approved_papers_input=approved_input,
+        approved_registry_path=approved_path,
+        download_backoff_seconds=0,
+        download_max_retries=0,
+        enriched_registry_path=enriched_path,
+        failed_only=False,
+        include_non_paper_pdfs=False,
+        limit=0,
+        new_only=True,
+        paper_id="",
+        paper_text_dir=tmp_path / "text",
+        raw_paper_dir=tmp_path / "papers",
+        report_path=report_path,
+        request_delay_seconds=0,
+        sections_manifest_path=tmp_path / "sections.jsonl",
+        skip_existing=False,
+        text_manifest_path=tmp_path / "text_manifest.jsonl",
+        timeout_seconds=1,
+    )
+
+    with mock.patch.object(
+        module,
+        "download_binary_with_retries",
+        return_value={
+            "attempts": 1,
+            "content_type": "application/pdf",
+            "download_status": "downloaded",
+            "downloaded_at_utc": "2026-05-18T00:00:00+00:00",
+            "error_message": "",
+            "file_size_bytes": 10,
+            "local_pdf_path": str(tmp_path / "paper.pdf"),
+            "sha256": "abc",
+            "source_url": "https://openreview.net/pdf?id=new",
+            "status_code": None,
+            "url": "https://openreview.net/pdf?id=new",
+        },
+    ) as download_mock:
+        summary = module.download_pdfs(args)
+
+    assert summary["records_attempted"] == 1
+    assert summary["new_only"] is True
+    assert download_mock.call_count == 1
+    assert download_mock.call_args.args[0] == "https://openreview.net/pdf?id=new"
+
+
 def test_build_40_paper_expansion_detects_40_approved_but_missing_sections(
     tmp_path: Path,
 ) -> None:
@@ -1481,6 +1694,52 @@ def test_build_40_paper_expansion_detects_40_approved_but_missing_sections(
     assert summary["additional_papers_needed"] == 0
     assert summary["expansion_ready_for_1000"] is False
     assert "section_extraction_required_for_approved_papers" in summary["missing_requirements"]
+
+
+def test_build_40_paper_expansion_ready_when_40_papers_and_800_sections(
+    tmp_path: Path,
+) -> None:
+    module = _load_preparation_module()
+    approved_path = tmp_path / "approved.jsonl"
+    sections_path = tmp_path / "sections.jsonl"
+    module.write_jsonl(
+        approved_path,
+        [
+            {
+                **_approved_1000_candidate(index),
+                "missing_pdf_or_section_text": False,
+                "selection_status": "approved",
+            }
+            for index in range(1, 41)
+        ],
+    )
+    module.write_jsonl(
+        sections_path,
+        [
+            {
+                "paper_id": f"research_ai_extra_approved_{((index - 1) % 40) + 1:02d}",
+                "section_record_id": f"section_{index:03d}",
+                "section_type": "method" if index % 2 == 0 else "results",
+            }
+            for index in range(1, 801)
+        ],
+    )
+    args = Namespace(
+        approved_registry_path=approved_path,
+        sections_manifest_path=sections_path,
+        expansion_report_path=tmp_path / "expansion_report.json",
+        expansion_review_csv_path=tmp_path / "review.csv",
+        expanded_section_quality_report_path=tmp_path / "quality.json",
+        candidate_template_path=tmp_path / "candidate_template.jsonl",
+    )
+
+    summary = module.build_research_ai_40_paper_expansion(args)
+
+    assert summary["current_approved_paper_count"] == 40
+    assert summary["current_section_count"] == 800
+    assert summary["additional_papers_needed"] == 0
+    assert summary["expansion_ready_for_1000"] is True
+    assert summary["missing_requirements"] == []
 
 
 def test_dry_run_cli() -> None:
@@ -1542,15 +1801,29 @@ def test_docs_include_research_ai_ingest_commands() -> None:
     validate_command = (
         "python scripts/phase2/prepare_research_ai_papers.py --validate-1000-scale-candidate-papers"
     )
+    discover_command = (
+        "python scripts/phase2/prepare_research_ai_papers.py --discover-1000-scale-papers"
+    )
     ingest_command = (
         "python scripts/phase2/prepare_research_ai_papers.py --ingest-approved-1000-scale-papers"
+    )
+    download_command = (
+        "python scripts/phase2/prepare_research_ai_papers.py --download-pdfs "
+        "--new-only --skip-existing"
+    )
+    extract_command = (
+        "python scripts/phase2/prepare_research_ai_papers.py --extract-text --new-only"
     )
     expansion_command = (
         "python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion"
     )
+    assert discover_command in curated_docs
     assert validate_command in curated_docs
     assert ingest_command in curated_docs
+    assert download_command in curated_docs
+    assert extract_command in curated_docs
     assert expansion_command in curated_docs
+    assert discover_command in plan_docs
     assert validate_command in plan_docs
     assert ingest_command in plan_docs
     assert "placeholders are not benchmark evidence" in curated_docs

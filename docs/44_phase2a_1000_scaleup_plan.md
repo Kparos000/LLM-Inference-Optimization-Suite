@@ -111,16 +111,23 @@ python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion
 Research AI candidate validation and ingest commands:
 
 ```powershell
+python scripts/phase2/prepare_research_ai_papers.py --discover-1000-scale-papers --target-new-papers 20
 python scripts/phase2/prepare_research_ai_papers.py --validate-1000-scale-candidate-papers
 python scripts/phase2/prepare_research_ai_papers.py --ingest-approved-1000-scale-papers
+python scripts/phase2/prepare_research_ai_papers.py --download-pdfs --new-only --skip-existing
+python scripts/phase2/prepare_research_ai_papers.py --extract-text --new-only
+python scripts/phase2/prepare_research_ai_papers.py --audit-sections
+python scripts/phase2/prepare_research_ai_papers.py --build-40-paper-expansion
 ```
 
 The ingest workflow accepts only real approved paper metadata. Placeholder slots
 remain excluded from benchmark evidence and are not counted as approved papers.
-After ingest, PDF/text extraction and section quality checks are still required
-before Research AI can clear its 1,000-scale source blocker. This workflow makes
-no LLM calls and does not build RAG, retrieval, embeddings, model calls, GPU
-runs, or inference.
+The discovery step prefers OpenReview ICLR 2025 Conference papers and writes a
+real approved 20-paper input file only when source provenance and PDF/OpenReview
+links are present. After ingest, PDF/text extraction and section quality checks
+are still required before Research AI can clear its 1,000-scale source blocker.
+This workflow makes no LLM calls and does not build RAG, retrieval, embeddings,
+model calls, GPU runs, or inference.
 
 After the expansion report is ready, rerun:
 

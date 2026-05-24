@@ -63,6 +63,17 @@ DEFAULT_1000_SCALE_CANDIDATE_VALIDATION_REPORT_PATH = Path(
 DEFAULT_1000_SCALE_CANDIDATE_INGEST_REPORT_PATH = Path(
     "data/generated/research_ai/research_ai_candidate_ingest_report.json"
 )
+DEFAULT_1000_SCALE_DISCOVERED_CANDIDATES_PATH = Path(
+    "data/generated/research_ai/research_ai_1000_scale_discovered_candidates.jsonl"
+)
+DEFAULT_1000_SCALE_DISCOVERY_REPORT_PATH = Path(
+    "data/generated/research_ai/research_ai_20_paper_discovery_report.json"
+)
+DEFAULT_1000_SCALE_CANDIDATE_SELECTION_REPORT_PATH = Path(
+    "data/generated/research_ai/research_ai_1000_scale_candidate_selection_report.json"
+)
+DEFAULT_OPENREVIEW_API_URL = "https://api2.openreview.net/notes"
+DEFAULT_OPENREVIEW_ICLR_2025_VENUE_ID = "ICLR.cc/2025/Conference"
 TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT = 40
 TARGET_RESEARCH_AI_SECTION_COUNT_MIN = 800
 TARGET_RESEARCH_AI_SECTION_COUNT_MAX = 1200
@@ -121,6 +132,101 @@ PDF_TYPE_PRIORITY = {
 }
 PAPER_BODY_PDF_TYPES = {"openreview_pdf", "full_paper_pdf", "unknown_pdf"}
 MAX_LOCAL_PAPER_DIR_CHARS = 72
+OPENREVIEW_PAGE_LIMIT = 1000
+DISCOVERY_TOPIC_KEYWORDS = {
+    "llm_serving_inference_optimization": (
+        "llm inference",
+        "large language model inference",
+        "inference",
+        "serving",
+        "latency",
+        "throughput",
+        "prefill",
+        "decoding",
+        "prompt scheduling",
+    ),
+    "speculative_decoding_kv_cache": (
+        "speculative decoding",
+        "kv cache",
+        "key cache",
+        "cache compression",
+        "mixed-precision decoding",
+        "attention",
+    ),
+    "rag_context_engineering": (
+        "retrieval",
+        "retrieval augmented generation",
+        "rag",
+        "long-context",
+        "long context",
+        "context compression",
+        "grounding",
+        "citation",
+    ),
+    "agentic_workflows_tool_use": (
+        "agent",
+        "agents",
+        "agentic",
+        "workflow",
+        "tool use",
+        "planning",
+        "software agent",
+    ),
+    "evaluation_benchmark_uncertainty": (
+        "benchmark",
+        "evaluation",
+        "evaluate",
+        "reasoning",
+        "uncertainty",
+        "hallucination",
+        "structured output",
+    ),
+    "small_language_models_efficient_llms": (
+        "small language model",
+        "small language models",
+        "efficient language model",
+        "compression",
+        "quantization",
+        "pruning",
+        "distillation",
+    ),
+}
+DISCOVERY_EXCLUSION_TERMS = (
+    "audio",
+    "speech",
+    "biomedical",
+    "biology",
+    "genetic",
+    "protein",
+    "molecule",
+    "organic",
+    "robotics-only",
+)
+DISCOVERY_HARD_EXCLUSION_TERMS = (
+    "audio",
+    "speech",
+    "biomedical",
+    "biology",
+    "genetic",
+    "pathology",
+    "protein",
+    "molecule",
+    "organic",
+    "embodied",
+)
+DISCOVERY_EXCLUSION_EXCEPTIONS = (
+    "llm",
+    "large language model",
+    "language model",
+    "inference",
+    "serving",
+    "retrieval",
+    "rag",
+    "agent",
+    "benchmark",
+    "reasoning",
+    "kv cache",
+)
 
 
 class LinkExtractor(HTMLParser):
@@ -230,6 +336,36 @@ def normalize_text_block(value: str | None) -> str:
     return text.strip()
 
 
+def slugify(value: str, max_chars: int = 96) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", normalize_whitespace(value).lower()).strip("_")
+    return (slug or "untitled")[:max_chars].rstrip("_")
+
+
+def openreview_content_value(value: Any) -> Any:
+    if isinstance(value, dict) and "value" in value:
+        return value["value"]
+    return value
+
+
+def openreview_text_value(content: dict[str, Any], field_name: str) -> str:
+    value = openreview_content_value(content.get(field_name))
+    if isinstance(value, list):
+        return normalize_whitespace("; ".join(str(item) for item in value))
+    return normalize_whitespace(str(value or ""))
+
+
+def openreview_list_value(content: dict[str, Any], field_name: str) -> list[str]:
+    value = openreview_content_value(content.get(field_name))
+    if isinstance(value, list):
+        return [
+            normalize_whitespace(str(item)) for item in value if normalize_whitespace(str(item))
+        ]
+    text = normalize_whitespace(str(value or ""))
+    if not text:
+        return []
+    return [part.strip() for part in re.split(r"\s*;\s*|\s*,\s*", text) if part.strip()]
+
+
 def clean_iclr_abstract(raw_text: str) -> str:
     text = normalize_whitespace(raw_text)
     text = re.sub(r"^Abstract\s*[:\-]?\s*", "", text, flags=re.IGNORECASE)
@@ -325,6 +461,64 @@ def fetch_html(url: str, timeout_seconds: int, delay_seconds: float) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
+def fetch_json(url: str, timeout_seconds: int, delay_seconds: float) -> dict[str, Any]:
+    if delay_seconds > 0:
+        time.sleep(delay_seconds)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            parsed = json.loads(response.read().decode("utf-8", errors="replace"))
+    except (
+        json.JSONDecodeError,
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+    ) as exc:
+        msg = f"Failed to fetch JSON from {url}: {exc}"
+        raise RuntimeError(msg) from exc
+    if not isinstance(parsed, dict):
+        raise RuntimeError(f"Expected JSON object from {url}")
+    return parsed
+
+
+def fetch_openreview_iclr_2025_notes(
+    *,
+    api_url: str,
+    venue_id: str,
+    timeout_seconds: int,
+    request_delay_seconds: float,
+) -> list[dict[str, Any]]:
+    notes: list[dict[str, Any]] = []
+    offset = 0
+    while True:
+        query = urllib.parse.urlencode(
+            {
+                "content.venueid": venue_id,
+                "limit": OPENREVIEW_PAGE_LIMIT,
+                "offset": offset,
+            }
+        )
+        payload = fetch_json(
+            f"{api_url}?{query}",
+            timeout_seconds=timeout_seconds,
+            delay_seconds=request_delay_seconds,
+        )
+        batch = payload.get("notes", [])
+        if not isinstance(batch, list):
+            raise RuntimeError("OpenReview response did not include a notes list.")
+        notes.extend(note for note in batch if isinstance(note, dict))
+        if len(batch) < OPENREVIEW_PAGE_LIMIT:
+            break
+        offset += len(batch)
+    return notes
+
+
 def extract_links_from_html(html_text: str, base_url: str) -> list[dict[str, str]]:
     parser = LinkExtractor(base_url)
     parser.feed(html_text)
@@ -418,6 +612,8 @@ def classify_pdf_url(url: str | None) -> str:
         "openreview.net" in lowered and path == "/pdf" and "id=" in lowered
     ):
         return "openreview_pdf"
+    if "arxiv.org/pdf/" in lowered:
+        return "full_paper_pdf"
     if "/slides/" in lowered or "slides" in lowered:
         return "slides_pdf"
     if "/posters/" in lowered or "poster" in lowered:
@@ -518,6 +714,187 @@ def ready_for_text_extraction(record: dict[str, Any]) -> bool:
         "clean",
         "missing",
     }
+
+
+def normalized_title_key(title: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", normalize_whitespace(title).casefold()).strip()
+
+
+def discovery_keyword_hits(text: str) -> dict[str, list[str]]:
+    haystack = normalize_whitespace(text).casefold()
+    hits: dict[str, list[str]] = {}
+    for topic, keywords in DISCOVERY_TOPIC_KEYWORDS.items():
+        matched = [keyword for keyword in keywords if keyword.casefold() in haystack]
+        if matched:
+            hits[topic] = matched
+    return hits
+
+
+def discovery_candidate_is_excluded(title: str, abstract: str) -> bool:
+    haystack = f"{title} {abstract}".casefold()
+    if any(term in haystack for term in DISCOVERY_HARD_EXCLUSION_TERMS):
+        return True
+    if not any(term in haystack for term in DISCOVERY_EXCLUSION_TERMS):
+        return False
+    return not any(exception in haystack for exception in DISCOVERY_EXCLUSION_EXCEPTIONS)
+
+
+def score_research_ai_discovery_candidate(
+    *,
+    title: str,
+    abstract: str,
+    keywords: list[str],
+    primary_area: str,
+) -> tuple[int, dict[str, list[str]]]:
+    haystack = f"{title} {abstract} {' '.join(keywords)} {primary_area}"
+    hits = discovery_keyword_hits(haystack)
+    score = 0
+    for topic, matched_keywords in hits.items():
+        score += 6 + len(matched_keywords)
+        if topic in {
+            "llm_serving_inference_optimization",
+            "speculative_decoding_kv_cache",
+            "rag_context_engineering",
+            "agentic_workflows_tool_use",
+        }:
+            score += 2
+    title_hits = discovery_keyword_hits(title)
+    score += 4 * len(title_hits)
+    if "llm" in haystack.casefold() or "large language model" in haystack.casefold():
+        score += 5
+    if discovery_candidate_is_excluded(title, abstract):
+        score -= 20
+    return score, hits
+
+
+def research_ai_paper_id_from_openreview(title: str, note_id: str) -> str:
+    return f"research_ai_iclr_2025_openreview_{slugify(title, 72)}_{note_id[:8].lower()}"
+
+
+def openreview_note_to_discovery_candidate(note: dict[str, Any]) -> dict[str, Any] | None:
+    content = note.get("content", {})
+    if not isinstance(content, dict):
+        return None
+    note_id = normalize_whitespace(str(note.get("id") or note.get("forum") or ""))
+    title = openreview_text_value(content, "title")
+    if not note_id or not title:
+        return None
+    abstract = clean_iclr_abstract(
+        openreview_text_value(content, "abstract")
+        or openreview_text_value(content, "TLDR")
+        or openreview_text_value(content, "tldr")
+    )
+    authors = openreview_list_value(content, "authors")
+    keywords = openreview_list_value(content, "keywords")
+    primary_area = openreview_text_value(content, "primary_area")
+    score, hits = score_research_ai_discovery_candidate(
+        title=title,
+        abstract=abstract,
+        keywords=keywords,
+        primary_area=primary_area,
+    )
+    if score <= 0:
+        return None
+    topics = list(hits) or ["llm_serving_inference_optimization"]
+    matched_keywords = sorted(
+        {keyword for matched in hits.values() for keyword in matched}, key=str.casefold
+    )
+    openreview_url = f"https://openreview.net/forum?id={note_id}"
+    pdf_url = f"https://openreview.net/pdf?id={note_id}"
+    return {
+        "abstract": abstract,
+        "approval_status": "approved",
+        "authors": authors,
+        "categories": ["ICLR 2025", primary_area] if primary_area else ["ICLR 2025"],
+        "discovered_by": "deterministic_script",
+        "matched_keywords": matched_keywords,
+        "not_for_benchmark_claims": False,
+        "openreview_id": note_id,
+        "openreview_url": openreview_url,
+        "paper_id": research_ai_paper_id_from_openreview(title, note_id),
+        "pdf_link_type": "openreview_pdf",
+        "pdf_url": pdf_url,
+        "primary_category": "conference",
+        "publication_year": 2025,
+        "published": "2025",
+        "provenance_url": openreview_url,
+        "reason_for_inclusion": (
+            "Included because OpenReview ICLR 2025 metadata matched project topics: "
+            f"{', '.join(topics)}."
+        ),
+        "score": score,
+        "selection_reason": (
+            "Selected from accepted ICLR 2025 OpenReview papers using deterministic topic "
+            "matching for LLM inference, serving, retrieval, agents, evaluation, or "
+            "efficient LLM evidence coverage."
+        ),
+        "selection_status": "approved",
+        "source": "OpenReview",
+        "source_id": "openreview_iclr_2025",
+        "source_url": openreview_url,
+        "submission_date": "2025-01-01",
+        "title": title,
+        "topic": topics[0],
+        "topics": topics,
+        "venue": "ICLR 2025",
+        "venue_or_source": "ICLR 2025",
+        "year": 2025,
+        "metadata": {
+            "approval_source": "openreview_iclr_2025_api",
+            "approval_method": "deterministic_1000_scale_source_expansion",
+            "openreview_api_id": note_id,
+            "openreview_number": note.get("number"),
+            "openreview_venueid": DEFAULT_OPENREVIEW_ICLR_2025_VENUE_ID,
+            "selection_score": score,
+        },
+    }
+
+
+def select_research_ai_1000_scale_candidates(
+    notes: list[dict[str, Any]],
+    existing_records: list[dict[str, Any]],
+    *,
+    target_new_papers: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    existing_titles = {
+        normalized_title_key(str(record.get("title") or ""))
+        for record in existing_records
+        if record.get("title")
+    }
+    existing_ids = {
+        normalized_duplicate_key(record.get("paper_id"))
+        for record in existing_records
+        if record.get("paper_id")
+    }
+    candidates = [
+        candidate
+        for note in notes
+        if (candidate := openreview_note_to_discovery_candidate(note)) is not None
+    ]
+    ranked_candidates = sorted(
+        candidates,
+        key=lambda row: (
+            -int(row.get("score") or 0),
+            str(row.get("title") or "").casefold(),
+            str(row.get("openreview_id") or ""),
+        ),
+    )
+    selected: list[dict[str, Any]] = []
+    seen_titles: set[str] = set()
+    seen_ids: set[str] = set()
+    for candidate in ranked_candidates:
+        title_key = normalized_title_key(str(candidate.get("title") or ""))
+        paper_id_key = normalized_duplicate_key(candidate.get("paper_id"))
+        if title_key in existing_titles or title_key in seen_titles:
+            continue
+        if paper_id_key in existing_ids or paper_id_key in seen_ids:
+            continue
+        selected.append(candidate)
+        seen_titles.add(title_key)
+        seen_ids.add(paper_id_key)
+        if len(selected) >= target_new_papers:
+            break
+    return selected, ranked_candidates
 
 
 def extract_title_from_metadata(parser: PageMetadataParser) -> str | None:
@@ -1182,7 +1559,13 @@ def parse_section_heading_line(line: str) -> tuple[str, str] | None:
         candidate = numbered_match.group("title").strip(" :-\u2013\u2014")
         if is_false_positive_section_heading(candidate, numbered=True):
             return None
-        return match_section_heading_alias(candidate, allow_prefix=True)
+        canonical_match = match_section_heading_alias(candidate, allow_prefix=True)
+        if canonical_match is not None:
+            return canonical_match
+        candidate_words = re.findall(r"\b[A-Za-z][A-Za-z0-9\-]*\b", candidate)
+        if 1 <= len(candidate_words) <= 14:
+            return normalize_whitespace(candidate), "other"
+        return None
     if is_false_positive_section_heading(text, numbered=False):
         return None
     stripped = text.strip(" :-\u2013\u2014")
@@ -1667,6 +2050,139 @@ def enrich_metadata(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def discovery_failure_report(
+    *,
+    args: argparse.Namespace,
+    error_message: str,
+    notes_fetched: int = 0,
+    candidate_count: int = 0,
+) -> dict[str, Any]:
+    return {
+        "phase": "2A-13A",
+        "generated_at_utc": utc_now(),
+        "mode": "discover_1000_scale_papers",
+        "source": args.source,
+        "target_new_papers": int(args.target_new_papers),
+        "notes_fetched": notes_fetched,
+        "candidate_count": candidate_count,
+        "selected_candidate_count": 0,
+        "discovery_succeeded": False,
+        "approved_papers_output": str(args.approved_papers_output),
+        "output_candidates": str(args.output_candidates),
+        "error_message": error_message,
+        "recommended_next_step": "Fix live discovery/download source issues before ingest.",
+    }
+
+
+def discover_1000_scale_papers(args: argparse.Namespace) -> dict[str, Any]:
+    if args.source != "openreview_iclr_2025":
+        msg = "Only --source openreview_iclr_2025 is implemented for this workflow."
+        report = discovery_failure_report(args=args, error_message=msg)
+        write_json(args.selection_report, report)
+        write_json(args.candidate_selection_report, report)
+        raise RuntimeError(msg)
+    existing_records = (
+        read_jsonl(args.approved_registry_path) if args.approved_registry_path.exists() else []
+    )
+    notes: list[dict[str, Any]] = []
+    try:
+        notes = fetch_openreview_iclr_2025_notes(
+            api_url=args.openreview_api_url,
+            venue_id=args.openreview_venue_id,
+            timeout_seconds=int(args.timeout_seconds),
+            request_delay_seconds=float(args.request_delay_seconds),
+        )
+        selected, ranked_candidates = select_research_ai_1000_scale_candidates(
+            notes,
+            existing_records,
+            target_new_papers=int(args.target_new_papers),
+        )
+    except RuntimeError as exc:
+        report = discovery_failure_report(
+            args=args,
+            error_message=str(exc),
+            notes_fetched=len(notes),
+        )
+        write_json(args.selection_report, report)
+        write_json(args.candidate_selection_report, report)
+        raise
+
+    if len(selected) < int(args.target_new_papers):
+        msg = (
+            "OpenReview discovery did not find enough deduplicated, relevant papers "
+            f"({len(selected)} selected; target {args.target_new_papers})."
+        )
+        report = discovery_failure_report(
+            args=args,
+            error_message=msg,
+            notes_fetched=len(notes),
+            candidate_count=len(ranked_candidates),
+        )
+        write_jsonl(args.output_candidates, ranked_candidates)
+        write_json(args.selection_report, report)
+        write_json(args.candidate_selection_report, report)
+        raise RuntimeError(msg)
+
+    selected = selected[: int(args.target_new_papers)]
+    validation = validate_research_ai_candidate_records(selected, allow_placeholders=False)
+    if validation["issues"]:
+        msg = "Discovered candidates failed approved-paper validation."
+        report = discovery_failure_report(
+            args=args,
+            error_message=msg,
+            notes_fetched=len(notes),
+            candidate_count=len(ranked_candidates),
+        )
+        report["validation_issues"] = validation["issues"]
+        write_jsonl(args.output_candidates, ranked_candidates)
+        write_json(args.selection_report, report)
+        write_json(args.candidate_selection_report, report)
+        raise RuntimeError(msg)
+
+    write_jsonl(args.output_candidates, ranked_candidates)
+    write_jsonl(args.approved_papers_output, selected)
+    report = {
+        "phase": "2A-13A",
+        "generated_at_utc": utc_now(),
+        "mode": "discover_1000_scale_papers",
+        "source": args.source,
+        "openreview_api_url": args.openreview_api_url,
+        "openreview_venue_id": args.openreview_venue_id,
+        "target_new_papers": int(args.target_new_papers),
+        "notes_fetched": len(notes),
+        "candidate_count": len(ranked_candidates),
+        "selected_candidate_count": len(selected),
+        "deduplicated_against_existing_registry_count": len(existing_records),
+        "discovery_succeeded": True,
+        "selected_paper_ids": [str(record["paper_id"]) for record in selected],
+        "selected_titles": [str(record["title"]) for record in selected],
+        "topics_by_candidate": {
+            str(record["paper_id"]): record.get("topics", []) for record in selected
+        },
+        "output_candidates": str(args.output_candidates),
+        "approved_papers_output": str(args.approved_papers_output),
+        "candidate_selection_report": str(args.candidate_selection_report),
+        "validation_passed": validation["validation_passed"],
+        "recommended_next_step": (
+            "Validate and ingest data/sources/research_ai_1000_scale_approved_papers.jsonl."
+        ),
+    }
+    write_json(args.selection_report, report)
+    write_json(args.candidate_selection_report, report)
+    return {
+        "mode": "discover_1000_scale_papers",
+        "phase": "2A-13A",
+        "source": args.source,
+        "notes_fetched": len(notes),
+        "candidate_count": len(ranked_candidates),
+        "selected_candidate_count": len(selected),
+        "approved_papers_output": str(args.approved_papers_output),
+        "output_candidates": str(args.output_candidates),
+        "selection_report": str(args.selection_report),
+        "discovery_succeeded": True,
+    }
+
+
 def existing_pdf_download_result(url: str, destination: Path, pdf_link_type: str) -> dict[str, Any]:
     return {
         "status": "existing",
@@ -1727,6 +2243,7 @@ def download_policy_from_args(args: argparse.Namespace) -> dict[str, Any]:
         "request_delay_seconds": effective_download_request_delay_seconds(args),
         "download_timeout_seconds": effective_download_timeout_seconds(args),
         "failed_only": bool(getattr(args, "failed_only", False)),
+        "new_only": bool(getattr(args, "new_only", False)),
         "paper_id_filter": str(getattr(args, "paper_id", "") or ""),
     }
 
@@ -1748,13 +2265,41 @@ def read_failed_download_paper_ids(report_path: Path) -> set[str]:
     }
 
 
+def new_only_paper_ids(args: argparse.Namespace) -> set[str]:
+    if not bool(getattr(args, "new_only", False)):
+        return set()
+    approved_papers_input = Path(
+        getattr(args, "approved_papers_input", DEFAULT_1000_SCALE_APPROVED_PAPERS_PATH)
+    )
+    if not approved_papers_input.exists():
+        raise RuntimeError(f"--new-only requires approved paper input at {approved_papers_input}.")
+    return {
+        str(record.get("paper_id") or "")
+        for record in read_jsonl(approved_papers_input)
+        if record.get("paper_id")
+    }
+
+
+def selected_record_ids_for_run(
+    records: list[dict[str, Any]],
+    args: argparse.Namespace,
+) -> set[str]:
+    scoped_records = apply_limit(records, int(getattr(args, "limit", 0)))
+    scoped_paper_ids = {str(record.get("paper_id") or "") for record in scoped_records}
+    if new_ids := new_only_paper_ids(args):
+        scoped_paper_ids &= new_ids
+    paper_id_filter = str(getattr(args, "paper_id", "") or "")
+    if paper_id_filter:
+        scoped_paper_ids &= {paper_id_filter}
+    return scoped_paper_ids
+
+
 def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
     if not args.enriched_registry_path.exists():
         msg = f"Missing enriched registry: {args.enriched_registry_path}"
         raise RuntimeError(msg)
     all_records = read_jsonl(args.enriched_registry_path)
-    scoped_records = apply_limit(all_records, int(args.limit))
-    scoped_paper_ids = {str(record.get("paper_id") or "") for record in scoped_records}
+    scoped_paper_ids = selected_record_ids_for_run(all_records, args)
     failed_only = bool(getattr(args, "failed_only", False))
     paper_id_filter = str(getattr(args, "paper_id", "") or "")
     failed_paper_ids = read_failed_download_paper_ids(args.report_path) if failed_only else set()
@@ -1879,6 +2424,7 @@ def download_pdfs(args: argparse.Namespace) -> dict[str, Any]:
         "request_delay_seconds": download_policy["request_delay_seconds"],
         "download_timeout_seconds": download_policy["download_timeout_seconds"],
         "failed_only": failed_only,
+        "new_only": bool(getattr(args, "new_only", False)),
         "paper_id_filter": paper_id_filter,
         "pdf_download_failure_details": failure_details,
         "enriched_registry_path": str(args.enriched_registry_path),
@@ -1927,7 +2473,29 @@ def build_text_manifest_row(
 
 
 def extract_text(args: argparse.Namespace) -> dict[str, Any]:
-    records = apply_limit(read_jsonl(args.enriched_registry_path), int(args.limit))
+    all_records = read_jsonl(args.enriched_registry_path)
+    selected_paper_ids = selected_record_ids_for_run(all_records, args)
+    records = [
+        record for record in all_records if str(record.get("paper_id") or "") in selected_paper_ids
+    ]
+    if not records and bool(getattr(args, "new_only", False)):
+        raise RuntimeError("No --new-only records were found for text extraction.")
+    existing_text_rows = (
+        read_jsonl(args.text_manifest_path) if args.text_manifest_path.exists() else []
+    )
+    existing_section_rows = (
+        read_jsonl(args.sections_manifest_path) if args.sections_manifest_path.exists() else []
+    )
+    preserved_text_rows = [
+        row
+        for row in existing_text_rows
+        if str(row.get("paper_id") or "") not in selected_paper_ids
+    ]
+    preserved_section_rows = [
+        row
+        for row in existing_section_rows
+        if str(row.get("paper_id") or "") not in selected_paper_ids
+    ]
     text_manifest_rows: list[dict[str, Any]] = []
     section_rows: list[dict[str, Any]] = []
     backend = get_pdf_text_extraction_backend()
@@ -1995,14 +2563,16 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
             quality["section_quality_status"] if quality is not None else "not_available"
         )
 
-    write_jsonl(args.text_manifest_path, text_manifest_rows)
-    write_jsonl(args.sections_manifest_path, section_rows)
+    combined_text_rows = [*preserved_text_rows, *text_manifest_rows]
+    combined_section_rows = [*preserved_section_rows, *section_rows]
+    write_jsonl(args.text_manifest_path, combined_text_rows)
+    write_jsonl(args.sections_manifest_path, combined_section_rows)
     approved_records = read_jsonl(args.approved_registry_path)
     report = build_paper_preparation_report(
         approved_records=approved_records,
-        enriched_records=records,
-        text_manifest_rows=text_manifest_rows,
-        section_rows=section_rows,
+        enriched_records=all_records,
+        text_manifest_rows=combined_text_rows,
+        section_rows=combined_section_rows,
         output_files=output_files_from_args(args),
         pdf_text_backend=backend,
     )
@@ -2011,6 +2581,7 @@ def extract_text(args: argparse.Namespace) -> dict[str, Any]:
         "mode": "extract_text",
         "phase": PHASE,
         "records_attempted": len(records),
+        "new_only": bool(getattr(args, "new_only", False)),
         "pdf_text_backend": report["pdf_text_backend"],
         "local_pdf_count": int(report["local_pdf_count"]),
         "text_extracted_count": int(report["text_extracted_count"]),
@@ -2094,6 +2665,34 @@ def audit_sections(args: argparse.Namespace) -> dict[str, Any]:
     )
     report = build_section_quality_audit_report(text_rows, section_rows)
     write_json(args.section_quality_report_path, report)
+    approved_records = (
+        approved_research_ai_papers(read_jsonl(args.approved_registry_path))
+        if getattr(args, "approved_registry_path", None)
+        and Path(args.approved_registry_path).exists()
+        else []
+    )
+    missing_requirements = research_ai_expansion_missing_requirements(
+        approved_count=len(approved_records),
+        section_count=len(section_rows),
+    )
+    expansion_ready_for_1000 = (
+        len(approved_records) >= TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT
+        and len(section_rows) >= TARGET_RESEARCH_AI_SECTION_COUNT_MIN
+    )
+    expanded_report_path = getattr(
+        args,
+        "expanded_section_quality_report_path",
+        DEFAULT_EXPANDED_SECTION_QUALITY_REPORT_PATH,
+    )
+    write_json(
+        Path(expanded_report_path),
+        build_research_ai_expanded_section_quality_report(
+            approved_count=len(approved_records),
+            section_rows=section_rows,
+            expansion_ready_for_1000=expansion_ready_for_1000,
+            missing_requirements=missing_requirements,
+        ),
+    )
     return {
         "mode": "audit_sections",
         "phase": report["phase"],
@@ -2105,6 +2704,8 @@ def audit_sections(args: argparse.Namespace) -> dict[str, Any]:
         "papers_with_poor_sections_count": report["papers_with_poor_sections_count"],
         "suspicious_large_sections_count": len(report["suspicious_large_sections"]),
         "report_path": str(args.section_quality_report_path),
+        "expanded_section_quality_report_path": str(expanded_report_path),
+        "expansion_ready_for_1000": expansion_ready_for_1000,
         "recommendations": report["recommendations"],
         "next_step": report["next_step"],
     }
@@ -2417,6 +3018,24 @@ def normalized_approved_1000_scale_record(record: dict[str, Any]) -> dict[str, A
     normalized["approval_status"] = "approved"
     normalized["not_for_benchmark_claims"] = False
     normalized["missing_pdf_or_section_text"] = False
+    pdf_url = normalize_whitespace(str(normalized.get("pdf_url") or ""))
+    openreview_url = normalize_whitespace(str(normalized.get("openreview_url") or ""))
+    abstract = normalize_whitespace(str(normalized.get("abstract") or ""))
+    if pdf_url:
+        normalized.setdefault("pdf_url_enriched", pdf_url)
+    if openreview_url:
+        normalized.setdefault("openreview_url", openreview_url)
+    normalized.setdefault("pdf_link_type", classify_pdf_url(pdf_url))
+    normalized.setdefault("paper_body_available", classify_pdf_url(pdf_url) in PAPER_BODY_PDF_TYPES)
+    normalized.setdefault("abstract_quality_status", "clean" if abstract else "missing")
+    normalized.setdefault(
+        "ready_for_text_extraction",
+        bool(
+            pdf_url
+            and normalized["pdf_link_type"] in PAPER_BODY_PDF_TYPES
+            and normalized["abstract_quality_status"] in {"clean", "missing"}
+        ),
+    )
     metadata = dict(normalized.get("metadata") or {})
     metadata.update(
         {
@@ -2427,6 +3046,45 @@ def normalized_approved_1000_scale_record(record: dict[str, Any]) -> dict[str, A
     )
     normalized["metadata"] = metadata
     return normalized
+
+
+def sync_enriched_registry_with_ingest(
+    enriched_registry_path: Path,
+    approved_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    existing_enriched = (
+        read_jsonl(enriched_registry_path) if enriched_registry_path.exists() else []
+    )
+    existing_by_id = {
+        str(record.get("paper_id") or ""): record
+        for record in existing_enriched
+        if record.get("paper_id")
+    }
+    added_count = 0
+    updated_rows: list[dict[str, Any]] = []
+    for record in existing_enriched:
+        paper_id = str(record.get("paper_id") or "")
+        replacement = next(
+            (
+                approved
+                for approved in approved_records
+                if str(approved.get("paper_id") or "") == paper_id
+            ),
+            None,
+        )
+        updated_rows.append({**replacement, **record} if replacement else record)
+    for record in approved_records:
+        paper_id = str(record.get("paper_id") or "")
+        if paper_id not in existing_by_id:
+            updated_rows.append(record)
+            added_count += 1
+    write_jsonl(enriched_registry_path, updated_rows)
+    return {
+        "enriched_registry_path": str(enriched_registry_path),
+        "existing_enriched_count": len(existing_enriched),
+        "enriched_records_added": added_count,
+        "updated_enriched_count": len(updated_rows),
+    }
 
 
 def ingest_approved_1000_scale_papers(args: argparse.Namespace) -> dict[str, Any]:
@@ -2494,6 +3152,7 @@ def ingest_approved_1000_scale_papers(args: argparse.Namespace) -> dict[str, Any
         "duplicate_existing_issue_count": len(duplicate_existing_issues),
         "ingest_passed": ingest_passed,
         "registry_updated": False,
+        "enriched_registry_updated": False,
         "issues": issues,
         "recommended_next_step": (
             "Run --build-40-paper-expansion and then extract PDF text/sections."
@@ -2508,6 +3167,12 @@ def ingest_approved_1000_scale_papers(args: argparse.Namespace) -> dict[str, Any
     merged_records = [*existing_records, *approved_records]
     write_jsonl(approved_registry_path, merged_records)
     report["registry_updated"] = True
+    enriched_registry_path = getattr(args, "enriched_registry_path", None)
+    if enriched_registry_path is not None:
+        report.update(
+            sync_enriched_registry_with_ingest(Path(enriched_registry_path), approved_records)
+        )
+        report["enriched_registry_updated"] = True
     write_json(args.ingest_report, report)
     return {
         "mode": "ingest_approved_1000_scale_papers",
@@ -2515,6 +3180,7 @@ def ingest_approved_1000_scale_papers(args: argparse.Namespace) -> dict[str, Any
         "approved_records_ingested": len(approved_records),
         "updated_approved_registry_count": len(merged_records),
         "registry_updated": True,
+        "enriched_registry_updated": report["enriched_registry_updated"],
         "approved_registry": str(approved_registry_path),
         "ingest_report": str(args.ingest_report),
         "recommended_next_step": report["recommended_next_step"],
@@ -2604,6 +3270,23 @@ def build_research_ai_expanded_section_quality_report(
     }
 
 
+def research_ai_expansion_missing_requirements(
+    *, approved_count: int, section_count: int
+) -> list[str]:
+    missing_requirements: list[str] = []
+    additional_papers_needed = max(0, TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT - approved_count)
+    if additional_papers_needed:
+        missing_requirements.append(f"additional_approved_papers_needed:{additional_papers_needed}")
+    if section_count < TARGET_RESEARCH_AI_SECTION_COUNT_MIN:
+        if approved_count >= TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT:
+            missing_requirements.append("section_extraction_required_for_approved_papers")
+        missing_requirements.append(
+            "section_coverage_below_target_min:"
+            f"{TARGET_RESEARCH_AI_SECTION_COUNT_MIN - section_count}"
+        )
+    return missing_requirements
+
+
 def build_research_ai_40_paper_expansion(args: argparse.Namespace) -> dict[str, Any]:
     approved_registry = read_jsonl(args.approved_registry_path)
     section_rows = (
@@ -2613,16 +3296,10 @@ def build_research_ai_40_paper_expansion(args: argparse.Namespace) -> dict[str, 
     approved_count = len(approved_records)
     additional_papers_needed = max(0, TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT - approved_count)
     candidate_slots = build_research_ai_candidate_slots(additional_papers_needed)
-    missing_requirements: list[str] = []
-    if additional_papers_needed:
-        missing_requirements.append(f"additional_approved_papers_needed:{additional_papers_needed}")
-    if len(section_rows) < TARGET_RESEARCH_AI_SECTION_COUNT_MIN:
-        if approved_count >= TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT:
-            missing_requirements.append("section_extraction_required_for_approved_papers")
-        missing_requirements.append(
-            "section_coverage_below_target_min:"
-            f"{TARGET_RESEARCH_AI_SECTION_COUNT_MIN - len(section_rows)}"
-        )
+    missing_requirements = research_ai_expansion_missing_requirements(
+        approved_count=approved_count,
+        section_count=len(section_rows),
+    )
     expansion_ready_for_1000 = (
         approved_count >= TARGET_RESEARCH_AI_APPROVED_PAPER_COUNT
         and len(section_rows) >= TARGET_RESEARCH_AI_SECTION_COUNT_MIN
@@ -2735,6 +3412,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--build-40-paper-expansion", action="store_true")
     parser.add_argument("--validate-1000-scale-candidate-papers", action="store_true")
     parser.add_argument("--ingest-approved-1000-scale-papers", action="store_true")
+    parser.add_argument("--discover-1000-scale-papers", action="store_true")
     parser.add_argument(
         "--approved-registry-path",
         type=Path,
@@ -2798,8 +3476,33 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=DEFAULT_1000_SCALE_CANDIDATE_INGEST_REPORT_PATH,
     )
+    parser.add_argument(
+        "--output-candidates",
+        type=Path,
+        default=DEFAULT_1000_SCALE_DISCOVERED_CANDIDATES_PATH,
+    )
+    parser.add_argument(
+        "--approved-papers-output",
+        type=Path,
+        default=DEFAULT_1000_SCALE_APPROVED_PAPERS_PATH,
+    )
+    parser.add_argument(
+        "--selection-report",
+        type=Path,
+        default=DEFAULT_1000_SCALE_DISCOVERY_REPORT_PATH,
+    )
+    parser.add_argument(
+        "--candidate-selection-report",
+        type=Path,
+        default=DEFAULT_1000_SCALE_CANDIDATE_SELECTION_REPORT_PATH,
+    )
+    parser.add_argument("--target-new-papers", type=int, default=20)
+    parser.add_argument("--source", default="openreview_iclr_2025")
+    parser.add_argument("--openreview-api-url", default=DEFAULT_OPENREVIEW_API_URL)
+    parser.add_argument("--openreview-venue-id", default=DEFAULT_OPENREVIEW_ICLR_2025_VENUE_ID)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--skip-existing", action="store_true")
+    parser.add_argument("--new-only", action="store_true")
     parser.add_argument("--include-non-paper-pdfs", action="store_true")
     parser.add_argument("--request-delay-seconds", type=float, default=1.0)
     parser.add_argument("--timeout-seconds", type=int, default=30)
@@ -2826,6 +3529,7 @@ def main(argv: list[str] | None = None) -> int:
             args.build_40_paper_expansion,
             args.validate_1000_scale_candidate_papers,
             args.ingest_approved_1000_scale_papers,
+            args.discover_1000_scale_papers,
         )
     )
     if mode_count != 1:
@@ -2834,7 +3538,7 @@ def main(argv: list[str] | None = None) -> int:
                 "Pass exactly one mode: --dry-run, --enrich-metadata, --download-pdfs, "
                 "--extract-text, --audit-sections, --summarize-local, or "
                 "--build-40-paper-expansion, --validate-1000-scale-candidate-papers, "
-                "or --ingest-approved-1000-scale-papers."
+                "--ingest-approved-1000-scale-papers, or --discover-1000-scale-papers."
             ),
             file=sys.stderr,
         )
@@ -2844,6 +3548,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if int(args.download_max_retries) < 0:
         print("--download-max-retries must be >= 0.", file=sys.stderr)
+        return 2
+    if int(args.target_new_papers) <= 0:
+        print("--target-new-papers must be > 0.", file=sys.stderr)
         return 2
     if float(args.download_backoff_seconds) < 0:
         print("--download-backoff-seconds must be >= 0.", file=sys.stderr)
@@ -2871,6 +3578,8 @@ def main(argv: list[str] | None = None) -> int:
             summary = validate_1000_scale_candidate_papers(args)
         elif args.ingest_approved_1000_scale_papers:
             summary = ingest_approved_1000_scale_papers(args)
+        elif args.discover_1000_scale_papers:
+            summary = discover_1000_scale_papers(args)
         else:
             summary = summarize_local(args)
     except RuntimeError as exc:

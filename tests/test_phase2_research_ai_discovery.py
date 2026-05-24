@@ -21,6 +21,7 @@ DOC_PATH = ROOT / "docs/34_phase2_research_ai_paper_discovery.md"
 MANUAL_TEMPLATE_PATH = ROOT / "data/sources/research_ai_manual_registry_template.csv"
 APPROVED_PAPERS_EXAMPLE_PATH = ROOT / "data/sources/research_ai_approved_papers.example.jsonl"
 APPROVED_REGISTRY_PATH = ROOT / "data/sources/research_ai_approved_papers.jsonl"
+APPROVED_1000_SCALE_PAPERS_PATH = ROOT / "data/sources/research_ai_1000_scale_approved_papers.jsonl"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -1300,6 +1301,11 @@ def test_committed_approved_registry_exists_after_generation() -> None:
     assert APPROVED_REGISTRY_PATH.exists()
     records = _read_jsonl(APPROVED_REGISTRY_PATH)
 
-    assert len(records) == 20
+    assert len(records) == 40
     assert {record["selection_status"] for record in records} == {"approved"}
     assert all(record.get("provenance_url") for record in records)
+    assert APPROVED_1000_SCALE_PAPERS_PATH.exists()
+    expansion_records = _read_jsonl(APPROVED_1000_SCALE_PAPERS_PATH)
+    assert len(expansion_records) == 20
+    assert {record["approval_status"] for record in expansion_records} == {"approved"}
+    assert all(record.get("source_url") for record in expansion_records)
