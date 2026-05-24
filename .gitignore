@@ -103,6 +103,10 @@ data/generated/phase2a/phase2a_scaleup_plan_report.json
 data/generated/phase2a/phase2a_scaleup_matrix.csv
 data/generated/phase2a/scaleup/
 data/generated/phase2a/scaleup_reports/
+data/generated/phase2a/large_scale/
+data/generated/phase2a/retrieval_corpus/
+data/generated/phase2a/eda/
+data/generated/phase2a/eda_test_cache/
 
 # Keep result folders
 !results/raw/.gitkeep
