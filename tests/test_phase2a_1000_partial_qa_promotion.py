@@ -10,6 +10,7 @@ QA_SCRIPT_PATH = ROOT / "scripts/phase2/audit_phase2a_scaleup_1000_partial.py"
 PROMOTE_SCRIPT_PATH = ROOT / "scripts/phase2/promote_phase2a_scaleup_1000_partial.py"
 GENERATOR_PATH = ROOT / "scripts/phase2/generate_phase2a_scaleup.py"
 DOC_PATH = ROOT / "docs/46_phase2a_1000_partial_qa_promotion.md"
+PROMOTED_PARTIAL_ROOT = ROOT / "data/scaleup_1000_partial"
 
 INCLUDED_VERTICALS = ["airline", "healthcare_admin", "retail", "finance"]
 
@@ -40,7 +41,17 @@ def _candidate_path(vertical: str, kind: str) -> Path:
     return ROOT / "data/generated/phase2a/scaleup" / vertical / f"{vertical}_{kind}_1000.jsonl"
 
 
+def _promoted_partial_path(vertical: str, kind: str) -> Path:
+    return PROMOTED_PARTIAL_ROOT / vertical / f"{vertical}_{kind}_1000.jsonl"
+
+
 def _ensure_generated_candidates() -> None:
+    if all(
+        _promoted_partial_path(vertical, kind).exists()
+        for vertical in INCLUDED_VERTICALS
+        for kind in ["prompts", "gold", "kb"]
+    ):
+        return
     for vertical in INCLUDED_VERTICALS:
         if all(_candidate_path(vertical, kind).exists() for kind in ["prompts", "gold", "kb"]):
             continue
@@ -64,8 +75,19 @@ def _ensure_generated_candidates() -> None:
 
 def _run_partial_qa() -> dict[str, Any]:
     _ensure_generated_candidates()
+    generated_root = (
+        PROMOTED_PARTIAL_ROOT
+        if PROMOTED_PARTIAL_ROOT.exists()
+        else ROOT / "data/generated/phase2a/scaleup"
+    )
     result = subprocess.run(
-        [sys.executable, str(QA_SCRIPT_PATH), "--run-audit"],
+        [
+            sys.executable,
+            str(QA_SCRIPT_PATH),
+            "--run-audit",
+            "--generated-root",
+            str(generated_root),
+        ],
         cwd=ROOT,
         text=True,
         capture_output=True,

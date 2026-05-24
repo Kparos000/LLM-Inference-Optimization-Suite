@@ -200,6 +200,36 @@ def load_jsonl_if_exists(path: Path) -> list[dict[str, Any]]:
     return load_jsonl(path)
 
 
+def load_committed_scaleup_kb_rows(vertical: str, target_per_vertical: int) -> list[dict[str, Any]]:
+    """Load committed promoted KB rows as a clean-checkout fallback.
+
+    Rich local source artifacts remain the preferred source for generation. These
+    committed datasets are used only when ignored local processed artifacts are
+    absent or insufficient in CI.
+    """
+
+    candidate_paths: list[Path] = []
+    if target_per_vertical == 1000:
+        candidate_paths.extend(
+            [
+                Path(f"data/scaleup_1000_full/{vertical}/{vertical}_kb_1000.jsonl"),
+                Path(f"data/scaleup_1000_partial/{vertical}/{vertical}_kb_1000.jsonl"),
+            ]
+        )
+    candidate_paths.append(Path(f"data/scaleup/{vertical}/{vertical}_kb_250.jsonl"))
+
+    rows: list[dict[str, Any]] = []
+    seen_doc_ids: set[str] = set()
+    for path in candidate_paths:
+        for row in load_jsonl_if_exists(path):
+            doc_id = str(row.get("doc_id") or "")
+            if not doc_id or doc_id in seen_doc_ids:
+                continue
+            rows.append(dict(row))
+            seen_doc_ids.add(doc_id)
+    return rows
+
+
 def write_json(path: Path, obj: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -1139,10 +1169,20 @@ def expand_finance_kb_rows(
         doc_id = str(row.get("doc_id") or "")
         if not doc_id or doc_id in existing_doc_ids:
             continue
-        kb_copy.append(row)
+        kb_copy.append(sanitize_finance_kb_row(row))
         existing_doc_ids.add(doc_id)
         if len(kb_copy) >= target_kb_count:
             break
+    if len(kb_copy) < target_kb_count:
+        committed_rows = load_committed_scaleup_kb_rows("finance", 1000)
+        for row in committed_rows:
+            doc_id = str(row.get("doc_id") or "")
+            if not doc_id or doc_id in existing_doc_ids:
+                continue
+            kb_copy.append(sanitize_finance_kb_row(row))
+            existing_doc_ids.add(doc_id)
+            if len(kb_copy) >= target_kb_count:
+                break
     return kb_copy
 
 
@@ -3718,6 +3758,18 @@ def expand_research_ai_kb_rows(
             existing_doc_ids.add(doc_id)
         if len(kb_copy) >= target_kb_count:
             break
+    if len(kb_copy) < target_kb_count or len(research_ai_contexts_by_paper(kb_copy)) < 40:
+        committed_rows = load_committed_scaleup_kb_rows("research_ai", 1000)
+        for row in committed_rows:
+            doc_id = str(row.get("doc_id") or "")
+            if doc_id and doc_id not in existing_doc_ids:
+                kb_copy.append(sanitize_research_ai_row(dict(row)))
+                existing_doc_ids.add(doc_id)
+            if (
+                len(kb_copy) >= target_kb_count
+                and len(research_ai_contexts_by_paper(kb_copy)) >= 40
+            ):
+                break
     return kb_copy[:1200]
 
 

@@ -9,6 +9,7 @@ GENERATOR_PATH = ROOT / "scripts/phase2/generate_phase2a_scaleup.py"
 QA_SCRIPT_PATH = ROOT / "scripts/phase2/audit_phase2a_scaleup_1000_full.py"
 PROMOTE_SCRIPT_PATH = ROOT / "scripts/phase2/promote_phase2a_scaleup_1000_full.py"
 DOC_PATH = ROOT / "docs/47_phase2a_1000_full_qa_promotion.md"
+PROMOTED_FULL_ROOT = ROOT / "data/scaleup_1000_full"
 VERTICALS = ["airline", "healthcare_admin", "retail", "finance", "research_ai"]
 
 
@@ -26,6 +27,12 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 
 
 def _ensure_research_ai_generated() -> None:
+    promoted_paths = [
+        PROMOTED_FULL_ROOT / "research_ai" / f"research_ai_{kind}_1000.jsonl"
+        for kind in ["prompts", "gold", "kb"]
+    ]
+    if all(path.exists() for path in promoted_paths):
+        return
     prompts = ROOT / "data/generated/phase2a/scaleup/research_ai/research_ai_prompts_1000.jsonl"
     gold = ROOT / "data/generated/phase2a/scaleup/research_ai/research_ai_gold_1000.jsonl"
     kb = ROOT / "data/generated/phase2a/scaleup/research_ai/research_ai_kb_1000.jsonl"
@@ -51,8 +58,24 @@ def _ensure_research_ai_generated() -> None:
 
 def _run_full_qa() -> dict[str, Any]:
     _ensure_research_ai_generated()
+    partial_root = (
+        PROMOTED_FULL_ROOT if PROMOTED_FULL_ROOT.exists() else ROOT / "data/scaleup_1000_partial"
+    )
+    generated_root = (
+        PROMOTED_FULL_ROOT
+        if PROMOTED_FULL_ROOT.exists()
+        else ROOT / "data/generated/phase2a/scaleup"
+    )
     result = subprocess.run(
-        [sys.executable, str(QA_SCRIPT_PATH), "--run-audit"],
+        [
+            sys.executable,
+            str(QA_SCRIPT_PATH),
+            "--run-audit",
+            "--partial-root",
+            str(partial_root),
+            "--generated-root",
+            str(generated_root),
+        ],
         cwd=ROOT,
         text=True,
         capture_output=True,

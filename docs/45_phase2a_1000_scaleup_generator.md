@@ -120,6 +120,21 @@ All implemented generators keep prompt/gold alignment, one gold record per
 prompt, answerable evidence IDs, meaningful negative `must_not_include`
 guardrails, and the linguistic variation quality gate.
 
+## Clean Checkout Reproducibility
+
+Finance and Research AI prefer rich local source artifacts when they are
+available:
+
+- Finance uses processed SEC filing sections and XBRL inventories.
+- Research AI uses processed paper text and section manifests.
+
+Those rich artifacts are generated locally and are not committed. In a clean CI
+checkout, the 1,000 generators deterministically fall back to committed promoted
+KB files under `data/scaleup_1000_full/`, `data/scaleup_1000_partial/`, and the
+250-scale checkpoint under `data/scaleup/`. This keeps the 800 to 1,200 KB
+target reproducible without committing raw PDFs, SEC raw files, generated
+reports, RAG indexes, embeddings, or inference outputs.
+
 ## Scope Boundary
 
 Larger 2,000, 4,000, and 5,000 target sizes remain planning-only until

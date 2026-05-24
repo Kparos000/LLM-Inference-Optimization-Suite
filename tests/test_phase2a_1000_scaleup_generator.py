@@ -348,6 +348,36 @@ def test_finance_1000_kb_target_range() -> None:
     assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
 
 
+def test_finance_1000_committed_kb_fallback_without_sec_artifacts() -> None:
+    module = _load_module()
+    original_section_loader = module.build_finance_section_kb_rows_from_manifest
+    original_xbrl_loader = module.build_finance_xbrl_inventory_kb_rows
+    module.build_finance_section_kb_rows_from_manifest = lambda: []
+    module.build_finance_xbrl_inventory_kb_rows = lambda limit: []
+    try:
+        seed_kb = _read_jsonl(ROOT / "data/kb/finance/kb_sample.jsonl")
+        expanded = module.expand_finance_kb_rows(seed_kb, target_kb_count=800)
+    finally:
+        module.build_finance_section_kb_rows_from_manifest = original_section_loader
+        module.build_finance_xbrl_inventory_kb_rows = original_xbrl_loader
+
+    assert 800 <= len(expanded) <= 1200
+
+
+def test_research_ai_1000_committed_kb_fallback_without_processed_sections() -> None:
+    module = _load_module()
+    original_section_loader = module.build_research_ai_section_kb_rows_from_manifest
+    module.build_research_ai_section_kb_rows_from_manifest = lambda limit: []
+    try:
+        seed_kb = _read_jsonl(ROOT / "data/kb/research_ai/kb_sample.jsonl")
+        expanded = module.expand_research_ai_kb_rows(seed_kb, target_per_vertical=1000)
+    finally:
+        module.build_research_ai_section_kb_rows_from_manifest = original_section_loader
+
+    assert 800 <= len(expanded) <= 1200
+    assert len(module.research_ai_contexts_by_paper(expanded)) >= 40
+
+
 def test_retail_1000_no_raw_user_ids_or_generic_titles() -> None:
     summary = _generate_vertical("retail")
     prompts = _read_jsonl(ROOT / summary["prompts_path"])
