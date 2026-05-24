@@ -35,8 +35,8 @@ TARGET_TO_CHECKPOINT = {
 }
 IMPLEMENTED_GENERATION_TARGETS = {
     "finance": {250},
-    "airline": {250},
-    "healthcare_admin": {250},
+    "airline": {250, 1000},
+    "healthcare_admin": {250, 1000},
     "research_ai": {250},
     "retail": {250},
 }
@@ -226,6 +226,10 @@ def flatten_text(value: Any) -> str:
     if isinstance(value, list | tuple | set):
         return " ".join(flatten_text(item) for item in value)
     return str(value)
+
+
+def normalize_whitespace(value: str | None) -> str:
+    return re.sub(r"\s+", " ", value or "").strip()
 
 
 def choose_phrase_variant(index: int, variants: list[str]) -> str:
@@ -1798,6 +1802,86 @@ def airline_reference_answer(
     )
 
 
+def expanded_synthetic_policy_kb_rows(
+    kb_rows: list[dict[str, Any]],
+    *,
+    vertical: str,
+    target_per_vertical: int,
+    target_kb_count: int,
+) -> list[dict[str, Any]]:
+    expanded = [dict(row) for row in kb_rows]
+    if target_per_vertical < 1000 or len(expanded) >= target_kb_count:
+        return expanded
+
+    base_rows = [row for row in kb_rows if row.get("doc_id")]
+    if not base_rows:
+        raise RuntimeError(f"{vertical} KB expansion requires source policy doc IDs.")
+
+    note_variants = [
+        "intake checklist",
+        "eligibility boundary",
+        "manual review cue",
+        "structured response note",
+        "evidence citation reminder",
+    ]
+    index = 1
+    while len(expanded) < target_kb_count:
+        base = base_rows[(index - 1) % len(base_rows)]
+        base_doc_id = str(base["doc_id"])
+        base_body = normalize_whitespace(str(base.get("body") or ""))
+        base_title = normalize_whitespace(str(base.get("title") or base_doc_id))
+        note_variant = note_variants[(index - 1) % len(note_variants)]
+        doc_id = f"{base_doc_id}-SCALE-{index:03d}"
+        if vertical == "airline":
+            body = (
+                f"Canada Air scale-up {note_variant} derived from {base_doc_id}. "
+                f"Base policy summary: {base_body} Use this derived policy note only "
+                "for synthetic benchmark grounding and do not promise exceptions, "
+                "compensation, or verification bypasses beyond the cited policy."
+            )
+            document_type = "airline_scaleup_policy_note"
+            tags = ["airline", "scaleup", "synthetic-policy-note"]
+        elif vertical == "healthcare_admin":
+            body = (
+                f"MapleCare Health scale-up {note_variant} derived from {base_doc_id}. "
+                f"Base administrative policy summary: {base_body} Use this derived "
+                "policy note only for synthetic benchmark grounding. It remains "
+                "administrative-only and must not provide diagnosis, treatment, "
+                "medication, or urgent clinical advice."
+            )
+            document_type = "healthcare_admin_scaleup_policy_note"
+            tags = ["healthcare-admin", "scaleup", "synthetic-policy-note"]
+        else:
+            raise RuntimeError(f"Unsupported synthetic policy KB expansion vertical: {vertical}")
+
+        metadata = dict(base.get("metadata") or {})
+        metadata.update(
+            {
+                "base_doc_id": base_doc_id,
+                "derived_note_index": index,
+                "generator": GENERATOR_NAME,
+                "scaleup_candidate": True,
+                "target_per_vertical": target_per_vertical,
+            }
+        )
+        expanded.append(
+            {
+                "allowed_to_commit": False,
+                "body": body,
+                "doc_id": doc_id,
+                "document_type": document_type,
+                "metadata": metadata,
+                "source_type": "synthetic_public_inspired_derived",
+                "tags": tags,
+                "title": f"{base_title} scale-up note {index:03d}",
+                "version": "phase2a-13a-scaleup-v1",
+                "vertical": vertical,
+            }
+        )
+        index += 1
+    return expanded
+
+
 def build_airline_pilot_records(
     *,
     target_per_vertical: int,
@@ -1902,7 +1986,12 @@ def build_airline_pilot_records(
         }
         prompts.append(prompt)
         gold.append(gold_row)
-    kb_copy = [dict(row) for row in kb_rows]
+    kb_copy = expanded_synthetic_policy_kb_rows(
+        kb_rows,
+        vertical="airline",
+        target_per_vertical=target_per_vertical,
+        target_kb_count=150,
+    )
     return prompts, gold, kb_copy
 
 
@@ -1935,7 +2024,27 @@ def build_healthcare_policy_context(
     return policy_context
 
 
-def healthcare_status_task_pairs() -> list[tuple[str, str]]:
+def healthcare_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
+    if target_per_vertical == 1000:
+        pairs: list[tuple[str, str]] = []
+        pairs.extend([("answer", "answer_grounded")] * 480)
+        pairs.extend([("answer", "policy_reasoning")] * 220)
+        pairs.extend([("answer", "extract_structured")] * 120)
+        pairs.extend([("answer", "escalation_response")] * 60)
+        pairs.extend([("escalate", "escalation_response")] * 40)
+        pairs.extend([("escalate", "quality_boundary")] * 20)
+        pairs.extend([("escalate", "safety_boundary")] * 20)
+        pairs.extend([("safety_boundary", "safety_boundary")] * 20)
+        pairs.extend([("spam_or_fraud", "quality_boundary")] * 10)
+        pairs.extend([("out_of_scope", "quality_boundary")] * 10)
+        return pairs
+
+    if target_per_vertical != 250:
+        distributions = calculate_distribution_counts("healthcare_admin", target_per_vertical)
+        status_sequence = expand_count_sequence(distributions["expected_status"])
+        task_sequence = expand_count_sequence(distributions["task_type"])
+        return list(zip(status_sequence, task_sequence, strict=True))
+
     pairs: list[tuple[str, str]] = []
     pairs.extend([("answer", "answer_grounded")] * 120)
     pairs.extend([("answer", "policy_reasoning")] * 55)
@@ -2224,10 +2333,8 @@ def build_healthcare_pilot_records(
     seed_prompts: list[dict[str, Any]],
     kb_rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    if target_per_vertical != 250:
-        raise RuntimeError("Healthcare Admin generation is currently implemented only for 250.")
     distributions = calculate_distribution_counts("healthcare_admin", target_per_vertical)
-    status_task_pairs = healthcare_status_task_pairs()
+    status_task_pairs = healthcare_status_task_pairs(target_per_vertical)
     if len(status_task_pairs) != target_per_vertical:
         raise RuntimeError("Healthcare status/task sequence does not match the target count.")
     if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
@@ -2334,7 +2441,12 @@ def build_healthcare_pilot_records(
         prompts.append(prompt)
         gold.append(gold_row)
 
-    kb_copy = [dict(row) for row in kb_rows]
+    kb_copy = expanded_synthetic_policy_kb_rows(
+        kb_rows,
+        vertical="healthcare_admin",
+        target_per_vertical=target_per_vertical,
+        target_kb_count=150,
+    )
     return prompts, gold, kb_copy
 
 
@@ -4238,7 +4350,7 @@ def generate_vertical(args: argparse.Namespace) -> dict[str, Any]:
             f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
             "implementation and prior checkpoint review."
         )
-    if target_per_vertical > 250 and not args.allow_large_local_generation:
+    if target_per_vertical > 1000 and not args.allow_large_local_generation:
         raise RuntimeError(
             f"Generation for {args.vertical} at {target_per_vertical} requires explicit "
             "implementation and prior checkpoint review."
