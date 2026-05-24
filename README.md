@@ -113,6 +113,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 2A-11 250-scale dataset promotion](docs/43_phase2a_250_scaleup_promotion.md)
 - [Phase 2A-12A 1,000-scale readiness plan](docs/44_phase2a_1000_scaleup_plan.md)
 - [Phase 2A-13A/13B/13C 1,000-scale generator](docs/45_phase2a_1000_scaleup_generator.md)
+- [Phase 2A-13D/13E partial 1,000-scale QA and promotion](docs/46_phase2a_1000_partial_qa_promotion.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

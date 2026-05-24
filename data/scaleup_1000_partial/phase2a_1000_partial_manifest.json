@@ -1,0 +1,77 @@
+{
+  "dataset_name": "phase2a_1000_partial",
+  "excluded_verticals": [
+    "research_ai"
+  ],
+  "generated_at_utc": "2026-05-24T11:50:26.791377+00:00",
+  "included_verticals": [
+    "airline",
+    "healthcare_admin",
+    "retail",
+    "finance"
+  ],
+  "next_step": "Implement and integrate Research AI 1,000 to create full 5,000-record dataset.",
+  "partial_dataset": true,
+  "per_vertical": {
+    "airline": {
+      "files": {
+        "gold": "data\\scaleup_1000_partial\\airline\\airline_gold_1000.jsonl",
+        "kb": "data\\scaleup_1000_partial\\airline\\airline_kb_1000.jsonl",
+        "prompts": "data\\scaleup_1000_partial\\airline\\airline_prompts_1000.jsonl"
+      },
+      "gold_count": 1000,
+      "kb_count": 150,
+      "prompt_count": 1000
+    },
+    "finance": {
+      "files": {
+        "gold": "data\\scaleup_1000_partial\\finance\\finance_gold_1000.jsonl",
+        "kb": "data\\scaleup_1000_partial\\finance\\finance_kb_1000.jsonl",
+        "prompts": "data\\scaleup_1000_partial\\finance\\finance_prompts_1000.jsonl"
+      },
+      "gold_count": 1000,
+      "kb_count": 840,
+      "prompt_count": 1000
+    },
+    "healthcare_admin": {
+      "files": {
+        "gold": "data\\scaleup_1000_partial\\healthcare_admin\\healthcare_admin_gold_1000.jsonl",
+        "kb": "data\\scaleup_1000_partial\\healthcare_admin\\healthcare_admin_kb_1000.jsonl",
+        "prompts": "data\\scaleup_1000_partial\\healthcare_admin\\healthcare_admin_prompts_1000.jsonl"
+      },
+      "gold_count": 1000,
+      "kb_count": 150,
+      "prompt_count": 1000
+    },
+    "retail": {
+      "files": {
+        "gold": "data\\scaleup_1000_partial\\retail\\retail_gold_1000.jsonl",
+        "kb": "data\\scaleup_1000_partial\\retail\\retail_kb_1000.jsonl",
+        "prompts": "data\\scaleup_1000_partial\\retail\\retail_prompts_1000.jsonl"
+      },
+      "gold_count": 1000,
+      "kb_count": 500,
+      "prompt_count": 1000
+    }
+  },
+  "phase": "2A-13E",
+  "promoted_root": "data\\scaleup_1000_partial",
+  "qa_report_path": "data\\generated\\phase2a\\scaleup_reports\\phase2a_1000_partial_qa_report.json",
+  "quality_summary": {
+    "critical_issue_count": 0,
+    "promotion_ready": true,
+    "warning_count": 0
+  },
+  "reason_excluded": "Research AI 1,000 generator pending",
+  "scaleup_notes": [
+    "no RAG",
+    "no inference",
+    "no embeddings",
+    "generated from Phase 2A deterministic local generators",
+    "partial checkpoint excludes Research AI until its 1,000 generator is implemented"
+  ],
+  "source_candidate_root": "data\\generated\\phase2a\\scaleup",
+  "total_gold_count": 4000,
+  "total_kb_count": 1640,
+  "total_prompt_count": 4000
+}
