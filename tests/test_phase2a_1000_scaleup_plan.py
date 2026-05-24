@@ -191,6 +191,32 @@ def test_1000_planner_clears_research_ai_blocker_when_expansion_ready() -> None:
     assert not any("research_ai:" in blocker for blocker in report["blockers"])
 
 
+def test_1000_planner_adds_finance_blocker_when_reuse_risk_is_high() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+    finance_report = {
+        "phase": "2A-12D",
+        "evidence_reuse_risk": "high",
+        "ready_for_1000_finance_generation": False,
+    }
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        finance_evidence_reuse_report=finance_report,
+        finance_evidence_reuse_report_path=Path(
+            "data/generated/phase2a/scaleup_reports/finance_evidence_reuse_audit_report.json"
+        ),
+    )
+
+    finance = report["per_vertical_readiness"]["finance"]
+    assert finance["evidence_reuse_risk"] == "high"
+    assert "finance_evidence_reuse_high_risk" in finance["blockers"]
+    assert "finance:finance_evidence_reuse_high_risk" in report["blockers"]
+
+
 def test_1000_plan_docs_include_command() -> None:
     docs = DOC_PATH.read_text(encoding="utf-8")
 

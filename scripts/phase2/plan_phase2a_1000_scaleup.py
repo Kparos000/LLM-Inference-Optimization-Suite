@@ -35,6 +35,9 @@ DEFAULT_RETAIL_MULTICATEGORY_REPORT = Path(
 DEFAULT_RESEARCH_AI_EXPANSION_REPORT = Path(
     "data/generated/research_ai/research_ai_40_paper_expansion_report.json"
 )
+DEFAULT_FINANCE_EVIDENCE_REUSE_REPORT = Path(
+    "data/generated/phase2a/scaleup_reports/finance_evidence_reuse_audit_report.json"
+)
 
 RECOMMENDED_STRATEGIES = {
     "airline": "Extend deterministic synthetic policy/ticket generator.",
@@ -178,8 +181,24 @@ def research_ai_missing_requirements(report: dict[str, Any] | None) -> list[str]
     return [str(item) for item in missing]
 
 
+def finance_evidence_reuse_ready(report: dict[str, Any] | None) -> bool:
+    if not isinstance(report, dict):
+        return False
+    return bool(report.get("ready_for_1000_finance_generation"))
+
+
+def finance_evidence_reuse_risk(report: dict[str, Any] | None) -> str:
+    if not isinstance(report, dict):
+        return "missing"
+    return str(report.get("evidence_reuse_risk") or "unknown")
+
+
 def vertical_blockers(
-    vertical: str, source_expansion_required: bool, source_expansion_ready: bool
+    vertical: str,
+    source_expansion_required: bool,
+    source_expansion_ready: bool,
+    *,
+    finance_evidence_reuse_report: dict[str, Any] | None = None,
 ) -> list[str]:
     blockers: list[str] = []
     if source_expansion_required and not source_expansion_ready:
@@ -188,6 +207,11 @@ def vertical_blockers(
         blockers.append("expand_research_ai_to_40_papers_or_equivalent_section_coverage")
     if vertical == "retail" and not source_expansion_ready:
         blockers.append("expand_retail_review_metadata_sample_and_categories")
+    if (
+        vertical == "finance"
+        and finance_evidence_reuse_risk(finance_evidence_reuse_report) == "high"
+    ):
+        blockers.append("finance_evidence_reuse_high_risk")
     return blockers
 
 
@@ -197,6 +221,7 @@ def build_per_vertical_readiness(
     promoted_manifest: dict[str, Any],
     retail_multicategory_report: dict[str, Any] | None = None,
     research_ai_expansion_report: dict[str, Any] | None = None,
+    finance_evidence_reuse_report: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     per_vertical_manifest = promoted_manifest["per_vertical"]
     readiness: dict[str, dict[str, Any]] = {}
@@ -209,7 +234,12 @@ def build_per_vertical_readiness(
             source_ready = research_ai_source_expansion_ready(research_ai_expansion_report)
         else:
             source_ready = not source_required
-        blockers = vertical_blockers(vertical, source_required, source_ready)
+        blockers = vertical_blockers(
+            vertical,
+            source_required,
+            source_ready,
+            finance_evidence_reuse_report=finance_evidence_reuse_report,
+        )
         kb_range = target_kb_range(scaleup_plan, vertical)
         generator_required = vertical in {"retail", "research_ai"}
         readiness[vertical] = {
@@ -228,6 +258,16 @@ def build_per_vertical_readiness(
             "generator_implementation_required": generator_required,
             "recommended_generator_strategy": RECOMMENDED_STRATEGIES[vertical],
             "source_requirements": source_requirements(scaleup_plan, vertical),
+            "evidence_reuse_audit_ready": (
+                finance_evidence_reuse_ready(finance_evidence_reuse_report)
+                if vertical == "finance"
+                else None
+            ),
+            "evidence_reuse_risk": (
+                finance_evidence_reuse_risk(finance_evidence_reuse_report)
+                if vertical == "finance"
+                else None
+            ),
             "blockers": blockers,
             "ready_for_1000_generation": not blockers,
         }
@@ -268,12 +308,15 @@ def build_report(
     retail_multicategory_report_path: Path | None = None,
     research_ai_expansion_report: dict[str, Any] | None = None,
     research_ai_expansion_report_path: Path | None = None,
+    finance_evidence_reuse_report: dict[str, Any] | None = None,
+    finance_evidence_reuse_report_path: Path | None = None,
 ) -> dict[str, Any]:
     per_vertical = build_per_vertical_readiness(
         scaleup_plan=scaleup_plan,
         promoted_manifest=promoted_manifest,
         retail_multicategory_report=retail_multicategory_report,
         research_ai_expansion_report=research_ai_expansion_report,
+        finance_evidence_reuse_report=finance_evidence_reuse_report,
     )
     source_expansion_requirements = {
         vertical: metrics["source_requirements"] for vertical, metrics in per_vertical.items()
@@ -286,10 +329,9 @@ def build_report(
         for vertical, metrics in per_vertical.items()
         for blocker in metrics["blockers"]
     ]
-    warnings = [
-        "finance:evidence_reuse_audit_required_before_generation",
-        "full_5000_generation_should_wait_for_blocker_resolution",
-    ]
+    warnings = ["full_5000_generation_should_wait_for_blocker_resolution"]
+    if not finance_evidence_reuse_ready(finance_evidence_reuse_report):
+        warnings.insert(0, "finance:evidence_reuse_audit_required_before_generation")
     return {
         "phase": PHASE,
         "generated_at_utc": utc_now(),
@@ -314,6 +356,13 @@ def build_report(
         )
         if not research_ai_source_expansion_ready(research_ai_expansion_report)
         else [],
+        "finance_evidence_reuse_audit_report_path": (
+            str(finance_evidence_reuse_report_path) if finance_evidence_reuse_report_path else None
+        ),
+        "finance_evidence_reuse_audit_ready": finance_evidence_reuse_ready(
+            finance_evidence_reuse_report
+        ),
+        "finance_evidence_reuse_risk": finance_evidence_reuse_risk(finance_evidence_reuse_report),
         "per_vertical_readiness": per_vertical,
         "source_expansion_requirements": source_expansion_requirements,
         "kb_expansion_targets": kb_expansion_targets,
@@ -367,6 +416,8 @@ def run_plan(args: argparse.Namespace) -> dict[str, Any]:
     research_ai_report = (
         read_json(research_ai_report_path) if research_ai_report_path.exists() else None
     )
+    finance_report_path = Path(args.finance_evidence_reuse_report)
+    finance_report = read_json(finance_report_path) if finance_report_path.exists() else None
     report = build_report(
         scaleup_plan=scaleup_plan,
         promoted_manifest=promoted_manifest,
@@ -375,6 +426,8 @@ def run_plan(args: argparse.Namespace) -> dict[str, Any]:
         retail_multicategory_report_path=retail_report_path if retail_report else None,
         research_ai_expansion_report=research_ai_report,
         research_ai_expansion_report_path=(research_ai_report_path if research_ai_report else None),
+        finance_evidence_reuse_report=finance_report,
+        finance_evidence_reuse_report_path=finance_report_path if finance_report else None,
     )
     write_json(Path(args.output_report), report)
     write_matrix_csv(Path(args.output_matrix_csv), matrix_rows(report))
@@ -404,6 +457,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--research-ai-expansion-report", default=str(DEFAULT_RESEARCH_AI_EXPANSION_REPORT)
+    )
+    parser.add_argument(
+        "--finance-evidence-reuse-report", default=str(DEFAULT_FINANCE_EVIDENCE_REUSE_REPORT)
     )
     parser.add_argument("--output-report", default=str(DEFAULT_OUTPUT_REPORT))
     parser.add_argument("--output-matrix-csv", default=str(DEFAULT_OUTPUT_MATRIX_CSV))

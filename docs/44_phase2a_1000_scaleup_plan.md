@@ -90,6 +90,36 @@ Finance should use the current 8-company SEC/XBRL corpus first, while checking
 evidence reuse to avoid repetitive prompts before committing to the full 1,000
 generation.
 
+## Finance Evidence Reuse Audit
+
+Finance needs a reuse audit before scaling because the 250 checkpoint is clean
+but still small enough that one SEC/XBRL evidence record could accidentally
+dominate the next generator. The audit checks required document reuse,
+company/ticker coverage, filing-form coverage, and task-type coverage across the
+promoted Finance 250 prompt/gold/KB files.
+
+Command:
+
+```powershell
+python scripts/phase2/audit_finance_evidence_reuse.py --run-audit
+```
+
+The audit writes:
+
+- `data/generated/phase2a/scaleup_reports/finance_evidence_reuse_audit_report.json`
+- `data/generated/phase2a/scaleup_reports/finance_evidence_reuse_by_doc.csv`
+
+Evidence reuse risk thresholds:
+
+- high risk: one evidence document is used by more than 20% of Finance prompts
+- medium risk: one evidence document is used by 10% to 20% of Finance prompts
+- low risk: no evidence document reaches 10% reuse
+
+When the audit reports `ready_for_1000_finance_generation: true`, the planner
+clears the Finance reuse warning. If the audit reports high risk, the planner
+adds a Finance blocker so the generator can diversify evidence before producing
+1,000 prompts.
+
 ## Review Subset Plan
 
 For the 5,000-record checkpoint, review should be stratified by vertical,
