@@ -1,9 +1,9 @@
-# Phase 2A-13A/13B/13C 1,000-Scale Generator
+# Phase 2A-13A/13B/13C/13G 1,000-Scale Generator
 
 Phase 2A-13 starts 1,000-scale local candidate generation. Airline and
 Healthcare Admin were implemented first, followed by Retail and Finance once
-their source-readiness checks passed. Research AI remains a separate generator
-implementation and is not generated here.
+their source-readiness checks passed. Research AI 1,000 generation is added
+after the expanded paper source set reaches readiness.
 
 This is deterministic local candidate generation only. It does not build RAG,
 retrieval indexes, embeddings, prompt assembly, model calls, GPU runs, or
@@ -33,6 +33,12 @@ Generate Finance 1,000 local candidates:
 
 ```powershell
 python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical finance --target-per-vertical 1000
+```
+
+Generate Research AI 1,000 local candidates:
+
+```powershell
+python scripts/phase2/generate_phase2a_scaleup.py --generate-vertical --vertical research_ai --target-per-vertical 1000
 ```
 
 ## Generated Files
@@ -68,6 +74,13 @@ Finance:
 - `data/generated/phase2a/scaleup/finance/finance_kb_1000.jsonl`
 - `data/generated/phase2a/scaleup_reports/finance_scaleup_1000_report.json`
 
+Research AI:
+
+- `data/generated/phase2a/scaleup/research_ai/research_ai_prompts_1000.jsonl`
+- `data/generated/phase2a/scaleup/research_ai/research_ai_gold_1000.jsonl`
+- `data/generated/phase2a/scaleup/research_ai/research_ai_kb_1000.jsonl`
+- `data/generated/phase2a/scaleup_reports/research_ai_scaleup_1000_report.json`
+
 ## Distribution Contracts
 
 Airline generates 1,000 prompts with:
@@ -96,15 +109,23 @@ Finance generates 1,000 prompts with:
 - expanded SEC/XBRL filing-derived KB: 800 to 1,200 records
 - evidence reuse spread across filing sections, XBRL facts, 8-K events, and promoted Finance 250 evidence
 
+Research AI generates 1,000 prompts with:
+
+- status: 900 answer, 40 insufficient_evidence, 40 escalate, 20 out_of_scope
+- output format: 720 text, 140 JSON, 140 markdown table
+- expanded paper-section KB: 800 to 1,200 records
+- evidence from the approved paper registry, section manifest, and promoted Research AI 250 evidence
+
 All implemented generators keep prompt/gold alignment, one gold record per
 prompt, answerable evidence IDs, meaningful negative `must_not_include`
 guardrails, and the linguistic variation quality gate.
 
 ## Scope Boundary
 
-Research AI 1,000 generation comes later. Larger 2,000, 4,000, and 5,000 target
-sizes remain planning-only until explicitly implemented.
+Larger 2,000, 4,000, and 5,000 target sizes remain planning-only until
+explicitly implemented.
 
 The next step after generating these local candidates is targeted review and QA
-across all 1,000 files before any promotion or 2,000-scale extension. Promotion
-requires a separate cross-vertical QA gate.
+across all 1,000 files before any 2,000-scale extension. Promotion requires a
+separate cross-vertical QA gate, first partial at 4,000 records and then full at
+the full 5,000-record checkpoint.

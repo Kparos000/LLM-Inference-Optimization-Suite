@@ -121,6 +121,23 @@ def test_finance_1000_generation_cli() -> None:
     assert report["generation_scope"] == "local_candidate_generation"
 
 
+def test_research_ai_1000_generation_cli() -> None:
+    summary = _generate_vertical("research_ai")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+
+    assert summary["vertical"] == "research_ai"
+    assert summary["prompt_count"] == 1000
+    assert summary["gold_count"] == 1000
+    assert summary["critical_issue_count"] == 0
+    assert summary["warning_count"] == 0
+    assert (ROOT / summary["prompts_path"]).exists()
+    assert (ROOT / summary["gold_path"]).exists()
+    assert (ROOT / summary["kb_path"]).exists()
+    assert report["target_per_vertical"] == 1000
+    assert report["checkpoint"] == "checkpoint_1000"
+    assert report["generation_scope"] == "local_candidate_generation"
+
+
 def test_airline_1000_counts_and_distribution() -> None:
     summary = _generate_vertical("airline")
     prompts = _read_jsonl(ROOT / summary["prompts_path"])
@@ -254,6 +271,44 @@ def test_finance_1000_counts_and_distribution() -> None:
     assert module.validate_evidence_coverage(gold, kb) == []
 
 
+def test_research_ai_1000_counts_distribution_and_kb_target() -> None:
+    summary = _generate_vertical("research_ai")
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+
+    assert len(prompts) == 1000
+    assert len(gold) == 1000
+    assert 800 <= len(kb) <= 1200
+    assert prompts[0]["prompt_id"] == "research_ai_scaleup_1000_0001"
+    assert prompts[-1]["prompt_id"] == "research_ai_scaleup_1000_1000"
+    assert Counter(prompt["expected_status"] for prompt in prompts) == {
+        "answer": 900,
+        "insufficient_evidence": 40,
+        "escalate": 40,
+        "out_of_scope": 20,
+    }
+    assert Counter(prompt["expected_output_format"] for prompt in prompts) == {
+        "text": 720,
+        "json": 140,
+        "markdown_table": 140,
+    }
+    assert {
+        "answer_grounded",
+        "paper_method",
+        "results_evaluation",
+        "extract_structured",
+        "compare_papers",
+        "literature_table",
+        "escalation_response",
+    }.issubset({str(prompt["task_type"]) for prompt in prompts})
+    assert len({paper_id for prompt in prompts for paper_id in prompt["source_paper_ids"]}) >= 40
+    module = _load_module()
+    assert module.validate_prompt_gold_alignment(prompts, gold) == []
+    assert module.validate_evidence_coverage(gold, kb) == []
+    assert module.validate_no_private_hygiene_terms(prompts + gold + kb) == []
+
+
 def test_airline_healthcare_1000_kb_targets() -> None:
     module = _load_module()
     for vertical in ["airline", "healthcare_admin"]:
@@ -334,6 +389,26 @@ def test_finance_1000_no_investment_advice() -> None:
     assert "price target" not in answer_text
 
 
+def test_research_ai_1000_no_fabricated_claims_or_private_paths() -> None:
+    summary = _generate_vertical("research_ai")
+    prompts = _read_jsonl(ROOT / summary["prompts_path"])
+    gold = _read_jsonl(ROOT / summary["gold_path"])
+    kb = _read_jsonl(ROOT / summary["kb_path"])
+
+    combined = json.dumps([prompts, gold, kb], ensure_ascii=True).lower()
+    assert "c:\\\\users" not in combined
+    assert "/home/" not in combined
+    assert "local_text_path" not in combined
+    assert "full paper text dump" not in combined
+    assert "according to my knowledge" not in combined
+    assert "fabricated paper claim" not in combined
+    for row in gold:
+        if row["expected_status"] == "answer":
+            assert row["required_doc_ids"]
+            assert row["required_chunk_ids"]
+            assert row["required_citations"]
+
+
 def test_airline_healthcare_1000_linguistic_variation() -> None:
     for vertical in ["airline", "healthcare_admin"]:
         summary = _generate_vertical(vertical)
@@ -341,6 +416,14 @@ def test_airline_healthcare_1000_linguistic_variation() -> None:
         assert report["linguistic_variation_rate"] >= 0.60
         assert report["most_common_question_template_share"] <= 0.40
         assert report["warning_count"] == 0
+
+
+def test_research_ai_1000_linguistic_variation() -> None:
+    summary = _generate_vertical("research_ai")
+    report = json.loads((ROOT / summary["report_path"]).read_text(encoding="utf-8"))
+    assert report["linguistic_variation_rate"] >= 0.60
+    assert report["most_common_question_template_share"] <= 0.40
+    assert report["warning_count"] == 0
 
 
 def test_retail_finance_1000_linguistic_variation() -> None:
@@ -352,7 +435,7 @@ def test_retail_finance_1000_linguistic_variation() -> None:
         assert report["warning_count"] == 0
 
 
-def test_generate_plan_marks_retail_finance_1000_implemented() -> None:
+def test_generate_plan_marks_all_1000_generators_implemented() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -369,15 +452,15 @@ def test_generate_plan_marks_retail_finance_1000_implemented() -> None:
 
     assert result.returncode == 0, result.stderr
     summary = json.loads(result.stdout)
-    for vertical in ["retail", "finance"]:
+    for vertical in ["retail", "finance", "research_ai"]:
         manifest = summary["verticals"][vertical]
         assert manifest["generation_implemented"] is True
         assert manifest["generation_scope"] == "local_candidate_generation"
         assert manifest["ready_for_actual_generation"] is True
 
 
-def test_large_generation_still_blocks_unimplemented_verticals() -> None:
-    for vertical in ["research_ai"]:
+def test_large_generation_still_blocks_unimplemented_targets() -> None:
+    for vertical in ["airline", "healthcare_admin", "retail", "finance", "research_ai"]:
         result = subprocess.run(
             [
                 sys.executable,
@@ -386,7 +469,7 @@ def test_large_generation_still_blocks_unimplemented_verticals() -> None:
                 "--vertical",
                 vertical,
                 "--target-per-vertical",
-                "1000",
+                "2000",
             ],
             cwd=ROOT,
             text=True,
@@ -394,7 +477,7 @@ def test_large_generation_still_blocks_unimplemented_verticals() -> None:
             check=False,
         )
         assert result.returncode != 0
-        assert f"Generation for {vertical} at 1000 requires explicit implementation" in (
+        assert f"Generation for {vertical} at 2000 requires explicit implementation" in (
             result.stderr
         )
 
@@ -407,5 +490,6 @@ def test_docs_include_1000_generation_commands() -> None:
     assert "--generate-vertical --vertical healthcare_admin --target-per-vertical 1000" in docs
     assert "--generate-vertical --vertical retail --target-per-vertical 1000" in docs
     assert "--generate-vertical --vertical finance --target-per-vertical 1000" in docs
-    assert "Research AI 1,000 generation comes later" in docs
+    assert "--generate-vertical --vertical research_ai --target-per-vertical 1000" in docs
+    assert "full 5,000-record" in docs
     assert "no RAG" in docs

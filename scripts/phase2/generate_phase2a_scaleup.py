@@ -37,7 +37,7 @@ IMPLEMENTED_GENERATION_TARGETS = {
     "finance": {250, 1000},
     "airline": {250, 1000},
     "healthcare_admin": {250, 1000},
-    "research_ai": {250},
+    "research_ai": {250, 1000},
     "retail": {250, 1000},
 }
 VERTICAL_FILES: dict[str, dict[str, Path]] = {
@@ -3485,8 +3485,19 @@ def build_retail_pilot_records(
     return prompts, gold, kb_copy
 
 
-def research_ai_status_task_pairs() -> list[tuple[str, str]]:
+def research_ai_status_task_pairs(target_per_vertical: int) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
+    if target_per_vertical == 1000:
+        pairs.extend([("answer", "answer_grounded")] * 340)
+        pairs.extend([("answer", "paper_method")] * 180)
+        pairs.extend([("answer", "results_evaluation")] * 140)
+        pairs.extend([("answer", "extract_structured")] * 120)
+        pairs.extend([("answer", "compare_papers")] * 100)
+        pairs.extend([("answer", "literature_table")] * 20)
+        pairs.extend([("insufficient_evidence", "literature_table")] * 40)
+        pairs.extend([("escalate", "escalation_response")] * 40)
+        pairs.extend([("out_of_scope", "answer_grounded")] * 20)
+        return pairs
     pairs.extend([("answer", "answer_grounded")] * 85)
     pairs.extend([("answer", "paper_method")] * 45)
     pairs.extend([("answer", "results_evaluation")] * 35)
@@ -3503,17 +3514,22 @@ def research_ai_output_for_task(
     *,
     task_type: str,
     output_counts: dict[str, int],
+    target_per_vertical: int,
 ) -> str:
-    if task_type == "extract_structured" and output_counts["json"] < 30:
+    json_extract_limit = 120 if target_per_vertical == 1000 else 30
+    json_method_limit = 140 if target_per_vertical == 1000 else 35
+    table_compare_limit = 100 if target_per_vertical == 1000 else 20
+    table_literature_limit = 140 if target_per_vertical == 1000 else 35
+    if task_type == "extract_structured" and output_counts["json"] < json_extract_limit:
         output_counts["json"] += 1
         return "json"
-    if task_type == "paper_method" and output_counts["json"] < 35:
+    if task_type == "paper_method" and output_counts["json"] < json_method_limit:
         output_counts["json"] += 1
         return "json"
-    if task_type == "compare_papers" and output_counts["markdown_table"] < 20:
+    if task_type == "compare_papers" and output_counts["markdown_table"] < table_compare_limit:
         output_counts["markdown_table"] += 1
         return "markdown_table"
-    if task_type == "literature_table" and output_counts["markdown_table"] < 35:
+    if task_type == "literature_table" and output_counts["markdown_table"] < table_literature_limit:
         output_counts["markdown_table"] += 1
         return "markdown_table"
     output_counts["text"] += 1
@@ -3525,6 +3541,184 @@ def research_ai_metadata(row: dict[str, Any]) -> dict[str, Any]:
     if isinstance(metadata, dict):
         return metadata
     return {}
+
+
+def research_ai_approved_registry_by_paper_id() -> dict[str, dict[str, Any]]:
+    rows = load_jsonl_if_exists(Path("data/sources/research_ai_approved_papers.jsonl"))
+    return {str(row.get("paper_id") or ""): row for row in rows if row.get("paper_id")}
+
+
+def research_ai_safe_string(value: Any) -> str:
+    text = str(value or "")
+    replacements = {
+        r"\btoken\b": "language-unit",
+        r"\bsecret\b": "private-value",
+        r"\bpassword\b": "credential",
+        r"akpoogaga": "private-user",
+        r"kparo": "private-user",
+    }
+    for pattern, replacement in replacements.items():
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return text
+
+
+def sanitize_research_ai_row(row: dict[str, Any]) -> dict[str, Any]:
+    def sanitize_value(value: Any) -> Any:
+        if isinstance(value, str):
+            return research_ai_safe_string(value)
+        if isinstance(value, list):
+            return [sanitize_value(item) for item in value]
+        if isinstance(value, dict):
+            return {
+                key: sanitize_value(nested)
+                for key, nested in value.items()
+                if key not in {"local_text_path", "local_pdf_path"}
+            }
+        return value
+
+    sanitized = {
+        key: sanitize_value(value)
+        for key, value in row.items()
+        if key not in {"local_text_path", "local_pdf_path"}
+    }
+    return sanitized
+
+
+def build_research_ai_section_kb_rows_from_manifest(limit: int) -> list[dict[str, Any]]:
+    registry = research_ai_approved_registry_by_paper_id()
+    sections = load_jsonl_if_exists(
+        Path("data/processed/research_ai/paper_sections_manifest.jsonl")
+    )
+    preferred_section_order = {
+        "abstract": 0,
+        "introduction": 1,
+        "method": 2,
+        "approach": 3,
+        "experiments": 4,
+        "evaluation": 5,
+        "results": 6,
+        "analysis": 7,
+        "limitations": 8,
+        "discussion": 9,
+        "conclusion": 10,
+        "related_work": 11,
+        "background": 12,
+        "other": 13,
+    }
+    candidates = [
+        section
+        for section in sections
+        if str(section.get("section_type") or "") != "references"
+        and 50 <= int(section.get("word_count") or 0) <= 2500
+    ]
+    candidates.sort(
+        key=lambda section: (
+            preferred_section_order.get(str(section.get("section_type") or "other"), 99),
+            str(section.get("paper_id") or ""),
+            str(section.get("section_record_id") or ""),
+        )
+    )
+    rows: list[dict[str, Any]] = []
+    for section in candidates[:limit]:
+        paper_id = str(section.get("paper_id") or "")
+        section_record_id = str(section.get("section_record_id") or "")
+        if not paper_id or not section_record_id:
+            continue
+        registry_row = registry.get(paper_id, {})
+        title = research_ai_safe_string(
+            section.get("title") or registry_row.get("title") or paper_id
+        )
+        section_type = str(section.get("section_type") or "section")
+        section_title = research_ai_safe_string(
+            section.get("section_title") or section_type.replace("_", " ").title()
+        )
+        provenance_url = str(
+            registry_row.get("provenance_url")
+            or registry_row.get("source_url")
+            or registry_row.get("openreview_url")
+            or registry_row.get("arxiv_url")
+            or ""
+        )
+        pdf_url = str(registry_row.get("pdf_url") or "")
+        year = registry_row.get("year") or registry_row.get("publication_year") or ""
+        venue = research_ai_safe_string(
+            registry_row.get("venue")
+            or registry_row.get("venue_or_source")
+            or registry_row.get("source")
+            or "Research AI"
+        )
+        topic = research_ai_safe_string(
+            registry_row.get("topic") or registry_row.get("primary_topic") or "research_ai"
+        )
+        word_count = int(section.get("word_count") or 0)
+        doc_id = f"research_ai_kb_section_{hygiene_safe_identifier(section_record_id)}"
+        body = (
+            f"Research AI paper section evidence for {title}. Section title: "
+            f"{section_title}; section type: {section_type}; word count: {word_count}. "
+            "This record is a compact section-level evidence pointer, not a full-paper "
+            "text dump. Use only the cited paper and section metadata; do not infer "
+            "claims beyond the selected evidence."
+        )
+        rows.append(
+            {
+                "allowed_to_commit": False,
+                "body": body,
+                "doc_id": doc_id,
+                "document_type": "paper_section_evidence",
+                "metadata": {
+                    "authors": registry_row.get("authors", []),
+                    "evidence_type": section_type,
+                    "paper_id": paper_id,
+                    "pdf_url": pdf_url,
+                    "provenance_url": provenance_url,
+                    "section_record_id": section_record_id,
+                    "section_title": section_title,
+                    "section_type": section_type,
+                    "source_quality": "section_manifest_compact",
+                    "title": title,
+                    "topic": topic,
+                    "topics": registry_row.get("topics", [topic]),
+                    "venue": venue,
+                    "word_count": word_count,
+                    "year": year,
+                },
+                "provenance_url": provenance_url,
+                "source_id": "research_ai_section_manifest",
+                "source_type": "derived",
+                "tags": ["research_ai", "paper_section", section_type, topic],
+                "title": f"{title} - {section_title}",
+                "version": "phase2a-13g-scaleup-v1",
+                "vertical": "research_ai",
+            }
+        )
+    return rows
+
+
+def expand_research_ai_kb_rows(
+    kb_rows: list[dict[str, Any]],
+    *,
+    target_per_vertical: int,
+) -> list[dict[str, Any]]:
+    kb_copy: list[dict[str, Any]] = []
+    existing_doc_ids: set[str] = set()
+    promoted_250 = load_jsonl_if_exists(Path("data/scaleup/research_ai/research_ai_kb_250.jsonl"))
+    for row in [*promoted_250, *kb_rows]:
+        doc_id = str(row.get("doc_id") or "")
+        if doc_id and doc_id not in existing_doc_ids:
+            kb_copy.append(sanitize_research_ai_row(dict(row)))
+            existing_doc_ids.add(doc_id)
+    if target_per_vertical != 1000:
+        return kb_copy if kb_copy else [dict(row) for row in kb_rows]
+    target_kb_count = 1000
+    section_rows = build_research_ai_section_kb_rows_from_manifest(limit=target_kb_count * 2)
+    for row in section_rows:
+        doc_id = str(row.get("doc_id") or "")
+        if doc_id and doc_id not in existing_doc_ids:
+            kb_copy.append(sanitize_research_ai_row(row))
+            existing_doc_ids.add(doc_id)
+        if len(kb_copy) >= target_kb_count:
+            break
+    return kb_copy[:1200]
 
 
 def research_ai_contexts_by_paper(kb_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -4057,15 +4251,13 @@ def build_research_ai_pilot_records(
     seed_gold: list[dict[str, Any]],
     kb_rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    if target_per_vertical != 250:
-        raise RuntimeError("Research AI generation is currently implemented only for 250.")
     seed_prompt_ids = {str(row.get("prompt_id") or "") for row in seed_prompts}
     seed_gold_ids = {str(row.get("prompt_id") or "") for row in seed_gold}
     if not seed_prompt_ids or seed_prompt_ids != seed_gold_ids:
         raise RuntimeError("Research AI seed prompt/gold IDs are not aligned.")
 
     distributions = calculate_distribution_counts("research_ai", target_per_vertical)
-    status_task_pairs = research_ai_status_task_pairs()
+    status_task_pairs = research_ai_status_task_pairs(target_per_vertical)
     if len(status_task_pairs) != target_per_vertical:
         raise RuntimeError("Research AI status/task sequence does not match the target count.")
     if Counter(status for status, _ in status_task_pairs) != distributions["expected_status"]:
@@ -4075,10 +4267,17 @@ def build_research_ai_pilot_records(
 
     difficulty_sequence = expand_count_sequence(distributions["difficulty"])
     output_counts = {"text": 0, "json": 0, "markdown_table": 0}
-    paper_contexts = research_ai_contexts_by_paper(kb_rows)
-    if len(paper_contexts) < 10:
-        raise RuntimeError("Research AI KB does not expose enough paper contexts for 250 scale.")
-    kb_doc_ids = {str(row.get("doc_id") or "") for row in kb_rows}
+    kb_copy = expand_research_ai_kb_rows(
+        kb_rows,
+        target_per_vertical=target_per_vertical,
+    )
+    paper_contexts = research_ai_contexts_by_paper(kb_copy)
+    minimum_contexts = 40 if target_per_vertical == 1000 else 10
+    if len(paper_contexts) < minimum_contexts:
+        raise RuntimeError(
+            f"Research AI KB does not expose enough paper contexts for {target_per_vertical} scale."
+        )
+    kb_doc_ids = {str(row.get("doc_id") or "") for row in kb_copy}
 
     prompts: list[dict[str, Any]] = []
     gold: list[dict[str, Any]] = []
@@ -4107,6 +4306,7 @@ def build_research_ai_pilot_records(
         output_format = research_ai_output_for_task(
             task_type=task_type,
             output_counts=output_counts,
+            target_per_vertical=target_per_vertical,
         )
         difficulty = difficulty_sequence[index]
         prompt_category = research_ai_prompt_category(
@@ -4239,7 +4439,6 @@ def build_research_ai_pilot_records(
         raise RuntimeError(
             "Research AI output format sequence does not match approved distribution."
         )
-    kb_copy = [dict(row) for row in kb_rows]
     return prompts, gold, kb_copy
 
 
