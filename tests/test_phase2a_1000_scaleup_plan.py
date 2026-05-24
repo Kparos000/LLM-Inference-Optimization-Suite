@@ -125,7 +125,11 @@ def test_1000_planner_clears_retail_source_blocker_when_report_ready() -> None:
 
     retail = report["per_vertical_readiness"]["retail"]
     assert retail["source_expansion_ready"] is True
-    assert retail["ready_for_1000_generation"] is True
+    assert retail["source_ready_for_1000"] is True
+    assert retail["ready_for_1000_generator_implementation"] is True
+    assert retail["generator_implemented_for_1000"] is False
+    assert retail["generator_implementation_required"] is True
+    assert retail["ready_for_1000_generation"] is False
     assert retail["blockers"] == []
     assert not any("retail:" in blocker for blocker in report["blockers"])
 
@@ -186,7 +190,10 @@ def test_1000_planner_clears_research_ai_blocker_when_expansion_ready() -> None:
 
     research_ai = report["per_vertical_readiness"]["research_ai"]
     assert research_ai["source_expansion_ready"] is True
-    assert research_ai["ready_for_1000_generation"] is True
+    assert research_ai["source_ready_for_1000"] is True
+    assert research_ai["ready_for_1000_generator_implementation"] is True
+    assert research_ai["generator_implemented_for_1000"] is False
+    assert research_ai["ready_for_1000_generation"] is False
     assert research_ai["blockers"] == []
     assert not any("research_ai:" in blocker for blocker in report["blockers"])
 
@@ -217,6 +224,114 @@ def test_1000_planner_adds_finance_blocker_when_reuse_risk_is_high() -> None:
     assert "finance:finance_evidence_reuse_high_risk" in report["blockers"]
 
 
+def test_1000_plan_separates_source_readiness_from_generator_readiness() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+    retail_report = {"retail_ready_for_1000_source_expansion": True}
+    finance_report = {
+        "evidence_reuse_risk": "low",
+        "ready_for_1000_finance_generation": True,
+    }
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        retail_multicategory_report=retail_report,
+        finance_evidence_reuse_report=finance_report,
+    )
+
+    for vertical in ["airline", "healthcare_admin", "retail", "finance"]:
+        metrics = report["per_vertical_readiness"][vertical]
+        assert metrics["source_ready_for_1000"] is True
+        assert metrics["ready_for_1000_generator_implementation"] is True
+        assert metrics["generator_implementation_required"] is True
+        assert metrics["generator_implemented_for_1000"] is False
+        assert metrics["ready_for_1000_generation"] is False
+
+
+def test_source_ready_verticals_can_start_generator_implementation() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        retail_multicategory_report={"retail_ready_for_1000_source_expansion": True},
+        finance_evidence_reuse_report={
+            "evidence_reuse_risk": "low",
+            "ready_for_1000_finance_generation": True,
+        },
+    )
+
+    expected = ["airline", "healthcare_admin", "retail", "finance"]
+    assert report["source_ready_verticals"] == expected
+    assert report["generator_implementation_ready_verticals"] == expected
+    assert report["can_start_1000_generator_implementation"] is True
+
+
+def test_ready_for_1000_generation_false_until_generator_exists() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        retail_multicategory_report={"retail_ready_for_1000_source_expansion": True},
+        research_ai_expansion_report={"expansion_ready_for_1000": True},
+        finance_evidence_reuse_report={
+            "evidence_reuse_risk": "low",
+            "ready_for_1000_finance_generation": True,
+        },
+    )
+
+    assert report["recommend_generation"] is False
+    assert report["generation_ready_verticals"] == []
+    for metrics in report["per_vertical_readiness"].values():
+        assert metrics["generator_implemented_for_1000"] is False
+        assert metrics["ready_for_1000_generation"] is False
+
+
+def test_research_ai_remains_blocked_until_expansion_ready() -> None:
+    module = _load_module()
+    scaleup_plan = module.read_json(ROOT / "data/sources/phase2a_scaleup_plan.json")
+    manifest = module.require_promoted_250_manifest(ROOT / "data/scaleup/phase2a_250_manifest.json")
+    research_ai_report = {
+        "phase": "2A-12C",
+        "expansion_ready_for_1000": False,
+        "missing_requirements": [
+            "additional_approved_papers_needed:20",
+            "section_coverage_below_target_min:436",
+        ],
+    }
+
+    report = module.build_report(
+        scaleup_plan=scaleup_plan,
+        promoted_manifest=manifest,
+        promoted_manifest_path=Path("data/scaleup/phase2a_250_manifest.json"),
+        retail_multicategory_report={"retail_ready_for_1000_source_expansion": True},
+        research_ai_expansion_report=research_ai_report,
+        finance_evidence_reuse_report={
+            "evidence_reuse_risk": "low",
+            "ready_for_1000_finance_generation": True,
+        },
+    )
+
+    research_ai = report["per_vertical_readiness"]["research_ai"]
+    assert research_ai["source_ready_for_1000"] is False
+    assert research_ai["ready_for_1000_generator_implementation"] is False
+    assert "research_ai" in report["blocked_verticals"]
+    assert "source_expansion_required_before_1000_generation" in research_ai["blockers"]
+    assert (
+        "expand_research_ai_to_40_papers_or_equivalent_section_coverage" in research_ai["blockers"]
+    )
+
+
 def test_1000_plan_docs_include_command() -> None:
     docs = DOC_PATH.read_text(encoding="utf-8")
 
@@ -224,6 +339,15 @@ def test_1000_plan_docs_include_command() -> None:
     assert "python scripts/phase2/plan_phase2a_1000_scaleup.py --write-report" in docs
     assert "no RAG" in docs
     assert "promoted 250 dataset" in docs
+
+
+def test_docs_explain_source_ready_vs_generator_ready() -> None:
+    docs = DOC_PATH.read_text(encoding="utf-8")
+
+    assert "Source Readiness Versus Generator Readiness" in docs
+    assert "source_ready_for_1000" in docs
+    assert "generator_implemented_for_1000" in docs
+    assert "ready_for_1000_generation" in docs
 
 
 def test_docs_include_40_paper_expansion_command() -> None:

@@ -89,9 +89,13 @@ def write_matrix_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "current_kb_count",
         "target_kb_min",
         "target_kb_max",
+        "source_ready_for_1000",
         "source_expansion_required",
         "source_expansion_ready",
+        "generator_implemented_for_1000",
         "generator_implementation_required",
+        "ready_for_1000_generator_implementation",
+        "ready_for_1000_generation",
         "recommended_generator_strategy",
         "blockers",
     ]
@@ -241,13 +245,16 @@ def build_per_vertical_readiness(
             finance_evidence_reuse_report=finance_evidence_reuse_report,
         )
         kb_range = target_kb_range(scaleup_plan, vertical)
-        generator_required = vertical in {"retail", "research_ai"}
+        source_ready_for_1000 = not blockers
+        generator_implemented_for_1000 = False
+        generator_required = True
         readiness[vertical] = {
             "current_250_prompts": int(metrics["prompt_count"]),
             "target_1000_prompts": TARGET_PER_VERTICAL,
             "additional_prompts_needed": TARGET_PER_VERTICAL - int(metrics["prompt_count"]),
             "current_kb_count": int(metrics["kb_count"]),
             "target_kb_range": kb_range,
+            "source_ready_for_1000": source_ready_for_1000,
             "source_expansion_required": source_required,
             "source_expansion_ready": source_ready,
             "source_expansion_missing_requirements": (
@@ -255,7 +262,9 @@ def build_per_vertical_readiness(
                 if vertical == "research_ai" and not source_ready
                 else []
             ),
+            "generator_implemented_for_1000": generator_implemented_for_1000,
             "generator_implementation_required": generator_required,
+            "ready_for_1000_generator_implementation": source_ready_for_1000,
             "recommended_generator_strategy": RECOMMENDED_STRATEGIES[vertical],
             "source_requirements": source_requirements(scaleup_plan, vertical),
             "evidence_reuse_audit_ready": (
@@ -269,7 +278,7 @@ def build_per_vertical_readiness(
                 else None
             ),
             "blockers": blockers,
-            "ready_for_1000_generation": not blockers,
+            "ready_for_1000_generation": (source_ready_for_1000 and generator_implemented_for_1000),
         }
     return readiness
 
@@ -290,13 +299,18 @@ def build_review_subset_plan() -> dict[str, Any]:
 
 
 def next_step_for_blockers(blockers: list[str]) -> str:
-    if not blockers:
-        return "Proceed to Phase 2A-12C implementation of 1,000-scale generators."
-    blocked_verticals = sorted({blocker.split(":", maxsplit=1)[0] for blocker in blockers})
-    return (
-        "Implement 1,000 generation for source-ready verticals while resolving "
-        f"{', '.join(blocked_verticals)} blockers before full 5,000-record generation."
-    )
+    if blockers:
+        blocked_verticals = {blocker.split(":", maxsplit=1)[0] for blocker in blockers}
+        if blocked_verticals == {"research_ai"}:
+            return (
+                "Implement 1,000 generators for source-ready verticals while resolving "
+                "Research AI source expansion."
+            )
+        return (
+            "Implement 1,000 generators for source-ready verticals while resolving "
+            "remaining source readiness blockers."
+        )
+    return "Implement 1,000 generators for source-ready verticals."
 
 
 def build_report(
@@ -328,6 +342,22 @@ def build_report(
         f"{vertical}:{blocker}"
         for vertical, metrics in per_vertical.items()
         for blocker in metrics["blockers"]
+    ]
+    source_ready_verticals = [
+        vertical for vertical, metrics in per_vertical.items() if metrics["source_ready_for_1000"]
+    ]
+    generator_implementation_ready_verticals = [
+        vertical
+        for vertical, metrics in per_vertical.items()
+        if metrics["ready_for_1000_generator_implementation"]
+    ]
+    blocked_verticals = [
+        vertical for vertical, metrics in per_vertical.items() if metrics["blockers"]
+    ]
+    generation_ready_verticals = [
+        vertical
+        for vertical, metrics in per_vertical.items()
+        if metrics["ready_for_1000_generation"]
     ]
     warnings = ["full_5000_generation_should_wait_for_blocker_resolution"]
     if not finance_evidence_reuse_ready(finance_evidence_reuse_report):
@@ -364,6 +394,11 @@ def build_report(
         ),
         "finance_evidence_reuse_risk": finance_evidence_reuse_risk(finance_evidence_reuse_report),
         "per_vertical_readiness": per_vertical,
+        "source_ready_verticals": source_ready_verticals,
+        "generator_implementation_ready_verticals": generator_implementation_ready_verticals,
+        "blocked_verticals": blocked_verticals,
+        "generation_ready_verticals": generation_ready_verticals,
+        "can_start_1000_generator_implementation": bool(source_ready_verticals),
         "source_expansion_requirements": source_expansion_requirements,
         "kb_expansion_targets": kb_expansion_targets,
         "gold_generation_strategy": {
@@ -375,7 +410,7 @@ def build_report(
         "review_subset_plan": build_review_subset_plan(),
         "blockers": blockers,
         "warnings": warnings,
-        "recommend_generation": not blockers,
+        "recommend_generation": bool(generation_ready_verticals),
         "next_step": next_step_for_blockers(blockers),
     }
 
@@ -393,9 +428,15 @@ def matrix_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                 "current_kb_count": metrics["current_kb_count"],
                 "target_kb_min": kb_range["min"],
                 "target_kb_max": kb_range["max"],
+                "source_ready_for_1000": metrics["source_ready_for_1000"],
                 "source_expansion_required": metrics["source_expansion_required"],
                 "source_expansion_ready": metrics["source_expansion_ready"],
+                "generator_implemented_for_1000": metrics["generator_implemented_for_1000"],
                 "generator_implementation_required": metrics["generator_implementation_required"],
+                "ready_for_1000_generator_implementation": metrics[
+                    "ready_for_1000_generator_implementation"
+                ],
+                "ready_for_1000_generation": metrics["ready_for_1000_generation"],
                 "recommended_generator_strategy": metrics["recommended_generator_strategy"],
                 "blockers": ";".join(metrics["blockers"]),
             }

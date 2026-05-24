@@ -37,6 +37,34 @@ The planner writes local ignored readiness artifacts:
 
 These files are planning artifacts only and are not the 1,000-scale dataset.
 
+## Source Readiness Versus Generator Readiness
+
+The readiness report separates source readiness from generator readiness. A
+vertical can be source-ready for 1,000-scale work even though its 1,000-record
+generator has not been implemented yet.
+
+Per-vertical fields use this model:
+
+- `source_ready_for_1000`: source data and prerequisite audits are ready.
+- `source_expansion_required`: additional source preparation is needed before
+  1,000-scale generation can be implemented.
+- `source_expansion_ready`: the required source expansion report is complete.
+- `generator_implemented_for_1000`: the 1,000-record generator exists. This is
+  `false` for all verticals in Phase 2A-12A.
+- `generator_implementation_required`: a 1,000-record generator still needs to
+  be implemented. This is `true` for all verticals in Phase 2A-12A.
+- `ready_for_1000_generator_implementation`: implementation can start because
+  the source prerequisites are ready.
+- `ready_for_1000_generation`: both source readiness and generator
+  implementation are complete. This remains `false` until the actual
+  1,000-scale generators exist.
+
+The top-level report also lists `source_ready_verticals`,
+`generator_implementation_ready_verticals`, and `blocked_verticals`. It sets
+`can_start_1000_generator_implementation: true` when at least one vertical is
+source-ready, but keeps `recommend_generation: false` until 1,000-scale
+generator implementation is complete.
+
 ## Per-Vertical Requirements
 
 Airline can extend from the deterministic synthetic policy/ticket generator. It
@@ -139,6 +167,5 @@ readiness report makes those blockers explicit before implementation.
 
 ## Next Step
 
-Implement 1,000 generation beginning with synthetic verticals while resolving
-Retail and Research AI source-expansion blockers before full 5,000-record
-generation.
+Implement 1,000 generators for source-ready verticals while resolving Research
+AI source expansion.
