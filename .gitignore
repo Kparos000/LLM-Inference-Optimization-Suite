@@ -105,8 +105,8 @@ data/generated/phase2a/scaleup/
 data/generated/phase2a/scaleup_reports/
 data/generated/phase2a/large_scale/
 data/generated/phase2a/retrieval_corpus/
-data/generated/phase2a/eda/
-data/generated/phase2a/eda_test_cache/
+data/generated/phase2a/eda/*
+data/generated/phase2a/eda_test_cache/*
 
 # Keep result folders
 !results/raw/.gitkeep
@@ -119,6 +119,14 @@ data/generated/phase2a/eda_test_cache/
 !results/samples/raw/.gitkeep
 !results/samples/figures/
 !results/samples/figures/.gitkeep
+!results/README.md
+!results/figures/README.md
+!data/generated/
+!data/generated/README.md
+!data/generated/phase2a/
+!data/generated/phase2a/README.md
+!data/generated/phase2a/eda/
+!data/generated/phase2a/eda/README.md
 
 # OS/editor
 .DS_Store
