@@ -126,6 +126,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 3 context and memory mode foundation](docs/56_phase3_context_memory_mode_foundation.md)
 - [Phase 3 corpus registry and chunking](docs/57_phase3_corpus_registry_and_chunking.md)
 - [Phase 3 retrieval and memory-mode workloads](docs/58_phase3_retrieval_and_memory_mode_workloads.md)
+- [Phase 3 completion and Phase 4 handoff](docs/59_phase3_completion_and_phase4_handoff.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

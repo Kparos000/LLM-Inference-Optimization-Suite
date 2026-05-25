@@ -1,0 +1,450 @@
+{
+  "agentic_trace_fixture_example": {
+    "backend_placeholder": "not_run_contract_only",
+    "escalated": false,
+    "escalation_reason": "",
+    "final_status": "answer",
+    "generation_attempts": 1,
+    "latency_placeholders": {
+      "generation_latency_ms": null,
+      "retrieval_latency_ms": null,
+      "validation_latency_ms": null
+    },
+    "memory_mode": "mm4_bounded_agentic",
+    "model_placeholder": "not_run_contract_only",
+    "prompt_id": "prompt_fixture_001",
+    "repair_attempts": 0,
+    "retrieval_rounds": 1,
+    "selected_retrieval_strategy": "hybrid_top5",
+    "steps": [
+      {
+        "step_name": "classify_task_risk",
+        "tool_name": null,
+        "uses_internet": false
+      },
+      {
+        "step_name": "select_retrieval_strategy",
+        "tool_name": null,
+        "uses_internet": false
+      },
+      {
+        "step_name": "retrieve_evidence",
+        "tool_name": "retrieve_context",
+        "uses_internet": false
+      },
+      {
+        "step_name": "assemble_context",
+        "tool_name": "assemble_context",
+        "uses_internet": false
+      },
+      {
+        "step_name": "validate_citations_format_safety",
+        "tool_name": "validate_citations",
+        "uses_internet": false
+      }
+    ],
+    "token_estimates": {
+      "context_tokens": 512,
+      "output_tokens": 96,
+      "prompt_tokens": 32
+    },
+    "trace_id": "trace_fixture_001",
+    "validation_results": {
+      "citations_valid": true,
+      "format_valid": true,
+      "safety_valid": true
+    },
+    "vertical": "finance",
+    "workload_id": "test_fixture:mm4_bounded_agentic:prompt_fixture_001"
+  },
+  "agentic_trace_format": {
+    "contract": {
+      "approved_tools": [
+        "retrieve_context",
+        "assemble_context",
+        "validate_citations",
+        "validate_format",
+        "validate_safety",
+        "repair_once",
+        "escalate"
+      ],
+      "contract_stage": "phase3_contract_only",
+      "hard_limits": {
+        "corpus_scope": "project_corpus_only",
+        "max_generation_attempts": 2,
+        "max_repair_attempts": 1,
+        "max_retrieval_rounds": 2,
+        "max_tool_calls": 3,
+        "no_arbitrary_tools": true,
+        "no_internet": true
+      },
+      "memory_mode": "mm4_bounded_agentic",
+      "no_model_inference_triggered": true,
+      "workflow_steps": [
+        "classify_task_risk",
+        "select_retrieval_strategy",
+        "retrieve_evidence",
+        "assemble_context",
+        "generate_answer",
+        "validate_citations_format_safety",
+        "repair_once_if_needed",
+        "escalate_if_evidence_insufficient"
+      ]
+    },
+    "final_status_values": [
+      "answer",
+      "escalate",
+      "failed_validation",
+      "insufficient_evidence"
+    ],
+    "required_fields": [
+      "trace_id",
+      "workload_id",
+      "prompt_id",
+      "memory_mode",
+      "vertical",
+      "steps",
+      "selected_retrieval_strategy",
+      "retrieval_rounds",
+      "generation_attempts",
+      "repair_attempts",
+      "validation_results",
+      "escalated",
+      "escalation_reason",
+      "final_status",
+      "token_estimates",
+      "latency_placeholders",
+      "backend_placeholder",
+      "model_placeholder"
+    ],
+    "schema_name": "AgenticTrace"
+  },
+  "context_artifacts": {
+    "all_chunk_builders_present": true,
+    "all_verticals_registered": true,
+    "chunk_builders": [
+      "airline",
+      "finance",
+      "healthcare_admin",
+      "research_ai",
+      "retail"
+    ],
+    "context_corpora": {
+      "airline": "data\\generated\\context_engineering\\corpora\\airline_context_corpus.jsonl",
+      "finance": "data\\generated\\context_engineering\\corpora\\finance_context_corpus.jsonl",
+      "healthcare_admin": "data\\generated\\context_engineering\\corpora\\healthcare_admin_context_corpus.jsonl",
+      "research_ai": "data\\generated\\context_engineering\\corpora\\research_ai_context_corpus.jsonl",
+      "retail": "data\\generated\\context_engineering\\corpora\\retail_context_corpus.jsonl"
+    },
+    "context_corpora_status": {
+      "airline": true,
+      "finance": true,
+      "healthcare_admin": true,
+      "research_ai": true,
+      "retail": true
+    },
+    "ready": true,
+    "registry_exists": true,
+    "registry_path": "data\\generated\\context_engineering\\corpus_registry.json",
+    "registry_verticals": [
+      "airline",
+      "finance",
+      "healthcare_admin",
+      "research_ai",
+      "retail"
+    ]
+  },
+  "context_root": "data\\generated\\context_engineering",
+  "dataset_root": "data\\scaleup_2000_full",
+  "evaluator_contract": {
+    "join_key": "prompt_id",
+    "missing_before_phase4": [
+      "runner output adapter from GenerationRecord JSONL to evaluator input",
+      "full batch evaluator CLI for generated model outputs",
+      "semantic groundedness judge beyond deterministic citation matching",
+      "aggregate score reports by backend/model/memory mode"
+    ],
+    "no_model_inference_triggered": true,
+    "reused_existing_utilities": [
+      "inference_bench.quality.parse_json_object"
+    ],
+    "supported_fields": [
+      "prompt_id",
+      "joined",
+      "expected_status",
+      "observed_status",
+      "status_matches",
+      "expected_output_format",
+      "format_valid",
+      "json_validity",
+      "markdown_table_validity",
+      "must_include_expected",
+      "must_include_missing",
+      "must_not_include_expected",
+      "must_not_include_violations",
+      "evidence_ids_expected",
+      "evidence_ids_found",
+      "evidence_match",
+      "groundedness",
+      "escalation_correct",
+      "insufficient_evidence_correct",
+      "safety_violation",
+      "safety_violation_terms"
+    ]
+  },
+  "generated_at_utc": "2026-05-25T19:12:53.598832+00:00",
+  "memory_modes": {
+    "defined_modes": [
+      "mm0_no_context",
+      "mm1_dense_top5",
+      "mm2_hybrid_top5",
+      "mm3_compressed_hybrid_top5",
+      "mm4_bounded_agentic"
+    ],
+    "mm4_contract": {
+      "approved_tools": [
+        "retrieve_context",
+        "assemble_context",
+        "validate_citations",
+        "validate_format",
+        "validate_safety",
+        "repair_once",
+        "escalate"
+      ],
+      "contract_stage": "phase3_contract_only",
+      "hard_limits": {
+        "corpus_scope": "project_corpus_only",
+        "max_generation_attempts": 2,
+        "max_repair_attempts": 1,
+        "max_retrieval_rounds": 2,
+        "max_tool_calls": 3,
+        "no_arbitrary_tools": true,
+        "no_internet": true
+      },
+      "memory_mode": "mm4_bounded_agentic",
+      "no_model_inference_triggered": true,
+      "workflow_steps": [
+        "classify_task_risk",
+        "select_retrieval_strategy",
+        "retrieve_evidence",
+        "assemble_context",
+        "generate_answer",
+        "validate_citations_format_safety",
+        "repair_once_if_needed",
+        "escalate_if_evidence_insufficient"
+      ]
+    },
+    "mode_status": {
+      "mm0_no_context": true,
+      "mm1_dense_top5": true,
+      "mm2_hybrid_top5": true,
+      "mm3_compressed_hybrid_top5": true,
+      "mm4_bounded_agentic": true
+    },
+    "ready": true,
+    "required_modes": [
+      "mm0_no_context",
+      "mm1_dense_top5",
+      "mm2_hybrid_top5",
+      "mm3_compressed_hybrid_top5",
+      "mm4_bounded_agentic"
+    ]
+  },
+  "missing_before_phase4": [
+    "runner adapter from Phase 3 WorkloadRecord JSONL to existing runner input format",
+    "mock/HF/OpenAI-compatible plumbing validation on smoke_500 workloads",
+    "batch evaluator CLI over generation JSONL outputs",
+    "hardware telemetry capture for later GPU runs",
+    "SGLang runnable backend integration",
+    "bounded agentic execution implementation; current mm4 is contract-only"
+  ],
+  "mm4_bounded_agentic_contract": {
+    "approved_tools": [
+      "retrieve_context",
+      "assemble_context",
+      "validate_citations",
+      "validate_format",
+      "validate_safety",
+      "repair_once",
+      "escalate"
+    ],
+    "contract_stage": "phase3_contract_only",
+    "hard_limits": {
+      "corpus_scope": "project_corpus_only",
+      "max_generation_attempts": 2,
+      "max_repair_attempts": 1,
+      "max_retrieval_rounds": 2,
+      "max_tool_calls": 3,
+      "no_arbitrary_tools": true,
+      "no_internet": true
+    },
+    "memory_mode": "mm4_bounded_agentic",
+    "no_model_inference_triggered": true,
+    "workflow_steps": [
+      "classify_task_risk",
+      "select_retrieval_strategy",
+      "retrieve_evidence",
+      "assemble_context",
+      "generate_answer",
+      "validate_citations_format_safety",
+      "repair_once_if_needed",
+      "escalate_if_evidence_insufficient"
+    ]
+  },
+  "model_aliases": {
+    "alias_count": 5,
+    "aliases_match_model_ids": {
+      "model1_0_5b": true,
+      "model2_1_5b": true,
+      "model3_7b": true,
+      "model4_32b": true,
+      "model5_large_placeholder": true
+    },
+    "aliases_resolve": {
+      "model1_0_5b": true,
+      "model2_1_5b": true,
+      "model3_7b": true,
+      "model4_32b": true,
+      "model5_large_placeholder": true
+    },
+    "canonical_model_count": 5,
+    "expected_aliases": {
+      "model1_0_5b": "qwen2_5_0_5b_instruct",
+      "model2_1_5b": "qwen2_5_1_5b_instruct",
+      "model3_7b": "qwen2_5_7b_instruct",
+      "model4_32b": "qwen2_5_32b_instruct",
+      "model5_large_placeholder": "large_model_placeholder"
+    },
+    "ready": true
+  },
+  "no_model_inference_triggered": true,
+  "output_root": "data\\generated\\context_engineering",
+  "phase4_first_commands": [
+    "pytest tests/test_phase3_context_memory_modes.py tests/test_phase3_corpus_registry.py tests/test_phase3_retrieval_workloads.py tests/test_phase3_bounded_agentic_and_readiness.py",
+    "python scripts/phase3/build_phase3_readiness_report.py --dataset-root data/scaleup_2000_full --context-root data/generated/context_engineering --workload-root data/workloads --output-root data/generated/context_engineering",
+    "inference-bench doctor",
+    "inference-bench validate-config",
+    "inference-bench mock-run --workload-path data/prompts/smoke_workload.jsonl --output-path results/raw/mock_phase4_plumbing_results.csv"
+  ],
+  "ready_for_phase4_plumbing": true,
+  "schemas": {
+    "agentic_trace_schema_valid": true,
+    "context_record_schema_valid": true,
+    "workload_record_schema_valid": true
+  },
+  "summary": [
+    {
+      "area": "model_aliases",
+      "artifact": "configs/models.yaml",
+      "notes": "Old model keys and public aliases resolve to the same model IDs.",
+      "phase4_action": "Reuse aliases when creating Phase 4 experiment configs.",
+      "ready": true,
+      "status": "ready"
+    },
+    {
+      "area": "memory_modes",
+      "artifact": "configs/memory_modes.yaml",
+      "notes": "mm0-mm4 are defined; mm4 remains contract-only.",
+      "phase4_action": "Use mm0-mm3 for first harness validation; keep mm4 out of main run.",
+      "ready": true,
+      "status": "ready"
+    },
+    {
+      "area": "schemas",
+      "artifact": "ContextRecord, WorkloadRecord, AgenticTrace",
+      "notes": "Context, workload, and agentic trace fixtures validate.",
+      "phase4_action": "Use these schemas as adapters into runner-specific payloads.",
+      "ready": true,
+      "status": "ready"
+    },
+    {
+      "area": "corpora",
+      "artifact": "data\\generated\\context_engineering\\corpus_registry.json",
+      "notes": "Corpus registry, vertical chunk builders, and local corpora are inspected.",
+      "phase4_action": "Regenerate with scripts/phase3/build_context_corpora.py when inputs change.",
+      "ready": true,
+      "status": "ready"
+    },
+    {
+      "area": "workloads",
+      "artifact": "data\\workloads",
+      "notes": "mm0-mm3 workload JSONL files and retrieval reports are inspected.",
+      "phase4_action": "Regenerate with scripts/phase3/build_memory_mode_workloads.py.",
+      "ready": true,
+      "status": "ready"
+    },
+    {
+      "area": "mm4_contract",
+      "artifact": "MM4_BOUNDED_AGENTIC_CONTRACT",
+      "notes": "Bounded workflow, hard limits, approved tools, and trace format are defined.",
+      "phase4_action": "Do not execute mm4 until Phase 4 validates normal workload plumbing.",
+      "ready": true,
+      "status": "contract_only"
+    },
+    {
+      "area": "evaluator_contract",
+      "artifact": "evaluator_contract_payload",
+      "notes": "Deterministic prompt_id join and structured scoring fields are defined.",
+      "phase4_action": "Build a Phase 4 evaluator CLI around runner generation JSONL outputs.",
+      "ready": true,
+      "status": "contract_only"
+    }
+  ],
+  "workload_artifacts": {
+    "ready": true,
+    "retrieval_artifacts": {
+      "retrieval_evaluation_report": "data\\generated\\context_engineering\\retrieval_evaluation_report.json",
+      "retrieval_evaluation_summary": "data\\generated\\context_engineering\\retrieval_evaluation_summary.csv",
+      "workload_build_report": "data\\generated\\context_engineering\\workload_build_report.json",
+      "workload_build_summary": "data\\generated\\context_engineering\\workload_build_summary.csv"
+    },
+    "retrieval_status": {
+      "retrieval_evaluation_report": true,
+      "retrieval_evaluation_summary": true,
+      "workload_build_report": true,
+      "workload_build_summary": true
+    },
+    "workload_paths": {
+      "controlled_2000": {
+        "mm0_no_context": "data\\workloads\\controlled_2000\\mm0_no_context.jsonl",
+        "mm1_dense_top5": "data\\workloads\\controlled_2000\\mm1_dense_top5.jsonl",
+        "mm2_hybrid_top5": "data\\workloads\\controlled_2000\\mm2_hybrid_top5.jsonl",
+        "mm3_compressed_hybrid_top5": "data\\workloads\\controlled_2000\\mm3_compressed_hybrid_top5.jsonl"
+      },
+      "final_10000": {
+        "mm0_no_context": "data\\workloads\\final_10000\\mm0_no_context.jsonl",
+        "mm1_dense_top5": "data\\workloads\\final_10000\\mm1_dense_top5.jsonl",
+        "mm2_hybrid_top5": "data\\workloads\\final_10000\\mm2_hybrid_top5.jsonl",
+        "mm3_compressed_hybrid_top5": "data\\workloads\\final_10000\\mm3_compressed_hybrid_top5.jsonl"
+      },
+      "smoke_500": {
+        "mm0_no_context": "data\\workloads\\smoke_500\\mm0_no_context.jsonl",
+        "mm1_dense_top5": "data\\workloads\\smoke_500\\mm1_dense_top5.jsonl",
+        "mm2_hybrid_top5": "data\\workloads\\smoke_500\\mm2_hybrid_top5.jsonl",
+        "mm3_compressed_hybrid_top5": "data\\workloads\\smoke_500\\mm3_compressed_hybrid_top5.jsonl"
+      }
+    },
+    "workload_root": "data\\workloads",
+    "workload_status": {
+      "controlled_2000": {
+        "mm0_no_context": true,
+        "mm1_dense_top5": true,
+        "mm2_hybrid_top5": true,
+        "mm3_compressed_hybrid_top5": true
+      },
+      "final_10000": {
+        "mm0_no_context": true,
+        "mm1_dense_top5": true,
+        "mm2_hybrid_top5": true,
+        "mm3_compressed_hybrid_top5": true
+      },
+      "smoke_500": {
+        "mm0_no_context": true,
+        "mm1_dense_top5": true,
+        "mm2_hybrid_top5": true,
+        "mm3_compressed_hybrid_top5": true
+      }
+    }
+  },
+  "workload_root": "data\\workloads"
+}

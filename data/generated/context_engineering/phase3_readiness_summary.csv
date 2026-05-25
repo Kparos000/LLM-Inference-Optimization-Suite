@@ -1,0 +1,8 @@
+area,artifact,ready,status,notes,phase4_action
+model_aliases,configs/models.yaml,True,ready,Old model keys and public aliases resolve to the same model IDs.,Reuse aliases when creating Phase 4 experiment configs.
+memory_modes,configs/memory_modes.yaml,True,ready,mm0-mm4 are defined; mm4 remains contract-only.,Use mm0-mm3 for first harness validation; keep mm4 out of main run.
+schemas,"ContextRecord, WorkloadRecord, AgenticTrace",True,ready,"Context, workload, and agentic trace fixtures validate.",Use these schemas as adapters into runner-specific payloads.
+corpora,data\generated\context_engineering\corpus_registry.json,True,ready,"Corpus registry, vertical chunk builders, and local corpora are inspected.",Regenerate with scripts/phase3/build_context_corpora.py when inputs change.
+workloads,data\workloads,True,ready,mm0-mm3 workload JSONL files and retrieval reports are inspected.,Regenerate with scripts/phase3/build_memory_mode_workloads.py.
+mm4_contract,MM4_BOUNDED_AGENTIC_CONTRACT,True,contract_only,"Bounded workflow, hard limits, approved tools, and trace format are defined.",Do not execute mm4 until Phase 4 validates normal workload plumbing.
+evaluator_contract,evaluator_contract_payload,True,contract_only,Deterministic prompt_id join and structured scoring fields are defined.,Build a Phase 4 evaluator CLI around runner generation JSONL outputs.
