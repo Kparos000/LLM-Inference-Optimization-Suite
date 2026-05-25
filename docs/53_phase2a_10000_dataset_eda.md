@@ -21,7 +21,9 @@ Run:
 python scripts/phase2/explore_phase2a_promoted_dataset.py --dataset-root data/scaleup_2000_full --write-report
 ```
 
-Generated EDA artifacts are written under `data/generated/phase2a/eda/`.
+Generated EDA artifacts are written under `data/generated/eda/dataset_10000/`.
+To remove known old generated EDA artifacts from the previous internal path,
+run the same command with `--cleanup-legacy-eda`.
 
 ## What Gets Generated
 
@@ -39,8 +41,11 @@ Generated EDA artifacts are written under `data/generated/phase2a/eda/`.
 - `dataset_10000_eda_summary.md`: human-readable top-level summary.
 - `interactive/*.html`: standalone Plotly charts for inventory, status, task mix, output format, prompt/gold/KB length, workload shape, evidence reuse, and heatmaps.
 - `plots/*.png`: static paper-ready PNG charts.
+- `term_visuals/*_top_terms_bar.html`: interactive clean-term bar charts.
+- `term_visuals/*_term_treemap.html`: interactive clean-term treemaps.
 - `word_clouds/*_wordcloud.png`: one word cloud style image per vertical.
 - `word_views/*_clean_terms.txt`: cleaned terms with filler and boilerplate removed, plus a separate domain-term view.
+- `word_views/*_domain_terms.txt`: less aggressive domain vocabulary views.
 - `word_views/*_tfidf_terms.txt`: TF-IDF-style vertical-distinctive terms.
 - `verticals/*/*_eda.html`: per-vertical EDA pages for domain-specific review.
 

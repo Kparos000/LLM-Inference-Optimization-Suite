@@ -74,5 +74,5 @@ It also writes:
 - `data/scaleup_2000_full/phase2a_2000_full_manifest.json`
 - `data/scaleup_2000_full/README.md`
 
-The next step after promotion is comprehensive Phase 2A EDA before Phase 2B
-context engineering.
+The next step after promotion is the public-facing 10,000-record dataset EDA
+before Phase 2B context engineering.

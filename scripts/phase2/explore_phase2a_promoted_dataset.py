@@ -39,7 +39,8 @@ VERTICAL_LABELS = {
 FILE_KINDS = ["prompts", "gold", "kb"]
 
 DEFAULT_DATASET_ROOT = Path("data/scaleup_2000_full")
-DEFAULT_OUTPUT_DIR = Path("data/generated/phase2a/eda")
+DEFAULT_OUTPUT_DIR = Path("data/generated/eda/dataset_10000")
+DEFAULT_LEGACY_OUTPUT_DIR = Path("data/generated/phase2a/eda")
 DEFAULT_RESEARCH_AI_CORPUS = Path(
     "data/generated/phase2a/retrieval_corpus/research_ai/research_ai_full_sections_corpus.jsonl"
 )
@@ -92,27 +93,61 @@ COMMON_STOPWORDS = {
     "that",
     "this",
     "they",
+    "them",
+    "their",
     "can",
+    "could",
     "should",
+    "would",
     "what",
     "how",
+    "why",
     "using",
+    "use",
+    "used",
     "only",
     "cited",
     "evidence",
     "records",
     "record",
     "scenario",
+    "scenarios",
     "selected",
     "answer",
     "question",
     "request",
+    "asks",
+    "asked",
     "help",
+    "provide",
+    "explain",
+    "summarize",
+    "identify",
+    "determine",
+    "describe",
+    "compare",
+    "create",
+    "extract",
+    "generate",
+    "return",
+    "output",
+    "response",
+    "support",
+    "agent",
+    "customer",
+    "user",
     "prompt",
     "gold",
     "kb",
     "scaleup",
-    "use",
+    "eval",
+    "reference",
+    "required",
+    "include",
+    "format",
+    "status",
+    "task",
+    "type",
     "based",
     "about",
     "after",
@@ -136,7 +171,6 @@ COMMON_STOPWORDS = {
     "needs",
     "not",
     "per",
-    "provide",
     "say",
     "says",
     "show",
@@ -151,6 +185,7 @@ COMMON_STOPWORDS = {
     "were",
     "when",
     "where",
+    "who",
     "which",
     "while",
     "will",
@@ -160,7 +195,17 @@ COMMON_STOPWORDS = {
 }
 
 VERTICAL_BOILERPLATE = {
-    "airline": {"canada", "air", "ca", "pol", "traveler", "passenger", "route"},
+    "airline": {
+        "canada",
+        "air",
+        "ca",
+        "pol",
+        "traveler",
+        "passenger",
+        "route",
+        "flight",
+        "airline",
+    },
     "healthcare_admin": {
         "maplecare",
         "health",
@@ -169,11 +214,31 @@ VERTICAL_BOILERPLATE = {
         "admin",
         "administrative",
         "clinic",
+        "caller",
         "mch",
     },
-    "retail": {"retail", "support", "agent", "product", "review", "item"},
-    "finance": {"finance", "filing", "sec", "inc", "company"},
-    "research_ai": {"research", "ai", "paper", "language", "model", "models"},
+    "retail": {"retail", "support", "agent", "product", "review", "item", "customer"},
+    "finance": {
+        "finance",
+        "financial",
+        "filing",
+        "sec",
+        "inc",
+        "company",
+        "corporation",
+        "corp",
+        "form",
+    },
+    "research_ai": {
+        "research",
+        "ai",
+        "paper",
+        "language",
+        "model",
+        "models",
+        "llm",
+        "llms",
+    },
 }
 
 CRITICAL_SAFETY_PATTERNS = {
@@ -465,6 +530,11 @@ def ngram_counter_from_tokens(token_lists: list[list[str]], n: int) -> Counter[s
 
 def top_counter_rows(counter: Counter[str], limit: int = 30) -> list[dict[str, Any]]:
     return [{"term": term, "count": count} for term, count in counter.most_common(limit)]
+
+
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+    return slug or "unknown"
 
 
 def distinctive_terms(
@@ -1215,14 +1285,34 @@ def vertical_specific_reports(
             "kb_ticker_coverage": frequency_from_metadata(finance_kb, "ticker"),
             "kb_filing_form_coverage": frequency_from_metadata(finance_kb, "form"),
             "xbrl_concept_coverage": frequency_from_metadata(finance_kb, "concept"),
+            "sec_section_type_coverage": frequency_from_metadata(finance_kb, "section_type"),
+            "document_type_coverage": frequency_dict(finance_kb, "document_type"),
             "evidence_type_coverage": dict(finance_evidence_types),
             "task_type_by_financial_evidence_type": {
                 evidence_type: dict(counter)
                 for evidence_type, counter in task_by_evidence_type.items()
             },
+            "calculation_task_share": safe_ratio(
+                sum(1 for row in finance_prompts if row.get("task_type") == "calculation"),
+                len(finance_prompts),
+            ),
+            "structured_output_task_share": safe_ratio(
+                sum(
+                    1
+                    for row in finance_prompts
+                    if row.get("expected_output_format") in {"json", "markdown_table"}
+                ),
+                len(finance_prompts),
+            ),
             "warnings": [
                 "XBRL concept metadata is unavailable in the promoted KB."
                 if not frequency_from_metadata(finance_kb, "concept")
+                else ""
+            ]
+            + [
+                "Ticker/form fields were not consistently available in promoted KB records, so some coverage charts may be partial."
+                if not frequency_from_metadata(finance_kb, "ticker")
+                or not frequency_from_metadata(finance_kb, "form")
                 else ""
             ],
         },
@@ -2083,7 +2173,18 @@ def write_word_cloud_image(
     try:
         from wordcloud import WordCloud  # type: ignore[import-untyped]
 
-        cloud = WordCloud(width=1200, height=700, background_color="white", colormap="viridis")
+        cloud = WordCloud(
+            width=1800,
+            height=1000,
+            background_color="white",
+            colormap="plasma",
+            max_words=120,
+            prefer_horizontal=0.92,
+            relative_scaling=0.65,
+            collocations=False,
+            contour_width=1,
+            contour_color="#d7dee8",
+        )
         cloud.generate_from_frequencies(frequencies)
         cloud.to_file(str(path))
         return
@@ -2098,22 +2199,23 @@ def write_word_cloud_image(
         )
         return
 
-    ranked = list(frequencies.items())[:40]
+    ranked = list(frequencies.items())[:60]
     max_count = max(frequencies.values()) or 1
-    fig, axis = plt.subplots(figsize=(12, 7))
+    fig, axis = plt.subplots(figsize=(15, 8.5))
     axis.axis("off")
-    columns = 4
+    columns = 5
     for index, (term, count) in enumerate(ranked):
         row = index // columns
         column = index % columns
-        x = 0.08 + column * 0.24
-        y = 0.9 - row * 0.08
-        size = 10 + 26 * (count / max_count)
+        x = 0.06 + column * 0.19
+        y = 0.9 - row * 0.07
+        size = 9 + 34 * (count / max_count)
         axis.text(
             x,
             y,
             term,
             fontsize=size,
+            fontweight="bold" if index < 12 else "normal",
             color=PLOT_COLORS[index % len(PLOT_COLORS)],
             transform=axis.transAxes,
             alpha=0.9,
@@ -2136,7 +2238,7 @@ def write_word_views(output_dir: Path, word_profile: dict[str, Any]) -> None:
         lines = [
             f"# {VERTICAL_LABELS[vertical]} Clean Terms",
             "",
-            "## clean_terms_without_boilerplate",
+            "## clean_terms",
             "",
             "### top_clean_unigrams",
             *[f"{item['term']}\t{item['count']}" for item in clean["unigrams"][:30]],
@@ -2146,16 +2248,21 @@ def write_word_views(output_dir: Path, word_profile: dict[str, Any]) -> None:
             "",
             "### top_clean_trigrams",
             *[f"{item['term']}\t{item['count']}" for item in clean["trigrams"][:30]],
-            "",
-            "## domain_terms_with_domain_words",
+        ]
+        write_text(word_dir / f"{vertical}_clean_terms.txt", "\n".join(lines) + "\n")
+        domain_lines = [
+            f"# {VERTICAL_LABELS[vertical]} Domain Terms",
             "",
             "### top_domain_unigrams",
             *[f"{item['term']}\t{item['count']}" for item in domain["unigrams"][:30]],
             "",
             "### top_domain_bigrams",
             *[f"{item['term']}\t{item['count']}" for item in domain["bigrams"][:30]],
+            "",
+            "### top_domain_trigrams",
+            *[f"{item['term']}\t{item['count']}" for item in domain["trigrams"][:30]],
         ]
-        write_text(word_dir / f"{vertical}_clean_terms.txt", "\n".join(lines) + "\n")
+        write_text(word_dir / f"{vertical}_domain_terms.txt", "\n".join(domain_lines) + "\n")
         tfidf_lines = [
             f"# {VERTICAL_LABELS[vertical]} TF-IDF Distinctive Terms",
             "",
@@ -2164,6 +2271,116 @@ def write_word_views(output_dir: Path, word_profile: dict[str, Any]) -> None:
         ]
         write_text(word_dir / f"{vertical}_tfidf_terms.txt", "\n".join(tfidf_lines) + "\n")
         write_word_cloud_image(cloud_dir / f"{vertical}_wordcloud.png", clean["unigrams"])
+
+
+def term_visual_title(vertical: str) -> str:
+    titles = {
+        "airline": "Airline - Clean Top Policy and Service Terms",
+        "healthcare_admin": "Healthcare Admin - Clean Top Administrative Boundary Terms",
+        "retail": "Retail - Clean Top Review Terms Across Promoted 10,000-Record Dataset",
+        "finance": "Finance - Clean Top Filing and Metric Terms",
+        "research_ai": "Research AI - Clean Top Method and Evaluation Terms",
+    }
+    return titles[vertical]
+
+
+def write_term_visual_html(path: Path, fig: Any, title: str) -> None:
+    write_plotly_html(path, fig, title)
+
+
+def write_term_visuals(
+    output_dir: Path,
+    dataset: dict[str, dict[str, list[dict[str, Any]]]],
+    word_profile: dict[str, Any],
+) -> None:
+    visual_dir = output_dir / "term_visuals"
+    visual_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        import plotly.express as px  # type: ignore[import-untyped]
+    except Exception:
+        for vertical in VERTICALS:
+            title = term_visual_title(vertical)
+            write_text(
+                visual_dir / f"{vertical}_top_terms_bar.html",
+                fallback_html(title, "<p>Plotly is unavailable; term chart skipped.</p>"),
+            )
+            write_text(
+                visual_dir / f"{vertical}_term_treemap.html",
+                fallback_html(title, "<p>Plotly is unavailable; term treemap skipped.</p>"),
+            )
+        return
+
+    for vertical in VERTICALS:
+        title = term_visual_title(vertical)
+        terms = word_profile["by_vertical"][vertical]["clean_terms_without_boilerplate"][
+            "unigrams"
+        ][:30]
+        bar_rows = list(reversed(terms))
+        bar = px.bar(
+            bar_rows,
+            x="count",
+            y="term",
+            orientation="h",
+            title=title,
+            labels={"count": "Frequency", "term": "Clean term"},
+            template="plotly_white",
+            text="count",
+        )
+        bar.update_layout(
+            yaxis={"categoryorder": "array", "categoryarray": [row["term"] for row in bar_rows]}
+        )
+        write_term_visual_html(visual_dir / f"{vertical}_top_terms_bar.html", bar, title)
+
+        treemap = px.treemap(
+            terms,
+            path=["term"],
+            values="count",
+            title=title.replace("Top", "Top Term Treemap"),
+            color="count",
+            color_continuous_scale="Viridis",
+        )
+        write_term_visual_html(
+            visual_dir / f"{vertical}_term_treemap.html",
+            treemap,
+            f"{title} Treemap",
+        )
+
+    retail_prompts = dataset["retail"]["prompts"]
+    category_counter = Counter(
+        str(row.get("category") or metadata(row).get("category") or "") for row in retail_prompts
+    )
+    for category, count in category_counter.items():
+        if not category or count == 0:
+            continue
+        texts = [
+            text_for_word_views(row)
+            for row in retail_prompts
+            if str(row.get("category") or metadata(row).get("category") or "") == category
+        ]
+        token_lists = [
+            clean_tokens(text, "retail", remove_vertical_boilerplate=True) for text in texts
+        ]
+        terms = top_counter_rows(ngram_counter_from_tokens(token_lists, 1), limit=30)
+        if not terms:
+            continue
+        category_label = category.replace("_", " ").title()
+        category_title = f"Retail - {category_label} Top Review Terms"
+        bar_rows = list(reversed(terms))
+        bar = px.bar(
+            bar_rows,
+            x="count",
+            y="term",
+            orientation="h",
+            title=category_title,
+            labels={"count": "Frequency", "term": "Clean term"},
+            template="plotly_white",
+            text="count",
+        )
+        write_term_visual_html(
+            visual_dir / f"{slugify(category)}_top_terms_bar.html",
+            bar,
+            category_title,
+        )
 
 
 def table_html(rows: list[dict[str, Any]], columns: list[str], limit: int = 20) -> str:
@@ -2256,6 +2473,9 @@ def write_vertical_pages(
         clean_terms = word_profile["by_vertical"][vertical]["clean_terms_without_boilerplate"][
             "unigrams"
         ]
+        domain_terms = word_profile["by_vertical"][vertical]["domain_terms_with_domain_words"][
+            "unigrams"
+        ]
         chart_html = ""
         if px is not None:
             charts = [
@@ -2263,7 +2483,7 @@ def write_vertical_pages(
                     prompt_plot_subset,
                     x="word_count",
                     nbins=30,
-                    title="Prompt Length",
+                    title=f"{VERTICAL_LABELS[vertical]} - Prompt Length Distribution",
                     labels={"word_count": "Prompt words"},
                     template="plotly_white",
                 ),
@@ -2271,7 +2491,7 @@ def write_vertical_pages(
                     kb_plot_subset,
                     x="word_count",
                     nbins=30,
-                    title="KB Row Length",
+                    title=f"{VERTICAL_LABELS[vertical]} - KB Row Length Distribution",
                     labels={"word_count": "KB row words"},
                     template="plotly_white",
                 ),
@@ -2279,7 +2499,7 @@ def write_vertical_pages(
                     gold_plot_subset,
                     x="word_count",
                     nbins=30,
-                    title="Reference Answer Length",
+                    title=f"{VERTICAL_LABELS[vertical]} - Reference Answer Length Distribution",
                     labels={"word_count": "Reference answer words"},
                     template="plotly_white",
                 ),
@@ -2287,14 +2507,14 @@ def write_vertical_pages(
                     long_count_rows(prompt_plot_subset, "task_type", "task_type"),
                     x="task_type",
                     y="count",
-                    title="Task Type Mix",
+                    title=f"{VERTICAL_LABELS[vertical]} - Task Type Mix",
                     template="plotly_white",
                 ),
                 px.bar(
                     long_count_rows(prompt_plot_subset, "expected_status", "expected_status"),
                     x="expected_status",
                     y="count",
-                    title="Status Mix",
+                    title=f"{VERTICAL_LABELS[vertical]} - Expected Status Mix",
                     template="plotly_white",
                 ),
                 px.bar(
@@ -2303,7 +2523,7 @@ def write_vertical_pages(
                     ),
                     x="expected_output_format",
                     y="count",
-                    title="Output Format Mix",
+                    title=f"{VERTICAL_LABELS[vertical]} - Output Format Mix",
                     template="plotly_white",
                 ),
             ]
@@ -2338,7 +2558,7 @@ def write_vertical_pages(
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>{html.escape(VERTICAL_LABELS[vertical])} EDA</title>
+  <title>{html.escape(VERTICAL_LABELS[vertical])} 10,000-record dataset EDA</title>
   {plotly_script}
   <style>
     body {{ margin: 0; font-family: Arial, sans-serif; color: #172033; background: #f7f8fb; }}
@@ -2355,7 +2575,7 @@ def write_vertical_pages(
   </style>
 </head>
 <body>
-  <header><h1>{html.escape(VERTICAL_LABELS[vertical])} EDA</h1></header>
+  <header><h1>{html.escape(VERTICAL_LABELS[vertical])} 10,000-record dataset EDA</h1></header>
   <main>
     <div class="cards">
       <div class="card"><span>Prompts</span><strong>{len(prompt_subset)}</strong></div>
@@ -2375,8 +2595,13 @@ def write_vertical_pages(
     </section>
     <section>
       <h2>Top Cleaned Terms</h2>
+      <p><a href="../../term_visuals/{vertical}_top_terms_bar.html">Open top-term bar chart</a> | <a href="../../term_visuals/{vertical}_term_treemap.html">Open term treemap</a></p>
       {table_html(clean_terms, ["term", "count"], limit=25)}
       <p><img alt="{html.escape(VERTICAL_LABELS[vertical])} word cloud" src="../../word_clouds/{vertical}_wordcloud.png"></p>
+    </section>
+    <section>
+      <h2>Domain Terms</h2>
+      {table_html(domain_terms, ["term", "count"], limit=25)}
     </section>
     <section>
       <h2>Evidence Reuse Summary</h2>
@@ -2413,8 +2638,9 @@ Layout:
 - `dashboard/` contains the executive Plotly overview HTML and markdown summary.
 - `interactive/` contains one standalone Plotly HTML file per major chart.
 - `plots/` contains static PNG figures for papers and documentation.
+- `term_visuals/` contains interactive top-term bar charts and treemaps.
 - `word_clouds/` contains one generated word cloud style PNG per vertical.
-- `word_views/` contains cleaned and TF-IDF-style term tables.
+- `word_views/` contains cleaned, domain, and TF-IDF-style term tables.
 - `verticals/` contains one interactive HTML EDA page per vertical.
 - `{OUTPUT_PREFIX}_*_profile.json` and `{OUTPUT_PREFIX}_*_report.json`
   contain machine-readable EDA.
@@ -2491,14 +2717,19 @@ def write_top_level_summary(
 def remove_legacy_eda_outputs(output_dir: Path) -> None:
     legacy_paths = []
     for pattern in [
+        f"{OUTPUT_PREFIX}_*.json",
+        f"{OUTPUT_PREFIX}_*.csv",
         "phase2a_10000_*.json",
         "phase2a_10000_*.csv",
         "phase2a_*.json",
+        f"{OUTPUT_PREFIX}_summary.md",
         "phase2a_eda_summary.md",
     ]:
         legacy_paths.extend(output_dir.glob(pattern))
     legacy_paths.extend(
         [
+            output_dir / f"dashboard/{OUTPUT_PREFIX}_overview.html",
+            output_dir / f"dashboard/{OUTPUT_PREFIX}_overview.md",
             output_dir / "dashboard/phase2a_10000_overview.html",
             output_dir / "dashboard/phase2a_10000_overview.md",
             output_dir / "plots/phase2a_eda_overview.png",
@@ -2514,6 +2745,8 @@ def write_reports(args: argparse.Namespace) -> dict[str, Any]:
     dataset_root = Path(args.dataset_root)
     output_dir = Path(args.output_dir)
     remove_legacy_eda_outputs(output_dir)
+    if args.cleanup_legacy_eda:
+        remove_legacy_eda_outputs(DEFAULT_LEGACY_OUTPUT_DIR)
     dataset, file_paths, missing_files = load_dataset(dataset_root)
     prompt_rows, gold_rows, kb_rows = build_metric_rows(dataset)
 
@@ -2573,6 +2806,7 @@ def write_reports(args: argparse.Namespace) -> dict[str, Any]:
     write_interactive_outputs(figures, output_dir)
     write_static_plots(output_dir, inventory, prompt_rows, gold_rows, kb_rows, evidence, workload)
     write_word_views(output_dir, word_profile)
+    write_term_visuals(output_dir, dataset, word_profile)
     write_dashboard(
         output_dir,
         inventory,
@@ -2623,6 +2857,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--write-report", action="store_true")
     parser.add_argument("--dataset-root", default=str(DEFAULT_DATASET_ROOT))
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
+    parser.add_argument(
+        "--cleanup-legacy-eda",
+        action="store_true",
+        help="Remove known old EDA artifacts under data/generated/phase2a/eda.",
+    )
     parser.add_argument("--research-ai-retrieval-corpus", default=str(DEFAULT_RESEARCH_AI_CORPUS))
     parser.add_argument(
         "--research-ai-retrieval-manifest", default=str(DEFAULT_RESEARCH_AI_MANIFEST)

@@ -107,11 +107,16 @@ data/generated/phase2a/large_scale/
 data/generated/phase2a/retrieval_corpus/
 data/generated/phase2a/eda/*
 data/generated/phase2a/eda_test_cache/*
+data/generated/eda/dataset_10000/*
+data/generated/eda/dataset_10000_test_cache/*
 
 # Keep result folders
 !results/raw/.gitkeep
+!results/raw/README.md
 !results/processed/.gitkeep
+!results/processed/README.md
 !results/figures/.gitkeep
+!results/figures/README.md
 !results/samples/
 !results/samples/.gitkeep
 !results/samples/README.md
@@ -120,7 +125,6 @@ data/generated/phase2a/eda_test_cache/*
 !results/samples/figures/
 !results/samples/figures/.gitkeep
 !results/README.md
-!results/figures/README.md
 !data/generated/
 !data/generated/README.md
 !data/generated/phase2a/
