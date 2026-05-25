@@ -11,5 +11,5 @@ experiment run.
 Dataset EDA outputs do not belong here. The 10,000-record dataset EDA lives at:
 
 ```text
-data/generated/eda/dataset_10000/
+data/generated/dataset_10000/
 ```

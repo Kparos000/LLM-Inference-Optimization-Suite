@@ -10,9 +10,12 @@ SCRIPT_PATH = ROOT / "scripts/phase2/explore_phase2a_promoted_dataset.py"
 DOC_PATH = ROOT / "docs/53_phase2a_10000_dataset_eda.md"
 DATASET_ROOT = ROOT / "data/scaleup_2000_full"
 MANIFEST_PATH = DATASET_ROOT / "phase2a_2000_full_manifest.json"
-DEFAULT_OUTPUT_DIR = ROOT / "data/generated/eda/dataset_10000"
-OUTPUT_DIR = ROOT / "data/generated/eda/dataset_10000_test_cache"
+DEFAULT_OUTPUT_DIR = ROOT / "data/generated/dataset_10000"
+OUTPUT_DIR = ROOT / "data/generated/dataset_10000_test_cache"
+FINANCE_OUTPUT_DIR = ROOT / "data/generated/finance_test_cache"
 LEGACY_OUTPUT_DIR = ROOT / "data/generated/phase2a/eda"
+OLD_PUBLIC_PARENT_DIR = ROOT / "data/generated/eda"
+OLD_PUBLIC_OUTPUT_DIR = ROOT / "data/generated/eda/dataset_10000"
 OUTPUT_PREFIX = "dataset_10000_eda"
 
 VERTICALS = ["airline", "healthcare_admin", "retail", "finance", "research_ai"]
@@ -117,6 +120,8 @@ def _run_eda() -> dict[str, Any]:
 
     if OUTPUT_DIR.exists():
         shutil.rmtree(OUTPUT_DIR)
+    if FINANCE_OUTPUT_DIR.exists():
+        shutil.rmtree(FINANCE_OUTPUT_DIR)
 
     (OUTPUT_DIR / "dashboard").mkdir(parents=True, exist_ok=True)
     (OUTPUT_DIR / "word_views").mkdir(parents=True, exist_ok=True)
@@ -151,6 +156,8 @@ def _run_eda() -> dict[str, Any]:
             "--write-report",
             "--output-dir",
             str(OUTPUT_DIR),
+            "--finance-output-dir",
+            str(FINANCE_OUTPUT_DIR),
             "--research-ai-retrieval-corpus",
             str(missing_corpus),
             "--research-ai-retrieval-manifest",
@@ -187,7 +194,8 @@ def test_eda_script_exists() -> None:
 def test_eda_default_output_dir_is_public_dataset_10000() -> None:
     text = SCRIPT_PATH.read_text(encoding="utf-8")
 
-    assert 'DEFAULT_OUTPUT_DIR = Path("data/generated/eda/dataset_10000")' in text
+    assert 'DEFAULT_OUTPUT_DIR = Path("data/generated/dataset_10000")' in text
+    assert 'DEFAULT_OUTPUT_DIR = Path("data/generated/eda/dataset_10000")' not in text
     assert 'DEFAULT_OUTPUT_DIR = Path("data/generated/phase2a/eda")' not in text
 
 
@@ -214,9 +222,12 @@ def test_eda_cli_still_runs_on_promoted_10000_dataset() -> None:
     assert summary["total_gold_count"] == 10000
     assert summary["total_kb_count"] == 4740
     assert summary["vertical_count"] == 5
-    assert summary["output_dir"].endswith(
-        "data\\generated\\eda\\dataset_10000_test_cache"
-    ) or summary["output_dir"].endswith("data/generated/eda/dataset_10000_test_cache")
+    assert summary["output_dir"].endswith("data\\generated\\dataset_10000_test_cache") or summary[
+        "output_dir"
+    ].endswith("data/generated/dataset_10000_test_cache")
+    assert summary["finance_output_dir"].endswith("data\\generated\\finance_test_cache") or summary[
+        "finance_output_dir"
+    ].endswith("data/generated/finance_test_cache")
 
 
 def test_eda_uses_public_facing_10000_record_names() -> None:
@@ -320,7 +331,7 @@ def test_old_phase2a_output_filenames_not_created() -> None:
         assert not (OUTPUT_DIR / stale_path).exists(), stale_path
 
 
-def test_cleanup_legacy_eda_flag_removes_known_old_outputs_only() -> None:
+def test_cleanup_legacy_eda_flag_removes_duplicate_old_eda_dirs() -> None:
     _run_eda()
     (LEGACY_OUTPUT_DIR / "dashboard").mkdir(parents=True, exist_ok=True)
     (LEGACY_OUTPUT_DIR / "word_views").mkdir(parents=True, exist_ok=True)
@@ -330,6 +341,8 @@ def test_cleanup_legacy_eda_flag_removes_known_old_outputs_only() -> None:
     old_public_dashboard = LEGACY_OUTPUT_DIR / f"dashboard/{OUTPUT_PREFIX}_overview.html"
     old_terms = LEGACY_OUTPUT_DIR / "word_views/retail_prompt_terms.txt"
     unrelated = LEGACY_OUTPUT_DIR / "unrelated_keep.txt"
+    OLD_PUBLIC_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    old_public_wrapper_report = OLD_PUBLIC_OUTPUT_DIR / f"{OUTPUT_PREFIX}_inventory.json"
     for path in [
         old_report,
         old_public_report,
@@ -337,6 +350,7 @@ def test_cleanup_legacy_eda_flag_removes_known_old_outputs_only() -> None:
         old_public_dashboard,
         old_terms,
         unrelated,
+        old_public_wrapper_report,
     ]:
         path.write_text("stale\n", encoding="utf-8")
 
@@ -349,6 +363,8 @@ def test_cleanup_legacy_eda_flag_removes_known_old_outputs_only() -> None:
             "--write-report",
             "--output-dir",
             str(OUTPUT_DIR),
+            "--finance-output-dir",
+            str(FINANCE_OUTPUT_DIR),
             "--cleanup-legacy-eda",
             "--research-ai-retrieval-corpus",
             str(OUTPUT_DIR / "missing_research_ai_full_sections_corpus.jsonl"),
@@ -369,8 +385,10 @@ def test_cleanup_legacy_eda_flag_removes_known_old_outputs_only() -> None:
     assert not old_dashboard.exists()
     assert not old_public_dashboard.exists()
     assert not old_terms.exists()
-    assert unrelated.exists()
-    unrelated.unlink()
+    assert not LEGACY_OUTPUT_DIR.exists()
+    assert not OLD_PUBLIC_OUTPUT_DIR.exists()
+    assert not OLD_PUBLIC_PARENT_DIR.exists()
+    assert not unrelated.exists()
 
 
 def test_eda_creates_static_plot_files_or_reports_plot_skip() -> None:
@@ -446,6 +464,9 @@ def test_finance_vertical_outputs_exist() -> None:
     _run_eda()
 
     assert (OUTPUT_DIR / "verticals/finance/finance_eda.html").exists()
+    assert (FINANCE_OUTPUT_DIR / "finance_eda.html").exists()
+    assert (FINANCE_OUTPUT_DIR / "index.html").exists()
+    assert (FINANCE_OUTPUT_DIR / "README.md").exists()
     assert (OUTPUT_DIR / "word_clouds/finance_wordcloud.png").exists()
     assert (OUTPUT_DIR / "word_views/finance_clean_terms.txt").exists()
     assert (OUTPUT_DIR / "word_views/finance_domain_terms.txt").exists()
@@ -457,10 +478,19 @@ def test_finance_term_visuals_exist() -> None:
 
     assert (OUTPUT_DIR / "term_visuals/finance_top_terms_bar.html").exists()
     assert (OUTPUT_DIR / "term_visuals/finance_term_treemap.html").exists()
+    assert (FINANCE_OUTPUT_DIR / "finance_top_terms_bar.html").exists()
+    assert (FINANCE_OUTPUT_DIR / "finance_term_treemap.html").exists()
+    assert (FINANCE_OUTPUT_DIR / "finance_wordcloud.png").exists()
+    assert (FINANCE_OUTPUT_DIR / "finance_clean_terms.txt").exists()
+    assert (FINANCE_OUTPUT_DIR / "finance_domain_terms.txt").exists()
+    assert (FINANCE_OUTPUT_DIR / "finance_tfidf_terms.txt").exists()
     finance_page = (OUTPUT_DIR / "verticals/finance/finance_eda.html").read_text(encoding="utf-8")
+    finance_entrypoint = (FINANCE_OUTPUT_DIR / "finance_eda.html").read_text(encoding="utf-8")
     assert "ticker_coverage" in finance_page
     assert "filing_form_coverage" in finance_page
     assert "xbrl_concept_coverage" in finance_page
+    assert "../../term_visuals/" not in finance_entrypoint
+    assert "finance_top_terms_bar.html" in finance_entrypoint
 
 
 def test_research_ai_vertical_folder_exists() -> None:
@@ -554,7 +584,7 @@ def test_results_readme_separates_experiment_results_from_dataset_eda() -> None:
 
     for text in [results_readme, figures_readme, raw_readme, processed_readme]:
         assert "smoke-test" in text
-        assert "data/generated/eda/dataset_10000" in text
+        assert "data/generated/dataset_10000" in text
         assert "inference/benchmark outputs" in text or "experiment results" in text
         assert "dataset EDA" in text
 

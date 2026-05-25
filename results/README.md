@@ -5,7 +5,7 @@
 The current 10,000-record dataset EDA lives under:
 
 ```text
-data/generated/eda/dataset_10000/
+data/generated/dataset_10000/
 ```
 
 Folder roles:

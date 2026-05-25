@@ -12,7 +12,7 @@ dashboard, interactive charts, static PNG plots, word clouds, and reports are
 generated under:
 
 ```text
-data/generated/eda/dataset_10000/
+data/generated/dataset_10000/
 ```
 
 Real inference result plots will be generated here later.

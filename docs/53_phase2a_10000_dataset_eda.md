@@ -21,7 +21,10 @@ Run:
 python scripts/phase2/explore_phase2a_promoted_dataset.py --dataset-root data/scaleup_2000_full --write-report
 ```
 
-Generated EDA artifacts are written under `data/generated/eda/dataset_10000/`.
+Generated EDA artifacts are written under `data/generated/dataset_10000/`.
+Finance-specific EDA is mirrored under `data/generated/finance/` so reviewers
+can open the finance view directly without navigating through the global
+cross-vertical folder.
 To remove known old generated EDA artifacts from the previous internal path,
 run the same command with `--cleanup-legacy-eda`.
 

@@ -53,7 +53,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Scaled synthetic workloads can be generated with `inference-bench generate-workloads --count 100`.
 - Reporting includes latency percentiles and aggregate throughput metadata for concurrency runs.
 - `openai-load-run` supports chunking, checkpointing, resume mode, and progress logs for long-running benchmarks.
-- The promoted 10,000-record benchmark dataset has a public-facing EDA layer under `data/generated/eda/dataset_10000/` with interactive dashboard, term visuals, static figures, word clouds, and vertical pages.
+- The promoted 10,000-record benchmark dataset has a public-facing EDA layer under `data/generated/dataset_10000/` with interactive dashboard, term visuals, static figures, word clouds, and vertical pages. Finance-specific EDA is also mirrored under `data/generated/finance/`.
 
 ## Documentation
 

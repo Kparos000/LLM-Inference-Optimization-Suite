@@ -107,8 +107,11 @@ data/generated/phase2a/large_scale/
 data/generated/phase2a/retrieval_corpus/
 data/generated/phase2a/eda/*
 data/generated/phase2a/eda_test_cache/*
-data/generated/eda/dataset_10000/*
-data/generated/eda/dataset_10000_test_cache/*
+data/generated/eda/
+data/generated/dataset_10000/*
+data/generated/dataset_10000_test_cache/*
+data/generated/finance/*
+data/generated/finance_test_cache/*
 
 # Keep result folders
 !results/raw/.gitkeep
@@ -127,10 +130,12 @@ data/generated/eda/dataset_10000_test_cache/*
 !results/README.md
 !data/generated/
 !data/generated/README.md
+!data/generated/dataset_10000/
+!data/generated/dataset_10000/README.md
+!data/generated/finance/
+!data/generated/finance/README.md
 !data/generated/phase2a/
 !data/generated/phase2a/README.md
-!data/generated/phase2a/eda/
-!data/generated/phase2a/eda/README.md
 
 # OS/editor
 .DS_Store
