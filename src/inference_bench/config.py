@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
 import yaml  # type: ignore[import-untyped]
+
+MODEL_ALIASES_KEY = "model_aliases"
+DEFAULT_MEMORY_MODES_PATH = "configs/memory_modes.yaml"
 
 
 def _validate_non_empty_string(value: str, field_name: str) -> None:
@@ -18,6 +21,12 @@ def _validate_non_empty_string(value: str, field_name: str) -> None:
 def _validate_optional_positive_int(value: int | None, field_name: str) -> None:
     if value is not None and value <= 0:
         msg = f"{field_name} must be > 0"
+        raise ValueError(msg)
+
+
+def _validate_non_negative_int(value: int, field_name: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        msg = f"{field_name} must be >= 0"
         raise ValueError(msg)
 
 
@@ -37,6 +46,36 @@ class ModelConfig:
         _validate_non_empty_string(self.provider, "provider")
         _validate_non_empty_string(self.model_id, "model_id")
         _validate_optional_positive_int(self.parameter_count, "parameter_count")
+
+
+@dataclass(frozen=True)
+class MemoryModeConfig:
+    """Configuration for a Phase 3 memory/context mode."""
+
+    description: str
+    requires_retrieval: bool
+    retrieval_type: str
+    top_k: int
+    requires_compression: bool
+    requires_agentic_workflow: bool
+    max_context_tokens: int
+    expected_stage: str
+
+    def __post_init__(self) -> None:
+        _validate_non_empty_string(self.description, "description")
+        _validate_non_empty_string(self.retrieval_type, "retrieval_type")
+        _validate_non_empty_string(self.expected_stage, "expected_stage")
+        _validate_non_negative_int(self.top_k, "top_k")
+        _validate_non_negative_int(self.max_context_tokens, "max_context_tokens")
+
+        for field_name in (
+            "requires_retrieval",
+            "requires_compression",
+            "requires_agentic_workflow",
+        ):
+            if not isinstance(getattr(self, field_name), bool):
+                msg = f"{field_name} must be boolean"
+                raise ValueError(msg)
 
 
 @dataclass(frozen=True)
@@ -85,10 +124,21 @@ class ProjectConfig:
     models: dict[str, ModelConfig]
     workloads: dict[str, WorkloadConfig]
     experiments: dict[str, ExperimentConfig]
+    model_aliases: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        for alias, target in self.model_aliases.items():
+            _validate_non_empty_string(alias, "model alias")
+            _validate_non_empty_string(target, f"model alias '{alias}' target")
+            if alias in self.models:
+                msg = f"Model alias '{alias}' conflicts with a canonical model key"
+                raise ValueError(msg)
+            if target not in self.models:
+                msg = f"Model alias '{alias}' references unknown model '{target}'"
+                raise ValueError(msg)
+
         for experiment_key, experiment in self.experiments.items():
-            if experiment.model not in self.models:
+            if experiment.model not in self.models and experiment.model not in self.model_aliases:
                 msg = f"Experiment '{experiment_key}' references unknown model '{experiment.model}'"
                 raise ValueError(msg)
             if experiment.workload not in self.workloads:
@@ -97,6 +147,21 @@ class ProjectConfig:
                     f"'{experiment.workload}'"
                 )
                 raise ValueError(msg)
+
+    def resolve_model_key(self, model_key_or_alias: str) -> str:
+        """Resolve a canonical model key from either an old key or public alias."""
+
+        _validate_non_empty_string(model_key_or_alias, "model_key_or_alias")
+        resolved_key = self.model_aliases.get(model_key_or_alias, model_key_or_alias)
+        if resolved_key not in self.models:
+            msg = f"Unknown model or alias '{model_key_or_alias}'"
+            raise KeyError(msg)
+        return resolved_key
+
+    def resolve_model_config(self, model_key_or_alias: str) -> ModelConfig:
+        """Return the model config for either a canonical key or public alias."""
+
+        return self.models[self.resolve_model_key(model_key_or_alias)]
 
 
 def load_yaml_file(path: str | Path) -> dict[str, object]:
@@ -138,10 +203,16 @@ def _load_config_mapping(path: str | Path) -> dict[str, dict[str, Any]]:
 def load_models_config(path: str | Path) -> dict[str, ModelConfig]:
     """Load model configurations from YAML."""
 
+    raw_config = load_yaml_file(path)
     models: dict[str, ModelConfig] = {}
-    for key, value in _load_config_mapping(path).items():
+    for key, value in raw_config.items():
+        if key == MODEL_ALIASES_KEY:
+            continue
+        if not isinstance(value, dict):
+            msg = f"Config entry '{key}' in {path} must be a mapping"
+            raise ValueError(msg)
         try:
-            models[key] = ModelConfig(**value)
+            models[key] = ModelConfig(**cast(dict[str, Any], value))
         except TypeError as exc:
             msg = f"Invalid model config '{key}' in {path}: {exc}"
             raise ValueError(msg) from exc
@@ -149,6 +220,59 @@ def load_models_config(path: str | Path) -> dict[str, ModelConfig]:
             msg = f"Invalid model config '{key}' in {path}: {exc}"
             raise ValueError(msg) from exc
     return models
+
+
+def load_model_aliases_config(path: str | Path) -> dict[str, str]:
+    """Load model aliases from the models YAML file."""
+
+    raw_config = load_yaml_file(path)
+    raw_aliases = raw_config.get(MODEL_ALIASES_KEY, {})
+    if raw_aliases is None:
+        return {}
+    if not isinstance(raw_aliases, dict):
+        msg = f"Config entry '{MODEL_ALIASES_KEY}' in {path} must be a mapping"
+        raise ValueError(msg)
+
+    aliases: dict[str, str] = {}
+    for alias, target in raw_aliases.items():
+        if not isinstance(alias, str) or not isinstance(target, str):
+            msg = f"Model aliases in {path} must contain only string keys and values"
+            raise ValueError(msg)
+        _validate_non_empty_string(alias, "model alias")
+        _validate_non_empty_string(target, f"model alias '{alias}' target")
+        aliases[alias] = target
+    return aliases
+
+
+def load_memory_modes_config(
+    path: str | Path = DEFAULT_MEMORY_MODES_PATH,
+) -> dict[str, MemoryModeConfig]:
+    """Load Phase 3 memory-mode configurations from YAML."""
+
+    memory_modes: dict[str, MemoryModeConfig] = {}
+    for key, value in _load_config_mapping(path).items():
+        try:
+            memory_modes[key] = MemoryModeConfig(**value)
+        except TypeError as exc:
+            msg = f"Invalid memory mode config '{key}' in {path}: {exc}"
+            raise ValueError(msg) from exc
+        except ValueError as exc:
+            msg = f"Invalid memory mode config '{key}' in {path}: {exc}"
+            raise ValueError(msg) from exc
+    return memory_modes
+
+
+def resolve_memory_mode(
+    memory_mode: str,
+    path: str | Path = DEFAULT_MEMORY_MODES_PATH,
+) -> MemoryModeConfig:
+    """Return one configured memory mode or raise a clear validation error."""
+
+    memory_modes = load_memory_modes_config(path)
+    if memory_mode not in memory_modes:
+        msg = f"Unknown memory mode '{memory_mode}' in {path}"
+        raise ValueError(msg)
+    return memory_modes[memory_mode]
 
 
 def load_workloads_config(path: str | Path) -> dict[str, WorkloadConfig]:
@@ -191,10 +315,13 @@ def load_project_config(
     """Load and validate the complete benchmark project configuration."""
 
     try:
+        models = load_models_config(models_path)
+        model_aliases = load_model_aliases_config(models_path)
         return ProjectConfig(
-            models=load_models_config(models_path),
+            models=models,
             workloads=load_workloads_config(workloads_path),
             experiments=load_experiments_config(experiments_path),
+            model_aliases=model_aliases,
         )
     except ValueError as exc:
         msg = f"Invalid project config: {exc}"

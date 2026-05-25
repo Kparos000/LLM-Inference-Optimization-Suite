@@ -1,0 +1,49 @@
+mm0_no_context:
+  description: "prompt only, no retrieved evidence"
+  requires_retrieval: false
+  retrieval_type: "none"
+  top_k: 0
+  requires_compression: false
+  requires_agentic_workflow: false
+  max_context_tokens: 0
+  expected_stage: "phase3"
+
+mm1_dense_top5:
+  description: "dense semantic retrieval, top 5"
+  requires_retrieval: true
+  retrieval_type: "dense"
+  top_k: 5
+  requires_compression: false
+  requires_agentic_workflow: false
+  max_context_tokens: 4096
+  expected_stage: "phase3"
+
+mm2_hybrid_top5:
+  description: "dense plus BM25 hybrid retrieval, top 5"
+  requires_retrieval: true
+  retrieval_type: "hybrid"
+  top_k: 5
+  requires_compression: false
+  requires_agentic_workflow: false
+  max_context_tokens: 4096
+  expected_stage: "phase3"
+
+mm3_compressed_hybrid_top5:
+  description: "hybrid retrieval plus deterministic context compression"
+  requires_retrieval: true
+  retrieval_type: "hybrid"
+  top_k: 5
+  requires_compression: true
+  requires_agentic_workflow: false
+  max_context_tokens: 2048
+  expected_stage: "phase3"
+
+mm4_bounded_agentic:
+  description: "bounded agentic workflow with retrieval, validation, one repair attempt, and escalation"
+  requires_retrieval: true
+  retrieval_type: "adaptive"
+  top_k: 5
+  requires_compression: true
+  requires_agentic_workflow: true
+  max_context_tokens: 4096
+  expected_stage: "phase3_contract_only"

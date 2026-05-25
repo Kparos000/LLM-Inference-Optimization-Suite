@@ -98,6 +98,7 @@ def validate_config(
 
     console.print("[bold green]Configuration valid.[/bold green]")
     console.print(f"Models loaded: {len(project_config.models)}")
+    console.print(f"Model aliases loaded: {len(project_config.model_aliases)}")
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")
     console.print("Experiments: " + (", ".join(experiment_names) if experiment_names else "none"))

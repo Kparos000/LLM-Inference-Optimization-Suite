@@ -37,3 +37,10 @@ large_model_placeholder:
   parameter_count: null
   default_dtype: "auto"
   notes: "Inactive placeholder for future large-model benchmark planning."
+
+model_aliases:
+  model1_0_5b: qwen2_5_0_5b_instruct
+  model2_1_5b: qwen2_5_1_5b_instruct
+  model3_7b: qwen2_5_7b_instruct
+  model4_32b: qwen2_5_32b_instruct
+  model5_large_placeholder: large_model_placeholder
