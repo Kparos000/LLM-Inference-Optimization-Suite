@@ -1,0 +1,322 @@
+{
+  "generated_at_utc": "2026-05-25T00:00:00+00:00",
+  "purpose": "Inference-readiness audit for Phase 2B context engineering and Phase 2C GPU inference optimization planning. No inference, GPU experiments, external API calls, embeddings, vector indexes, or RAG were run for this inventory.",
+  "datasets": {
+    "promoted_benchmark": {
+      "path": "data/scaleup_2000_full/",
+      "public_eda_path": "data/generated/dataset_10000/",
+      "legacy_eda_path_note": "data/generated/eda/dataset_10000/ is a legacy path and is not the current public EDA location.",
+      "total_prompts": 10000,
+      "total_gold_records": 10000,
+      "total_kb_records": 4740,
+      "verticals": {
+        "airline": {
+          "prompts": 2000,
+          "gold_records": 2000,
+          "kb_records": 300,
+          "workload_pressure": "medium"
+        },
+        "healthcare_admin": {
+          "prompts": 2000,
+          "gold_records": 2000,
+          "kb_records": 300,
+          "workload_pressure": "low"
+        },
+        "retail": {
+          "prompts": 2000,
+          "gold_records": 2000,
+          "kb_records": 1000,
+          "workload_pressure": "medium"
+        },
+        "finance": {
+          "prompts": 2000,
+          "gold_records": 2000,
+          "kb_records": 1540,
+          "workload_pressure": "high",
+          "finance_eda_entrypoint": "data/generated/finance/finance_eda.html"
+        },
+        "research_ai": {
+          "prompts": 2000,
+          "gold_records": 2000,
+          "kb_records": 1600,
+          "workload_pressure": "high"
+        }
+      }
+    },
+    "research_ai_full_retrieval_corpus": {
+      "path": "data/generated/phase2a/retrieval_corpus/research_ai/research_ai_full_sections_corpus.jsonl",
+      "available": true,
+      "section_count_from_eda": 1941,
+      "note": "Broader retrieval candidate corpus for Phase 2B. It is not the same as the promoted benchmark KB and no retrieval index exists yet."
+    },
+    "eda_reports": {
+      "inventory": "data/generated/dataset_10000/dataset_10000_eda_inventory.json",
+      "evidence_reuse": "data/generated/dataset_10000/dataset_10000_eda_evidence_reuse_report.json",
+      "workload_shape": "data/generated/dataset_10000/dataset_10000_eda_workload_shape_report.json",
+      "safety": "data/generated/dataset_10000/dataset_10000_eda_safety_report.json"
+    }
+  },
+  "workloads": {
+    "current_synthetic_harness_workloads": [
+      "smoke",
+      "structured_output_smoke",
+      "short_chat",
+      "code_helpdesk",
+      "long_context",
+      "shared_prefix"
+    ],
+    "promoted_dataset_workloads_needed": [
+      "dataset_10000_no_context",
+      "dataset_10000_gold_context",
+      "dataset_10000_bm25",
+      "dataset_10000_dense",
+      "dataset_10000_hybrid",
+      "dataset_10000_reranked_hybrid",
+      "dataset_10000_contextual_compression",
+      "dataset_10000_bounded_agentic"
+    ],
+    "context_modes_needed": [
+      "no_context",
+      "gold_context",
+      "retrieved_context",
+      "compressed_context",
+      "bounded_agentic_workflow"
+    ],
+    "retrieval_modes_needed": [
+      "none",
+      "gold_evidence",
+      "bm25",
+      "dense",
+      "hybrid",
+      "reranked_hybrid",
+      "contextual_compression"
+    ]
+  },
+  "current_scripts": {
+    "cli": "src/inference_bench/cli.py",
+    "runners": [
+      "src/inference_bench/runners/mock_runner.py",
+      "src/inference_bench/runners/hf_runner.py",
+      "src/inference_bench/runners/openai_compatible_runner.py",
+      "src/inference_bench/runners/openai_load_runner.py"
+    ],
+    "metrics": [
+      "src/inference_bench/metrics/latency.py",
+      "src/inference_bench/metrics/throughput.py",
+      "src/inference_bench/metrics/memory.py",
+      "src/inference_bench/metrics/cost.py"
+    ],
+    "reporting": [
+      "src/inference_bench/reporting/summary.py",
+      "src/inference_bench/reporting/compare.py",
+      "src/inference_bench/reporting/plots.py",
+      "src/inference_bench/reporting/phase1_plots.py"
+    ],
+    "system_info": "src/inference_bench/system_info.py",
+    "phase2_data_scripts": [
+      "scripts/phase2/explore_phase2a_promoted_dataset.py",
+      "scripts/phase2/export_research_ai_retrieval_corpus.py"
+    ],
+    "vllm_client_scripts": [
+      "scripts/run_vllm_smoke_client.ps1",
+      "scripts/run_vllm_smoke_client.sh",
+      "scripts/run_vllm_expanded_baseline_client.ps1",
+      "scripts/run_vllm_expanded_baseline_client.sh",
+      "scripts/vllm_planned_commands.md"
+    ]
+  },
+  "current_metrics": {
+    "request_level_available": [
+      "TTFT when streaming is enabled",
+      "TPOT",
+      "end_to_end_latency",
+      "throughput_tokens_per_second",
+      "input_tokens",
+      "output_tokens",
+      "success",
+      "error_message"
+    ],
+    "aggregate_available": [
+      "p50/p90/p95/p99 latency summaries",
+      "aggregate_requests_per_second in openai-load metadata",
+      "aggregate_output_tokens_per_second in openai-load metadata",
+      "success_count",
+      "failure_count",
+      "row_count"
+    ],
+    "quality_available": [
+      "structured JSON validity for generated JSONL traces",
+      "source dataset safety scan from EDA",
+      "source dataset evidence coverage from EDA"
+    ],
+    "estimates_available": [
+      "estimated model weight memory",
+      "estimated KV cache memory",
+      "EDA estimated prompt tokens",
+      "EDA estimated referenced KB tokens",
+      "EDA estimated expected output tokens"
+    ]
+  },
+  "missing_metrics": [
+    "queue_time",
+    "actual_batch_size",
+    "continuous_batching_composition",
+    "server_prefill_time",
+    "server_decode_time",
+    "prefill_tokens_per_second",
+    "decode_tokens_per_second",
+    "GPU_utilization",
+    "GPU_memory_used",
+    "GPU_memory_headroom",
+    "power_draw",
+    "temperature",
+    "KV_cache_usage",
+    "KV_cache_hit_rate",
+    "PagedAttention_block_usage",
+    "prefix_cache_hit_rate",
+    "estimated_MFU",
+    "tensor_parallel_efficiency",
+    "pipeline_parallel_efficiency",
+    "data_parallel_efficiency",
+    "expert_parallel_efficiency",
+    "retrieval_recall_at_k",
+    "groundedness",
+    "citation_recall",
+    "answer_correctness",
+    "generation_safety_violations",
+    "cost_per_1000_requests",
+    "cost_per_1M_tokens",
+    "cost_per_successful_answer"
+  ],
+  "telemetry_requirements": {
+    "hardware": [
+      "GPU name/count/driver/CUDA/runtime",
+      "GPU utilization over time",
+      "GPU memory used/free/headroom over time",
+      "power draw and power limit",
+      "temperature and throttling indicators",
+      "CPU utilization",
+      "host RAM usage",
+      "network throughput when client and server are separate"
+    ],
+    "backend": [
+      "queue depth",
+      "queue time",
+      "running/waiting request counts",
+      "batch size by scheduler iteration",
+      "prompt/prefill tokens per second",
+      "decode tokens per second",
+      "KV cache block usage",
+      "KV cache evictions",
+      "prefix cache hit rate",
+      "request timing events"
+    ],
+    "mfu_inputs": [
+      "model parameter count",
+      "dtype",
+      "hardware peak FLOPs",
+      "measured prompt tokens per second",
+      "measured generated tokens per second",
+      "wall-clock measurement window"
+    ]
+  },
+  "backend_requirements": {
+    "vllm": [
+      "OpenAI-compatible server run manifest",
+      "metrics endpoint or log capture",
+      "scheduler queue and batch metrics",
+      "prefill/decode metrics",
+      "PagedAttention/KV cache metrics",
+      "prefix caching metrics",
+      "chunked prefill settings",
+      "tensor/pipeline parallel configuration fields"
+    ],
+    "sglang": [
+      "OpenAI-compatible or native client path",
+      "server metrics capture",
+      "queue and batch metrics",
+      "prefill/decode metrics",
+      "KV cache pool metrics",
+      "radix/prefix cache metrics",
+      "parallelism configuration fields",
+      "comparable result schema to vLLM"
+    ],
+    "bounded_agentic_workflow": [
+      "fixed maximum steps",
+      "allowed tools list",
+      "per-step latency and token accounting",
+      "retrieval calls counted separately",
+      "no autonomous external side effects",
+      "deterministic replay artifacts"
+    ]
+  },
+  "phase2b_steps": [
+    "Define context-record, retrieval-result, assembled-prompt, and evaluation schemas.",
+    "Convert the 10,000-record dataset into generated workload JSONL files.",
+    "Implement no_context and gold_context assembly.",
+    "Normalize KB rows into shared chunk/citation records.",
+    "Implement lexical retrieval first, then dense/hybrid/reranked modes later.",
+    "Implement retrieval recall@k and required evidence coverage scoring.",
+    "Implement groundedness, format validity, must-include, must-not-include, and safety scoring.",
+    "Create bounded agentic workflow fixtures without autonomous execution."
+  ],
+  "phase2c_steps": [
+    "Extend result schema for context mode, retrieval mode, context tokens, queue time, prefill/decode timings, batch size, concurrency, telemetry_run_id, and backend metrics.",
+    "Add run manifest JSON for backend, model, hardware, dtype, quantization, context length, and parallelism settings.",
+    "Add GPU telemetry collection and timestamp alignment.",
+    "Add vLLM metrics ingestion.",
+    "Add SGLang metrics ingestion.",
+    "Add estimated MFU calculation.",
+    "Run vLLM smoke with no_context and gold_context modes only after dry-run validation.",
+    "Run batching, variable-length, context-length, KV-cache, and prefix-cache sweeps.",
+    "Add bottleneck diagnosis summaries and vLLM-vs-SGLang comparison tables."
+  ],
+  "first_experiment_plan": {
+    "backend": "vLLM OpenAI-compatible server",
+    "model_sequence": [
+      "Qwen/Qwen2.5-0.5B-Instruct smoke",
+      "Qwen/Qwen2.5-1.5B-Instruct calibration",
+      "Qwen/Qwen2.5-7B-Instruct first serious GPU benchmark if memory permits"
+    ],
+    "subset": "250 prompts stratified by vertical, task_type, output_format, evidence_count, and estimated context-token bucket",
+    "context_modes": [
+      "no_context",
+      "gold_context"
+    ],
+    "retrieval_modes": [
+      "none for first smoke",
+      "gold_evidence for context assembly validation"
+    ],
+    "concurrency_levels": [
+      1,
+      4,
+      8,
+      16
+    ],
+    "required_artifacts": [
+      "result CSV",
+      "generation JSONL",
+      "run manifest JSON",
+      "GPU telemetry time series",
+      "backend metrics snapshot",
+      "evaluation report"
+    ],
+    "stop_conditions": [
+      "OOM",
+      "telemetry missing",
+      "critical schema failure",
+      "unsafe generation evaluator failure",
+      "unexpected error rate"
+    ]
+  },
+  "risks": [
+    "Phase 2B context assembly is not implemented yet.",
+    "OpenAI-compatible token counts currently use whitespace estimates.",
+    "Server-side queue and batch metrics are not captured.",
+    "GPU telemetry and MFU are not implemented.",
+    "KV cache and prefix cache metrics are backend-specific and missing.",
+    "Retrieval recall, groundedness, citation recall, and answer correctness are missing.",
+    "SGLang comparison requires a separate backend setup and metrics adapter.",
+    "Agentic workflow mode requires strict bounds to avoid uncontrolled behavior."
+  ]
+}
