@@ -1,0 +1,387 @@
+{
+  "generated_at_utc": "2026-05-25T00:00:00+00:00",
+  "purpose": "Repository-aware Phase 3-6 implementation audit and planning inventory. No new inference code, refactors, model-key renames, GPU experiments, external API calls, embeddings, vector indexes, or RAG execution were performed.",
+  "current_public_paths": {
+    "promoted_dataset": "data/scaleup_2000_full/",
+    "public_dataset_eda": "data/generated/dataset_10000/",
+    "finance_eda_entrypoint": "data/generated/finance/finance_eda.html",
+    "legacy_eda_paths": [
+      "data/generated/eda/dataset_10000/",
+      "data/generated/phase2a/eda/"
+    ],
+    "research_ai_future_retrieval_corpus": "data/generated/phase2a/retrieval_corpus/research_ai/"
+  },
+  "models": {
+    "config_file": "configs/models.yaml",
+    "required_fields": [
+      "name",
+      "provider",
+      "model_id"
+    ],
+    "optional_fields": [
+      "parameter_count",
+      "default_dtype",
+      "notes"
+    ],
+    "current_keys": {
+      "qwen2_5_0_5b_instruct": {
+        "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+        "parameter_count": 500000000,
+        "role": "local smoke/dev"
+      },
+      "qwen2_5_1_5b_instruct": {
+        "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+        "parameter_count": 1500000000,
+        "role": "small baseline candidate"
+      },
+      "qwen2_5_7b_instruct": {
+        "model_id": "Qwen/Qwen2.5-7B-Instruct",
+        "parameter_count": 7000000000,
+        "role": "first serious GPU benchmark candidate"
+      },
+      "qwen2_5_32b_instruct": {
+        "model_id": "Qwen/Qwen2.5-32B-Instruct",
+        "parameter_count": 32000000000,
+        "role": "later scale comparison candidate"
+      },
+      "large_model_placeholder": {
+        "model_id": "placeholder/large-model",
+        "parameter_count": null,
+        "role": "future large model placeholder"
+      }
+    },
+    "proposed_public_keys": {
+      "qwen2_5_0_5b_instruct": "model1_0_5b",
+      "qwen2_5_1_5b_instruct": "model2_1_5b",
+      "qwen2_5_7b_instruct": "model3_7b",
+      "qwen2_5_32b_instruct": "model4_32b",
+      "large_model_placeholder": "model5_large_placeholder"
+    },
+    "alias_recommendation": "Support aliases before renaming keys. The current ModelConfig does not accept arbitrary alias fields, so a future alias resolver or duplicate-key transition is needed before configs are changed.",
+    "files_depending_on_current_keys": [
+      "configs/models.yaml",
+      "configs/experiments.yaml",
+      "configs/vllm_baseline_experiments.yaml",
+      "configs/stress_plan.yaml",
+      "tests/test_config.py"
+    ]
+  },
+  "backends": {
+    "mock": {
+      "implemented": true,
+      "runner": "src/inference_bench/runners/mock_runner.py",
+      "current_use": "Default config validation and no-model pipeline smoke"
+    },
+    "huggingface": {
+      "implemented": true,
+      "runner": "src/inference_bench/runners/hf_runner.py",
+      "command": "inference-bench hf-run",
+      "measures": [
+        "input_tokens with tokenizer",
+        "output_tokens",
+        "TTFT when streaming is enabled",
+        "TPOT",
+        "end_to_end_latency_ms",
+        "throughput_tokens_per_second",
+        "success",
+        "error_message"
+      ]
+    },
+    "openai_compatible": {
+      "implemented": true,
+      "runner": "src/inference_bench/runners/openai_compatible_runner.py",
+      "command": "inference-bench openai-compatible-run",
+      "intended_backend": "vLLM or any OpenAI-compatible local server",
+      "default_base_url": "http://localhost:8000/v1",
+      "default_api_key": "EMPTY",
+      "token_counting": "whitespace approximation"
+    },
+    "openai_load": {
+      "implemented": true,
+      "runner": "src/inference_bench/runners/openai_load_runner.py",
+      "command": "inference-bench openai-load-run",
+      "supports_concurrency": true,
+      "supports_checkpoint_resume": true,
+      "supports_chunking": true,
+      "supports_metadata_json": true
+    },
+    "vllm": {
+      "implemented": "client path only",
+      "server_adapter": "OpenAI-compatible server/client path",
+      "missing": [
+        "server metrics ingestion",
+        "scheduler queue metrics",
+        "prefill/decode server timing",
+        "KV/PagedAttention metrics",
+        "prefix cache metrics"
+      ]
+    },
+    "sglang": {
+      "implemented": false,
+      "missing": [
+        "dependency/config",
+        "runnable CLI/backend adapter",
+        "metrics ingestion",
+        "result schema parity with vLLM"
+      ]
+    }
+  },
+  "current_concurrency": {
+    "planned_grid": [
+      1,
+      4,
+      8,
+      16,
+      32
+    ],
+    "source": "configs/stress_plan.yaml",
+    "active_checked_in_experiments": "Mostly concurrency 1 in configs/experiments.yaml and configs/vllm_baseline_experiments.yaml",
+    "load_runner_support": "inference-bench openai-load-run --concurrency"
+  },
+  "current_metrics": {
+    "request_level": [
+      "ttft_ms",
+      "tpot_ms",
+      "end_to_end_latency_ms",
+      "throughput_tokens_per_second",
+      "input_tokens",
+      "output_tokens",
+      "peak_memory_mb schema field",
+      "estimated_cost_usd schema field",
+      "success",
+      "error_message"
+    ],
+    "aggregate": [
+      "p50/p90/p95/p99 summaries",
+      "aggregate_requests_per_second in openai-load metadata",
+      "aggregate_output_tokens_per_second in openai-load metadata",
+      "success_count",
+      "failure_count"
+    ],
+    "quality": [
+      "structured JSON validity only"
+    ],
+    "missing": [
+      "queue_time",
+      "server_prefill_time",
+      "server_decode_time",
+      "actual_batch_size",
+      "continuous_batching_composition",
+      "GPU_utilization",
+      "GPU_memory_used",
+      "GPU_memory_headroom",
+      "power_draw",
+      "temperature",
+      "KV_cache_usage",
+      "KV_cache_hit_rate",
+      "prefix_cache_hit_rate",
+      "estimated_MFU",
+      "retrieval_recall_at_k",
+      "groundedness",
+      "answer_correctness"
+    ]
+  },
+  "telemetry": {
+    "current_static_capture": "src/inference_bench/system_info.py",
+    "current_static_fields": [
+      "platform",
+      "python_version",
+      "processor",
+      "cpu_count_logical",
+      "cpu_count_physical",
+      "total_ram_gb",
+      "torch_version",
+      "cuda_available",
+      "cuda_device_count",
+      "cuda_device_names",
+      "transformers_version"
+    ],
+    "missing_live_telemetry": [
+      "nvidia-smi sampling",
+      "pynvml",
+      "DCGM",
+      "Prometheus metrics",
+      "GPU utilization time series",
+      "GPU memory time series",
+      "power draw",
+      "temperature",
+      "backend scheduler metrics"
+    ]
+  },
+  "result_schema": {
+    "current_csv_fields": [
+      "run_id",
+      "timestamp_utc",
+      "backend",
+      "model_name",
+      "optimization",
+      "workload_name",
+      "prompt_id",
+      "input_tokens",
+      "output_tokens",
+      "ttft_ms",
+      "tpot_ms",
+      "end_to_end_latency_ms",
+      "throughput_tokens_per_second",
+      "peak_memory_mb",
+      "estimated_cost_usd",
+      "success",
+      "error_message"
+    ],
+    "future_fields_needed": [
+      "vertical",
+      "dataset_id",
+      "context_mode",
+      "memory_mode",
+      "retrieval_mode",
+      "context_tokens",
+      "concurrency",
+      "queue_time_ms",
+      "prefill_ms",
+      "decode_ms",
+      "batch_size_observed",
+      "telemetry_run_id",
+      "backend_metrics_id",
+      "eval_correct",
+      "format_valid",
+      "grounded",
+      "safety_violation",
+      "gpu_cost_usd"
+    ]
+  },
+  "evaluation": {
+    "current_support": "Structured JSON validity through src/inference_bench/quality.py",
+    "gold_join_possible": true,
+    "join_key": "prompt_id",
+    "missing": [
+      "gold/eval loader keyed by prompt_id",
+      "generation-to-gold evaluator",
+      "must_include and must_not_include scoring",
+      "citation/evidence matching",
+      "groundedness",
+      "vertical safety boundary checks",
+      "aggregate quality reports"
+    ]
+  },
+  "context_rag": {
+    "current_support": [
+      "promoted prompt/gold/KB JSONL",
+      "Research AI full section corpus export",
+      "dataset EDA workload-shape reports"
+    ],
+    "missing": [
+      "context schema",
+      "corpus registry",
+      "BM25",
+      "dense retrieval",
+      "hybrid retrieval",
+      "reranking",
+      "compression",
+      "context packer",
+      "promoted dataset workload JSONL builders"
+    ]
+  },
+  "memory_modes": {
+    "mm0_no_context": {
+      "requires_retrieval": false,
+      "requires_model_calls_before_gpu": false,
+      "purpose": "Prompt-only baseline"
+    },
+    "mm1_dense_top5": {
+      "requires_retrieval": true,
+      "requires_model_calls_before_gpu": "embedding/index stage if embeddings are not precomputed",
+      "purpose": "Dense top-5 retrieval"
+    },
+    "mm2_hybrid_top5": {
+      "requires_retrieval": true,
+      "requires_model_calls_before_gpu": "embedding/index stage if embeddings are not precomputed",
+      "purpose": "BM25 plus dense top-5 retrieval"
+    },
+    "mm3_compressed_hybrid_top5": {
+      "requires_retrieval": true,
+      "requires_model_calls_before_gpu": "no for deterministic compression; yes for model-based compression later",
+      "purpose": "Compressed hybrid context"
+    },
+    "mm4_bounded_agentic": {
+      "requires_retrieval": true,
+      "requires_model_calls_before_gpu": false,
+      "purpose": "Bounded tool/retrieval workflow as separate post-main experiment"
+    }
+  },
+  "chunking_strategies": {
+    "airline": "Policy/procedure chunks keyed by doc_id with metadata.base_doc_id grouping and paragraph/sentence fallback for long bodies.",
+    "healthcare_admin": "Admin-procedure and safety-boundary chunks keyed by doc_id, preserving expected_queue, privacy_sensitive, and safety_boundary prompt fields.",
+    "retail": "Parent-child product/category chunks using parent_asin/category/product_title as parent and review/product_metadata/review_summary/support_policy as children.",
+    "finance": "SEC/XBRL-aware chunking with atomic XBRL fact chunks, filing-event chunks, filing-section chunks by section_type, and sentence-window fallback for long narrative sections.",
+    "research_ai": "Paper-section chunks keyed by paper_id and section_id, with sentence-window fallback for long full-corpus method/results sections."
+  },
+  "final_experiment_plan": {
+    "backends": [
+      "HF baseline",
+      "vLLM",
+      "SGLang"
+    ],
+    "models": [
+      "0.5B local plumbing",
+      "1.5B small baseline",
+      "7B first serious GPU",
+      "32B later scale comparison"
+    ],
+    "dataset_sizes": [
+      "local tiny sample",
+      "500-prompt GPU smoke",
+      "2000 controlled subset",
+      "10000 final run"
+    ],
+    "main_concurrency": [
+      1,
+      4,
+      8,
+      16
+    ],
+    "stress_concurrency": [
+      32
+    ],
+    "main_memory_modes": [
+      "mm0_no_context",
+      "mm1_dense_top5",
+      "mm2_hybrid_top5",
+      "mm3_compressed_hybrid_top5"
+    ],
+    "post_main_mode": "mm4_bounded_agentic"
+  },
+  "cost_tracking": {
+    "api_token_cost_for_self_hosted_open_models": 0,
+    "infrastructure_cost_required": true,
+    "formulas": [
+      "gpu_cost_usd = runpod_gpu_hourly_price_usd * runtime_hours",
+      "gpu_dollars_per_1000_requests = gpu_cost_usd / total_requests * 1000",
+      "gpu_dollars_per_1m_tokens = gpu_cost_usd / total_tokens * 1000000",
+      "gpu_dollars_per_successful_answer = gpu_cost_usd / successful_answers",
+      "gpu_dollars_per_grounded_correct_answer = gpu_cost_usd / grounded_correct_answers"
+    ]
+  },
+  "api_keys": {
+    "HF_TOKEN": "Needed for gated or rate-limited Hugging Face models.",
+    "local_vllm": "Can use EMPTY API key.",
+    "local_sglang": "Can use a local dummy key if compatible.",
+    "runpod_api_key": "Only needed if automating pods.",
+    "external_model_apis": "Only needed if later added."
+  },
+  "roadmap": {
+    "phase3": "Context engineering and RAG foundation: workload/context schemas, corpus registry, retrieval, context packing, eval.",
+    "phase4": "Harness/plumbing validation and small GPU smoke: manifests, telemetry, exact tokens, vLLM smoke.",
+    "phase5": "Main GPU experiment: backend comparison, bottleneck diagnosis, optimization pass, rerun.",
+    "phase6": "Plots, dashboard, deployment, paper, and public storytelling."
+  },
+  "risks": [
+    "Direct model-key rename would break current configs/tests unless aliases are supported.",
+    "OpenAI-compatible token counts are currently whitespace estimates.",
+    "Server-side queue/prefill/decode metrics are missing.",
+    "GPU telemetry is missing.",
+    "SGLang is not yet runnable.",
+    "Context/RAG/evaluation layers are not implemented yet.",
+    "Research AI full corpus must not be confused with gold-linked benchmark KB.",
+    "32B runs may require tensor parallelism and larger GPU budget."
+  ]
+}

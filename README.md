@@ -122,6 +122,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 2A-16B Research AI retrieval corpus](docs/52_phase2a_research_ai_retrieval_corpus.md)
 - [10,000-record dataset EDA](docs/53_phase2a_10000_dataset_eda.md)
 - [Inference readiness inventory](docs/54_inference_readiness_inventory.md)
+- [Repo-aware Phase 3 to 6 inference plan](docs/55_repo_aware_phase3_to_6_plan.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

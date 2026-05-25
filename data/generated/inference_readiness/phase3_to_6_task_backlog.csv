@@ -1,0 +1,33 @@
+phase,task_id,task_name,reuse_existing,depends_on,output_artifacts,acceptance_criteria,priority
+3,P3-01,Add model alias migration plan,"configs/models.yaml; config loader tests",none,"docs/config migration notes","Old keys and proposed public keys can coexist before any rename",high
+3,P3-02,Define promoted dataset workload schema,"WorkloadItem style; BenchmarkResult style",P3-01,"schema docs and tests","Schema carries prompt_id, vertical, task_type, expected_output_format, gold refs, context mode, retrieval mode",high
+3,P3-03,Build mm0 no-context workload generator,"data/scaleup_2000_full; workload loader patterns",P3-02,"data/generated/workloads/dataset_10000/mm0_no_context.jsonl","All 10000 prompt records convert deterministically",high
+3,P3-04,Build gold-context assembler,"KB/gold required_doc_ids; EDA workload reports",P3-02,"gold_context workload JSONL and context trace JSONL","Required evidence is packed with stable citation IDs",high
+3,P3-05,Normalize KB into corpus registry,"promoted KB JSONL; Research AI corpus export",P3-02,"corpus registry JSONL/JSON","All 4740 promoted KB rows load through one typed interface",high
+3,P3-06,Implement lexical retrieval baseline,"corpus registry",P3-05,"BM25 retrieval result JSONL","Retrieval returns ranked doc IDs with scores for every prompt",high
+3,P3-07,Implement retrieval recall evaluator,"gold required_doc_ids and required_evidence_ids",P3-06,"retrieval_eval_report.json","Recall@k and evidence coverage are reported by vertical",high
+3,P3-08,Add dense retrieval plan and dependency decision,"pyproject optional dependencies style",P3-05,"implementation note/config","Embedding/index dependency is chosen before dense implementation",medium
+3,P3-09,Implement hybrid top-5 retrieval,"BM25 baseline and dense retrieval",P3-08,"hybrid retrieval JSONL","Hybrid output is comparable with lexical output and scored by recall@5",high
+3,P3-10,Implement deterministic context compression,"hybrid retrieval output",P3-09,"compressed context workload JSONL","Compression ratio and retained evidence coverage are reported",medium
+3,P3-11,Implement generation evaluator,"quality.py; gold records",P3-03,"generation_eval_report.json","Must-include, must-not-include, format validity, citation match, groundedness, safety are scored",high
+3,P3-12,Define bounded agentic contract,"memory mode plan; retrieval schema",P3-07,"agentic_contract.md and fixture schema","Max steps, allowed tools, side-effect limits, and replay format are explicit",medium
+4,P4-01,Extend result schema for context-aware runs,"BenchmarkResult; GenerationRecord",P3-02,"updated schema/tests","Context/memory/retrieval/concurrency/run IDs can be written without breaking old fields",high
+4,P4-02,Add exact tokenizer counting for OpenAI-compatible runs,"HF tokenizer approach; models.yaml",P4-01,"token counting module/tests","OpenAI-compatible records no longer rely only on whitespace token estimates",high
+4,P4-03,Add run manifest schema,"system_info.py; result paths",P4-01,"run_manifest.json","Backend, model, dtype, command, hardware, driver, CUDA, container, context settings are captured",high
+4,P4-04,Add GPU telemetry sampler,"system_info.py",P4-03,"telemetry JSONL/CSV","GPU utilization, memory, power, temperature are sampled with timestamps",high
+4,P4-05,Add vLLM backend metrics ingestion,"openai-load-run; vLLM server",P4-03,"vllm_metrics JSONL/JSON","Queue, batch, prefill/decode, KV, prefix metrics are captured when available",high
+4,P4-06,Validate local HF promoted tiny sample,"hf-run; mm0 workload",P3-03,"results/raw/hf_dataset_tiny_results.csv","Tiny promoted workload completes with generation traces",high
+4,P4-07,Validate vLLM 0.5B smoke,"openai-compatible-run; mm0 workload",P4-05,"results/raw/vllm_dataset_smoke_results.csv","Streaming TTFT/TPOT/latency/tokens/results are populated",high
+4,P4-08,Run 500-prompt GPU smoke,"openai-load-run; telemetry; manifest",P4-07,"raw CSV, generation JSONL, manifest, telemetry, eval report","100 prompts per vertical pass concurrency 1 and 4 with acceptable failure rate",high
+5,P5-01,Build main run matrix,"stress_plan.yaml; Phase 3 workloads",P4-08,"run_matrix.yaml","Backends, models, memory modes, subsets, concurrency, stop conditions are explicit",high
+5,P5-02,Run vLLM 7B controlled subset,"openai-load-run; telemetry",P5-01,"results/raw and processed vLLM 7B artifacts","2000-prompt subset completes across concurrency 1/4/8/16",high
+5,P5-03,Add SGLang runnable adapter,"OpenAI-compatible runner patterns",P5-02,"SGLang runner/config/tests","SGLang can run same workload schema and write same result fields",medium
+5,P5-04,Run backend comparison,"vLLM/HF/SGLang paths",P5-03,"backend comparison CSV/report","Equivalent workloads compare latency, throughput, quality, cost, telemetry",high
+5,P5-05,Add bottleneck diagnosis report,"metrics; telemetry; backend metrics",P5-04,"bottleneck_diagnosis.md/json","Queue/prefill/decode/KV/memory/throughput bottleneck labels are generated",high
+5,P5-06,Run optimization pass and rerun,"vLLM config and diagnosis",P5-05,"optimized comparison report","Optimization changes have before/after metrics and quality checks",high
+5,P5-07,Add GPU cost accounting,"cost.py; run metadata",P5-04,"cost_report.csv/json","GPU dollars per 1000 requests, 1M tokens, successful answer, grounded correct answer are computed",medium
+5,P5-08,Estimate MFU,"models.yaml; telemetry; backend throughput",P5-04,"mfu_report.csv/json","MFU estimate is reported with formula inputs and limitations",medium
+6,P6-01,Build final plot suite,"phase1_plots.py; compare-results",P5-06,"results/figures/phase3_6","Plots cover latency, throughput, TTFT, TPOT, quality, cost, telemetry, MFU",high
+6,P6-02,Build inference dashboard,"EDA dashboard style; processed results",P6-01,"data/generated/inference_dashboard","Dashboard distinguishes dataset EDA from inference results",high
+6,P6-03,Write technical paper,"docs; final reports",P6-02,"docs/final_paper.md","Paper explains dataset, methods, backend comparison, bottlenecks, optimizations, limits",high
+6,P6-04,Prepare public story assets,"plots; dashboard; paper",P6-03,"README updates and public summary","External reviewer can find finance, dataset EDA, inference results, and final claims",medium
