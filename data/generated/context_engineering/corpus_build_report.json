@@ -1,0 +1,421 @@
+{
+  "all_context_records_validated": true,
+  "by_vertical": {
+    "airline": {
+      "average_text_length": 420.277,
+      "chunk_builder": "build_airline_context_records",
+      "chunk_strategy": "policy-section chunking plus recursive fallback",
+      "context_ids_unique": true,
+      "context_row_count": 300,
+      "corpus_id": "airline_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "enough_context_rows_for_retrieval_testing": true,
+      "metadata_coverage": {
+        "base_doc_id": {
+          "missing": 25,
+          "present": 275,
+          "total": 300
+        },
+        "fictional_airline": {
+          "missing": 0,
+          "present": 300,
+          "total": 300
+        }
+      },
+      "missing_metadata_warnings": [
+        "airline: metadata field 'base_doc_id' missing on 25/300 context records."
+      ],
+      "output_path": "data\\generated\\context_engineering\\corpora\\airline_context_corpus.jsonl",
+      "source_files": {
+        "gold": "data\\scaleup_2000_full\\airline\\airline_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\airline\\airline_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\airline\\airline_prompts_2000.jsonl"
+      },
+      "source_row_count": 300,
+      "token_estimate_distribution": {
+        "max": 71.0,
+        "mean": 57.877,
+        "median": 60.0,
+        "min": 22.0,
+        "p95": 65.0
+      },
+      "validated_context_records": true,
+      "vertical": "airline"
+    },
+    "finance": {
+      "average_text_length": 391.04,
+      "chunk_builder": "build_finance_context_records",
+      "chunk_strategy": "SEC/XBRL-aware structured chunking with sentence-window fallback",
+      "context_ids_unique": true,
+      "context_row_count": 1588,
+      "corpus_id": "finance_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "enough_context_rows_for_retrieval_testing": true,
+      "finance_metadata_summary": {
+        "company_name": {
+          "missing": 8,
+          "present": 1580,
+          "unique_values_sample": [
+            "Advanced Micro Devices, Inc.",
+            "Alphabet Inc.",
+            "Amazon.com, Inc.",
+            "Apple Inc.",
+            "Meta Platforms, Inc.",
+            "Microsoft Corporation",
+            "NVIDIA Corporation",
+            "Tesla, Inc."
+          ]
+        },
+        "concept": {
+          "missing": 809,
+          "present": 779,
+          "unique_values_sample": [
+            "AccountsPayable",
+            "AccountsPayableCurrent",
+            "AccountsPayableOtherCurrentAndNoncurrent",
+            "AccountsPayableRelatedPartiesCurrent",
+            "AccountsReceivableGrossCurrent",
+            "AccountsReceivableNetCurrent",
+            "AccrualForEnvironmentalLossContingencies",
+            "AccrualForEnvironmentalLossContingenciesPayments",
+            "AccruedIncomeTaxesCurrent",
+            "AccruedIncomeTaxesNoncurrent",
+            "AccruedLiabilities",
+            "AccruedLiabilitiesCurrent",
+            "AccruedLiabilitiesCurrentAndNoncurrent",
+            "AccruedMarketingCostsCurrent",
+            "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment",
+            "AccumulatedOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
+            "AccumulatedOtherComprehensiveIncomeLossCumulativeChangesInNetGainLossFromCashFlowHedgesEffectNetOfTax",
+            "AccumulatedOtherComprehensiveIncomeLossForeignCurrencyTranslationAdjustmentNetOfTax",
+            "AccumulatedOtherComprehensiveIncomeLossNetOfTax",
+            "AdditionalPaidInCapitalCommonStock"
+          ]
+        },
+        "concepts": {
+          "missing": 1564,
+          "present": 24,
+          "unique_values_sample": [
+            "Assets",
+            "CashAndCashEquivalentsAtCarryingValue",
+            "CostOfRevenue",
+            "GrossProfit",
+            "Liabilities",
+            "NetCashProvidedByUsedInOperatingActivities",
+            "NetIncomeLoss",
+            "OperatingIncomeLoss",
+            "ProfitLoss",
+            "ResearchAndDevelopmentExpense",
+            "RevenueFromContractWithCustomerExcludingAssessedTax",
+            "Revenues",
+            "SalesRevenueNet",
+            "StockholdersEquity"
+          ]
+        },
+        "filing_date": {
+          "missing": 803,
+          "present": 785,
+          "unique_values_sample": [
+            "2024-01-02",
+            "2024-01-24",
+            "2024-01-29",
+            "2024-01-30",
+            "2024-01-31",
+            "2024-02-01",
+            "2024-02-02",
+            "2024-02-21",
+            "2024-04-02",
+            "2024-04-23",
+            "2024-04-24",
+            "2024-04-25",
+            "2024-04-26",
+            "2024-04-30",
+            "2024-05-01",
+            "2024-05-02",
+            "2024-05-03",
+            "2024-05-22",
+            "2024-05-29",
+            "2024-07-02"
+          ]
+        },
+        "form": {
+          "missing": 803,
+          "present": 785,
+          "unique_values_sample": [
+            "10-K",
+            "10-Q",
+            "8-K"
+          ]
+        },
+        "section_type": {
+          "missing": 827,
+          "present": 761,
+          "unique_values_sample": [
+            "business",
+            "controls_and_procedures",
+            "financial_statements",
+            "financial_statements_and_exhibits",
+            "legal_proceedings",
+            "liquidity_and_capital_resources",
+            "management_discussion_and_analysis",
+            "notes_to_financial_statements",
+            "quantitative_and_qualitative_disclosures",
+            "results_of_operations",
+            "risk_factors",
+            "segment_information"
+          ]
+        },
+        "ticker": {
+          "missing": 0,
+          "present": 1588,
+          "unique_values_sample": [
+            "AAPL",
+            "AMD",
+            "AMZN",
+            "GOOGL",
+            "META",
+            "MSFT",
+            "NVDA",
+            "TSLA"
+          ]
+        }
+      },
+      "metadata_coverage": {
+        "company_name": {
+          "missing": 8,
+          "present": 1580,
+          "total": 1588
+        },
+        "concept": {
+          "missing": 809,
+          "present": 779,
+          "total": 1588
+        },
+        "filing_date": {
+          "missing": 803,
+          "present": 785,
+          "total": 1588
+        },
+        "form": {
+          "missing": 803,
+          "present": 785,
+          "total": 1588
+        },
+        "section_type": {
+          "missing": 827,
+          "present": 761,
+          "total": 1588
+        },
+        "ticker": {
+          "missing": 0,
+          "present": 1588,
+          "total": 1588
+        }
+      },
+      "missing_metadata_warnings": [
+        "finance: metadata field 'company_name' missing on 8/1588 context records.",
+        "finance: metadata field 'form' missing on 803/1588 context records.",
+        "finance: metadata field 'filing_date' missing on 803/1588 context records.",
+        "finance: metadata field 'concept' missing on 809/1588 context records.",
+        "finance: metadata field 'section_type' missing on 827/1588 context records."
+      ],
+      "output_path": "data\\generated\\context_engineering\\corpora\\finance_context_corpus.jsonl",
+      "source_files": {
+        "gold": "data\\scaleup_2000_full\\finance\\finance_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\finance\\finance_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\finance\\finance_prompts_2000.jsonl"
+      },
+      "source_row_count": 1540,
+      "token_estimate_distribution": {
+        "max": 220.0,
+        "mean": 50.398,
+        "median": 46.0,
+        "min": 33.0,
+        "p95": 67.3
+      },
+      "validated_context_records": true,
+      "vertical": "finance"
+    },
+    "healthcare_admin": {
+      "average_text_length": 439.9,
+      "chunk_builder": "build_healthcare_admin_context_records",
+      "chunk_strategy": "admin-procedure chunking plus safety-boundary metadata",
+      "context_ids_unique": true,
+      "context_row_count": 300,
+      "corpus_id": "healthcare_admin_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "enough_context_rows_for_retrieval_testing": true,
+      "metadata_coverage": {
+        "base_doc_id": {
+          "missing": 25,
+          "present": 275,
+          "total": 300
+        },
+        "fictional_provider": {
+          "missing": 0,
+          "present": 300,
+          "total": 300
+        }
+      },
+      "missing_metadata_warnings": [
+        "healthcare_admin: metadata field 'base_doc_id' missing on 25/300 context records."
+      ],
+      "output_path": "data\\generated\\context_engineering\\corpora\\healthcare_admin_context_corpus.jsonl",
+      "source_files": {
+        "gold": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_prompts_2000.jsonl"
+      },
+      "source_row_count": 300,
+      "token_estimate_distribution": {
+        "max": 66.0,
+        "mean": 56.35,
+        "median": 59.0,
+        "min": 19.0,
+        "p95": 63.0
+      },
+      "validated_context_records": true,
+      "vertical": "healthcare_admin"
+    },
+    "research_ai": {
+      "average_text_length": 480.55,
+      "chunk_builder": "build_research_ai_context_records",
+      "chunk_strategy": "paper-section chunking with sentence-window fallback",
+      "context_ids_unique": true,
+      "context_row_count": 1726,
+      "corpus_id": "research_ai_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "enough_context_rows_for_retrieval_testing": true,
+      "metadata_coverage": {
+        "paper_id": {
+          "missing": 0,
+          "present": 1726,
+          "total": 1726
+        },
+        "section_title": {
+          "missing": 267,
+          "present": 1459,
+          "total": 1726
+        },
+        "section_type": {
+          "missing": 28,
+          "present": 1698,
+          "total": 1726
+        },
+        "title": {
+          "missing": 0,
+          "present": 1726,
+          "total": 1726
+        }
+      },
+      "missing_metadata_warnings": [
+        "research_ai: metadata field 'section_type' missing on 28/1726 context records.",
+        "research_ai: metadata field 'section_title' missing on 267/1726 context records."
+      ],
+      "output_path": "data\\generated\\context_engineering\\corpora\\research_ai_context_corpus.jsonl",
+      "research_ai_section_metadata_summary": {
+        "paper_id_count": 60,
+        "preserved_expected_section_types": [
+          "abstract",
+          "experiments",
+          "introduction",
+          "limitations",
+          "method",
+          "results"
+        ],
+        "section_type_counts": {
+          "abstract": 80,
+          "analysis": 44,
+          "approach": 5,
+          "background": 15,
+          "conclusion": 80,
+          "discussion": 19,
+          "evaluation": 42,
+          "experiments": 69,
+          "introduction": 114,
+          "limitations": 33,
+          "method": 303,
+          "missing": 28,
+          "other": 730,
+          "related_work": 42,
+          "results": 122
+        }
+      },
+      "source_files": {
+        "gold": "data\\scaleup_2000_full\\research_ai\\research_ai_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\research_ai\\research_ai_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\research_ai\\research_ai_prompts_2000.jsonl"
+      },
+      "source_row_count": 1600,
+      "token_estimate_distribution": {
+        "max": 236.0,
+        "mean": 71.414,
+        "median": 56.0,
+        "min": 3.0,
+        "p95": 202.0
+      },
+      "validated_context_records": true,
+      "vertical": "research_ai"
+    },
+    "retail": {
+      "average_text_length": 376.759,
+      "chunk_builder": "build_retail_context_records",
+      "chunk_strategy": "parent-child product/category/review chunking",
+      "context_ids_unique": true,
+      "context_row_count": 1013,
+      "corpus_id": "retail_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "enough_context_rows_for_retrieval_testing": true,
+      "metadata_coverage": {
+        "category": {
+          "missing": 0,
+          "present": 1013,
+          "total": 1013
+        },
+        "parent_asin": {
+          "missing": 8,
+          "present": 1005,
+          "total": 1013
+        },
+        "product_title": {
+          "missing": 8,
+          "present": 1005,
+          "total": 1013
+        },
+        "rating": {
+          "missing": 931,
+          "present": 82,
+          "total": 1013
+        }
+      },
+      "missing_metadata_warnings": [
+        "retail: metadata field 'parent_asin' missing on 8/1013 context records.",
+        "retail: metadata field 'product_title' missing on 8/1013 context records.",
+        "retail: metadata field 'rating' missing on 931/1013 context records."
+      ],
+      "output_path": "data\\generated\\context_engineering\\corpora\\retail_context_corpus.jsonl",
+      "source_files": {
+        "gold": "data\\scaleup_2000_full\\retail\\retail_gold_2000.jsonl",
+        "kb": "data\\scaleup_2000_full\\retail\\retail_kb_2000.jsonl",
+        "prompts": "data\\scaleup_2000_full\\retail\\retail_prompts_2000.jsonl"
+      },
+      "source_row_count": 1000,
+      "token_estimate_distribution": {
+        "max": 179.0,
+        "mean": 53.712,
+        "median": 51.0,
+        "min": 24.0,
+        "p95": 67.0
+      },
+      "validated_context_records": true,
+      "vertical": "retail"
+    }
+  },
+  "corpora_dir": "data\\generated\\context_engineering\\corpora",
+  "dataset_root": "data\\scaleup_2000_full",
+  "generated_at_utc": "2026-05-25T16:56:50.451954+00:00",
+  "invalid_context_count": 0,
+  "no_retrieval_no_embeddings_no_inference": true,
+  "output_root": "data\\generated\\context_engineering",
+  "registry_path": "data\\generated\\context_engineering\\corpus_registry.json"
+}

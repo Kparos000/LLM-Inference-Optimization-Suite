@@ -124,6 +124,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Inference readiness inventory](docs/54_inference_readiness_inventory.md)
 - [Repo-aware Phase 3 to 6 inference plan](docs/55_repo_aware_phase3_to_6_plan.md)
 - [Phase 3 context and memory mode foundation](docs/56_phase3_context_memory_mode_foundation.md)
+- [Phase 3 corpus registry and chunking](docs/57_phase3_corpus_registry_and_chunking.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

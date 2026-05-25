@@ -1,0 +1,6 @@
+vertical,corpus_id,chunk_strategy,source_rows,context_rows,avg_text_length,token_min,token_mean,token_median,token_p95,token_max,missing_metadata_warning_count,enough_context_rows_for_retrieval_testing,output_path
+airline,airline_benchmark_context_corpus,policy-section chunking plus recursive fallback,300,300,420.277,22.0,57.877,60.0,65.0,71.0,1,True,data\generated\context_engineering\corpora\airline_context_corpus.jsonl
+healthcare_admin,healthcare_admin_benchmark_context_corpus,admin-procedure chunking plus safety-boundary metadata,300,300,439.9,19.0,56.35,59.0,63.0,66.0,1,True,data\generated\context_engineering\corpora\healthcare_admin_context_corpus.jsonl
+retail,retail_benchmark_context_corpus,parent-child product/category/review chunking,1000,1013,376.759,24.0,53.712,51.0,67.0,179.0,3,True,data\generated\context_engineering\corpora\retail_context_corpus.jsonl
+finance,finance_benchmark_context_corpus,SEC/XBRL-aware structured chunking with sentence-window fallback,1540,1588,391.04,33.0,50.398,46.0,67.3,220.0,5,True,data\generated\context_engineering\corpora\finance_context_corpus.jsonl
+research_ai,research_ai_benchmark_context_corpus,paper-section chunking with sentence-window fallback,1600,1726,480.55,3.0,71.414,56.0,202.0,236.0,2,True,data\generated\context_engineering\corpora\research_ai_context_corpus.jsonl

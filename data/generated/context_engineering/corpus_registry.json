@@ -1,0 +1,106 @@
+{
+  "dataset_root": "data\\scaleup_2000_full",
+  "entries": [
+    {
+      "chunk_builder": "build_airline_context_records",
+      "corpus_id": "airline_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "input_path": "data\\scaleup_2000_full\\airline\\airline_kb_2000.jsonl",
+      "notes": "policy-section chunking plus recursive fallback",
+      "output_path": "data\\generated\\context_engineering\\corpora\\airline_context_corpus.jsonl",
+      "vertical": "airline"
+    },
+    {
+      "chunk_builder": "build_airline_context_records",
+      "corpus_id": "airline_gold_linked_context_corpus",
+      "corpus_role": "gold_linked_evidence",
+      "input_path": "data\\scaleup_2000_full\\airline\\airline_gold_2000.jsonl",
+      "notes": "Gold/eval records provide required evidence IDs used to flag context rows.",
+      "output_path": "data\\generated\\context_engineering\\corpora\\airline_context_corpus.jsonl",
+      "vertical": "airline"
+    },
+    {
+      "chunk_builder": "build_healthcare_admin_context_records",
+      "corpus_id": "healthcare_admin_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "input_path": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_kb_2000.jsonl",
+      "notes": "admin-procedure chunking plus safety-boundary metadata",
+      "output_path": "data\\generated\\context_engineering\\corpora\\healthcare_admin_context_corpus.jsonl",
+      "vertical": "healthcare_admin"
+    },
+    {
+      "chunk_builder": "build_healthcare_admin_context_records",
+      "corpus_id": "healthcare_admin_gold_linked_context_corpus",
+      "corpus_role": "gold_linked_evidence",
+      "input_path": "data\\scaleup_2000_full\\healthcare_admin\\healthcare_admin_gold_2000.jsonl",
+      "notes": "Gold/eval records provide required evidence IDs used to flag context rows.",
+      "output_path": "data\\generated\\context_engineering\\corpora\\healthcare_admin_context_corpus.jsonl",
+      "vertical": "healthcare_admin"
+    },
+    {
+      "chunk_builder": "build_retail_context_records",
+      "corpus_id": "retail_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "input_path": "data\\scaleup_2000_full\\retail\\retail_kb_2000.jsonl",
+      "notes": "parent-child product/category/review chunking",
+      "output_path": "data\\generated\\context_engineering\\corpora\\retail_context_corpus.jsonl",
+      "vertical": "retail"
+    },
+    {
+      "chunk_builder": "build_retail_context_records",
+      "corpus_id": "retail_gold_linked_context_corpus",
+      "corpus_role": "gold_linked_evidence",
+      "input_path": "data\\scaleup_2000_full\\retail\\retail_gold_2000.jsonl",
+      "notes": "Gold/eval records provide required evidence IDs used to flag context rows.",
+      "output_path": "data\\generated\\context_engineering\\corpora\\retail_context_corpus.jsonl",
+      "vertical": "retail"
+    },
+    {
+      "chunk_builder": "build_finance_context_records",
+      "corpus_id": "finance_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "input_path": "data\\scaleup_2000_full\\finance\\finance_kb_2000.jsonl",
+      "notes": "SEC/XBRL-aware structured chunking with sentence-window fallback",
+      "output_path": "data\\generated\\context_engineering\\corpora\\finance_context_corpus.jsonl",
+      "vertical": "finance"
+    },
+    {
+      "chunk_builder": "build_finance_context_records",
+      "corpus_id": "finance_gold_linked_context_corpus",
+      "corpus_role": "gold_linked_evidence",
+      "input_path": "data\\scaleup_2000_full\\finance\\finance_gold_2000.jsonl",
+      "notes": "Gold/eval records provide required evidence IDs used to flag context rows.",
+      "output_path": "data\\generated\\context_engineering\\corpora\\finance_context_corpus.jsonl",
+      "vertical": "finance"
+    },
+    {
+      "chunk_builder": "build_research_ai_context_records",
+      "corpus_id": "research_ai_benchmark_context_corpus",
+      "corpus_role": "benchmark_kb",
+      "input_path": "data\\scaleup_2000_full\\research_ai\\research_ai_kb_2000.jsonl",
+      "notes": "paper-section chunking with sentence-window fallback",
+      "output_path": "data\\generated\\context_engineering\\corpora\\research_ai_context_corpus.jsonl",
+      "vertical": "research_ai"
+    },
+    {
+      "chunk_builder": "build_research_ai_context_records",
+      "corpus_id": "research_ai_gold_linked_context_corpus",
+      "corpus_role": "gold_linked_evidence",
+      "input_path": "data\\scaleup_2000_full\\research_ai\\research_ai_gold_2000.jsonl",
+      "notes": "Gold/eval records provide required evidence IDs used to flag context rows.",
+      "output_path": "data\\generated\\context_engineering\\corpora\\research_ai_context_corpus.jsonl",
+      "vertical": "research_ai"
+    },
+    {
+      "chunk_builder": "not_built_in_phase3_block2",
+      "corpus_id": "research_ai_full_sections_future_retrieval_corpus",
+      "corpus_role": "full_retrieval_corpus",
+      "input_path": "data\\generated\\phase2a\\retrieval_corpus\\research_ai\\research_ai_full_sections_corpus.jsonl",
+      "notes": "Future retrieval corpus exported during data preparation. Block 2 normalizes the promoted benchmark KB only.",
+      "output_path": "",
+      "vertical": "research_ai"
+    }
+  ],
+  "generated_at_utc": "2026-05-25T16:56:49.183167+00:00",
+  "output_root": "data\\generated\\context_engineering"
+}
