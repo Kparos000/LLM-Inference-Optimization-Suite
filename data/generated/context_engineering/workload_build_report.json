@@ -1,0 +1,171 @@
+{
+  "all_workload_records_validated": true,
+  "by_split": {
+    "controlled_2000": {
+      "mm0_no_context": {
+        "by_vertical": {
+          "airline": 400,
+          "finance": 400,
+          "healthcare_admin": 400,
+          "research_ai": 400,
+          "retail": 400
+        },
+        "output_path": "data\\workloads\\controlled_2000\\mm0_no_context.jsonl",
+        "record_count": 2000,
+        "validated": true
+      },
+      "mm1_dense_top5": {
+        "by_vertical": {
+          "airline": 400,
+          "finance": 400,
+          "healthcare_admin": 400,
+          "research_ai": 400,
+          "retail": 400
+        },
+        "output_path": "data\\workloads\\controlled_2000\\mm1_dense_top5.jsonl",
+        "record_count": 2000,
+        "validated": true
+      },
+      "mm2_hybrid_top5": {
+        "by_vertical": {
+          "airline": 400,
+          "finance": 400,
+          "healthcare_admin": 400,
+          "research_ai": 400,
+          "retail": 400
+        },
+        "output_path": "data\\workloads\\controlled_2000\\mm2_hybrid_top5.jsonl",
+        "record_count": 2000,
+        "validated": true
+      },
+      "mm3_compressed_hybrid_top5": {
+        "by_vertical": {
+          "airline": 400,
+          "finance": 400,
+          "healthcare_admin": 400,
+          "research_ai": 400,
+          "retail": 400
+        },
+        "output_path": "data\\workloads\\controlled_2000\\mm3_compressed_hybrid_top5.jsonl",
+        "record_count": 2000,
+        "validated": true
+      }
+    },
+    "final_10000": {
+      "mm0_no_context": {
+        "by_vertical": {
+          "airline": 2000,
+          "finance": 2000,
+          "healthcare_admin": 2000,
+          "research_ai": 2000,
+          "retail": 2000
+        },
+        "output_path": "data\\workloads\\final_10000\\mm0_no_context.jsonl",
+        "record_count": 10000,
+        "validated": true
+      },
+      "mm1_dense_top5": {
+        "by_vertical": {
+          "airline": 2000,
+          "finance": 2000,
+          "healthcare_admin": 2000,
+          "research_ai": 2000,
+          "retail": 2000
+        },
+        "output_path": "data\\workloads\\final_10000\\mm1_dense_top5.jsonl",
+        "record_count": 10000,
+        "validated": true
+      },
+      "mm2_hybrid_top5": {
+        "by_vertical": {
+          "airline": 2000,
+          "finance": 2000,
+          "healthcare_admin": 2000,
+          "research_ai": 2000,
+          "retail": 2000
+        },
+        "output_path": "data\\workloads\\final_10000\\mm2_hybrid_top5.jsonl",
+        "record_count": 10000,
+        "validated": true
+      },
+      "mm3_compressed_hybrid_top5": {
+        "by_vertical": {
+          "airline": 2000,
+          "finance": 2000,
+          "healthcare_admin": 2000,
+          "research_ai": 2000,
+          "retail": 2000
+        },
+        "output_path": "data\\workloads\\final_10000\\mm3_compressed_hybrid_top5.jsonl",
+        "record_count": 10000,
+        "validated": true
+      }
+    },
+    "smoke_500": {
+      "mm0_no_context": {
+        "by_vertical": {
+          "airline": 100,
+          "finance": 100,
+          "healthcare_admin": 100,
+          "research_ai": 100,
+          "retail": 100
+        },
+        "output_path": "data\\workloads\\smoke_500\\mm0_no_context.jsonl",
+        "record_count": 500,
+        "validated": true
+      },
+      "mm1_dense_top5": {
+        "by_vertical": {
+          "airline": 100,
+          "finance": 100,
+          "healthcare_admin": 100,
+          "research_ai": 100,
+          "retail": 100
+        },
+        "output_path": "data\\workloads\\smoke_500\\mm1_dense_top5.jsonl",
+        "record_count": 500,
+        "validated": true
+      },
+      "mm2_hybrid_top5": {
+        "by_vertical": {
+          "airline": 100,
+          "finance": 100,
+          "healthcare_admin": 100,
+          "research_ai": 100,
+          "retail": 100
+        },
+        "output_path": "data\\workloads\\smoke_500\\mm2_hybrid_top5.jsonl",
+        "record_count": 500,
+        "validated": true
+      },
+      "mm3_compressed_hybrid_top5": {
+        "by_vertical": {
+          "airline": 100,
+          "finance": 100,
+          "healthcare_admin": 100,
+          "research_ai": 100,
+          "retail": 100
+        },
+        "output_path": "data\\workloads\\smoke_500\\mm3_compressed_hybrid_top5.jsonl",
+        "record_count": 500,
+        "validated": true
+      }
+    }
+  },
+  "context_root": "data/generated/context_engineering",
+  "dataset_root": "data/scaleup_2000_full",
+  "generated_at_utc": "2026-05-25T18:18:49.399540+00:00",
+  "memory_modes": [
+    "mm0_no_context",
+    "mm1_dense_top5",
+    "mm2_hybrid_top5",
+    "mm3_compressed_hybrid_top5"
+  ],
+  "no_model_inference_triggered": true,
+  "output_root": "data/workloads",
+  "splits": [
+    "smoke_500",
+    "controlled_2000",
+    "final_10000"
+  ]
+}
