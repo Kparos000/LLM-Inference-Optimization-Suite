@@ -1,0 +1,140 @@
+{
+  "already_exists": [
+    "OpenAI-compatible load runner chunking",
+    "checkpoint JSON with completed_prompt_ids",
+    "resume mode that skips completed prompts",
+    "append-mode result CSV and generation JSONL writes",
+    "run metadata JSON",
+    "progress text logs",
+    "per-prompt success/error fields"
+  ],
+  "artifacts_inspected": {
+    "openai_load_runner": {
+      "exists": true,
+      "non_empty": true,
+      "path": "src/inference_bench/runners/openai_load_runner.py"
+    },
+    "output_records": {
+      "exists": true,
+      "non_empty": true,
+      "path": "src/inference_bench/output_records.py"
+    },
+    "results_processed": {
+      "exists": true,
+      "non_empty": true,
+      "path": "results/processed"
+    },
+    "results_raw": {
+      "exists": true,
+      "non_empty": true,
+      "path": "results/raw"
+    },
+    "schema": {
+      "exists": true,
+      "non_empty": true,
+      "path": "src/inference_bench/schema.py"
+    },
+    "system_info": {
+      "exists": true,
+      "non_empty": true,
+      "path": "src/inference_bench/system_info.py"
+    }
+  },
+  "audit_scope": "inference checkpointing, chunked persistence, resume, and logging",
+  "generated_at_utc": "2026-05-26T02:11:00.600927+00:00",
+  "missing_before_main_gpu_experiments": [
+    "live GPU telemetry sampling",
+    "structured JSONL run logs",
+    "backend OOM/timeout retry classification",
+    "resume coverage for every backend path selected for main experiments"
+  ],
+  "missing_before_phase4": [
+    "Phase 3 WorkloadRecord to runner WorkloadItem adapter",
+    "memory_mode and dataset_split in run metadata/logs",
+    "standardized per-run output directory convention",
+    "batch evaluator output persistence"
+  ],
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "recommended_phase4_tasks": [
+    "Add a workload adapter for data/workloads/smoke_500/mm*.jsonl.",
+    "Run mock plumbing with mm0 and mm2 workloads before HF/vLLM.",
+    "Extend run metadata with memory_mode, vertical counts, and context token summary.",
+    "Add evaluator CLI over generation JSONL joined by prompt_id."
+  ],
+  "summary": [
+    {
+      "area": "openai_load_runner_checkpointing",
+      "artifact": "src/inference_bench/runners/openai_load_runner.py",
+      "current_capability": "Supports chunk_size, checkpoint_path, resume, completed_prompt_ids, atomic checkpoint writes, and duplicate prompt skipping.",
+      "phase4_gap": "Needs adapter from Phase 3 WorkloadRecord JSONL to runner WorkloadItem.",
+      "phase5_gap": "Needs GPU run manifests to include memory_mode, dataset split, and telemetry IDs.",
+      "priority": "high",
+      "reusable": true
+    },
+    {
+      "area": "chunked_result_persistence",
+      "artifact": "src/inference_bench/runners/openai_load_runner.py",
+      "current_capability": "Chunked mode appends result CSV and generation JSONL after each chunk.",
+      "phase4_gap": "Extend chunked writing tests to Phase 3 memory-mode workloads.",
+      "phase5_gap": "Add durable per-run directories for main GPU runs.",
+      "priority": "high",
+      "reusable": true
+    },
+    {
+      "area": "progress_logging",
+      "artifact": "src/inference_bench/runners/openai_load_runner.py",
+      "current_capability": "Progress messages include processed count, chunk number, success/failure counts, elapsed seconds, aggregate request rate, and checkpoint_saved.",
+      "phase4_gap": "Logs do not yet include memory_mode, dataset_split, prompt vertical, or retrieval mode.",
+      "phase5_gap": "Add structured JSONL logs for long GPU/API runs.",
+      "priority": "high",
+      "reusable": true
+    },
+    {
+      "area": "run_metadata",
+      "artifact": "src/inference_bench/runners/openai_load_runner.py",
+      "current_capability": "Run metadata captures run_id, workload path, backend, model, optimization, concurrency, token settings, stream mode, success/failure counts, and wall clock.",
+      "phase4_gap": "Add memory_mode, retrieval_backend_label, and context_token fields.",
+      "phase5_gap": "Attach GPU telemetry file paths and hardware IDs.",
+      "priority": "high",
+      "reusable": true
+    },
+    {
+      "area": "failure_tracking",
+      "artifact": "src/inference_bench/schema.py",
+      "current_capability": "BenchmarkResult and GenerationRecord capture success and error_message per prompt.",
+      "phase4_gap": "Add evaluator failure categories and prompt/gold join failure reporting.",
+      "phase5_gap": "Add retry classification for backend timeout, OOM, and validation failures.",
+      "priority": "medium",
+      "reusable": true
+    },
+    {
+      "area": "hf_runner_resume",
+      "artifact": "src/inference_bench/runners",
+      "current_capability": "HF runner foundation exists, but checkpoint/resume is not currently equivalent to openai-load-run chunked mode.",
+      "phase4_gap": "Decide whether Phase 4 HF plumbing needs chunked resume support.",
+      "phase5_gap": "Main GPU runs should use a resumable path before large sweeps.",
+      "priority": "medium",
+      "reusable": false
+    },
+    {
+      "area": "telemetry_logging",
+      "artifact": "src/inference_bench/system_info.py",
+      "current_capability": "System metadata capture exists for reproducibility, but live GPU telemetry is not implemented.",
+      "phase4_gap": "Record workload/run metadata alongside local smoke outputs.",
+      "phase5_gap": "Add nvidia-smi/pynvml/DCGM telemetry sampling for GPU runs.",
+      "priority": "high",
+      "reusable": true
+    },
+    {
+      "area": "structured_logs",
+      "artifact": "results/raw",
+      "current_capability": "CSV, JSONL generation records, checkpoint JSON, metadata JSON, and text logs are supported in parts of the harness.",
+      "phase4_gap": "Standardize per-run folder layout and log naming.",
+      "phase5_gap": "Use append-only JSONL logs for dashboard ingestion.",
+      "priority": "medium",
+      "reusable": true
+    }
+  ],
+  "terminology_note": "This project is not training or fine-tuning models in Phase 3. The relevant safety controls are inference checkpointing, chunked result persistence, resume support, and long-run logging."
+}

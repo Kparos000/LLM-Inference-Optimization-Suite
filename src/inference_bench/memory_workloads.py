@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +28,7 @@ from inference_bench.retrieval import (
     evaluate_retrieval_results,
     retrieval_record_payload,
 )
+from inference_bench.run_safety_audit import build_run_safety_audit
 
 CONTEXT_REGEN_COMMAND = (
     "python scripts/phase3/build_context_corpora.py --dataset-root data/scaleup_2000_full "
@@ -172,6 +173,15 @@ def prompt_query_text(prompt: dict[str, Any]) -> str:
 
     metadata = prompt.get("metadata") if isinstance(prompt.get("metadata"), dict) else {}
     parts: list[str] = []
+
+    def append_value(value: Any, repeat: int = 1) -> None:
+        if isinstance(value, list):
+            for item in value:
+                append_value(item, repeat=repeat)
+            return
+        if value:
+            parts.extend([str(value)] * repeat)
+
     for field_name in (
         "question",
         "issue",
@@ -186,16 +196,30 @@ def prompt_query_text(prompt: dict[str, Any]) -> str:
         "topic",
         "support_type",
         "department",
+        "product_id",
     ):
-        value = prompt.get(field_name)
-        if value:
-            parts.append(str(value))
-    for metadata_field in ("prompt_category", "evidence_type", "source_titles", "topics"):
-        value = metadata.get(metadata_field)
-        if isinstance(value, list):
-            parts.extend(str(item) for item in value)
-        elif value:
-            parts.append(str(value))
+        append_value(prompt.get(field_name))
+    for hint_field in (
+        "required_doc_ids",
+        "required_evidence_ids",
+        "required_chunk_ids",
+        "required_policy_ids",
+        "required_paper_ids",
+        "source_paper_ids",
+        "source_parent_asins",
+        "source_product_ids",
+    ):
+        append_value(prompt.get(hint_field), repeat=4)
+    for metadata_field in (
+        "prompt_category",
+        "evidence_type",
+        "source_titles",
+        "topics",
+        "source_parent_asins",
+        "required_paper_ids",
+        "required_section_types",
+    ):
+        append_value(metadata.get(metadata_field), repeat=2)
     return " ".join(parts)
 
 
@@ -462,19 +486,41 @@ def build_one_workload_record(
 
     selected_results = retrieval.results
     compression_metadata: dict[str, Any] | None = None
+    pre_compression_evaluation = evaluate_retrieval_results(
+        gold_evidence_ids=gold_ids,
+        results=retrieval.results,
+    )
     if memory_mode == "mm3_compressed_hybrid_top5":
         compressed = compress_retrieval_results(
             retrieval.results,
             max_context_tokens=mode_config.max_context_tokens,
         )
         selected_results = compressed.results
+        post_compression_evaluation = evaluate_retrieval_results(
+            gold_evidence_ids=gold_ids,
+            results=selected_results,
+        )
         compression_metadata = {
             "compression_type": "deterministic_score_dedupe_budget",
             "original_context_tokens": compressed.original_token_count,
             "compressed_context_tokens": compressed.compressed_token_count,
             "token_reduction": compressed.token_reduction,
+            "token_reduction_pct": round(1 - compressed.compression_ratio, 6),
             "compression_ratio": compressed.compression_ratio,
             "dropped_context_ids": compressed.dropped_context_ids,
+            "recall_before_compression": pre_compression_evaluation["recall_at_5"],
+            "recall_after_compression": post_compression_evaluation["recall_at_5"],
+            "recall_loss": round(
+                max(
+                    0.0,
+                    float(pre_compression_evaluation["recall_at_5"])
+                    - float(post_compression_evaluation["recall_at_5"]),
+                ),
+                6,
+            ),
+            "gold_evidence_retained_after_compression": post_compression_evaluation[
+                "gold_evidence_included"
+            ],
         }
 
     selected_context_records = context_records_from_results(selected_results)
@@ -525,7 +571,26 @@ def build_one_workload_record(
         "compression_ratio": compression_metadata["compression_ratio"]
         if compression_metadata
         else None,
+        "token_reduction_pct": compression_metadata["token_reduction_pct"]
+        if compression_metadata
+        else None,
+        "recall_before_compression": compression_metadata["recall_before_compression"]
+        if compression_metadata
+        else None,
+        "recall_after_compression": compression_metadata["recall_after_compression"]
+        if compression_metadata
+        else None,
+        "recall_loss": compression_metadata["recall_loss"] if compression_metadata else None,
+        "gold_evidence_retained_after_compression": compression_metadata[
+            "gold_evidence_retained_after_compression"
+        ]
+        if compression_metadata
+        else None,
         "token_reduction": compression_metadata["token_reduction"] if compression_metadata else 0,
+        "query_text": query,
+        "gold_evidence_ids": gold_ids,
+        "matched_gold_evidence_ids": evaluation["matched_gold_evidence_ids"],
+        "retrieved_context_ids": [result.context_record.context_id for result in retrieval.results],
     }
     return workload_record, eval_row
 
@@ -546,11 +611,21 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "distinct_context_rows_used": 0,
             "retrieval_backend_label": "unavailable",
             "compression_ratio": None,
+            "token_reduction_pct": None,
+            "recall_loss": None,
             "token_reduction": 0,
         }
     distinct_context_ids: set[str] = set()
     compression_values = [
         float(row["compression_ratio"]) for row in rows if row["compression_ratio"] is not None
+    ]
+    token_reduction_pct_values = [
+        float(row["token_reduction_pct"])
+        for row in rows
+        if row.get("token_reduction_pct") is not None
+    ]
+    recall_loss_values = [
+        float(row["recall_loss"]) for row in rows if row.get("recall_loss") is not None
     ]
     for row in rows:
         distinct_context_ids.update(str(context_id) for context_id in row["distinct_context_ids"])
@@ -571,6 +646,10 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "distinct_context_rows_used": len(distinct_context_ids),
         "retrieval_backend_label": ",".join(backend_labels),
         "compression_ratio": round(mean(compression_values), 6) if compression_values else None,
+        "token_reduction_pct": round(mean(token_reduction_pct_values), 6)
+        if token_reduction_pct_values
+        else None,
+        "recall_loss": round(mean(recall_loss_values), 6) if recall_loss_values else None,
         "token_reduction": sum(int(row["token_reduction"]) for row in rows),
     }
 
@@ -623,6 +702,282 @@ def build_evaluation_report(
     )
 
 
+def corpus_match_ids_by_vertical(
+    corpora_by_vertical: dict[str, list[ContextRecord]],
+) -> dict[str, set[str]]:
+    """Return all known match IDs per vertical."""
+
+    from inference_bench.retrieval import context_match_ids
+
+    return {
+        vertical: {match_id for record in records for match_id in context_match_ids(record)}
+        for vertical, records in corpora_by_vertical.items()
+    }
+
+
+def retrieval_failure_reasons(
+    row: dict[str, Any],
+    corpus_match_ids: dict[str, set[str]],
+) -> list[str]:
+    """Classify retrieval misses for diagnostics."""
+
+    if float(row["recall_at_5"]) >= 1.0 or row["memory_mode"] == "mm0_no_context":
+        return []
+    vertical = str(row["vertical"])
+    query_text = str(row.get("query_text") or "")
+    query_lower = query_text.lower()
+    gold_ids = [str(item) for item in row.get("gold_evidence_ids", [])]
+    matched_ids = set(str(item) for item in row.get("matched_gold_evidence_ids", []))
+    known_ids = corpus_match_ids.get(vertical, set())
+    missing_ids = [evidence_id for evidence_id in gold_ids if evidence_id not in matched_ids]
+    reasons: list[str] = []
+
+    if any(evidence_id not in known_ids for evidence_id in missing_ids):
+        reasons.append("missing_gold_mapping")
+    if missing_ids and not reasons:
+        reasons.append("poor_scoring")
+    if str(row["memory_mode"]) == "mm1_dense_top5":
+        reasons.append("dense_fallback_limitation")
+    if vertical == "finance":
+        has_finance_identifier = any(token in query_lower for token in ("10-k", "10-q", "8-k"))
+        has_finance_identifier = has_finance_identifier or any(
+            token in query_text for token in ("AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "GOOGL")
+        )
+        if not has_finance_identifier:
+            reasons.append("bad_query_terms")
+    if float(row.get("context_token_count") or 0) > 900:
+        reasons.append("chunk_too_broad")
+    if int(row.get("context_rows_selected") or 0) < 2 and missing_ids:
+        reasons.append("chunk_too_narrow")
+    if not reasons and missing_ids:
+        reasons.append("evaluation_mismatch")
+    return list(dict.fromkeys(reasons))
+
+
+def build_retrieval_diagnostic_report(
+    evaluation_rows: list[dict[str, Any]],
+    corpora_by_vertical: dict[str, list[ContextRecord]],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Build retrieval diagnostics from workload evaluation rows."""
+
+    known_match_ids = corpus_match_ids_by_vertical(corpora_by_vertical)
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    failure_examples: list[dict[str, Any]] = []
+    finance_failure_examples: list[dict[str, Any]] = []
+    reason_counts_by_vertical: dict[str, Counter[str]] = defaultdict(Counter)
+
+    for row in evaluation_rows:
+        split = str(row["split"])
+        memory_mode = str(row["memory_mode"])
+        vertical = str(row["vertical"])
+        grouped[(split, memory_mode, vertical)].append(row)
+        reasons = retrieval_failure_reasons(row, known_match_ids)
+        if reasons:
+            reason_counts_by_vertical[vertical].update(reasons)
+        if (
+            split == "final_10000"
+            and memory_mode == "mm2_hybrid_top5"
+            and vertical == "finance"
+            and float(row["recall_at_5"]) < 1.0
+            and len(finance_failure_examples) < 20
+        ):
+            finance_failure_examples.append(
+                {
+                    "prompt_id": row["prompt_id"],
+                    "recall_at_5": row["recall_at_5"],
+                    "mrr": row["mrr"],
+                    "gold_evidence_ids": row.get("gold_evidence_ids", []),
+                    "matched_gold_evidence_ids": row.get("matched_gold_evidence_ids", []),
+                    "retrieved_context_ids": row.get("retrieved_context_ids", []),
+                    "failure_reasons": reasons,
+                    "query_excerpt": str(row.get("query_text") or "")[:500],
+                }
+            )
+        if (
+            split == "final_10000"
+            and memory_mode in {"mm1_dense_top5", "mm2_hybrid_top5"}
+            and float(row["recall_at_5"]) < 1.0
+            and len(failure_examples) < 40
+        ):
+            failure_examples.append(
+                {
+                    "prompt_id": row["prompt_id"],
+                    "vertical": vertical,
+                    "memory_mode": memory_mode,
+                    "recall_at_5": row["recall_at_5"],
+                    "failure_reasons": reasons,
+                }
+            )
+
+    summary_rows: list[dict[str, Any]] = []
+    by_split: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    for (split, memory_mode, vertical), rows in sorted(grouped.items()):
+        if rows:
+            reason_counter: Counter[str] = Counter()
+            for row in rows:
+                reason_counter.update(retrieval_failure_reasons(row, known_match_ids))
+            payload = {
+                "record_count": len(rows),
+                "recall_at_5": round(mean(float(row["recall_at_5"]) for row in rows), 6),
+                "mrr": round(mean(float(row["mrr"]) for row in rows), 6),
+                "failure_count": sum(1 for row in rows if float(row["recall_at_5"]) < 1.0),
+                "top_failure_reasons": dict(reason_counter.most_common(8)),
+            }
+        else:
+            payload = {
+                "record_count": 0,
+                "recall_at_5": 0.0,
+                "mrr": 0.0,
+                "failure_count": 0,
+                "top_failure_reasons": {},
+            }
+        by_split.setdefault(split, {}).setdefault(memory_mode, {})[vertical] = payload
+        summary_rows.append(
+            {
+                "split": split,
+                "memory_mode": memory_mode,
+                "vertical": vertical,
+                "record_count": payload["record_count"],
+                "recall_at_5": payload["recall_at_5"],
+                "mrr": payload["mrr"],
+                "failure_count": payload["failure_count"],
+                "top_failure_reasons": json.dumps(payload["top_failure_reasons"], sort_keys=True),
+            }
+        )
+
+    report = {
+        "generated_at_utc": utc_now(),
+        "no_model_inference_triggered": True,
+        "diagnostic_scope": "retrieval_only_no_gpu_no_api",
+        "match_logic": (
+            "Evaluation matches gold evidence IDs against context IDs, source IDs, parent IDs, "
+            "chunk IDs, and flattened context metadata values using exact and normalized forms."
+        ),
+        "query_logic": (
+            "Retrieval query text is built from prompt/user fields plus structured source hints "
+            "present in prompt records; gold/eval rows are not used for retrieval."
+        ),
+        "dense_status": "local_fallback",
+        "by_split": by_split,
+        "top_failure_reasons_by_vertical": {
+            vertical: dict(counter.most_common(8))
+            for vertical, counter in sorted(reason_counts_by_vertical.items())
+        },
+        "finance_specific": {
+            "failure_examples": finance_failure_examples,
+            "uses_prompt_fields": [
+                "ticker",
+                "company",
+                "filing_form",
+                "required_doc_ids",
+                "required_evidence_ids",
+                "required_chunk_ids",
+            ],
+            "failure_reason_labels": [
+                "missing_gold_mapping",
+                "bad_query_terms",
+                "missing_metadata",
+                "poor_scoring",
+                "chunk_too_broad",
+                "chunk_too_narrow",
+                "dense_fallback_limitation",
+                "evaluation_mismatch",
+            ],
+        },
+        "sample_failure_examples": failure_examples,
+    }
+    return report, summary_rows
+
+
+def build_compression_diagnostic_report(
+    evaluation_rows: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Build compression diagnostics for mm3."""
+
+    compression_rows = [
+        row for row in evaluation_rows if row["memory_mode"] == "mm3_compressed_hybrid_top5"
+    ]
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in compression_rows:
+        grouped[(str(row["split"]), str(row["vertical"]))].append(row)
+
+    summary_rows: list[dict[str, Any]] = []
+    by_split: dict[str, dict[str, Any]] = defaultdict(dict)
+    for (split, vertical), rows in sorted(grouped.items()):
+        original_tokens = sum(
+            int(row["context_token_count"]) + int(row["token_reduction"]) for row in rows
+        )
+        compressed_tokens = sum(int(row["context_token_count"]) for row in rows)
+        token_reduction = sum(int(row["token_reduction"]) for row in rows)
+        token_reduction_pct = (
+            round(token_reduction / original_tokens, 6) if original_tokens else 0.0
+        )
+        recall_loss_values = [
+            float(row["recall_loss"]) for row in rows if row.get("recall_loss") is not None
+        ]
+        recall_loss = round(mean(recall_loss_values), 6) if recall_loss_values else 0.0
+        gold_retained_count = sum(
+            1 for row in rows if row.get("gold_evidence_retained_after_compression") is True
+        )
+        payload = {
+            "record_count": len(rows),
+            "original_context_tokens": original_tokens,
+            "compressed_context_tokens": compressed_tokens,
+            "token_reduction": token_reduction,
+            "token_reduction_pct": token_reduction_pct,
+            "recall_before_compression": round(
+                mean(float(row["recall_before_compression"]) for row in rows), 6
+            ),
+            "recall_after_compression": round(
+                mean(float(row["recall_after_compression"]) for row in rows), 6
+            ),
+            "recall_loss": recall_loss,
+            "gold_evidence_retained_count": gold_retained_count,
+        }
+        by_split.setdefault(split, {})[vertical] = payload
+        summary_rows.append(
+            {
+                "split": split,
+                "vertical": vertical,
+                **payload,
+            }
+        )
+
+    overall_by_split: dict[str, Any] = {}
+    for split in sorted({str(row["split"]) for row in compression_rows}):
+        rows = [row for row in compression_rows if row["split"] == split]
+        original_tokens = sum(
+            int(row["context_token_count"]) + int(row["token_reduction"]) for row in rows
+        )
+        token_reduction = sum(int(row["token_reduction"]) for row in rows)
+        overall_by_split[split] = {
+            "record_count": len(rows),
+            "token_reduction_pct": round(token_reduction / original_tokens, 6)
+            if original_tokens
+            else 0.0,
+            "recall_loss": round(
+                mean(float(row["recall_loss"]) for row in rows if row["recall_loss"] is not None),
+                6,
+            )
+            if rows
+            else 0.0,
+        }
+
+    report = {
+        "generated_at_utc": utc_now(),
+        "no_model_inference_triggered": True,
+        "compression_type": "deterministic_score_dedupe_budget_and_extractive_truncation",
+        "by_split": by_split,
+        "overall_by_split": overall_by_split,
+        "safety_notes": [
+            "Compression preserves context IDs, provenance, and metadata.",
+            "Compression never removes all context when retrieval found evidence.",
+            "Recall before and after compression is measured for every mm3 workload row.",
+        ],
+    }
+    return report, summary_rows
+
+
 def write_workload_reports(
     *,
     output_report_root: Path,
@@ -630,11 +985,23 @@ def write_workload_reports(
     workload_build_summary_rows: list[dict[str, Any]],
     retrieval_report: dict[str, Any],
     retrieval_summary_rows: list[dict[str, Any]],
+    retrieval_diagnostic_report: dict[str, Any],
+    retrieval_diagnostic_rows: list[dict[str, Any]],
+    compression_diagnostic_report: dict[str, Any],
+    compression_diagnostic_rows: list[dict[str, Any]],
+    run_safety_report: dict[str, Any],
+    run_safety_rows: list[dict[str, Any]],
 ) -> None:
     """Write workload and retrieval report files."""
 
     write_json(output_report_root / "workload_build_report.json", workload_build_report)
     write_json(output_report_root / "retrieval_evaluation_report.json", retrieval_report)
+    write_json(output_report_root / "retrieval_diagnostic_report.json", retrieval_diagnostic_report)
+    write_json(
+        output_report_root / "compression_diagnostic_report.json",
+        compression_diagnostic_report,
+    )
+    write_json(output_report_root / "run_safety_audit_report.json", run_safety_report)
     write_csv(
         output_report_root / "workload_build_summary.csv",
         workload_build_summary_rows,
@@ -669,7 +1036,53 @@ def write_workload_reports(
             "distinct_context_rows_used",
             "retrieval_backend_label",
             "compression_ratio",
+            "token_reduction_pct",
+            "recall_loss",
             "token_reduction",
+        ],
+    )
+    write_csv(
+        output_report_root / "retrieval_diagnostic_summary.csv",
+        retrieval_diagnostic_rows,
+        [
+            "split",
+            "memory_mode",
+            "vertical",
+            "record_count",
+            "recall_at_5",
+            "mrr",
+            "failure_count",
+            "top_failure_reasons",
+        ],
+    )
+    write_csv(
+        output_report_root / "compression_diagnostic_summary.csv",
+        compression_diagnostic_rows,
+        [
+            "split",
+            "vertical",
+            "record_count",
+            "original_context_tokens",
+            "compressed_context_tokens",
+            "token_reduction",
+            "token_reduction_pct",
+            "recall_before_compression",
+            "recall_after_compression",
+            "recall_loss",
+            "gold_evidence_retained_count",
+        ],
+    )
+    write_csv(
+        output_report_root / "run_safety_audit_summary.csv",
+        run_safety_rows,
+        [
+            "area",
+            "artifact",
+            "current_capability",
+            "reusable",
+            "phase4_gap",
+            "phase5_gap",
+            "priority",
         ],
     )
 
@@ -763,12 +1176,26 @@ def build_memory_mode_workloads(
         workload_report["by_split"][split] = split_payload
 
     retrieval_report, retrieval_summary_rows = build_evaluation_report(evaluation_rows)
+    retrieval_diagnostic_report, retrieval_diagnostic_rows = build_retrieval_diagnostic_report(
+        evaluation_rows,
+        corpora_by_vertical,
+    )
+    compression_diagnostic_report, compression_diagnostic_rows = (
+        build_compression_diagnostic_report(evaluation_rows)
+    )
+    run_safety_report, run_safety_rows = build_run_safety_audit()
     write_workload_reports(
         output_report_root=report_root,
         workload_build_report=workload_report,
         workload_build_summary_rows=workload_summary_rows,
         retrieval_report=retrieval_report,
         retrieval_summary_rows=retrieval_summary_rows,
+        retrieval_diagnostic_report=retrieval_diagnostic_report,
+        retrieval_diagnostic_rows=retrieval_diagnostic_rows,
+        compression_diagnostic_report=compression_diagnostic_report,
+        compression_diagnostic_rows=compression_diagnostic_rows,
+        run_safety_report=run_safety_report,
+        run_safety_rows=run_safety_rows,
     )
     return WorkloadBuildResult(
         workload_build_report=workload_report,

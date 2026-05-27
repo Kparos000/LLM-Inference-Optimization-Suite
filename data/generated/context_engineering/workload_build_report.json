@@ -154,7 +154,7 @@
   },
   "context_root": "data/generated/context_engineering",
   "dataset_root": "data/scaleup_2000_full",
-  "generated_at_utc": "2026-05-25T18:18:49.399540+00:00",
+  "generated_at_utc": "2026-05-26T01:58:45.125996+00:00",
   "memory_modes": [
     "mm0_no_context",
     "mm1_dense_top5",

@@ -413,7 +413,7 @@
   },
   "corpora_dir": "data\\generated\\context_engineering\\corpora",
   "dataset_root": "data\\scaleup_2000_full",
-  "generated_at_utc": "2026-05-25T16:56:50.451954+00:00",
+  "generated_at_utc": "2026-05-25T22:42:39.213289+00:00",
   "invalid_context_count": 0,
   "no_retrieval_no_embeddings_no_inference": true,
   "output_root": "data\\generated\\context_engineering",

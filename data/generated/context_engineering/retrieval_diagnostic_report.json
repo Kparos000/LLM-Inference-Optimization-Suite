@@ -1,0 +1,1425 @@
+{
+  "by_split": {
+    "controlled_2000": {
+      "mm0_no_context": {
+        "airline": {
+          "failure_count": 400,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 400,
+          "top_failure_reasons": {}
+        },
+        "finance": {
+          "failure_count": 400,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 400,
+          "top_failure_reasons": {}
+        },
+        "healthcare_admin": {
+          "failure_count": 400,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 400,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 400,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 400,
+          "top_failure_reasons": {}
+        },
+        "retail": {
+          "failure_count": 400,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 400,
+          "top_failure_reasons": {}
+        }
+      },
+      "mm1_dense_top5": {
+        "airline": {
+          "failure_count": 65,
+          "mrr": 1.0,
+          "recall_at_5": 0.915417,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 65,
+            "poor_scoring": 65
+          }
+        },
+        "finance": {
+          "failure_count": 18,
+          "mrr": 0.94675,
+          "recall_at_5": 0.96,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "chunk_too_broad": 3,
+            "dense_fallback_limitation": 18,
+            "poor_scoring": 18
+          }
+        },
+        "healthcare_admin": {
+          "failure_count": 19,
+          "mrr": 1.0,
+          "recall_at_5": 0.97625,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 19,
+            "poor_scoring": 19
+          }
+        },
+        "research_ai": {
+          "failure_count": 142,
+          "mrr": 0.958333,
+          "recall_at_5": 0.834845,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "chunk_too_broad": 2,
+            "dense_fallback_limitation": 142,
+            "poor_scoring": 134
+          }
+        },
+        "retail": {
+          "failure_count": 76,
+          "mrr": 0.95375,
+          "recall_at_5": 0.8825,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 76,
+            "poor_scoring": 76
+          }
+        }
+      },
+      "mm2_hybrid_top5": {
+        "airline": {
+          "failure_count": 32,
+          "mrr": 0.99375,
+          "recall_at_5": 0.979792,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "poor_scoring": 32
+          }
+        },
+        "finance": {
+          "failure_count": 8,
+          "mrr": 0.978125,
+          "recall_at_5": 0.98,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "poor_scoring": 8
+          }
+        },
+        "healthcare_admin": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 400,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 21,
+          "mrr": 0.98,
+          "recall_at_5": 0.973168,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "chunk_too_broad": 2,
+            "poor_scoring": 13
+          }
+        },
+        "retail": {
+          "failure_count": 49,
+          "mrr": 1.0,
+          "recall_at_5": 0.93875,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "poor_scoring": 49
+          }
+        }
+      },
+      "mm3_compressed_hybrid_top5": {
+        "airline": {
+          "failure_count": 32,
+          "mrr": 0.99375,
+          "recall_at_5": 0.979792,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "poor_scoring": 32
+          }
+        },
+        "finance": {
+          "failure_count": 8,
+          "mrr": 0.978125,
+          "recall_at_5": 0.98,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "poor_scoring": 8
+          }
+        },
+        "healthcare_admin": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 400,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 21,
+          "mrr": 0.98,
+          "recall_at_5": 0.973168,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "poor_scoring": 13
+          }
+        },
+        "retail": {
+          "failure_count": 49,
+          "mrr": 1.0,
+          "recall_at_5": 0.93875,
+          "record_count": 400,
+          "top_failure_reasons": {
+            "poor_scoring": 49
+          }
+        }
+      }
+    },
+    "final_10000": {
+      "mm0_no_context": {
+        "airline": {
+          "failure_count": 2000,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 2000,
+          "top_failure_reasons": {}
+        },
+        "finance": {
+          "failure_count": 2000,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 2000,
+          "top_failure_reasons": {}
+        },
+        "healthcare_admin": {
+          "failure_count": 2000,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 2000,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 2000,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 2000,
+          "top_failure_reasons": {}
+        },
+        "retail": {
+          "failure_count": 2000,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 2000,
+          "top_failure_reasons": {}
+        }
+      },
+      "mm1_dense_top5": {
+        "airline": {
+          "failure_count": 321,
+          "mrr": 1.0,
+          "recall_at_5": 0.917167,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 321,
+            "poor_scoring": 321
+          }
+        },
+        "finance": {
+          "failure_count": 82,
+          "mrr": 0.956725,
+          "recall_at_5": 0.963,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "chunk_too_broad": 14,
+            "dense_fallback_limitation": 82,
+            "poor_scoring": 82
+          }
+        },
+        "healthcare_admin": {
+          "failure_count": 94,
+          "mrr": 1.0,
+          "recall_at_5": 0.9765,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 94,
+            "poor_scoring": 94
+          }
+        },
+        "research_ai": {
+          "failure_count": 695,
+          "mrr": 0.963958,
+          "recall_at_5": 0.837368,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "chunk_too_broad": 8,
+            "dense_fallback_limitation": 695,
+            "poor_scoring": 655
+          }
+        },
+        "retail": {
+          "failure_count": 311,
+          "mrr": 0.9865,
+          "recall_at_5": 0.916,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 311,
+            "poor_scoring": 311
+          }
+        }
+      },
+      "mm2_hybrid_top5": {
+        "airline": {
+          "failure_count": 158,
+          "mrr": 0.99275,
+          "recall_at_5": 0.979958,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "poor_scoring": 158
+          }
+        },
+        "finance": {
+          "failure_count": 42,
+          "mrr": 0.977625,
+          "recall_at_5": 0.979375,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "poor_scoring": 42
+          }
+        },
+        "healthcare_admin": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 2000,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 126,
+          "mrr": 0.98,
+          "recall_at_5": 0.967534,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "chunk_too_broad": 18,
+            "poor_scoring": 86
+          }
+        },
+        "retail": {
+          "failure_count": 227,
+          "mrr": 0.99925,
+          "recall_at_5": 0.94325,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "poor_scoring": 227
+          }
+        }
+      },
+      "mm3_compressed_hybrid_top5": {
+        "airline": {
+          "failure_count": 158,
+          "mrr": 0.99275,
+          "recall_at_5": 0.979958,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "poor_scoring": 158
+          }
+        },
+        "finance": {
+          "failure_count": 42,
+          "mrr": 0.977625,
+          "recall_at_5": 0.979375,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "poor_scoring": 42
+          }
+        },
+        "healthcare_admin": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 2000,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 126,
+          "mrr": 0.98,
+          "recall_at_5": 0.967534,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "poor_scoring": 86
+          }
+        },
+        "retail": {
+          "failure_count": 227,
+          "mrr": 0.99925,
+          "recall_at_5": 0.94325,
+          "record_count": 2000,
+          "top_failure_reasons": {
+            "poor_scoring": 227
+          }
+        }
+      }
+    },
+    "smoke_500": {
+      "mm0_no_context": {
+        "airline": {
+          "failure_count": 100,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "finance": {
+          "failure_count": 100,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "healthcare_admin": {
+          "failure_count": 100,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 100,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "retail": {
+          "failure_count": 100,
+          "mrr": 0.0,
+          "recall_at_5": 0.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        }
+      },
+      "mm1_dense_top5": {
+        "airline": {
+          "failure_count": 16,
+          "mrr": 1.0,
+          "recall_at_5": 0.92,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 16,
+            "poor_scoring": 16
+          }
+        },
+        "finance": {
+          "failure_count": 3,
+          "mrr": 0.942,
+          "recall_at_5": 0.97,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 3,
+            "poor_scoring": 3
+          }
+        },
+        "healthcare_admin": {
+          "failure_count": 6,
+          "mrr": 1.0,
+          "recall_at_5": 0.97,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 6,
+            "poor_scoring": 6
+          }
+        },
+        "research_ai": {
+          "failure_count": 23,
+          "mrr": 1.0,
+          "recall_at_5": 0.87,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 23,
+            "poor_scoring": 23
+          }
+        },
+        "retail": {
+          "failure_count": 20,
+          "mrr": 0.815,
+          "recall_at_5": 0.81,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "dense_fallback_limitation": 20,
+            "poor_scoring": 20
+          }
+        }
+      },
+      "mm2_hybrid_top5": {
+        "airline": {
+          "failure_count": 8,
+          "mrr": 1.0,
+          "recall_at_5": 0.98,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "poor_scoring": 8
+          }
+        },
+        "finance": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "healthcare_admin": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "retail": {
+          "failure_count": 5,
+          "mrr": 1.0,
+          "recall_at_5": 0.975,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "poor_scoring": 5
+          }
+        }
+      },
+      "mm3_compressed_hybrid_top5": {
+        "airline": {
+          "failure_count": 8,
+          "mrr": 1.0,
+          "recall_at_5": 0.98,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "poor_scoring": 8
+          }
+        },
+        "finance": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "healthcare_admin": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "research_ai": {
+          "failure_count": 0,
+          "mrr": 1.0,
+          "recall_at_5": 1.0,
+          "record_count": 100,
+          "top_failure_reasons": {}
+        },
+        "retail": {
+          "failure_count": 5,
+          "mrr": 1.0,
+          "recall_at_5": 0.975,
+          "record_count": 100,
+          "top_failure_reasons": {
+            "poor_scoring": 5
+          }
+        }
+      }
+    }
+  },
+  "dense_status": "local_fallback",
+  "diagnostic_scope": "retrieval_only_no_gpu_no_api",
+  "finance_specific": {
+    "failure_examples": [
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1046",
+        "query_excerpt": "Compare the cited Finance evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense in a compact markdown table. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1049",
+        "query_excerpt": "For scenario 1049, compare 10-K, 10-Q, or company evidence without adding claims. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_k",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLSalesRevenueNet",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLLiabilitiesAndStockholdersEquity"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1058",
+        "query_excerpt": "What differs between the cited filings or companies for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense? Keep to the evidence. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_invento",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1061",
+        "query_excerpt": "Compare the cited Finance evidence for Apple Inc. and Microsoft Corporation (MULTI) revenue in a compact markdown table. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_k",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLInventoryWorkInProcessAndRawMaterialsNetOfReserves",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLSalesRevenueNet"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1070",
+        "query_excerpt": "Create a table that contrasts the available filing evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1082",
+        "query_excerpt": "Using only SEC/XBRL records finance_kb_xbrl_NVDA_concept_inventory, finance_kb_xbrl_AMD_concept_inventory, create a grounded filing comparison. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_xbrl_AMD_conce",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1085",
+        "query_excerpt": "Create a table that contrasts the available filing evidence for Apple Inc. and Microsoft Corporation (MULTI) revenue. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_x",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLCommitmentsAndContingencies",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment",
+          "finance:finance_kb_xbrl_AAPL_finance_seed_0001_facts"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1094",
+        "query_excerpt": "For scenario 1094, compare 10-K, 10-Q, or company evidence without adding claims. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLResearchAndDevelopmentExpense",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1097",
+        "query_excerpt": "Using only SEC/XBRL records finance_kb_xbrl_AAPL_concept_inventory, finance_kb_xbrl_MSFT_concept_inventory, create a grounded filing comparison. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_con",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLLiabilitiesAndStockholdersEquity",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLResearchAndDevelopmentExpense"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis",
+          "finance_kb_sec_AMZN_10K_000101872425000004_management_discussion_and_analysis",
+          "finance_section_AMZN_10K_000101872424000008_management_discussion_and_analysis_5",
+          "finance_section_AMZN_10K_000101872425000004_management_discussion_and_analysis_5"
+        ],
+        "matched_gold_evidence_ids": [
+          "finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis",
+          "finance_section_AMZN_10K_000101872424000008_management_discussion_and_analysis_5",
+          "finance_section_AMZN_10K_000101872425000004_management_discussion_and_analysis_5"
+        ],
+        "mrr": 1.0,
+        "prompt_id": "finance_scaleup_2000_1098",
+        "query_excerpt": "What differs between the cited filings or companies for Amazon.com, Inc. (AMZN) and Amazon.com, Inc. (AMZN)? Keep to the evidence. compare_filings markdown_table answer AMZN Amazon.com, Inc. (AMZN) and Amazon.com, Inc. (AMZN) 10-K finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis finance_kb_sec_AMZN_10K_00010187242",
+        "recall_at_5": 0.75,
+        "retrieved_context_ids": [
+          "finance:finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis::chunk_002",
+          "finance:finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis::chunk_003",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872425000004managementdiscussionandanalysis5",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008managementdiscussionandanalysis5"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1106",
+        "query_excerpt": "Compare the cited Finance evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense in a compact markdown table. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1109",
+        "query_excerpt": "For scenario 1109, compare 10-K, 10-Q, or company evidence without adding claims. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_k",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLSalesRevenueNet",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLLiabilitiesAndStockholdersEquity"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1118",
+        "query_excerpt": "What differs between the cited filings or companies for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense? Keep to the evidence. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_invento",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1121",
+        "query_excerpt": "Compare the cited Finance evidence for Apple Inc. and Microsoft Corporation (MULTI) revenue in a compact markdown table. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_k",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLInventoryWorkInProcessAndRawMaterialsNetOfReserves",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLSalesRevenueNet"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1130",
+        "query_excerpt": "Create a table that contrasts the available filing evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1142",
+        "query_excerpt": "Using only SEC/XBRL records finance_kb_xbrl_NVDA_concept_inventory, finance_kb_xbrl_AMD_concept_inventory, create a grounded filing comparison. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_xbrl_AMD_conce",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1145",
+        "query_excerpt": "Create a table that contrasts the available filing evidence for Apple Inc. and Microsoft Corporation (MULTI) revenue. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_x",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLCommitmentsAndContingencies",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment",
+          "finance:finance_kb_xbrl_AAPL_finance_seed_0001_facts"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1154",
+        "query_excerpt": "For scenario 1154, compare 10-K, 10-Q, or company evidence without adding claims. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_kb_",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLResearchAndDevelopmentExpense",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_concept_inventory",
+          "finance_kb_xbrl_MSFT_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1157",
+        "query_excerpt": "Using only SEC/XBRL records finance_kb_xbrl_AAPL_concept_inventory, finance_kb_xbrl_MSFT_concept_inventory, create a grounded filing comparison. compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_con",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredRevenueNoncurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLLiabilitiesAndStockholdersEquity",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLResearchAndDevelopmentExpense"
+        ]
+      },
+      {
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_NVDA_concept_inventory",
+          "finance_kb_xbrl_AMD_concept_inventory"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_1166",
+        "query_excerpt": "Compare the cited Finance evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense in a compact markdown table. compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_inventory finance_",
+        "recall_at_5": 0.0,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
+        ]
+      }
+    ],
+    "failure_reason_labels": [
+      "missing_gold_mapping",
+      "bad_query_terms",
+      "missing_metadata",
+      "poor_scoring",
+      "chunk_too_broad",
+      "chunk_too_narrow",
+      "dense_fallback_limitation",
+      "evaluation_mismatch"
+    ],
+    "uses_prompt_fields": [
+      "ticker",
+      "company",
+      "filing_form",
+      "required_doc_ids",
+      "required_evidence_ids",
+      "required_chunk_ids"
+    ]
+  },
+  "generated_at_utc": "2026-05-26T02:11:00.528322+00:00",
+  "match_logic": "Evaluation matches gold evidence IDs against context IDs, source IDs, parent IDs, chunk IDs, and flattened context metadata values using exact and normalized forms.",
+  "no_model_inference_triggered": true,
+  "query_logic": "Retrieval query text is built from prompt/user fields plus structured source hints present in prompt records; gold/eval rows are not used for retrieval.",
+  "sample_failure_examples": [
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0004",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0005",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0017",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0018",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0030",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0031",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0043",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0053",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0056",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0057",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0069",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0070",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0082",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0083",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0095",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0096",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0108",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0118",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0121",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0122",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0134",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0135",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0147",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0148",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0160",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0161",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0173",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0183",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0186",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0187",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0199",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0200",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0212",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0213",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0225",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0226",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0238",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0248",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0251",
+      "recall_at_5": 0.3333333333333333,
+      "vertical": "airline"
+    },
+    {
+      "failure_reasons": [
+        "poor_scoring",
+        "dense_fallback_limitation"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0252",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    }
+  ],
+  "top_failure_reasons_by_vertical": {
+    "airline": {
+      "dense_fallback_limitation": 402,
+      "poor_scoring": 798
+    },
+    "finance": {
+      "chunk_too_broad": 17,
+      "dense_fallback_limitation": 103,
+      "poor_scoring": 203
+    },
+    "healthcare_admin": {
+      "dense_fallback_limitation": 119,
+      "poor_scoring": 119
+    },
+    "research_ai": {
+      "chunk_too_broad": 30,
+      "dense_fallback_limitation": 860,
+      "poor_scoring": 1010
+    },
+    "retail": {
+      "dense_fallback_limitation": 407,
+      "poor_scoring": 969
+    }
+  }
+}

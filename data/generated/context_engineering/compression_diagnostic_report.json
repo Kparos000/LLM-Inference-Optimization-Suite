@@ -1,0 +1,200 @@
+{
+  "by_split": {
+    "controlled_2000": {
+      "airline": {
+        "compressed_context_tokens": 67337,
+        "gold_evidence_retained_count": 400,
+        "original_context_tokens": 87814,
+        "recall_after_compression": 0.979792,
+        "recall_before_compression": 0.979792,
+        "recall_loss": 0.0,
+        "record_count": 400,
+        "token_reduction": 20477,
+        "token_reduction_pct": 0.233186
+      },
+      "finance": {
+        "compressed_context_tokens": 79631,
+        "gold_evidence_retained_count": 392,
+        "original_context_tokens": 112101,
+        "recall_after_compression": 0.98,
+        "recall_before_compression": 0.98,
+        "recall_loss": 0.0,
+        "record_count": 400,
+        "token_reduction": 32470,
+        "token_reduction_pct": 0.28965
+      },
+      "healthcare_admin": {
+        "compressed_context_tokens": 59950,
+        "gold_evidence_retained_count": 400,
+        "original_context_tokens": 74262,
+        "recall_after_compression": 1.0,
+        "recall_before_compression": 1.0,
+        "recall_loss": 0.0,
+        "record_count": 400,
+        "token_reduction": 14312,
+        "token_reduction_pct": 0.192723
+      },
+      "research_ai": {
+        "compressed_context_tokens": 100385,
+        "gold_evidence_retained_count": 392,
+        "original_context_tokens": 140716,
+        "recall_after_compression": 0.973168,
+        "recall_before_compression": 0.973168,
+        "recall_loss": 0.0,
+        "record_count": 400,
+        "token_reduction": 40331,
+        "token_reduction_pct": 0.286613
+      },
+      "retail": {
+        "compressed_context_tokens": 80120,
+        "gold_evidence_retained_count": 400,
+        "original_context_tokens": 112228,
+        "recall_after_compression": 0.93875,
+        "recall_before_compression": 0.93875,
+        "recall_loss": 0.0,
+        "record_count": 400,
+        "token_reduction": 32108,
+        "token_reduction_pct": 0.286096
+      }
+    },
+    "final_10000": {
+      "airline": {
+        "compressed_context_tokens": 331796,
+        "gold_evidence_retained_count": 2000,
+        "original_context_tokens": 430563,
+        "recall_after_compression": 0.979958,
+        "recall_before_compression": 0.979958,
+        "recall_loss": 0.0,
+        "record_count": 2000,
+        "token_reduction": 98767,
+        "token_reduction_pct": 0.22939
+      },
+      "finance": {
+        "compressed_context_tokens": 383554,
+        "gold_evidence_retained_count": 1959,
+        "original_context_tokens": 540011,
+        "recall_after_compression": 0.979375,
+        "recall_before_compression": 0.979375,
+        "recall_loss": 0.0,
+        "record_count": 2000,
+        "token_reduction": 156457,
+        "token_reduction_pct": 0.289729
+      },
+      "healthcare_admin": {
+        "compressed_context_tokens": 300185,
+        "gold_evidence_retained_count": 2000,
+        "original_context_tokens": 372042,
+        "recall_after_compression": 1.0,
+        "recall_before_compression": 1.0,
+        "recall_loss": 0.0,
+        "record_count": 2000,
+        "token_reduction": 71857,
+        "token_reduction_pct": 0.193142
+      },
+      "research_ai": {
+        "compressed_context_tokens": 505388,
+        "gold_evidence_retained_count": 1960,
+        "original_context_tokens": 708501,
+        "recall_after_compression": 0.967534,
+        "recall_before_compression": 0.967534,
+        "recall_loss": 0.0,
+        "record_count": 2000,
+        "token_reduction": 203113,
+        "token_reduction_pct": 0.28668
+      },
+      "retail": {
+        "compressed_context_tokens": 385252,
+        "gold_evidence_retained_count": 2000,
+        "original_context_tokens": 539672,
+        "recall_after_compression": 0.94325,
+        "recall_before_compression": 0.94325,
+        "recall_loss": 0.0,
+        "record_count": 2000,
+        "token_reduction": 154420,
+        "token_reduction_pct": 0.286137
+      }
+    },
+    "smoke_500": {
+      "airline": {
+        "compressed_context_tokens": 16955,
+        "gold_evidence_retained_count": 100,
+        "original_context_tokens": 22176,
+        "recall_after_compression": 0.98,
+        "recall_before_compression": 0.98,
+        "recall_loss": 0.0,
+        "record_count": 100,
+        "token_reduction": 5221,
+        "token_reduction_pct": 0.235435
+      },
+      "finance": {
+        "compressed_context_tokens": 21145,
+        "gold_evidence_retained_count": 100,
+        "original_context_tokens": 29794,
+        "recall_after_compression": 1.0,
+        "recall_before_compression": 1.0,
+        "recall_loss": 0.0,
+        "record_count": 100,
+        "token_reduction": 8649,
+        "token_reduction_pct": 0.290293
+      },
+      "healthcare_admin": {
+        "compressed_context_tokens": 14958,
+        "gold_evidence_retained_count": 100,
+        "original_context_tokens": 18518,
+        "recall_after_compression": 1.0,
+        "recall_before_compression": 1.0,
+        "recall_loss": 0.0,
+        "record_count": 100,
+        "token_reduction": 3560,
+        "token_reduction_pct": 0.192245
+      },
+      "research_ai": {
+        "compressed_context_tokens": 24481,
+        "gold_evidence_retained_count": 100,
+        "original_context_tokens": 34343,
+        "recall_after_compression": 1.0,
+        "recall_before_compression": 1.0,
+        "recall_loss": 0.0,
+        "record_count": 100,
+        "token_reduction": 9862,
+        "token_reduction_pct": 0.287162
+      },
+      "retail": {
+        "compressed_context_tokens": 22712,
+        "gold_evidence_retained_count": 100,
+        "original_context_tokens": 31836,
+        "recall_after_compression": 0.975,
+        "recall_before_compression": 0.975,
+        "recall_loss": 0.0,
+        "record_count": 100,
+        "token_reduction": 9124,
+        "token_reduction_pct": 0.286594
+      }
+    }
+  },
+  "compression_type": "deterministic_score_dedupe_budget_and_extractive_truncation",
+  "generated_at_utc": "2026-05-26T02:11:00.600746+00:00",
+  "no_model_inference_triggered": true,
+  "overall_by_split": {
+    "controlled_2000": {
+      "recall_loss": 0.0,
+      "record_count": 2000,
+      "token_reduction_pct": 0.265021
+    },
+    "final_10000": {
+      "recall_loss": 0.0,
+      "record_count": 10000,
+      "token_reduction_pct": 0.264249
+    },
+    "smoke_500": {
+      "recall_loss": 0.0,
+      "record_count": 500,
+      "token_reduction_pct": 0.266458
+    }
+  },
+  "safety_notes": [
+    "Compression preserves context IDs, provenance, and metadata.",
+    "Compression never removes all context when retrieval found evidence.",
+    "Recall before and after compression is measured for every mm3 workload row."
+  ]
+}
