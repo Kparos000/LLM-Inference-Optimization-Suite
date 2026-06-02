@@ -18,6 +18,11 @@ if str(SRC_ROOT) not in sys.path:
 from inference_bench.context_corpora import VERTICALS, benchmark_paths, read_jsonl  # noqa: E402
 from inference_bench.evaluator_contract import evaluate_generated_answers  # noqa: E402
 
+DEFAULT_REPORT_NAME = "phase4_mock_smoke_eval_report.json"
+DEFAULT_SUMMARY_NAME = "phase4_mock_smoke_eval_summary.csv"
+HF_LOCAL_SMOKE_REPORT_NAME = "phase4_hf_local_smoke_eval_report.json"
+HF_LOCAL_SMOKE_SUMMARY_NAME = "phase4_hf_local_smoke_eval_summary.csv"
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Build CLI parser."""
@@ -30,13 +35,31 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-root", default="results/processed")
     parser.add_argument(
         "--report-name",
-        default="phase4_mock_smoke_eval_report.json",
+        default=DEFAULT_REPORT_NAME,
     )
     parser.add_argument(
         "--summary-name",
-        default="phase4_mock_smoke_eval_summary.csv",
+        default=DEFAULT_SUMMARY_NAME,
     )
     return parser
+
+
+def resolve_output_names(
+    *,
+    results_path: str | Path,
+    report_name: str,
+    summary_name: str,
+) -> tuple[str, str]:
+    """Return output names, using HF smoke defaults for HF smoke result paths."""
+
+    stem = Path(results_path).stem
+    if (
+        stem == "phase4_hf_local_smoke_results"
+        and report_name == DEFAULT_REPORT_NAME
+        and summary_name == DEFAULT_SUMMARY_NAME
+    ):
+        return HF_LOCAL_SMOKE_REPORT_NAME, HF_LOCAL_SMOKE_SUMMARY_NAME
+    return report_name, summary_name
 
 
 def load_result_rows(path: str | Path) -> list[dict[str, Any]]:
@@ -211,13 +234,18 @@ def main(argv: list[str] | None = None) -> int:
         generated_answers,
         load_gold_records(args.dataset_root),
     )
+    report_name, summary_name = resolve_output_names(
+        results_path=args.results_path,
+        report_name=args.report_name,
+        summary_name=args.summary_name,
+    )
     report_path, summary_path = write_report(
         results_path=args.results_path,
         output_root=args.output_root,
         result_rows=result_rows,
         evaluation_rows=evaluation_rows,
-        report_name=args.report_name,
-        summary_name=args.summary_name,
+        report_name=report_name,
+        summary_name=summary_name,
     )
     print(f"Evaluation rows written: {len(evaluation_rows)}")
     print(f"Evaluation report: {report_path}")

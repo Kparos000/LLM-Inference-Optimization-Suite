@@ -1,11 +1,11 @@
 {
   "ablation_modes": [
-    "none"
+    "prompt_plus_metadata"
   ],
   "by_vertical": {
     "airline": 25
   },
-  "input_workload_path": "data/workloads/smoke_500/mm2_hybrid_top5.jsonl",
+  "input_workload_path": "data/workloads/smoke_500/prompt_plus_metadata/mm2_hybrid_top5.jsonl",
   "limit": 25,
   "memory_modes": [
     "mm2_hybrid_top5"
