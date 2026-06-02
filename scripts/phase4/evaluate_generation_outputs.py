@@ -22,6 +22,8 @@ DEFAULT_REPORT_NAME = "phase4_mock_smoke_eval_report.json"
 DEFAULT_SUMMARY_NAME = "phase4_mock_smoke_eval_summary.csv"
 HF_LOCAL_SMOKE_REPORT_NAME = "phase4_hf_local_smoke_eval_report.json"
 HF_LOCAL_SMOKE_SUMMARY_NAME = "phase4_hf_local_smoke_eval_summary.csv"
+OPENAI_COMPATIBLE_SMOKE_REPORT_NAME = "phase4_openai_compatible_smoke_eval_report.json"
+OPENAI_COMPATIBLE_SMOKE_SUMMARY_NAME = "phase4_openai_compatible_smoke_eval_summary.csv"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -50,7 +52,7 @@ def resolve_output_names(
     report_name: str,
     summary_name: str,
 ) -> tuple[str, str]:
-    """Return output names, using HF smoke defaults for HF smoke result paths."""
+    """Return output names for known Phase 4 smoke result paths."""
 
     stem = Path(results_path).stem
     if (
@@ -59,6 +61,12 @@ def resolve_output_names(
         and summary_name == DEFAULT_SUMMARY_NAME
     ):
         return HF_LOCAL_SMOKE_REPORT_NAME, HF_LOCAL_SMOKE_SUMMARY_NAME
+    if (
+        stem == "phase4_openai_compatible_smoke_results"
+        and report_name == DEFAULT_REPORT_NAME
+        and summary_name == DEFAULT_SUMMARY_NAME
+    ):
+        return OPENAI_COMPATIBLE_SMOKE_REPORT_NAME, OPENAI_COMPATIBLE_SMOKE_SUMMARY_NAME
     return report_name, summary_name
 
 
