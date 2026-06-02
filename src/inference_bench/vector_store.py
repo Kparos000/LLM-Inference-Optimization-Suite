@@ -248,7 +248,7 @@ def context_payload(record: ContextRecord) -> dict[str, Any]:
         "source_type": record.source_type,
         "title": record.title,
         "indexed_text": vector_text(record),
-        "indexed_text_strategy": "title_text_selected_metadata_v2",
+        "indexed_text_strategy": "title_text_selected_metadata_finance_concepts_v3",
         "metadata": record.metadata,
     }
 
@@ -266,8 +266,15 @@ def vector_text(record: ContextRecord) -> str:
         "report_date",
         "period",
         "fiscal_year",
+        "fiscal_periods_present",
+        "fiscal_years_present",
+        "forms_present",
+        "latest_end",
+        "latest_filed",
         "concept",
         "concepts",
+        "label",
+        "record_id",
         "section_type",
         "section_title",
         "category",
@@ -282,6 +289,24 @@ def vector_text(record: ContextRecord) -> str:
     selected_metadata_values = [
         str(metadata[key]) for key in selected_metadata_keys if metadata.get(key) is not None
     ]
+    concept_values = [
+        str(metadata[key])
+        for key in ("concept", "concepts", "label")
+        if metadata.get(key) is not None
+    ]
+    period_values = [
+        str(metadata[key])
+        for key in (
+            "filing_date",
+            "report_date",
+            "fiscal_periods_present",
+            "fiscal_years_present",
+            "forms_present",
+            "latest_end",
+            "latest_filed",
+        )
+        if metadata.get(key) is not None
+    ]
     metadata_values = " ".join(str(value) for value in flatten_metadata(metadata))
     return " ".join(
         part
@@ -292,6 +317,9 @@ def vector_text(record: ContextRecord) -> str:
             f"chunk strategy: {record.chunk_strategy}",
             f"selected metadata: {' '.join(selected_metadata_values)}",
             split_identifier_text(" ".join(selected_metadata_values)),
+            f"finance concepts: {' '.join(concept_values)}",
+            split_identifier_text(" ".join(concept_values)),
+            f"finance periods: {' '.join(period_values)}",
             record.title,
             record.source_type,
             record.chunk_strategy,
@@ -424,7 +452,7 @@ def build_qdrant_index(
                 "vector_dimension": embedding_provider.dimension,
                 "distance": config.distance,
                 "payload_fields_stored": payload_fields,
-                "indexed_text_strategy": "title_text_selected_metadata_v2",
+                "indexed_text_strategy": "title_text_selected_metadata_finance_concepts_v3",
                 "indexing_time_seconds": round(elapsed, 6),
                 "skipped_records": len(failed_records),
                 "failed_record_ids": failed_records[:25],
@@ -449,7 +477,7 @@ def build_qdrant_index(
         "embedding_model": embedding_provider.model_name,
         "vector_dimension": embedding_provider.dimension,
         "distance": config.distance,
-        "indexed_text_strategy": "title_text_selected_metadata_v2",
+        "indexed_text_strategy": "title_text_selected_metadata_finance_concepts_v3",
         "collections": collections,
     }
     output_path = Path(output_root)

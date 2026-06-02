@@ -463,10 +463,16 @@
       }
     }
   },
+  "candidate_expansion": {
+    "candidate_generation_then_reranking": true,
+    "candidate_top_k_dense": 50,
+    "candidate_top_k_lexical": 50,
+    "final_top_k": 5
+  },
   "context_root": "data/generated/context_engineering",
   "dataset_root": "data/scaleup_2000_full",
   "dense_backend_requested": "qdrant_vector",
-  "generated_at_utc": "2026-06-02T05:55:32.219128+00:00",
+  "generated_at_utc": "2026-06-02T19:02:50.944836+00:00",
   "memory_modes": [
     "mm0_no_context",
     "mm1_dense_top5",
@@ -476,11 +482,11 @@
   "no_model_inference_triggered": true,
   "output_root": "data/workloads",
   "qdrant_query_embedding_warmup": {
-    "airline": 6000,
-    "finance": 2761,
-    "healthcare_admin": 1134,
-    "research_ai": 2525,
-    "retail": 4180
+    "airline": 795,
+    "finance": 1962,
+    "healthcare_admin": 1095,
+    "research_ai": 1532,
+    "retail": 3584
   },
   "splits": [
     "smoke_500",

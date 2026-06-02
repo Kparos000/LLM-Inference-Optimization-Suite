@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import csv
 import json
+import re
+import time
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -19,16 +21,23 @@ from inference_bench.config import load_memory_modes_config
 from inference_bench.context_corpora import VERTICALS, benchmark_paths, read_jsonl
 from inference_bench.context_schema import ContextRecord, WorkloadRecord
 from inference_bench.retrieval import (
+    DEFAULT_CANDIDATE_TOP_K_DENSE,
+    DEFAULT_CANDIDATE_TOP_K_LEXICAL,
+    DEFAULT_FINAL_TOP_K,
     BM25Retriever,
+    CompanyTickerResolver,
     HybridRetriever,
     LocalFallbackDenseRetriever,
     QdrantDenseRetriever,
     RetrievalResult,
     TimedRetrieval,
+    build_xbrl_concept_map,
     compress_retrieval_results,
     enrich_query_text,
     evaluate_retrieval_results,
+    rerank_candidate_results,
     retrieval_record_payload,
+    tokenize,
 )
 from inference_bench.run_safety_audit import build_run_safety_audit
 from inference_bench.vector_store import QdrantVectorSearcher
@@ -88,6 +97,8 @@ class QueryBuildResult:
     leakage_guard_applied: bool = True
     blocked_direct_hint_count: int = 0
     enrichment_terms: tuple[str, ...] = ()
+    expanded_queries: tuple[str, ...] = ()
+    expansion_types: tuple[str, ...] = ()
 
 
 def utc_now() -> str:
@@ -204,6 +215,9 @@ def validate_ablation_mode(ablation_mode: str) -> None:
 def prompt_query_text(
     prompt: dict[str, Any],
     ablation_mode: str = "prompt_plus_source_hints",
+    *,
+    company_ticker_resolver: CompanyTickerResolver | None = None,
+    xbrl_concept_map: dict[str, set[str]] | None = None,
 ) -> QueryBuildResult:
     """Build retrieval query text under one strict ablation policy."""
 
@@ -231,6 +245,8 @@ def prompt_query_text(
             " ".join(parts),
             vertical=vertical,
             allow_direct_identifiers=False,
+            resolver=company_ticker_resolver,
+            concept_map=xbrl_concept_map,
         )
         return QueryBuildResult(
             query_text=enriched.query_text,
@@ -239,6 +255,8 @@ def prompt_query_text(
             uses_source_hints=False,
             blocked_direct_hint_count=enriched.blocked_direct_hint_count,
             enrichment_terms=enriched.enrichment_terms,
+            expanded_queries=enriched.expanded_queries,
+            expansion_types=enriched.expansion_types,
         )
 
     for field_name in (
@@ -290,6 +308,9 @@ def prompt_query_text(
         " ".join(parts),
         vertical=vertical,
         allow_direct_identifiers=allow_direct_identifiers,
+        resolver=company_ticker_resolver,
+        concept_map=xbrl_concept_map,
+        metadata_terms=set(tokenize(" ".join(parts))) if uses_metadata else None,
     )
     return QueryBuildResult(
         query_text=enriched.query_text,
@@ -299,6 +320,8 @@ def prompt_query_text(
         leakage_guard_applied=not allow_direct_identifiers,
         blocked_direct_hint_count=enriched.blocked_direct_hint_count,
         enrichment_terms=enriched.enrichment_terms,
+        expanded_queries=enriched.expanded_queries,
+        expansion_types=enriched.expansion_types,
     )
 
 
@@ -468,6 +491,11 @@ def build_retrievers(
             "lexical": lexical,
             "dense": dense,
             "hybrid": hybrid,
+            "records_by_context_id": {record.context_id: record for record in records},
+            "company_ticker_resolver": CompanyTickerResolver.from_records(records)
+            if vertical == "finance"
+            else None,
+            "xbrl_concept_map": build_xbrl_concept_map(records) if vertical == "finance" else {},
         }
     if qdrant_searchers:
         retrievers["_qdrant_searchers"] = qdrant_searchers
@@ -505,17 +533,26 @@ def warm_qdrant_query_embeddings(
             vertical = str(prompt.get("vertical") or "")
             if vertical not in queries_by_vertical:
                 continue
+            resolver = cast(Any, retrievers[vertical]).get("company_ticker_resolver")
+            concept_map = cast(Any, retrievers[vertical]).get("xbrl_concept_map") or {}
             for ablation_mode in ablation_modes:
-                queries_by_vertical[vertical].add(
-                    prompt_query_text(prompt, ablation_mode).query_text
+                query = prompt_query_text(
+                    prompt,
+                    ablation_mode,
+                    company_ticker_resolver=resolver,
+                    xbrl_concept_map=concept_map,
                 )
+                queries_by_vertical[vertical].add(query.query_text)
 
     warmed_counts: dict[str, int] = {}
     for vertical, queries in queries_by_vertical.items():
         searcher = qdrant_searchers.get(vertical)
         if searcher is None:
             continue
-        cast(Any, searcher).warm_snapshot_search_results(sorted(queries), top_k=120)
+        cast(Any, searcher).warm_snapshot_search_results(
+            sorted(queries),
+            top_k=max(DEFAULT_CANDIDATE_TOP_K_DENSE, 120),
+        )
         warmed_counts[vertical] = len(queries)
     return warmed_counts
 
@@ -536,23 +573,60 @@ def retrieve_for_mode(
     *,
     memory_mode: str,
     query: str,
+    expanded_queries: tuple[str, ...] = (),
+    expansion_types: tuple[str, ...] = (),
+    source_hints_used: bool = False,
     vertical: str,
     retrievers: dict[str, dict[str, Any]],
     top_k: int,
-    retrieval_cache: dict[tuple[str, str, str, int], TimedRetrieval] | None = None,
+    candidate_top_k_dense: int = DEFAULT_CANDIDATE_TOP_K_DENSE,
+    candidate_top_k_lexical: int = DEFAULT_CANDIDATE_TOP_K_LEXICAL,
+    final_top_k: int = DEFAULT_FINAL_TOP_K,
+    retrieval_cache: dict[tuple[str, str, str, tuple[str, ...], int], TimedRetrieval] | None = None,
 ) -> TimedRetrieval:
     """Run retrieval for one memory mode."""
 
     if memory_mode == "mm0_no_context":
         return no_context_retrieval()
     cache_mode = "mm2_hybrid_top5" if memory_mode == "mm3_compressed_hybrid_top5" else memory_mode
-    cache_key = (cache_mode, vertical, query, top_k)
+    active_expanded_queries = expanded_queries or (query,)
+    cache_key = (cache_mode, vertical, query, active_expanded_queries, top_k)
     if retrieval_cache is not None and cache_key in retrieval_cache:
         return retrieval_cache[cache_key]
     if memory_mode == "mm1_dense_top5":
-        retrieval = cast(Any, retrievers[vertical]["dense"]).retrieve(query, top_k)
+        started = time.perf_counter()
+        candidate_results: list[RetrievalResult] = []
+        dense_retriever = cast(Any, retrievers[vertical]["dense"])
+        candidate_results.extend(dense_retriever.retrieve(query, candidate_top_k_dense).results)
+        retrieval = rerank_candidate_results(
+            query=query,
+            candidate_results=candidate_results,
+            final_top_k=final_top_k,
+            retrieval_mode="dense",
+            lexical_weight=0.0,
+            dense_weight=1.0,
+            source_hints_used=source_hints_used,
+            candidate_top_k_dense=candidate_top_k_dense,
+            candidate_top_k_lexical=0,
+            expanded_query_count=len(active_expanded_queries),
+            expansion_types=expansion_types,
+            started=started,
+            backend_label=dense_retriever.backend_label,
+            vector_store=dense_retriever.vector_store,
+            boost_features_by_context_id=cast(
+                HybridRetriever, retrievers[vertical]["hybrid"]
+            ).boost_features,
+        )
     elif memory_mode in {"mm2_hybrid_top5", "mm3_compressed_hybrid_top5"}:
-        retrieval = cast(HybridRetriever, retrievers[vertical]["hybrid"]).retrieve(query, top_k)
+        retrieval = cast(HybridRetriever, retrievers[vertical]["hybrid"]).retrieve(
+            query,
+            final_top_k,
+            expanded_queries=active_expanded_queries,
+            candidate_top_k_dense=candidate_top_k_dense,
+            candidate_top_k_lexical=candidate_top_k_lexical,
+            source_hints_used=source_hints_used,
+            expansion_types=expansion_types,
+        )
     else:
         msg = f"Unknown memory mode '{memory_mode}'"
         raise ValueError(msg)
@@ -625,11 +699,26 @@ def retrieval_metadata_payload(
         "leakage_guard_applied": query_build.leakage_guard_applied,
         "blocked_direct_hint_count": query_build.blocked_direct_hint_count,
         "enrichment_terms": list(query_build.enrichment_terms),
-        "reranking_used": retrieval.retrieval_type == "hybrid",
+        "expanded_queries": list(query_build.expanded_queries),
+        "expanded_query_count": retrieval.diagnostics.get("expanded_query_count", 0),
+        "expansion_types": retrieval.diagnostics.get("expansion_types", []),
+        "reranking_used": bool(retrieval.diagnostics.get("reranked"))
+        or retrieval.retrieval_type == "hybrid",
+        "reranker_enabled": retrieval.diagnostics.get("reranker_enabled", False),
         "retrieval_latency_ms": round(retrieval.latency_ms, 6),
         "configured_top_k": configured_top_k,
+        "candidate_top_k_dense": retrieval.diagnostics.get("candidate_top_k_dense", 0),
+        "candidate_top_k_lexical": retrieval.diagnostics.get("candidate_top_k_lexical", 0),
+        "final_top_k": retrieval.diagnostics.get("final_top_k", configured_top_k),
+        "candidates_before_dedupe": retrieval.diagnostics.get("candidates_before_dedupe", 0),
+        "candidates_after_dedupe": retrieval.diagnostics.get("candidates_after_dedupe", 0),
         "retrieved_count": len(retrieval.results),
         "selected_context_ids": [result.context_record.context_id for result in selected_results],
+        "candidate_context_ids_sample": retrieval.diagnostics.get("candidate_context_ids", [])[:10],
+        "pre_rerank_top_context_ids": retrieval.diagnostics.get(
+            "pre_rerank_top_context_ids",
+            [],
+        ),
         "ranked_results": [retrieval_record_payload(result) for result in retrieval.results],
         "recall_at_5": evaluation["recall_at_5"],
         "mrr": evaluation["mrr"],
@@ -656,22 +745,37 @@ def build_one_workload_record(
     ablation_mode: str,
     retrievers: dict[str, dict[str, Any]],
     mode_configs: dict[str, Any],
-    retrieval_cache: dict[tuple[str, str, str, int], TimedRetrieval] | None = None,
+    retrieval_cache: dict[tuple[str, str, str, tuple[str, ...], int], TimedRetrieval] | None = None,
 ) -> tuple[WorkloadRecord, dict[str, Any]]:
     """Build one workload record and its evaluation row."""
 
     mode_config = mode_configs[memory_mode]
     vertical = str(prompt.get("vertical") or "")
     prompt_id = str(prompt.get("prompt_id") or "")
-    query_build = prompt_query_text(prompt, ablation_mode)
+    vertical_retrievers = retrievers[vertical]
+    query_build = prompt_query_text(
+        prompt,
+        ablation_mode,
+        company_ticker_resolver=cast(
+            CompanyTickerResolver | None,
+            vertical_retrievers.get("company_ticker_resolver"),
+        ),
+        xbrl_concept_map=cast(
+            dict[str, set[str]], vertical_retrievers.get("xbrl_concept_map") or {}
+        ),
+    )
     query = query_build.query_text
     gold_ids = gold_evidence_ids(gold_record)
     retrieval = retrieve_for_mode(
         memory_mode=memory_mode,
         query=query,
+        expanded_queries=query_build.expanded_queries,
+        expansion_types=query_build.expansion_types,
+        source_hints_used=query_build.uses_source_hints,
         vertical=vertical,
         retrievers=retrievers,
         top_k=mode_config.top_k,
+        final_top_k=mode_config.top_k,
         retrieval_cache=retrieval_cache,
     )
 
@@ -680,6 +784,46 @@ def build_one_workload_record(
     pre_compression_evaluation = evaluate_retrieval_results(
         gold_evidence_ids=gold_ids,
         results=retrieval.results,
+    )
+    records_by_context_id = cast(
+        dict[str, ContextRecord], vertical_retrievers["records_by_context_id"]
+    )
+    candidate_context_ids = [
+        str(context_id) for context_id in retrieval.diagnostics.get("candidate_context_ids", [])
+    ]
+    candidate_results = [
+        RetrievalResult(
+            context_record=records_by_context_id[context_id],
+            score=0.0,
+            rank=index,
+            retrieval_mode=retrieval.retrieval_type,
+            component_scores={},
+        )
+        for index, context_id in enumerate(candidate_context_ids, start=1)
+        if context_id in records_by_context_id
+    ]
+    candidate_evaluation = evaluate_retrieval_results(
+        gold_evidence_ids=gold_ids,
+        results=candidate_results,
+    )
+    pre_rerank_context_ids = [
+        str(context_id)
+        for context_id in retrieval.diagnostics.get("pre_rerank_top_context_ids", [])
+    ]
+    pre_rerank_results = [
+        RetrievalResult(
+            context_record=records_by_context_id[context_id],
+            score=0.0,
+            rank=index,
+            retrieval_mode=retrieval.retrieval_type,
+            component_scores={},
+        )
+        for index, context_id in enumerate(pre_rerank_context_ids, start=1)
+        if context_id in records_by_context_id
+    ]
+    pre_rerank_evaluation = evaluate_retrieval_results(
+        gold_evidence_ids=gold_ids,
+        results=pre_rerank_results,
     )
     if memory_mode == "mm3_compressed_hybrid_top5":
         compressed = compress_retrieval_results(
@@ -770,7 +914,8 @@ def build_one_workload_record(
         "leakage_guard_applied": query_build.leakage_guard_applied,
         "blocked_direct_hint_count": query_build.blocked_direct_hint_count,
         "enrichment_terms": list(query_build.enrichment_terms),
-        "reranking_used": retrieval.retrieval_type == "hybrid",
+        "reranking_used": bool(retrieval.diagnostics.get("reranked"))
+        or retrieval.retrieval_type == "hybrid",
         "compression_ratio": compression_metadata["compression_ratio"]
         if compression_metadata
         else None,
@@ -794,6 +939,30 @@ def build_one_workload_record(
         "gold_evidence_ids": gold_ids,
         "matched_gold_evidence_ids": evaluation["matched_gold_evidence_ids"],
         "retrieved_context_ids": [result.context_record.context_id for result in retrieval.results],
+        "candidate_context_ids": candidate_context_ids,
+        "pre_rerank_top_context_ids": pre_rerank_context_ids,
+        "gold_in_candidate_pool": candidate_evaluation["gold_evidence_included"],
+        "candidate_recall_at_50": candidate_evaluation["recall_at_5"],
+        "pre_rerank_recall_at_5": pre_rerank_evaluation["recall_at_5"],
+        "reranker_rescued_gold": (
+            bool(evaluation["gold_evidence_included"])
+            and not bool(pre_rerank_evaluation["gold_evidence_included"])
+            and bool(candidate_evaluation["gold_evidence_included"])
+        ),
+        "candidate_top_k_dense": retrieval.diagnostics.get(
+            "candidate_top_k_dense",
+            0,
+        ),
+        "candidate_top_k_lexical": retrieval.diagnostics.get(
+            "candidate_top_k_lexical",
+            0,
+        ),
+        "final_top_k": retrieval.diagnostics.get("final_top_k", mode_config.top_k),
+        "reranker_enabled": retrieval.diagnostics.get("reranker_enabled", False),
+        "candidates_before_dedupe": retrieval.diagnostics.get("candidates_before_dedupe", 0),
+        "candidates_after_dedupe": retrieval.diagnostics.get("candidates_after_dedupe", 0),
+        "expanded_query_count": retrieval.diagnostics.get("expanded_query_count", 0),
+        "expansion_types": retrieval.diagnostics.get("expansion_types", []),
     }
     return workload_record, eval_row
 
@@ -821,9 +990,20 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "token_reduction": 0,
             "query_enrichment_used": False,
             "reranking_used": False,
+            "reranker_enabled": False,
             "source_hints_used": False,
             "leakage_guard_applied": False,
             "blocked_direct_hint_count": 0,
+            "candidate_top_k_dense": 0,
+            "candidate_top_k_lexical": 0,
+            "final_top_k": 0,
+            "avg_candidates_before_dedupe": 0.0,
+            "avg_candidates_after_dedupe": 0.0,
+            "avg_expanded_query_count": 0.0,
+            "gold_in_candidate_pool_count": 0,
+            "candidate_recall_at_50": 0.0,
+            "pre_rerank_recall_at_5": 0.0,
+            "reranker_rescued_gold_count": 0,
         }
     distinct_context_ids: set[str] = set()
     compression_values = [
@@ -867,10 +1047,42 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "token_reduction": sum(int(row["token_reduction"]) for row in rows),
         "query_enrichment_used": any(bool(row.get("query_enrichment_used")) for row in rows),
         "reranking_used": any(bool(row.get("reranking_used")) for row in rows),
+        "reranker_enabled": any(bool(row.get("reranker_enabled")) for row in rows),
         "source_hints_used": any(bool(row.get("source_hints_used")) for row in rows),
         "leakage_guard_applied": any(bool(row.get("leakage_guard_applied")) for row in rows),
         "blocked_direct_hint_count": sum(
             int(row.get("blocked_direct_hint_count") or 0) for row in rows
+        ),
+        "candidate_top_k_dense": max(int(row.get("candidate_top_k_dense") or 0) for row in rows),
+        "candidate_top_k_lexical": max(
+            int(row.get("candidate_top_k_lexical") or 0) for row in rows
+        ),
+        "final_top_k": max(int(row.get("final_top_k") or 0) for row in rows),
+        "avg_candidates_before_dedupe": round(
+            mean(float(row.get("candidates_before_dedupe") or 0) for row in rows),
+            6,
+        ),
+        "avg_candidates_after_dedupe": round(
+            mean(float(row.get("candidates_after_dedupe") or 0) for row in rows),
+            6,
+        ),
+        "avg_expanded_query_count": round(
+            mean(float(row.get("expanded_query_count") or 0) for row in rows),
+            6,
+        ),
+        "gold_in_candidate_pool_count": sum(
+            1 for row in rows if bool(row.get("gold_in_candidate_pool"))
+        ),
+        "candidate_recall_at_50": round(
+            mean(float(row.get("candidate_recall_at_50") or 0.0) for row in rows),
+            6,
+        ),
+        "pre_rerank_recall_at_5": round(
+            mean(float(row.get("pre_rerank_recall_at_5") or 0.0) for row in rows),
+            6,
+        ),
+        "reranker_rescued_gold_count": sum(
+            1 for row in rows if bool(row.get("reranker_rescued_gold"))
         ),
     }
 
@@ -967,6 +1179,12 @@ def build_evaluation_report(
             "source_hint_modes_are_hint_assisted": ["prompt_plus_source_hints"],
             "query_enrichment_used": query_enrichment_used,
             "reranking_used": reranking_used,
+            "candidate_expansion": {
+                "candidate_top_k_dense_default": DEFAULT_CANDIDATE_TOP_K_DENSE,
+                "candidate_top_k_lexical_default": DEFAULT_CANDIDATE_TOP_K_LEXICAL,
+                "final_top_k_default": DEFAULT_FINAL_TOP_K,
+                "separates_candidate_generation_reranking_and_final_selection": True,
+            },
             "strict_modes_block_direct_source_hints": True,
             "by_split": by_split,
             "overall_by_split_ablation_mode": overall_by_split_ablation_mode,
@@ -1010,15 +1228,37 @@ def retrieval_failure_reasons(
         reasons.append("missing_gold_mapping")
     if missing_ids and not reasons:
         reasons.append("poor_scoring")
+    if row.get("gold_in_candidate_pool") and missing_ids:
+        reasons.append("gold_in_top50_not_top5")
+    if not row.get("gold_in_candidate_pool") and missing_ids:
+        reasons.append("gold_not_in_candidate_pool")
     if str(row["memory_mode"]) == "mm1_dense_top5" and row.get("dense_backend") == "local_fallback":
         reasons.append("dense_fallback_limitation")
     if vertical == "finance":
         has_finance_identifier = any(token in query_lower for token in ("10-k", "10-q", "8-k"))
         has_finance_identifier = has_finance_identifier or any(
-            token in query_text for token in ("AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "GOOGL")
+            token in query_text.upper()
+            for token in ("AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "GOOGL", "META", "AMD")
         )
         if not has_finance_identifier:
             reasons.append("bad_query_terms")
+        if not any(
+            token in query_lower
+            for token in (
+                "revenue",
+                "sales",
+                "income",
+                "cash",
+                "flow",
+                "risk",
+                "margin",
+                "capex",
+                "selected financial metric",
+            )
+        ):
+            reasons.append("missed_finance_metric")
+        if not any(re.fullmatch(r"20\d{2}", token) for token in tokenize(query_lower)):
+            reasons.append("missed_period")
     if float(row.get("context_token_count") or 0) > 900:
         reasons.append("chunk_too_broad")
     if int(row.get("context_rows_selected") or 0) < 2 and missing_ids:
@@ -1037,7 +1277,10 @@ def build_retrieval_diagnostic_report(
     known_match_ids = corpus_match_ids_by_vertical(corpora_by_vertical)
     grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     failure_examples: list[dict[str, Any]] = []
-    finance_failure_examples: list[dict[str, Any]] = []
+    finance_failure_examples_by_ablation: dict[str, list[dict[str, Any]]] = {
+        "prompt_text_only": [],
+        "prompt_plus_metadata": [],
+    }
     reason_counts_by_vertical: dict[str, Counter[str]] = defaultdict(Counter)
 
     for row in evaluation_rows:
@@ -1055,9 +1298,9 @@ def build_retrieval_diagnostic_report(
             and memory_mode == "mm2_hybrid_top5"
             and vertical == "finance"
             and float(row["recall_at_5"]) < 1.0
-            and len(finance_failure_examples) < 20
+            and len(finance_failure_examples_by_ablation[ablation_mode]) < 30
         ):
-            finance_failure_examples.append(
+            finance_failure_examples_by_ablation[ablation_mode].append(
                 {
                     "prompt_id": row["prompt_id"],
                     "ablation_mode": ablation_mode,
@@ -1066,10 +1309,18 @@ def build_retrieval_diagnostic_report(
                     "gold_evidence_ids": row.get("gold_evidence_ids", []),
                     "matched_gold_evidence_ids": row.get("matched_gold_evidence_ids", []),
                     "retrieved_context_ids": row.get("retrieved_context_ids", []),
+                    "candidate_context_ids": row.get("candidate_context_ids", [])[:50],
+                    "gold_in_candidate_pool": row.get("gold_in_candidate_pool"),
+                    "candidate_recall_at_50": row.get("candidate_recall_at_50"),
+                    "pre_rerank_top_context_ids": row.get("pre_rerank_top_context_ids", []),
+                    "pre_rerank_recall_at_5": row.get("pre_rerank_recall_at_5"),
+                    "reranker_rescued_gold": row.get("reranker_rescued_gold"),
                     "failure_reasons": reasons,
                     "query_enrichment_used": row.get("query_enrichment_used"),
                     "reranking_used": row.get("reranking_used"),
                     "source_hints_used": row.get("source_hints_used"),
+                    "expanded_query_count": row.get("expanded_query_count"),
+                    "expansion_types": row.get("expansion_types", []),
                     "query_excerpt": str(row.get("query_text") or "")[:500],
                 }
             )
@@ -1102,6 +1353,16 @@ def build_retrieval_diagnostic_report(
                 "recall_at_5": round(mean(float(row["recall_at_5"]) for row in rows), 6),
                 "mrr": round(mean(float(row["mrr"]) for row in rows), 6),
                 "failure_count": sum(1 for row in rows if float(row["recall_at_5"]) < 1.0),
+                "candidate_recall_at_50": round(
+                    mean(float(row.get("candidate_recall_at_50") or 0.0) for row in rows),
+                    6,
+                ),
+                "gold_in_candidate_pool_count": sum(
+                    1 for row in rows if bool(row.get("gold_in_candidate_pool"))
+                ),
+                "reranker_rescued_gold_count": sum(
+                    1 for row in rows if bool(row.get("reranker_rescued_gold"))
+                ),
                 "top_failure_reasons": dict(reason_counter.most_common(8)),
             }
         else:
@@ -1110,6 +1371,9 @@ def build_retrieval_diagnostic_report(
                 "recall_at_5": 0.0,
                 "mrr": 0.0,
                 "failure_count": 0,
+                "candidate_recall_at_50": 0.0,
+                "gold_in_candidate_pool_count": 0,
+                "reranker_rescued_gold_count": 0,
                 "top_failure_reasons": {},
             }
         by_split.setdefault(split, {}).setdefault(ablation_mode, {}).setdefault(memory_mode, {})[
@@ -1125,6 +1389,9 @@ def build_retrieval_diagnostic_report(
                 "recall_at_5": payload["recall_at_5"],
                 "mrr": payload["mrr"],
                 "failure_count": payload["failure_count"],
+                "candidate_recall_at_50": payload["candidate_recall_at_50"],
+                "gold_in_candidate_pool_count": payload["gold_in_candidate_pool_count"],
+                "reranker_rescued_gold_count": payload["reranker_rescued_gold_count"],
                 "query_enrichment_used": any(
                     bool(row.get("query_enrichment_used")) for row in rows
                 ),
@@ -1175,6 +1442,9 @@ def build_retrieval_diagnostic_report(
         },
         "reranking": {
             "enabled_for_hybrid": True,
+            "candidate_top_k_dense": DEFAULT_CANDIDATE_TOP_K_DENSE,
+            "candidate_top_k_lexical": DEFAULT_CANDIDATE_TOP_K_LEXICAL,
+            "final_top_k": DEFAULT_FINAL_TOP_K,
             "signals": [
                 "lexical overlap",
                 "metadata overlap",
@@ -1194,7 +1464,7 @@ def build_retrieval_diagnostic_report(
             for vertical, counter in sorted(reason_counts_by_vertical.items())
         },
         "finance_specific": {
-            "failure_examples": finance_failure_examples,
+            "failure_examples_by_ablation": finance_failure_examples_by_ablation,
             "uses_prompt_fields": [
                 "ticker",
                 "company",
@@ -1210,6 +1480,10 @@ def build_retrieval_diagnostic_report(
                 "chunk_too_narrow",
                 "dense_fallback_limitation",
                 "evaluation_mismatch",
+                "gold_in_top50_not_top5",
+                "gold_not_in_candidate_pool",
+                "missed_finance_metric",
+                "missed_period",
             ],
         },
         "sample_failure_examples": failure_examples,
@@ -1404,8 +1678,19 @@ def write_workload_reports(
             "source_hints_used",
             "query_enrichment_used",
             "reranking_used",
+            "reranker_enabled",
             "leakage_guard_applied",
             "blocked_direct_hint_count",
+            "candidate_top_k_dense",
+            "candidate_top_k_lexical",
+            "final_top_k",
+            "avg_candidates_before_dedupe",
+            "avg_candidates_after_dedupe",
+            "avg_expanded_query_count",
+            "gold_in_candidate_pool_count",
+            "candidate_recall_at_50",
+            "pre_rerank_recall_at_5",
+            "reranker_rescued_gold_count",
             "compression_ratio",
             "token_reduction_pct",
             "recall_loss",
@@ -1424,6 +1709,9 @@ def write_workload_reports(
             "recall_at_5",
             "mrr",
             "failure_count",
+            "candidate_recall_at_50",
+            "gold_in_candidate_pool_count",
+            "reranker_rescued_gold_count",
             "query_enrichment_used",
             "reranking_used",
             "source_hints_used",
@@ -1528,6 +1816,12 @@ def build_memory_mode_workloads(
         "vector_store": vector_store_key if dense_backend == "qdrant_vector" else "none",
         "ablation_modes": active_ablation_modes,
         "splits": splits,
+        "candidate_expansion": {
+            "candidate_top_k_dense": DEFAULT_CANDIDATE_TOP_K_DENSE,
+            "candidate_top_k_lexical": DEFAULT_CANDIDATE_TOP_K_LEXICAL,
+            "final_top_k": DEFAULT_FINAL_TOP_K,
+            "candidate_generation_then_reranking": True,
+        },
         "qdrant_query_embedding_warmup": qdrant_query_embedding_warmup,
         "no_model_inference_triggered": True,
         "all_workload_records_validated": True,
@@ -1535,7 +1829,7 @@ def build_memory_mode_workloads(
     }
     workload_summary_rows: list[dict[str, Any]] = []
     evaluation_rows: list[dict[str, Any]] = []
-    retrieval_cache: dict[tuple[str, str, str, int], TimedRetrieval] = {}
+    retrieval_cache: dict[tuple[str, str, str, tuple[str, ...], int], TimedRetrieval] = {}
     use_legacy_output_paths = active_ablation_modes == ["prompt_plus_source_hints"]
 
     try:
