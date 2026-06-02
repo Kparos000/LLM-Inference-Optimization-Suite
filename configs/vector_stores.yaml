@@ -1,0 +1,9 @@
+qdrant_local:
+  provider: qdrant
+  mode: local
+  storage_path: data/generated/vector_store/qdrant
+  collection_prefix: llm_inference_suite
+  distance: cosine
+  embedding_backend: sentence_transformers
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  batch_size: 64

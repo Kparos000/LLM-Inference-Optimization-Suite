@@ -10,6 +10,7 @@ import yaml  # type: ignore[import-untyped]
 
 MODEL_ALIASES_KEY = "model_aliases"
 DEFAULT_MEMORY_MODES_PATH = "configs/memory_modes.yaml"
+DEFAULT_VECTOR_STORES_PATH = "configs/vector_stores.yaml"
 
 
 def _validate_non_empty_string(value: str, field_name: str) -> None:
@@ -76,6 +77,41 @@ class MemoryModeConfig:
             if not isinstance(getattr(self, field_name), bool):
                 msg = f"{field_name} must be boolean"
                 raise ValueError(msg)
+
+
+@dataclass(frozen=True)
+class VectorStoreConfig:
+    """Configuration for a local vector store used by retrieval workloads."""
+
+    provider: str
+    mode: str
+    storage_path: str
+    collection_prefix: str
+    distance: str
+    embedding_backend: str
+    embedding_model: str
+    batch_size: int = 64
+
+    def __post_init__(self) -> None:
+        _validate_non_empty_string(self.provider, "provider")
+        _validate_non_empty_string(self.mode, "mode")
+        _validate_non_empty_string(self.storage_path, "storage_path")
+        _validate_non_empty_string(self.collection_prefix, "collection_prefix")
+        _validate_non_empty_string(self.distance, "distance")
+        _validate_non_empty_string(self.embedding_backend, "embedding_backend")
+        _validate_non_empty_string(self.embedding_model, "embedding_model")
+        if self.provider != "qdrant":
+            msg = "vector store provider must be 'qdrant'"
+            raise ValueError(msg)
+        if self.mode != "local":
+            msg = "only local vector store mode is supported"
+            raise ValueError(msg)
+        if self.distance.lower() != "cosine":
+            msg = "only cosine vector distance is supported"
+            raise ValueError(msg)
+        if self.batch_size <= 0:
+            msg = "batch_size must be > 0"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True)
@@ -273,6 +309,37 @@ def resolve_memory_mode(
         msg = f"Unknown memory mode '{memory_mode}' in {path}"
         raise ValueError(msg)
     return memory_modes[memory_mode]
+
+
+def load_vector_stores_config(
+    path: str | Path = DEFAULT_VECTOR_STORES_PATH,
+) -> dict[str, VectorStoreConfig]:
+    """Load vector store configurations from YAML."""
+
+    vector_stores: dict[str, VectorStoreConfig] = {}
+    for key, value in _load_config_mapping(path).items():
+        try:
+            vector_stores[key] = VectorStoreConfig(**value)
+        except TypeError as exc:
+            msg = f"Invalid vector store config '{key}' in {path}: {exc}"
+            raise ValueError(msg) from exc
+        except ValueError as exc:
+            msg = f"Invalid vector store config '{key}' in {path}: {exc}"
+            raise ValueError(msg) from exc
+    return vector_stores
+
+
+def resolve_vector_store(
+    vector_store: str,
+    path: str | Path = DEFAULT_VECTOR_STORES_PATH,
+) -> VectorStoreConfig:
+    """Return one configured vector store or raise a clear validation error."""
+
+    vector_stores = load_vector_stores_config(path)
+    if vector_store not in vector_stores:
+        msg = f"Unknown vector store '{vector_store}' in {path}"
+        raise ValueError(msg)
+    return vector_stores[vector_store]
 
 
 def load_workloads_config(path: str | Path) -> dict[str, WorkloadConfig]:

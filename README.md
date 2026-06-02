@@ -128,6 +128,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 3 retrieval and memory-mode workloads](docs/58_phase3_retrieval_and_memory_mode_workloads.md)
 - [Phase 3 completion and Phase 4 handoff](docs/59_phase3_completion_and_phase4_handoff.md)
 - [Phase 3 retrieval hardening and run safety](docs/61_phase3_retrieval_hardening_and_run_safety.md)
+- [Qdrant vector retrieval and ablation](docs/62_qdrant_vector_retrieval_and_ablation.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

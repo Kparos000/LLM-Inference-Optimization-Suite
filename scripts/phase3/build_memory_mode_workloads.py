@@ -40,6 +40,23 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         default=sorted(SUPPORTED_MEMORY_MODES),
     )
+    parser.add_argument(
+        "--dense-backend",
+        choices=["local_fallback", "qdrant_vector"],
+        default="local_fallback",
+    )
+    parser.add_argument(
+        "--ablation-modes",
+        nargs="+",
+        default=["prompt_plus_source_hints"],
+    )
+    parser.add_argument("--vector-store-config", default="configs/vector_stores.yaml")
+    parser.add_argument("--vector-store-key", default="qdrant_local")
+    parser.add_argument(
+        "--allow-dense-fallback",
+        action="store_true",
+        help="Allow local_fallback if the requested dense backend cannot be created.",
+    )
     return parser
 
 
@@ -53,14 +70,20 @@ def main(argv: list[str] | None = None) -> int:
         output_root=args.output_root,
         splits=args.splits,
         memory_modes=args.memory_modes,
+        dense_backend=args.dense_backend,
+        ablation_modes=args.ablation_modes,
+        vector_store_config_path=args.vector_store_config,
+        vector_store_key=args.vector_store_key,
+        allow_dense_fallback=args.allow_dense_fallback,
     )
     report = result.workload_build_report
     for split, split_payload in report["by_split"].items():
-        for memory_mode, payload in split_payload.items():
-            print(
-                f"{split}/{memory_mode}: records={payload['record_count']} "
-                f"output={payload['output_path']}"
-            )
+        for ablation_mode, ablation_payload in split_payload.items():
+            for memory_mode, payload in ablation_payload.items():
+                print(
+                    f"{split}/{ablation_mode}/{memory_mode}: records={payload['record_count']} "
+                    f"output={payload['output_path']}"
+                )
     print(f"Workload build report: {Path(args.context_root) / 'workload_build_report.json'}")
     print(
         "Retrieval evaluation report: "

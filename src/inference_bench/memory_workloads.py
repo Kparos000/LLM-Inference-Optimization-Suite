@@ -22,6 +22,7 @@ from inference_bench.retrieval import (
     BM25Retriever,
     HybridRetriever,
     LocalFallbackDenseRetriever,
+    QdrantDenseRetriever,
     RetrievalResult,
     TimedRetrieval,
     compress_retrieval_results,
@@ -29,6 +30,7 @@ from inference_bench.retrieval import (
     retrieval_record_payload,
 )
 from inference_bench.run_safety_audit import build_run_safety_audit
+from inference_bench.vector_store import QdrantVectorSearcher
 
 CONTEXT_REGEN_COMMAND = (
     "python scripts/phase3/build_context_corpora.py --dataset-root data/scaleup_2000_full "
@@ -40,6 +42,13 @@ SUPPORTED_MEMORY_MODES = {
     "mm1_dense_top5",
     "mm2_hybrid_top5",
     "mm3_compressed_hybrid_top5",
+}
+
+SUPPORTED_DENSE_BACKENDS = {"local_fallback", "qdrant_vector"}
+SUPPORTED_ABLATION_MODES = {
+    "prompt_text_only",
+    "prompt_plus_metadata",
+    "prompt_plus_source_hints",
 }
 
 
@@ -63,6 +72,17 @@ class WorkloadBuildResult:
     workload_build_summary_rows: list[dict[str, Any]]
     retrieval_evaluation_report: dict[str, Any]
     retrieval_evaluation_summary_rows: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class QueryBuildResult:
+    """Ablation-aware retrieval query text and audit labels."""
+
+    query_text: str
+    ablation_mode: str
+    uses_metadata: bool
+    uses_source_hints: bool
+    uses_gold_ids: bool = False
 
 
 def utc_now() -> str:
@@ -168,9 +188,21 @@ def gold_evidence_ids(gold_record: dict[str, Any] | None) -> list[str]:
     return list(dict.fromkeys(ids))
 
 
-def prompt_query_text(prompt: dict[str, Any]) -> str:
-    """Build retrieval query text from prompt fields only."""
+def validate_ablation_mode(ablation_mode: str) -> None:
+    """Validate a retrieval ablation mode."""
 
+    if ablation_mode not in SUPPORTED_ABLATION_MODES:
+        msg = f"Unknown ablation mode '{ablation_mode}'"
+        raise ValueError(msg)
+
+
+def prompt_query_text(
+    prompt: dict[str, Any],
+    ablation_mode: str = "prompt_plus_source_hints",
+) -> QueryBuildResult:
+    """Build retrieval query text under one strict ablation policy."""
+
+    validate_ablation_mode(ablation_mode)
     metadata = prompt.get("metadata") if isinstance(prompt.get("metadata"), dict) else {}
     parts: list[str] = []
 
@@ -182,9 +214,22 @@ def prompt_query_text(prompt: dict[str, Any]) -> str:
         if value:
             parts.extend([str(value)] * repeat)
 
+    for field_name in ("question", "issue"):
+        append_value(prompt.get(field_name))
+
+    uses_metadata = ablation_mode in {"prompt_plus_metadata", "prompt_plus_source_hints"}
+    uses_source_hints = ablation_mode == "prompt_plus_source_hints"
+
+    if not uses_metadata:
+        return QueryBuildResult(
+            query_text=" ".join(parts),
+            ablation_mode=ablation_mode,
+            uses_metadata=False,
+            uses_source_hints=False,
+        )
+
     for field_name in (
-        "question",
-        "issue",
+        "vertical",
         "task_type",
         "expected_output_format",
         "expected_status",
@@ -199,28 +244,39 @@ def prompt_query_text(prompt: dict[str, Any]) -> str:
         "product_id",
     ):
         append_value(prompt.get(field_name))
-    for hint_field in (
-        "required_doc_ids",
-        "required_evidence_ids",
-        "required_chunk_ids",
-        "required_policy_ids",
-        "required_paper_ids",
-        "source_paper_ids",
-        "source_parent_asins",
-        "source_product_ids",
-    ):
-        append_value(prompt.get(hint_field), repeat=4)
     for metadata_field in (
         "prompt_category",
         "evidence_type",
-        "source_titles",
         "topics",
-        "source_parent_asins",
-        "required_paper_ids",
         "required_section_types",
     ):
         append_value(metadata.get(metadata_field), repeat=2)
-    return " ".join(parts)
+
+    if uses_source_hints:
+        for hint_field in (
+            "required_doc_ids",
+            "required_evidence_ids",
+            "required_chunk_ids",
+            "required_policy_ids",
+            "required_paper_ids",
+            "source_paper_ids",
+            "source_parent_asins",
+            "source_product_ids",
+        ):
+            append_value(prompt.get(hint_field), repeat=4)
+        for metadata_field in (
+            "source_titles",
+            "source_parent_asins",
+            "required_paper_ids",
+        ):
+            append_value(metadata.get(metadata_field), repeat=2)
+
+    return QueryBuildResult(
+        query_text=" ".join(parts),
+        ablation_mode=ablation_mode,
+        uses_metadata=uses_metadata,
+        uses_source_hints=uses_source_hints,
+    )
 
 
 def expected_output_format(prompt: dict[str, Any], gold_record: dict[str, Any] | None) -> str:
@@ -327,20 +383,82 @@ def select_prompts_for_split(
 
 def build_retrievers(
     corpora_by_vertical: dict[str, list[ContextRecord]],
+    *,
+    dense_backend: str = "local_fallback",
+    vector_store_config_path: str | Path = "configs/vector_stores.yaml",
+    vector_store_key: str = "qdrant_local",
+    allow_dense_fallback: bool = False,
 ) -> dict[str, dict[str, Any]]:
-    """Build lexical, dense fallback, and hybrid retrievers per vertical."""
+    """Build lexical, dense, and hybrid retrievers per vertical."""
+
+    if dense_backend not in SUPPORTED_DENSE_BACKENDS:
+        msg = f"Unknown dense backend '{dense_backend}'"
+        raise ValueError(msg)
 
     retrievers: dict[str, dict[str, Any]] = {}
+    qdrant_searchers: dict[str, QdrantVectorSearcher] = {}
+    qdrant_client: Any | None = None
+    qdrant_embedding_provider: Any | None = None
+    qdrant_vector_config: Any | None = None
+    if dense_backend == "qdrant_vector":
+        try:
+            from inference_bench.config import resolve_vector_store
+            from inference_bench.vector_store import build_embedding_provider, build_qdrant_client
+
+            qdrant_vector_config = resolve_vector_store(vector_store_key, vector_store_config_path)
+            qdrant_embedding_provider = build_embedding_provider(qdrant_vector_config)
+            qdrant_client = build_qdrant_client(qdrant_vector_config)
+        except RuntimeError:
+            if not allow_dense_fallback:
+                raise
+            qdrant_client = None
+            qdrant_embedding_provider = None
+            qdrant_vector_config = None
     for vertical, records in corpora_by_vertical.items():
         lexical = BM25Retriever(records)
-        dense = LocalFallbackDenseRetriever(records)
+        if (
+            dense_backend == "qdrant_vector"
+            and qdrant_client is not None
+            and qdrant_embedding_provider is not None
+            and qdrant_vector_config is not None
+        ):
+            try:
+                searcher = QdrantVectorSearcher(
+                    config=qdrant_vector_config,
+                    vertical=vertical,
+                    embedding_provider=qdrant_embedding_provider,
+                    client=qdrant_client,
+                )
+                qdrant_searchers[vertical] = searcher
+                dense = QdrantDenseRetriever(searcher)
+            except RuntimeError:
+                if not allow_dense_fallback:
+                    if qdrant_client is not None:
+                        qdrant_client.close()
+                    raise
+                dense = LocalFallbackDenseRetriever(records)
+        else:
+            dense = LocalFallbackDenseRetriever(records)
         hybrid = HybridRetriever(lexical, dense)
         retrievers[vertical] = {
             "lexical": lexical,
             "dense": dense,
             "hybrid": hybrid,
         }
+    if qdrant_searchers:
+        retrievers["_qdrant_searchers"] = qdrant_searchers
+    if qdrant_client is not None:
+        retrievers["_qdrant_client"] = {"client": qdrant_client}
     return retrievers
+
+
+def close_retrievers(retrievers: dict[str, dict[str, Any]]) -> None:
+    """Close local vector-store resources held by retrievers."""
+
+    qdrant_client_payload = retrievers.get("_qdrant_client", {})
+    qdrant_client = qdrant_client_payload.get("client") if qdrant_client_payload else None
+    if qdrant_client is not None:
+        qdrant_client.close()
 
 
 def no_context_retrieval() -> TimedRetrieval:
@@ -351,6 +469,7 @@ def no_context_retrieval() -> TimedRetrieval:
         latency_ms=0.0,
         backend_label="unavailable",
         retrieval_type="none",
+        vector_store="none",
     )
 
 
@@ -372,9 +491,7 @@ def retrieve_for_mode(
     if retrieval_cache is not None and cache_key in retrieval_cache:
         return retrieval_cache[cache_key]
     if memory_mode == "mm1_dense_top5":
-        retrieval = cast(LocalFallbackDenseRetriever, retrievers[vertical]["dense"]).retrieve(
-            query, top_k
-        )
+        retrieval = cast(Any, retrievers[vertical]["dense"]).retrieve(query, top_k)
     elif memory_mode in {"mm2_hybrid_top5", "mm3_compressed_hybrid_top5"}:
         retrieval = cast(HybridRetriever, retrievers[vertical]["hybrid"]).retrieve(query, top_k)
     else:
@@ -431,6 +548,7 @@ def retrieval_metadata_payload(
     selected_results: list[RetrievalResult],
     evaluation: dict[str, Any],
     configured_top_k: int,
+    query_build: QueryBuildResult,
     compression_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build per-workload retrieval metadata."""
@@ -438,6 +556,12 @@ def retrieval_metadata_payload(
     payload: dict[str, Any] = {
         "retrieval_type": retrieval.retrieval_type,
         "retrieval_backend_label": retrieval.backend_label,
+        "dense_backend": retrieval.backend_label,
+        "vector_store": retrieval.vector_store,
+        "ablation_mode": query_build.ablation_mode,
+        "source_hints_used": query_build.uses_source_hints,
+        "metadata_used": query_build.uses_metadata,
+        "gold_ids_used_in_query": query_build.uses_gold_ids,
         "retrieval_latency_ms": round(retrieval.latency_ms, 6),
         "configured_top_k": configured_top_k,
         "retrieved_count": len(retrieval.results),
@@ -465,6 +589,7 @@ def build_one_workload_record(
     gold_record: dict[str, Any] | None,
     dataset_split: str,
     memory_mode: str,
+    ablation_mode: str,
     retrievers: dict[str, dict[str, Any]],
     retrieval_cache: dict[tuple[str, str, str, int], TimedRetrieval] | None = None,
 ) -> tuple[WorkloadRecord, dict[str, Any]]:
@@ -473,7 +598,8 @@ def build_one_workload_record(
     mode_config = resolve_memory_mode(memory_mode)
     vertical = str(prompt.get("vertical") or "")
     prompt_id = str(prompt.get("prompt_id") or "")
-    query = prompt_query_text(prompt)
+    query_build = prompt_query_text(prompt, ablation_mode)
+    query = query_build.query_text
     gold_ids = gold_evidence_ids(gold_record)
     retrieval = retrieve_for_mode(
         memory_mode=memory_mode,
@@ -533,11 +659,12 @@ def build_one_workload_record(
         selected_results=selected_results,
         evaluation=evaluation,
         configured_top_k=mode_config.top_k,
+        query_build=query_build,
         compression_metadata=compression_metadata,
     )
     question = str(prompt.get("question") or prompt.get("issue") or "")
     workload_record = WorkloadRecord(
-        workload_id=f"{dataset_split}:{memory_mode}:{prompt_id}",
+        workload_id=f"{dataset_split}:{ablation_mode}:{memory_mode}:{prompt_id}",
         prompt_id=prompt_id,
         vertical=vertical,
         memory_mode=memory_mode,
@@ -556,6 +683,7 @@ def build_one_workload_record(
     )
     eval_row = {
         "split": dataset_split,
+        "ablation_mode": ablation_mode,
         "memory_mode": memory_mode,
         "vertical": vertical,
         "prompt_id": prompt_id,
@@ -568,6 +696,11 @@ def build_one_workload_record(
         "context_rows_selected": len(selected_context_records),
         "distinct_context_ids": [result.context_record.context_id for result in selected_results],
         "retrieval_backend_label": retrieval.backend_label,
+        "dense_backend": retrieval.backend_label,
+        "vector_store": retrieval.vector_store,
+        "source_hints_used": query_build.uses_source_hints,
+        "metadata_used": query_build.uses_metadata,
+        "gold_ids_used_in_query": query_build.uses_gold_ids,
         "compression_ratio": compression_metadata["compression_ratio"]
         if compression_metadata
         else None,
@@ -610,6 +743,8 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "total_context_rows_selected": 0,
             "distinct_context_rows_used": 0,
             "retrieval_backend_label": "unavailable",
+            "dense_backend": "unavailable",
+            "vector_store": "none",
             "compression_ratio": None,
             "token_reduction_pct": None,
             "recall_loss": None,
@@ -630,6 +765,8 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in rows:
         distinct_context_ids.update(str(context_id) for context_id in row["distinct_context_ids"])
     backend_labels = sorted(set(str(row["retrieval_backend_label"]) for row in rows))
+    dense_backends = sorted(set(str(row["dense_backend"]) for row in rows))
+    vector_stores = sorted(set(str(row["vector_store"]) for row in rows))
     return {
         "record_count": len(rows),
         "recall_at_5": round(mean(float(row["recall_at_5"]) for row in rows), 6),
@@ -645,6 +782,8 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "total_context_rows_selected": sum(int(row["context_rows_selected"]) for row in rows),
         "distinct_context_rows_used": len(distinct_context_ids),
         "retrieval_backend_label": ",".join(backend_labels),
+        "dense_backend": ",".join(dense_backends),
+        "vector_store": ",".join(vector_stores),
         "compression_ratio": round(mean(compression_values), 6) if compression_values else None,
         "token_reduction_pct": round(mean(token_reduction_pct_values), 6)
         if token_reduction_pct_values
@@ -661,41 +800,89 @@ def build_evaluation_report(
 
     summary_rows: list[dict[str, Any]] = []
     by_split: dict[str, dict[str, Any]] = {}
-    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in evaluation_rows:
-        grouped[(str(row["split"]), str(row["memory_mode"]), str(row["vertical"]))].append(row)
+        grouped[
+            (
+                str(row["split"]),
+                str(row["ablation_mode"]),
+                str(row["memory_mode"]),
+                str(row["vertical"]),
+            )
+        ].append(row)
 
-    for (split, memory_mode, vertical), rows in sorted(grouped.items()):
+    for (split, ablation_mode, memory_mode, vertical), rows in sorted(grouped.items()):
         metrics = aggregate_eval_rows(rows)
-        by_split.setdefault(split, {}).setdefault(memory_mode, {})[vertical] = metrics
+        by_split.setdefault(split, {}).setdefault(ablation_mode, {}).setdefault(memory_mode, {})[
+            vertical
+        ] = metrics
         summary_rows.append(
             {
                 "split": split,
+                "ablation_mode": ablation_mode,
                 "memory_mode": memory_mode,
                 "vertical": vertical,
+                "context_token_count": metrics["avg_context_tokens"],
                 **metrics,
             }
         )
 
-    overall_grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    overall_grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in evaluation_rows:
-        overall_grouped[(str(row["split"]), str(row["memory_mode"]))].append(row)
-    overall_by_split_mode = {
+        overall_grouped[
+            (str(row["split"]), str(row["ablation_mode"]), str(row["memory_mode"]))
+        ].append(row)
+    split_names = sorted({str(row["split"]) for row in evaluation_rows})
+    overall_by_split_ablation_mode = {
         split: {
-            mode: aggregate_eval_rows(rows)
-            for (row_split, mode), rows in overall_grouped.items()
-            if row_split == split
+            ablation: {
+                mode: aggregate_eval_rows(rows)
+                for (row_split, row_ablation, mode), rows in overall_grouped.items()
+                if row_split == split and row_ablation == ablation
+            }
+            for ablation in sorted(
+                {
+                    row_ablation
+                    for row_split, row_ablation, _mode in overall_grouped
+                    if row_split == split
+                }
+            )
         }
-        for split in sorted({str(row["split"]) for row in evaluation_rows})
+        for split in split_names
     }
+    overall_by_split_mode = {
+        split: ablation_payload.get("prompt_plus_source_hints", {})
+        for split, ablation_payload in overall_by_split_ablation_mode.items()
+    }
+    dense_statuses = sorted(
+        {
+            str(row["dense_backend"])
+            for row in evaluation_rows
+            if row["memory_mode"] == "mm1_dense_top5"
+        }
+    )
+    hybrid_statuses = sorted(
+        {
+            str(row["dense_backend"])
+            for row in evaluation_rows
+            if row["memory_mode"] in {"mm2_hybrid_top5", "mm3_compressed_hybrid_top5"}
+        }
+    )
+    vector_stores = sorted({str(row["vector_store"]) for row in evaluation_rows})
+    ablation_modes = sorted({str(row["ablation_mode"]) for row in evaluation_rows})
 
     return (
         {
             "generated_at_utc": utc_now(),
             "no_model_inference_triggered": True,
-            "dense_retrieval_status": "local_fallback",
-            "hybrid_dense_component_status": "local_fallback",
+            "dense_retrieval_status": ",".join(dense_statuses) or "unavailable",
+            "hybrid_dense_component_status": ",".join(hybrid_statuses) or "unavailable",
+            "vector_stores": vector_stores,
+            "ablation_modes": ablation_modes,
+            "qdrant_used": "qdrant_vector" in dense_statuses or "qdrant_vector" in hybrid_statuses,
+            "source_hint_modes_are_hint_assisted": ["prompt_plus_source_hints"],
             "by_split": by_split,
+            "overall_by_split_ablation_mode": overall_by_split_ablation_mode,
             "overall_by_split_mode": overall_by_split_mode,
         },
         summary_rows,
@@ -736,7 +923,7 @@ def retrieval_failure_reasons(
         reasons.append("missing_gold_mapping")
     if missing_ids and not reasons:
         reasons.append("poor_scoring")
-    if str(row["memory_mode"]) == "mm1_dense_top5":
+    if str(row["memory_mode"]) == "mm1_dense_top5" and row.get("dense_backend") == "local_fallback":
         reasons.append("dense_fallback_limitation")
     if vertical == "finance":
         has_finance_identifier = any(token in query_lower for token in ("10-k", "10-q", "8-k"))
@@ -761,21 +948,23 @@ def build_retrieval_diagnostic_report(
     """Build retrieval diagnostics from workload evaluation rows."""
 
     known_match_ids = corpus_match_ids_by_vertical(corpora_by_vertical)
-    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     failure_examples: list[dict[str, Any]] = []
     finance_failure_examples: list[dict[str, Any]] = []
     reason_counts_by_vertical: dict[str, Counter[str]] = defaultdict(Counter)
 
     for row in evaluation_rows:
         split = str(row["split"])
+        ablation_mode = str(row.get("ablation_mode") or "prompt_plus_source_hints")
         memory_mode = str(row["memory_mode"])
         vertical = str(row["vertical"])
-        grouped[(split, memory_mode, vertical)].append(row)
+        grouped[(split, ablation_mode, memory_mode, vertical)].append(row)
         reasons = retrieval_failure_reasons(row, known_match_ids)
         if reasons:
             reason_counts_by_vertical[vertical].update(reasons)
         if (
             split == "final_10000"
+            and ablation_mode == "prompt_plus_source_hints"
             and memory_mode == "mm2_hybrid_top5"
             and vertical == "finance"
             and float(row["recall_at_5"]) < 1.0
@@ -784,6 +973,7 @@ def build_retrieval_diagnostic_report(
             finance_failure_examples.append(
                 {
                     "prompt_id": row["prompt_id"],
+                    "ablation_mode": ablation_mode,
                     "recall_at_5": row["recall_at_5"],
                     "mrr": row["mrr"],
                     "gold_evidence_ids": row.get("gold_evidence_ids", []),
@@ -803,6 +993,7 @@ def build_retrieval_diagnostic_report(
                 {
                     "prompt_id": row["prompt_id"],
                     "vertical": vertical,
+                    "ablation_mode": ablation_mode,
                     "memory_mode": memory_mode,
                     "recall_at_5": row["recall_at_5"],
                     "failure_reasons": reasons,
@@ -811,7 +1002,7 @@ def build_retrieval_diagnostic_report(
 
     summary_rows: list[dict[str, Any]] = []
     by_split: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
-    for (split, memory_mode, vertical), rows in sorted(grouped.items()):
+    for (split, ablation_mode, memory_mode, vertical), rows in sorted(grouped.items()):
         if rows:
             reason_counter: Counter[str] = Counter()
             for row in rows:
@@ -831,10 +1022,13 @@ def build_retrieval_diagnostic_report(
                 "failure_count": 0,
                 "top_failure_reasons": {},
             }
-        by_split.setdefault(split, {}).setdefault(memory_mode, {})[vertical] = payload
+        by_split.setdefault(split, {}).setdefault(ablation_mode, {}).setdefault(memory_mode, {})[
+            vertical
+        ] = payload
         summary_rows.append(
             {
                 "split": split,
+                "ablation_mode": ablation_mode,
                 "memory_mode": memory_mode,
                 "vertical": vertical,
                 "record_count": payload["record_count"],
@@ -845,6 +1039,12 @@ def build_retrieval_diagnostic_report(
             }
         )
 
+    dense_statuses = sorted(
+        {
+            str(row.get("dense_backend") or row.get("retrieval_backend_label") or "unavailable")
+            for row in evaluation_rows
+        }
+    )
     report = {
         "generated_at_utc": utc_now(),
         "no_model_inference_triggered": True,
@@ -854,10 +1054,15 @@ def build_retrieval_diagnostic_report(
             "chunk IDs, and flattened context metadata values using exact and normalized forms."
         ),
         "query_logic": (
-            "Retrieval query text is built from prompt/user fields plus structured source hints "
-            "present in prompt records; gold/eval rows are not used for retrieval."
+            "Retrieval query text is built according to ablation mode. prompt_text_only uses "
+            "only user-visible prompt text; prompt_plus_metadata adds realistic prompt metadata; "
+            "prompt_plus_source_hints is explicitly hint-assisted. Gold/eval rows are not used "
+            "for retrieval."
         ),
-        "dense_status": "local_fallback",
+        "dense_status": ",".join(dense_statuses) or "unavailable",
+        "ablation_modes": sorted(
+            {str(row.get("ablation_mode") or "prompt_plus_source_hints") for row in evaluation_rows}
+        ),
         "by_split": by_split,
         "top_failure_reasons_by_vertical": {
             vertical: dict(counter.most_common(8))
@@ -897,13 +1102,19 @@ def build_compression_diagnostic_report(
     compression_rows = [
         row for row in evaluation_rows if row["memory_mode"] == "mm3_compressed_hybrid_top5"
     ]
-    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in compression_rows:
-        grouped[(str(row["split"]), str(row["vertical"]))].append(row)
+        grouped[
+            (
+                str(row["split"]),
+                str(row.get("ablation_mode") or "prompt_plus_source_hints"),
+                str(row["vertical"]),
+            )
+        ].append(row)
 
     summary_rows: list[dict[str, Any]] = []
     by_split: dict[str, dict[str, Any]] = defaultdict(dict)
-    for (split, vertical), rows in sorted(grouped.items()):
+    for (split, ablation_mode, vertical), rows in sorted(grouped.items()):
         original_tokens = sum(
             int(row["context_token_count"]) + int(row["token_reduction"]) for row in rows
         )
@@ -934,40 +1145,67 @@ def build_compression_diagnostic_report(
             "recall_loss": recall_loss,
             "gold_evidence_retained_count": gold_retained_count,
         }
-        by_split.setdefault(split, {})[vertical] = payload
+        by_split.setdefault(split, {}).setdefault(ablation_mode, {})[vertical] = payload
         summary_rows.append(
             {
                 "split": split,
+                "ablation_mode": ablation_mode,
                 "vertical": vertical,
                 **payload,
             }
         )
 
-    overall_by_split: dict[str, Any] = {}
+    overall_by_split_ablation_mode: dict[str, Any] = {}
     for split in sorted({str(row["split"]) for row in compression_rows}):
-        rows = [row for row in compression_rows if row["split"] == split]
-        original_tokens = sum(
-            int(row["context_token_count"]) + int(row["token_reduction"]) for row in rows
-        )
-        token_reduction = sum(int(row["token_reduction"]) for row in rows)
-        overall_by_split[split] = {
-            "record_count": len(rows),
-            "token_reduction_pct": round(token_reduction / original_tokens, 6)
-            if original_tokens
-            else 0.0,
-            "recall_loss": round(
-                mean(float(row["recall_loss"]) for row in rows if row["recall_loss"] is not None),
-                6,
+        overall_by_split_ablation_mode[split] = {}
+        for ablation_mode in sorted(
+            {
+                str(row.get("ablation_mode") or "prompt_plus_source_hints")
+                for row in compression_rows
+                if row["split"] == split
+            }
+        ):
+            rows = [
+                row
+                for row in compression_rows
+                if row["split"] == split
+                and str(row.get("ablation_mode") or "prompt_plus_source_hints") == ablation_mode
+            ]
+            original_tokens = sum(
+                int(row["context_token_count"]) + int(row["token_reduction"]) for row in rows
             )
-            if rows
-            else 0.0,
-        }
+            token_reduction = sum(int(row["token_reduction"]) for row in rows)
+            overall_by_split_ablation_mode[split][ablation_mode] = {
+                "record_count": len(rows),
+                "token_reduction_pct": round(token_reduction / original_tokens, 6)
+                if original_tokens
+                else 0.0,
+                "recall_loss": round(
+                    mean(
+                        float(row["recall_loss"]) for row in rows if row["recall_loss"] is not None
+                    ),
+                    6,
+                )
+                if rows
+                else 0.0,
+            }
+    overall_by_split = {
+        split: ablation_payload.get("prompt_plus_source_hints", {})
+        for split, ablation_payload in overall_by_split_ablation_mode.items()
+    }
 
     report = {
         "generated_at_utc": utc_now(),
         "no_model_inference_triggered": True,
         "compression_type": "deterministic_score_dedupe_budget_and_extractive_truncation",
+        "ablation_modes": sorted(
+            {
+                str(row.get("ablation_mode") or "prompt_plus_source_hints")
+                for row in compression_rows
+            }
+        ),
         "by_split": by_split,
+        "overall_by_split_ablation_mode": overall_by_split_ablation_mode,
         "overall_by_split": overall_by_split,
         "safety_notes": [
             "Compression preserves context IDs, provenance, and metadata.",
@@ -1007,6 +1245,7 @@ def write_workload_reports(
         workload_build_summary_rows,
         [
             "split",
+            "ablation_mode",
             "memory_mode",
             "record_count",
             "airline",
@@ -1023,11 +1262,15 @@ def write_workload_reports(
         retrieval_summary_rows,
         [
             "split",
+            "ablation_mode",
             "memory_mode",
             "vertical",
             "record_count",
             "recall_at_5",
             "mrr",
+            "dense_backend",
+            "vector_store",
+            "context_token_count",
             "avg_retrieval_latency_ms",
             "avg_context_tokens",
             "gold_evidence_included_count",
@@ -1046,6 +1289,7 @@ def write_workload_reports(
         retrieval_diagnostic_rows,
         [
             "split",
+            "ablation_mode",
             "memory_mode",
             "vertical",
             "record_count",
@@ -1060,6 +1304,7 @@ def write_workload_reports(
         compression_diagnostic_rows,
         [
             "split",
+            "ablation_mode",
             "vertical",
             "record_count",
             "original_context_tokens",
@@ -1094,6 +1339,11 @@ def build_memory_mode_workloads(
     output_root: str | Path,
     splits: list[str],
     memory_modes: list[str],
+    dense_backend: str = "local_fallback",
+    ablation_modes: list[str] | None = None,
+    vector_store_config_path: str | Path = "configs/vector_stores.yaml",
+    vector_store_key: str = "qdrant_local",
+    allow_dense_fallback: bool = False,
     split_plan: SplitPlan | None = None,
 ) -> WorkloadBuildResult:
     """Build memory-mode workload JSONL files and reports."""
@@ -1107,10 +1357,22 @@ def build_memory_mode_workloads(
         if memory_mode not in SUPPORTED_MEMORY_MODES:
             msg = f"Memory mode '{memory_mode}' is not implemented in Phase 3 Block 3"
             raise ValueError(msg)
+    if dense_backend not in SUPPORTED_DENSE_BACKENDS:
+        msg = f"Unknown dense backend '{dense_backend}'"
+        raise ValueError(msg)
+    active_ablation_modes = ablation_modes or ["prompt_plus_source_hints"]
+    for ablation_mode in active_ablation_modes:
+        validate_ablation_mode(ablation_mode)
 
     prompts_by_vertical, gold_by_vertical = load_prompts_and_gold(dataset_root)
     corpora_by_vertical = load_context_corpora(context_root)
-    retrievers = build_retrievers(corpora_by_vertical)
+    retrievers = build_retrievers(
+        corpora_by_vertical,
+        dense_backend=dense_backend,
+        vector_store_config_path=vector_store_config_path,
+        vector_store_key=vector_store_key,
+        allow_dense_fallback=allow_dense_fallback,
+    )
     output_path = Path(output_root)
     report_root = Path(context_root)
     workload_report: dict[str, Any] = {
@@ -1119,6 +1381,9 @@ def build_memory_mode_workloads(
         "context_root": str(context_root),
         "output_root": str(output_root),
         "memory_modes": memory_modes,
+        "dense_backend_requested": dense_backend,
+        "vector_store": vector_store_key if dense_backend == "qdrant_vector" else "none",
+        "ablation_modes": active_ablation_modes,
         "splits": splits,
         "no_model_inference_triggered": True,
         "all_workload_records_validated": True,
@@ -1127,53 +1392,67 @@ def build_memory_mode_workloads(
     workload_summary_rows: list[dict[str, Any]] = []
     evaluation_rows: list[dict[str, Any]] = []
     retrieval_cache: dict[tuple[str, str, str, int], TimedRetrieval] = {}
+    use_legacy_output_paths = active_ablation_modes == ["prompt_plus_source_hints"]
 
-    for split in splits:
-        selected_prompts = select_prompts_for_split(prompts_by_vertical, split, active_split_plan)
-        split_payload: dict[str, Any] = {}
-        for memory_mode in memory_modes:
-            eval_rows_for_file: list[dict[str, Any]] = []
-            by_vertical_counts: dict[str, int] = {vertical: 0 for vertical in VERTICALS}
-            output_file = output_path / split / f"{memory_mode}.jsonl"
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            record_count = 0
-
-            with output_file.open("w", encoding="utf-8") as file:
-                for prompt in selected_prompts:
-                    vertical = str(prompt.get("vertical"))
-                    prompt_id = str(prompt.get("prompt_id"))
-                    gold_record = gold_by_vertical.get(vertical, {}).get(prompt_id)
-                    workload_record, eval_row = build_one_workload_record(
-                        prompt=prompt,
-                        gold_record=gold_record,
-                        dataset_split=split,
-                        memory_mode=memory_mode,
-                        retrievers=retrievers,
-                        retrieval_cache=retrieval_cache,
-                    )
-                    write_workload_jsonl_line(file, workload_record)
-                    eval_rows_for_file.append(eval_row)
-                    by_vertical_counts[vertical] += 1
-                    record_count += 1
-
-            evaluation_rows.extend(eval_rows_for_file)
-            split_payload[memory_mode] = {
-                "output_path": str(output_file),
-                "record_count": record_count,
-                "by_vertical": by_vertical_counts,
-                "validated": True,
-            }
-            workload_summary_rows.append(
-                {
-                    "split": split,
-                    "memory_mode": memory_mode,
-                    "record_count": record_count,
-                    **by_vertical_counts,
-                    "output_path": str(output_file),
-                    "validated": True,
-                }
+    try:
+        for split in splits:
+            selected_prompts = select_prompts_for_split(
+                prompts_by_vertical, split, active_split_plan
             )
-        workload_report["by_split"][split] = split_payload
+            split_payload: dict[str, Any] = {}
+            for ablation_mode in active_ablation_modes:
+                ablation_payload: dict[str, Any] = {}
+                for memory_mode in memory_modes:
+                    eval_rows_for_file: list[dict[str, Any]] = []
+                    by_vertical_counts: dict[str, int] = {vertical: 0 for vertical in VERTICALS}
+                    if use_legacy_output_paths:
+                        output_file = output_path / split / f"{memory_mode}.jsonl"
+                    else:
+                        output_file = output_path / split / ablation_mode / f"{memory_mode}.jsonl"
+                    output_file.parent.mkdir(parents=True, exist_ok=True)
+                    record_count = 0
+
+                    with output_file.open("w", encoding="utf-8") as file:
+                        for prompt in selected_prompts:
+                            vertical = str(prompt.get("vertical"))
+                            prompt_id = str(prompt.get("prompt_id"))
+                            gold_record = gold_by_vertical.get(vertical, {}).get(prompt_id)
+                            workload_record, eval_row = build_one_workload_record(
+                                prompt=prompt,
+                                gold_record=gold_record,
+                                dataset_split=split,
+                                memory_mode=memory_mode,
+                                ablation_mode=ablation_mode,
+                                retrievers=retrievers,
+                                retrieval_cache=retrieval_cache,
+                            )
+                            write_workload_jsonl_line(file, workload_record)
+                            eval_rows_for_file.append(eval_row)
+                            by_vertical_counts[vertical] += 1
+                            record_count += 1
+
+                    evaluation_rows.extend(eval_rows_for_file)
+                    ablation_payload[memory_mode] = {
+                        "output_path": str(output_file),
+                        "record_count": record_count,
+                        "by_vertical": by_vertical_counts,
+                        "validated": True,
+                    }
+                    workload_summary_rows.append(
+                        {
+                            "split": split,
+                            "ablation_mode": ablation_mode,
+                            "memory_mode": memory_mode,
+                            "record_count": record_count,
+                            **by_vertical_counts,
+                            "output_path": str(output_file),
+                            "validated": True,
+                        }
+                    )
+                split_payload[ablation_mode] = ablation_payload
+            workload_report["by_split"][split] = split_payload
+    finally:
+        close_retrievers(retrievers)
 
     retrieval_report, retrieval_summary_rows = build_evaluation_report(evaluation_rows)
     retrieval_diagnostic_report, retrieval_diagnostic_rows = build_retrieval_diagnostic_report(

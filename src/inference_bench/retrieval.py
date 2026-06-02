@@ -1,8 +1,8 @@
 """Dependency-light retrieval and compression utilities for Phase 3.
 
-This module does not call model APIs, build dense embedding indexes, or run
-inference. The dense retriever is an interface with a deterministic local
-fallback so workload generation and tests can run without external services.
+This module does not call model APIs or run inference. The dense retriever can
+use a local Qdrant vector store when an index exists, and it keeps the
+deterministic local fallback explicit for offline tests.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import re
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass, replace
-from typing import Any
+from typing import Any, Protocol
 
 from inference_bench.context_schema import ContextRecord
 
@@ -61,6 +61,17 @@ class TimedRetrieval:
     latency_ms: float
     backend_label: str
     retrieval_type: str
+    vector_store: str = "none"
+
+
+class DenseRetrieverProtocol(Protocol):
+    """Common interface for dense retrievers."""
+
+    backend_label: str
+    vector_store: str
+
+    def retrieve(self, query: str, top_k: int) -> TimedRetrieval:
+        """Retrieve dense context records."""
 
 
 @dataclass(frozen=True)
@@ -383,6 +394,7 @@ class LocalFallbackDenseRetriever:
     """Deterministic local fallback for the dense-retrieval interface."""
 
     backend_label = "local_fallback"
+    vector_store = "none"
 
     def __init__(self, records: list[ContextRecord]) -> None:
         self.records = records
@@ -435,16 +447,51 @@ class LocalFallbackDenseRetriever:
             latency_ms=(time.perf_counter() - started) * 1000,
             backend_label=self.backend_label,
             retrieval_type="dense",
+            vector_store=self.vector_store,
+        )
+
+
+class QdrantDenseRetriever:
+    """Dense retriever backed by a local Qdrant vector collection."""
+
+    backend_label = "qdrant_vector"
+    vector_store = "qdrant_local"
+
+    def __init__(self, searcher: Any) -> None:
+        self.searcher = searcher
+
+    def retrieve(self, query: str, top_k: int) -> TimedRetrieval:
+        """Retrieve top-k contexts using local Qdrant vector search."""
+
+        started = time.perf_counter()
+        search_results = self.searcher.retrieve(query, top_k)
+        results = [
+            RetrievalResult(
+                context_record=result.context_record,
+                score=result.score,
+                rank=rank,
+                retrieval_mode="dense",
+                component_scores={"dense": result.score, "qdrant": result.score},
+            )
+            for rank, result in enumerate(search_results, start=1)
+            if result.score > 0
+        ]
+        return TimedRetrieval(
+            results=results,
+            latency_ms=(time.perf_counter() - started) * 1000,
+            backend_label=self.backend_label,
+            retrieval_type="dense",
+            vector_store=self.vector_store,
         )
 
 
 class HybridRetriever:
-    """Hybrid retriever with simple score fusion over BM25 and dense fallback."""
+    """Hybrid retriever with score fusion over BM25, dense retrieval, and boosts."""
 
     def __init__(
         self,
         lexical_retriever: BM25Retriever,
-        dense_retriever: LocalFallbackDenseRetriever,
+        dense_retriever: DenseRetrieverProtocol,
         lexical_weight: float = 0.55,
         dense_weight: float = 0.45,
     ) -> None:
@@ -461,6 +508,12 @@ class HybridRetriever:
         """Return the dense backend status for report compatibility."""
 
         return self.dense_retriever.backend_label
+
+    @property
+    def vector_store(self) -> str:
+        """Return the vector store label used by the dense component."""
+
+        return self.dense_retriever.vector_store
 
     def retrieve(self, query: str, top_k: int) -> TimedRetrieval:
         """Retrieve top-k contexts with weighted score fusion."""
@@ -530,6 +583,7 @@ class HybridRetriever:
             latency_ms=(time.perf_counter() - started) * 1000,
             backend_label=self.backend_label,
             retrieval_type="hybrid",
+            vector_store=self.vector_store,
         )
 
 
