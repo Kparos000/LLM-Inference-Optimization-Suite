@@ -1,181 +1,181 @@
-split,ablation_mode,memory_mode,vertical,record_count,recall_at_5,mrr,failure_count,top_failure_reasons
-controlled_2000,prompt_plus_metadata,mm0_no_context,airline,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_metadata,mm0_no_context,finance,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_metadata,mm0_no_context,healthcare_admin,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_metadata,mm0_no_context,research_ai,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_metadata,mm0_no_context,retail,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_metadata,mm1_dense_top5,airline,400,0.469583,0.657125,316,"{""poor_scoring"": 316}"
-controlled_2000,prompt_plus_metadata,mm1_dense_top5,finance,400,0.275,0.198583,294,"{""bad_query_terms"": 11, ""poor_scoring"": 294}"
-controlled_2000,prompt_plus_metadata,mm1_dense_top5,healthcare_admin,400,0.767083,0.910417,159,"{""poor_scoring"": 159}"
-controlled_2000,prompt_plus_metadata,mm1_dense_top5,research_ai,400,0.321306,0.329583,345,"{""chunk_too_broad"": 3, ""poor_scoring"": 337}"
-controlled_2000,prompt_plus_metadata,mm1_dense_top5,retail,400,0.327083,0.247042,285,"{""poor_scoring"": 285}"
-controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,airline,400,0.755208,0.922375,187,"{""poor_scoring"": 187}"
-controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,finance,400,0.356875,0.268208,262,"{""bad_query_terms"": 11, ""chunk_too_broad"": 1, ""poor_scoring"": 262}"
-controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,healthcare_admin,400,0.84125,0.93,127,"{""poor_scoring"": 127}"
-controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,research_ai,400,0.688184,0.668833,174,"{""chunk_too_broad"": 2, ""poor_scoring"": 166}"
-controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,retail,400,0.274583,0.298333,309,"{""poor_scoring"": 309}"
-controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,airline,400,0.755208,0.922375,187,"{""poor_scoring"": 187}"
-controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,finance,400,0.356875,0.268208,262,"{""bad_query_terms"": 11, ""poor_scoring"": 262}"
-controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,healthcare_admin,400,0.84125,0.93,127,"{""poor_scoring"": 127}"
-controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,research_ai,400,0.688184,0.668833,174,"{""poor_scoring"": 166}"
-controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,retail,400,0.274583,0.298333,309,"{""poor_scoring"": 309}"
-controlled_2000,prompt_plus_source_hints,mm0_no_context,airline,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_source_hints,mm0_no_context,finance,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_source_hints,mm0_no_context,healthcare_admin,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_source_hints,mm0_no_context,research_ai,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_source_hints,mm0_no_context,retail,400,0.0,0.0,400,{}
-controlled_2000,prompt_plus_source_hints,mm1_dense_top5,airline,400,0.486667,0.715583,313,"{""poor_scoring"": 313}"
-controlled_2000,prompt_plus_source_hints,mm1_dense_top5,finance,400,0.219375,0.125375,320,"{""poor_scoring"": 320}"
-controlled_2000,prompt_plus_source_hints,mm1_dense_top5,healthcare_admin,400,0.760833,0.889792,164,"{""poor_scoring"": 164}"
-controlled_2000,prompt_plus_source_hints,mm1_dense_top5,research_ai,400,0.129526,0.1245,383,"{""chunk_too_broad"": 10, ""poor_scoring"": 375}"
-controlled_2000,prompt_plus_source_hints,mm1_dense_top5,retail,400,0.29,0.211458,293,"{""poor_scoring"": 293}"
-controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,airline,400,0.977708,0.992083,34,"{""poor_scoring"": 34}"
-controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,finance,400,0.975,0.97,10,"{""poor_scoring"": 10}"
-controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,healthcare_admin,400,1.0,0.990833,0,{}
-controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,research_ai,400,0.970604,0.98,23,"{""chunk_too_broad"": 2, ""poor_scoring"": 15}"
-controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,retail,400,0.9375,0.9975,49,"{""poor_scoring"": 49}"
-controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,airline,400,0.977708,0.992083,34,"{""poor_scoring"": 34}"
-controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,finance,400,0.975,0.97,10,"{""poor_scoring"": 10}"
-controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,healthcare_admin,400,1.0,0.990833,0,{}
-controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,research_ai,400,0.970604,0.98,23,"{""poor_scoring"": 15}"
-controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,retail,400,0.9375,0.9975,49,"{""poor_scoring"": 49}"
-controlled_2000,prompt_text_only,mm0_no_context,airline,400,0.0,0.0,400,{}
-controlled_2000,prompt_text_only,mm0_no_context,finance,400,0.0,0.0,400,{}
-controlled_2000,prompt_text_only,mm0_no_context,healthcare_admin,400,0.0,0.0,400,{}
-controlled_2000,prompt_text_only,mm0_no_context,research_ai,400,0.0,0.0,400,{}
-controlled_2000,prompt_text_only,mm0_no_context,retail,400,0.0,0.0,400,{}
-controlled_2000,prompt_text_only,mm1_dense_top5,airline,400,0.476458,0.669417,309,"{""poor_scoring"": 309}"
-controlled_2000,prompt_text_only,mm1_dense_top5,finance,400,0.24375,0.1635,304,"{""bad_query_terms"": 56, ""chunk_too_broad"": 2, ""poor_scoring"": 304}"
-controlled_2000,prompt_text_only,mm1_dense_top5,healthcare_admin,400,0.760833,0.852625,155,"{""poor_scoring"": 155}"
-controlled_2000,prompt_text_only,mm1_dense_top5,research_ai,400,0.173938,0.163125,369,"{""chunk_too_broad"": 12, ""poor_scoring"": 361}"
-controlled_2000,prompt_text_only,mm1_dense_top5,retail,400,0.155833,0.166833,356,"{""poor_scoring"": 356}"
-controlled_2000,prompt_text_only,mm2_hybrid_top5,airline,400,0.759375,0.930375,181,"{""poor_scoring"": 181}"
-controlled_2000,prompt_text_only,mm2_hybrid_top5,finance,400,0.32,0.257958,277,"{""bad_query_terms"": 54, ""chunk_too_broad"": 18, ""poor_scoring"": 277}"
-controlled_2000,prompt_text_only,mm2_hybrid_top5,healthcare_admin,400,0.86375,0.97875,110,"{""poor_scoring"": 110}"
-controlled_2000,prompt_text_only,mm2_hybrid_top5,research_ai,400,0.302844,0.25725,332,"{""poor_scoring"": 324}"
-controlled_2000,prompt_text_only,mm2_hybrid_top5,retail,400,0.195,0.186,343,"{""poor_scoring"": 343}"
-controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,airline,400,0.759375,0.930375,181,"{""poor_scoring"": 181}"
-controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,finance,400,0.32,0.257958,277,"{""bad_query_terms"": 54, ""poor_scoring"": 277}"
-controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,healthcare_admin,400,0.86375,0.97875,110,"{""poor_scoring"": 110}"
-controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,research_ai,400,0.302844,0.25725,332,"{""poor_scoring"": 324}"
-controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,retail,400,0.195,0.186,343,"{""poor_scoring"": 343}"
-final_10000,prompt_plus_metadata,mm0_no_context,airline,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_metadata,mm0_no_context,finance,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_metadata,mm0_no_context,healthcare_admin,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_metadata,mm0_no_context,research_ai,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_metadata,mm0_no_context,retail,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_metadata,mm1_dense_top5,airline,2000,0.474708,0.66435,1564,"{""poor_scoring"": 1564}"
-final_10000,prompt_plus_metadata,mm1_dense_top5,finance,2000,0.272875,0.195275,1469,"{""bad_query_terms"": 56, ""poor_scoring"": 1469}"
-final_10000,prompt_plus_metadata,mm1_dense_top5,healthcare_admin,2000,0.768583,0.909867,783,"{""poor_scoring"": 783}"
-final_10000,prompt_plus_metadata,mm1_dense_top5,research_ai,2000,0.312416,0.314008,1717,"{""chunk_too_broad"": 17, ""poor_scoring"": 1677}"
-final_10000,prompt_plus_metadata,mm1_dense_top5,retail,2000,0.315833,0.222833,1454,"{""poor_scoring"": 1454}"
-final_10000,prompt_plus_metadata,mm2_hybrid_top5,airline,2000,0.763333,0.925775,918,"{""poor_scoring"": 918}"
-final_10000,prompt_plus_metadata,mm2_hybrid_top5,finance,2000,0.353375,0.265367,1330,"{""bad_query_terms"": 56, ""chunk_too_broad"": 4, ""poor_scoring"": 1330}"
-final_10000,prompt_plus_metadata,mm2_hybrid_top5,healthcare_admin,2000,0.8435,0.928292,629,"{""poor_scoring"": 629}"
-final_10000,prompt_plus_metadata,mm2_hybrid_top5,research_ai,2000,0.676409,0.659125,891,"{""chunk_too_broad"": 13, ""poor_scoring"": 851}"
-final_10000,prompt_plus_metadata,mm2_hybrid_top5,retail,2000,0.2105,0.23625,1661,"{""poor_scoring"": 1661}"
-final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,airline,2000,0.763333,0.925775,918,"{""poor_scoring"": 918}"
-final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,finance,2000,0.353375,0.265367,1330,"{""bad_query_terms"": 56, ""poor_scoring"": 1330}"
-final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,healthcare_admin,2000,0.8435,0.928292,629,"{""poor_scoring"": 629}"
-final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,research_ai,2000,0.676409,0.659125,891,"{""poor_scoring"": 851}"
-final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,retail,2000,0.2105,0.23625,1661,"{""poor_scoring"": 1661}"
-final_10000,prompt_plus_source_hints,mm0_no_context,airline,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_source_hints,mm0_no_context,finance,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_source_hints,mm0_no_context,healthcare_admin,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_source_hints,mm0_no_context,research_ai,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_source_hints,mm0_no_context,retail,2000,0.0,0.0,2000,{}
-final_10000,prompt_plus_source_hints,mm1_dense_top5,airline,2000,0.487,0.710892,1553,"{""poor_scoring"": 1553}"
-final_10000,prompt_plus_source_hints,mm1_dense_top5,finance,2000,0.202125,0.119925,1623,"{""poor_scoring"": 1623}"
-final_10000,prompt_plus_source_hints,mm1_dense_top5,healthcare_admin,2000,0.762333,0.8871,806,"{""poor_scoring"": 806}"
-final_10000,prompt_plus_source_hints,mm1_dense_top5,research_ai,2000,0.141277,0.130417,1914,"{""chunk_too_broad"": 59, ""poor_scoring"": 1874}"
-final_10000,prompt_plus_source_hints,mm1_dense_top5,retail,2000,0.289167,0.188258,1465,"{""poor_scoring"": 1465}"
-final_10000,prompt_plus_source_hints,mm2_hybrid_top5,airline,2000,0.976875,0.99125,170,"{""poor_scoring"": 170}"
-final_10000,prompt_plus_source_hints,mm2_hybrid_top5,finance,2000,0.974375,0.967792,52,"{""poor_scoring"": 52}"
-final_10000,prompt_plus_source_hints,mm2_hybrid_top5,healthcare_admin,2000,1.0,0.991917,0,{}
-final_10000,prompt_plus_source_hints,mm2_hybrid_top5,research_ai,2000,0.965953,0.98,127,"{""chunk_too_broad"": 18, ""poor_scoring"": 87}"
-final_10000,prompt_plus_source_hints,mm2_hybrid_top5,retail,2000,0.94375,0.99825,224,"{""poor_scoring"": 224}"
-final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,airline,2000,0.976875,0.99125,170,"{""poor_scoring"": 170}"
-final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,finance,2000,0.974375,0.967792,52,"{""poor_scoring"": 52}"
-final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,healthcare_admin,2000,1.0,0.991917,0,{}
-final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,research_ai,2000,0.965953,0.98,127,"{""poor_scoring"": 87}"
-final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,retail,2000,0.94375,0.99825,224,"{""poor_scoring"": 224}"
-final_10000,prompt_text_only,mm0_no_context,airline,2000,0.0,0.0,2000,{}
-final_10000,prompt_text_only,mm0_no_context,finance,2000,0.0,0.0,2000,{}
-final_10000,prompt_text_only,mm0_no_context,healthcare_admin,2000,0.0,0.0,2000,{}
-final_10000,prompt_text_only,mm0_no_context,research_ai,2000,0.0,0.0,2000,{}
-final_10000,prompt_text_only,mm0_no_context,retail,2000,0.0,0.0,2000,{}
-final_10000,prompt_text_only,mm1_dense_top5,airline,2000,0.48125,0.66995,1543,"{""poor_scoring"": 1543}"
-final_10000,prompt_text_only,mm1_dense_top5,finance,2000,0.2375,0.160217,1539,"{""bad_query_terms"": 305, ""chunk_too_broad"": 16, ""poor_scoring"": 1539}"
-final_10000,prompt_text_only,mm1_dense_top5,healthcare_admin,2000,0.762833,0.851758,763,"{""poor_scoring"": 763}"
-final_10000,prompt_text_only,mm1_dense_top5,research_ai,2000,0.174553,0.166083,1850,"{""chunk_too_broad"": 49, ""poor_scoring"": 1810}"
-final_10000,prompt_text_only,mm1_dense_top5,retail,2000,0.143417,0.1399,1806,"{""poor_scoring"": 1806}"
-final_10000,prompt_text_only,mm2_hybrid_top5,airline,2000,0.76825,0.933192,889,"{""poor_scoring"": 889}"
-final_10000,prompt_text_only,mm2_hybrid_top5,finance,2000,0.32825,0.262333,1372,"{""bad_query_terms"": 298, ""chunk_too_broad"": 87, ""poor_scoring"": 1372}"
-final_10000,prompt_text_only,mm2_hybrid_top5,healthcare_admin,2000,0.865,0.9775,549,"{""poor_scoring"": 549}"
-final_10000,prompt_text_only,mm2_hybrid_top5,research_ai,2000,0.302628,0.255558,1676,"{""poor_scoring"": 1636}"
-final_10000,prompt_text_only,mm2_hybrid_top5,retail,2000,0.151667,0.140875,1800,"{""poor_scoring"": 1800}"
-final_10000,prompt_text_only,mm3_compressed_hybrid_top5,airline,2000,0.76825,0.933192,889,"{""poor_scoring"": 889}"
-final_10000,prompt_text_only,mm3_compressed_hybrid_top5,finance,2000,0.32825,0.262333,1372,"{""bad_query_terms"": 298, ""poor_scoring"": 1372}"
-final_10000,prompt_text_only,mm3_compressed_hybrid_top5,healthcare_admin,2000,0.865,0.9775,549,"{""poor_scoring"": 549}"
-final_10000,prompt_text_only,mm3_compressed_hybrid_top5,research_ai,2000,0.302628,0.255558,1676,"{""poor_scoring"": 1636}"
-final_10000,prompt_text_only,mm3_compressed_hybrid_top5,retail,2000,0.151667,0.140875,1800,"{""poor_scoring"": 1800}"
-smoke_500,prompt_plus_metadata,mm0_no_context,airline,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_metadata,mm0_no_context,finance,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_metadata,mm0_no_context,healthcare_admin,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_metadata,mm0_no_context,research_ai,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_metadata,mm0_no_context,retail,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_metadata,mm1_dense_top5,airline,100,0.465,0.645833,79,"{""poor_scoring"": 79}"
-smoke_500,prompt_plus_metadata,mm1_dense_top5,finance,100,0.19,0.168167,83,"{""poor_scoring"": 83}"
-smoke_500,prompt_plus_metadata,mm1_dense_top5,healthcare_admin,100,0.791667,0.95,37,"{""poor_scoring"": 37}"
-smoke_500,prompt_plus_metadata,mm1_dense_top5,research_ai,100,0.226667,0.274333,95,"{""chunk_too_broad"": 1, ""poor_scoring"": 95}"
-smoke_500,prompt_plus_metadata,mm1_dense_top5,retail,100,0.455,0.341333,55,"{""poor_scoring"": 55}"
-smoke_500,prompt_plus_metadata,mm2_hybrid_top5,airline,100,0.754167,0.955,48,"{""poor_scoring"": 48}"
-smoke_500,prompt_plus_metadata,mm2_hybrid_top5,finance,100,0.335,0.284167,68,"{""poor_scoring"": 68}"
-smoke_500,prompt_plus_metadata,mm2_hybrid_top5,healthcare_admin,100,0.86,0.965,29,"{""poor_scoring"": 29}"
-smoke_500,prompt_plus_metadata,mm2_hybrid_top5,research_ai,100,0.843333,0.855,20,"{""poor_scoring"": 20}"
-smoke_500,prompt_plus_metadata,mm2_hybrid_top5,retail,100,0.43,0.423333,60,"{""poor_scoring"": 60}"
-smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,airline,100,0.754167,0.955,48,"{""poor_scoring"": 48}"
-smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,finance,100,0.335,0.284167,68,"{""poor_scoring"": 68}"
-smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,healthcare_admin,100,0.86,0.965,29,"{""poor_scoring"": 29}"
-smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,research_ai,100,0.843333,0.855,20,"{""poor_scoring"": 20}"
-smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,retail,100,0.43,0.423333,60,"{""poor_scoring"": 60}"
-smoke_500,prompt_plus_source_hints,mm0_no_context,airline,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_source_hints,mm0_no_context,finance,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_source_hints,mm0_no_context,healthcare_admin,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_source_hints,mm0_no_context,research_ai,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_source_hints,mm0_no_context,retail,100,0.0,0.0,100,{}
-smoke_500,prompt_plus_source_hints,mm1_dense_top5,airline,100,0.48,0.692833,78,"{""poor_scoring"": 78}"
-smoke_500,prompt_plus_source_hints,mm1_dense_top5,finance,100,0.22,0.1575,81,"{""poor_scoring"": 81}"
-smoke_500,prompt_plus_source_hints,mm1_dense_top5,healthcare_admin,100,0.781667,0.918333,38,"{""poor_scoring"": 38}"
-smoke_500,prompt_plus_source_hints,mm1_dense_top5,research_ai,100,0.09,0.0925,100,"{""chunk_too_broad"": 5, ""poor_scoring"": 100}"
-smoke_500,prompt_plus_source_hints,mm1_dense_top5,retail,100,0.375,0.272667,63,"{""poor_scoring"": 63}"
-smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,airline,100,0.98,1.0,8,"{""poor_scoring"": 8}"
-smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,finance,100,1.0,1.0,0,{}
-smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,healthcare_admin,100,1.0,1.0,0,{}
-smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,research_ai,100,1.0,1.0,0,{}
-smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,retail,100,0.965,0.99,6,"{""poor_scoring"": 6}"
-smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,airline,100,0.98,1.0,8,"{""poor_scoring"": 8}"
-smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,finance,100,1.0,1.0,0,{}
-smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,healthcare_admin,100,1.0,1.0,0,{}
-smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,research_ai,100,1.0,1.0,0,{}
-smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,retail,100,0.965,0.99,6,"{""poor_scoring"": 6}"
-smoke_500,prompt_text_only,mm0_no_context,airline,100,0.0,0.0,100,{}
-smoke_500,prompt_text_only,mm0_no_context,finance,100,0.0,0.0,100,{}
-smoke_500,prompt_text_only,mm0_no_context,healthcare_admin,100,0.0,0.0,100,{}
-smoke_500,prompt_text_only,mm0_no_context,research_ai,100,0.0,0.0,100,{}
-smoke_500,prompt_text_only,mm0_no_context,retail,100,0.0,0.0,100,{}
-smoke_500,prompt_text_only,mm1_dense_top5,airline,100,0.468333,0.653333,77,"{""poor_scoring"": 77}"
-smoke_500,prompt_text_only,mm1_dense_top5,finance,100,0.21,0.177833,80,"{""bad_query_terms"": 1, ""poor_scoring"": 80}"
-smoke_500,prompt_text_only,mm1_dense_top5,healthcare_admin,100,0.776667,0.877833,37,"{""poor_scoring"": 37}"
-smoke_500,prompt_text_only,mm1_dense_top5,research_ai,100,0.216667,0.2205,87,"{""chunk_too_broad"": 2, ""poor_scoring"": 87}"
-smoke_500,prompt_text_only,mm1_dense_top5,retail,100,0.23,0.208333,78,"{""poor_scoring"": 78}"
-smoke_500,prompt_text_only,mm2_hybrid_top5,airline,100,0.771667,0.9445,45,"{""poor_scoring"": 45}"
-smoke_500,prompt_text_only,mm2_hybrid_top5,finance,100,0.295,0.269167,72,"{""chunk_too_broad"": 4, ""poor_scoring"": 72}"
-smoke_500,prompt_text_only,mm2_hybrid_top5,healthcare_admin,100,0.87,0.995,27,"{""poor_scoring"": 27}"
-smoke_500,prompt_text_only,mm2_hybrid_top5,research_ai,100,0.195,0.145333,91,"{""poor_scoring"": 91}"
-smoke_500,prompt_text_only,mm2_hybrid_top5,retail,100,0.365,0.306167,66,"{""poor_scoring"": 66}"
-smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,airline,100,0.771667,0.9445,45,"{""poor_scoring"": 45}"
-smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,finance,100,0.295,0.269167,72,"{""poor_scoring"": 72}"
-smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,healthcare_admin,100,0.87,0.995,27,"{""poor_scoring"": 27}"
-smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,research_ai,100,0.195,0.145333,91,"{""poor_scoring"": 91}"
-smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,retail,100,0.365,0.306167,66,"{""poor_scoring"": 66}"
+split,ablation_mode,memory_mode,vertical,record_count,recall_at_5,mrr,failure_count,query_enrichment_used,reranking_used,source_hints_used,top_failure_reasons
+controlled_2000,prompt_plus_metadata,mm0_no_context,airline,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_plus_metadata,mm0_no_context,finance,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_plus_metadata,mm0_no_context,healthcare_admin,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_plus_metadata,mm0_no_context,research_ai,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_plus_metadata,mm0_no_context,retail,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_plus_metadata,mm1_dense_top5,airline,400,0.562708,0.700542,276,True,False,False,"{""poor_scoring"": 276}"
+controlled_2000,prompt_plus_metadata,mm1_dense_top5,finance,400,0.299375,0.186,282,True,False,False,"{""bad_query_terms"": 11, ""poor_scoring"": 282}"
+controlled_2000,prompt_plus_metadata,mm1_dense_top5,healthcare_admin,400,0.826667,0.926458,135,True,False,False,"{""poor_scoring"": 135}"
+controlled_2000,prompt_plus_metadata,mm1_dense_top5,research_ai,400,0.357276,0.292417,328,True,False,False,"{""poor_scoring"": 320}"
+controlled_2000,prompt_plus_metadata,mm1_dense_top5,retail,400,0.271667,0.2245,310,True,False,False,"{""poor_scoring"": 310}"
+controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,airline,400,0.7225,0.905292,217,True,True,False,"{""poor_scoring"": 217}"
+controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,finance,400,0.24125,0.161708,316,True,True,False,"{""bad_query_terms"": 10, ""chunk_too_broad"": 15, ""poor_scoring"": 316}"
+controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,healthcare_admin,400,0.834583,0.912833,126,True,True,False,"{""poor_scoring"": 126}"
+controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,research_ai,400,0.648552,0.634875,187,True,True,False,"{""chunk_too_broad"": 16, ""poor_scoring"": 179}"
+controlled_2000,prompt_plus_metadata,mm2_hybrid_top5,retail,400,0.279583,0.32125,311,True,True,False,"{""poor_scoring"": 311}"
+controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,airline,400,0.7225,0.905292,217,True,True,False,"{""poor_scoring"": 217}"
+controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,finance,400,0.24125,0.161708,316,True,True,False,"{""bad_query_terms"": 10, ""poor_scoring"": 316}"
+controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,healthcare_admin,400,0.834583,0.912833,126,True,True,False,"{""poor_scoring"": 126}"
+controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,research_ai,400,0.648552,0.634875,187,True,True,False,"{""poor_scoring"": 179}"
+controlled_2000,prompt_plus_metadata,mm3_compressed_hybrid_top5,retail,400,0.279583,0.32125,311,True,True,False,"{""poor_scoring"": 311}"
+controlled_2000,prompt_plus_source_hints,mm0_no_context,airline,400,0.0,0.0,400,True,False,True,{}
+controlled_2000,prompt_plus_source_hints,mm0_no_context,finance,400,0.0,0.0,400,True,False,True,{}
+controlled_2000,prompt_plus_source_hints,mm0_no_context,healthcare_admin,400,0.0,0.0,400,True,False,True,{}
+controlled_2000,prompt_plus_source_hints,mm0_no_context,research_ai,400,0.0,0.0,400,True,False,True,{}
+controlled_2000,prompt_plus_source_hints,mm0_no_context,retail,400,0.0,0.0,400,True,False,True,{}
+controlled_2000,prompt_plus_source_hints,mm1_dense_top5,airline,400,0.536667,0.69925,290,True,False,True,"{""poor_scoring"": 290}"
+controlled_2000,prompt_plus_source_hints,mm1_dense_top5,finance,400,0.406875,0.239333,242,True,False,True,"{""chunk_too_broad"": 3, ""poor_scoring"": 242}"
+controlled_2000,prompt_plus_source_hints,mm1_dense_top5,healthcare_admin,400,0.809167,0.928958,141,True,False,True,"{""poor_scoring"": 141}"
+controlled_2000,prompt_plus_source_hints,mm1_dense_top5,research_ai,400,0.393056,0.323542,332,True,False,True,"{""chunk_too_broad"": 1, ""poor_scoring"": 324}"
+controlled_2000,prompt_plus_source_hints,mm1_dense_top5,retail,400,0.252083,0.187125,312,True,False,True,"{""poor_scoring"": 312}"
+controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,airline,400,0.979792,0.9925,32,True,True,True,"{""poor_scoring"": 32}"
+controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,finance,400,0.99125,0.991042,6,True,True,True,"{""poor_scoring"": 6}"
+controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,healthcare_admin,400,1.0,0.99125,0,True,True,True,{}
+controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,research_ai,400,0.971235,0.98,23,True,True,True,"{""poor_scoring"": 15}"
+controlled_2000,prompt_plus_source_hints,mm2_hybrid_top5,retail,400,0.95375,1.0,37,True,True,True,"{""poor_scoring"": 37}"
+controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,airline,400,0.979792,0.9925,32,True,True,True,"{""poor_scoring"": 32}"
+controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,finance,400,0.99125,0.991042,6,True,True,True,"{""poor_scoring"": 6}"
+controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,healthcare_admin,400,1.0,0.99125,0,True,True,True,{}
+controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,research_ai,400,0.971235,0.98,23,True,True,True,"{""poor_scoring"": 15}"
+controlled_2000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,retail,400,0.95375,1.0,37,True,True,True,"{""poor_scoring"": 37}"
+controlled_2000,prompt_text_only,mm0_no_context,airline,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_text_only,mm0_no_context,finance,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_text_only,mm0_no_context,healthcare_admin,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_text_only,mm0_no_context,research_ai,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_text_only,mm0_no_context,retail,400,0.0,0.0,400,True,False,False,{}
+controlled_2000,prompt_text_only,mm1_dense_top5,airline,400,0.575,0.738792,280,True,False,False,"{""poor_scoring"": 280}"
+controlled_2000,prompt_text_only,mm1_dense_top5,finance,400,0.18375,0.109708,327,True,False,False,"{""bad_query_terms"": 125, ""poor_scoring"": 327}"
+controlled_2000,prompt_text_only,mm1_dense_top5,healthcare_admin,400,0.815833,0.9055,136,True,False,False,"{""poor_scoring"": 136}"
+controlled_2000,prompt_text_only,mm1_dense_top5,research_ai,400,0.26677,0.218583,361,True,False,False,"{""poor_scoring"": 353}"
+controlled_2000,prompt_text_only,mm1_dense_top5,retail,400,0.189583,0.176875,343,True,False,False,"{""poor_scoring"": 343}"
+controlled_2000,prompt_text_only,mm2_hybrid_top5,airline,400,0.719167,0.923208,219,True,True,False,"{""poor_scoring"": 219}"
+controlled_2000,prompt_text_only,mm2_hybrid_top5,finance,400,0.17125,0.103042,337,True,True,False,"{""bad_query_terms"": 123, ""chunk_too_broad"": 16, ""poor_scoring"": 337}"
+controlled_2000,prompt_text_only,mm2_hybrid_top5,healthcare_admin,400,0.855417,0.985,120,True,True,False,"{""poor_scoring"": 120}"
+controlled_2000,prompt_text_only,mm2_hybrid_top5,research_ai,400,0.314921,0.26725,332,True,True,False,"{""chunk_too_broad"": 3, ""poor_scoring"": 324}"
+controlled_2000,prompt_text_only,mm2_hybrid_top5,retail,400,0.1975,0.197417,342,True,True,False,"{""poor_scoring"": 342}"
+controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,airline,400,0.719167,0.923208,219,True,True,False,"{""poor_scoring"": 219}"
+controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,finance,400,0.17125,0.103042,337,True,True,False,"{""bad_query_terms"": 123, ""poor_scoring"": 337}"
+controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,healthcare_admin,400,0.855417,0.985,120,True,True,False,"{""poor_scoring"": 120}"
+controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,research_ai,400,0.314921,0.26725,332,True,True,False,"{""poor_scoring"": 324}"
+controlled_2000,prompt_text_only,mm3_compressed_hybrid_top5,retail,400,0.1975,0.197417,342,True,True,False,"{""poor_scoring"": 342}"
+final_10000,prompt_plus_metadata,mm0_no_context,airline,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_plus_metadata,mm0_no_context,finance,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_plus_metadata,mm0_no_context,healthcare_admin,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_plus_metadata,mm0_no_context,research_ai,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_plus_metadata,mm0_no_context,retail,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_plus_metadata,mm1_dense_top5,airline,2000,0.564375,0.705308,1369,True,False,False,"{""poor_scoring"": 1369}"
+final_10000,prompt_plus_metadata,mm1_dense_top5,finance,2000,0.29575,0.182817,1420,True,False,False,"{""bad_query_terms"": 60, ""poor_scoring"": 1420}"
+final_10000,prompt_plus_metadata,mm1_dense_top5,healthcare_admin,2000,0.83175,0.92975,662,True,False,False,"{""poor_scoring"": 662}"
+final_10000,prompt_plus_metadata,mm1_dense_top5,research_ai,2000,0.356693,0.289308,1629,True,False,False,"{""poor_scoring"": 1589}"
+final_10000,prompt_plus_metadata,mm1_dense_top5,retail,2000,0.253417,0.199292,1588,True,False,False,"{""poor_scoring"": 1588}"
+final_10000,prompt_plus_metadata,mm2_hybrid_top5,airline,2000,0.723458,0.910408,1074,True,True,False,"{""poor_scoring"": 1074}"
+final_10000,prompt_plus_metadata,mm2_hybrid_top5,finance,2000,0.218,0.131867,1618,True,True,False,"{""bad_query_terms"": 55, ""chunk_too_broad"": 48, ""poor_scoring"": 1618}"
+final_10000,prompt_plus_metadata,mm2_hybrid_top5,healthcare_admin,2000,0.838083,0.912633,617,True,True,False,"{""poor_scoring"": 617}"
+final_10000,prompt_plus_metadata,mm2_hybrid_top5,research_ai,2000,0.643333,0.638117,947,True,True,False,"{""chunk_too_broad"": 87, ""poor_scoring"": 907}"
+final_10000,prompt_plus_metadata,mm2_hybrid_top5,retail,2000,0.219583,0.252183,1645,True,True,False,"{""poor_scoring"": 1645}"
+final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,airline,2000,0.723458,0.910408,1074,True,True,False,"{""poor_scoring"": 1074}"
+final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,finance,2000,0.218,0.131867,1618,True,True,False,"{""bad_query_terms"": 55, ""poor_scoring"": 1618}"
+final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,healthcare_admin,2000,0.838083,0.912633,617,True,True,False,"{""poor_scoring"": 617}"
+final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,research_ai,2000,0.643333,0.638117,947,True,True,False,"{""poor_scoring"": 907}"
+final_10000,prompt_plus_metadata,mm3_compressed_hybrid_top5,retail,2000,0.219583,0.252183,1645,True,True,False,"{""poor_scoring"": 1645}"
+final_10000,prompt_plus_source_hints,mm0_no_context,airline,2000,0.0,0.0,2000,True,False,True,{}
+final_10000,prompt_plus_source_hints,mm0_no_context,finance,2000,0.0,0.0,2000,True,False,True,{}
+final_10000,prompt_plus_source_hints,mm0_no_context,healthcare_admin,2000,0.0,0.0,2000,True,False,True,{}
+final_10000,prompt_plus_source_hints,mm0_no_context,research_ai,2000,0.0,0.0,2000,True,False,True,{}
+final_10000,prompt_plus_source_hints,mm0_no_context,retail,2000,0.0,0.0,2000,True,False,True,{}
+final_10000,prompt_plus_source_hints,mm1_dense_top5,airline,2000,0.551042,0.70585,1426,True,False,True,"{""poor_scoring"": 1426}"
+final_10000,prompt_plus_source_hints,mm1_dense_top5,finance,2000,0.386875,0.243017,1270,True,False,True,"{""chunk_too_broad"": 5, ""poor_scoring"": 1270}"
+final_10000,prompt_plus_source_hints,mm1_dense_top5,healthcare_admin,2000,0.815417,0.93175,686,True,False,True,"{""poor_scoring"": 686}"
+final_10000,prompt_plus_source_hints,mm1_dense_top5,research_ai,2000,0.403502,0.336233,1642,True,False,True,"{""chunk_too_broad"": 5, ""poor_scoring"": 1602}"
+final_10000,prompt_plus_source_hints,mm1_dense_top5,retail,2000,0.22675,0.170533,1614,True,False,True,"{""poor_scoring"": 1614}"
+final_10000,prompt_plus_source_hints,mm2_hybrid_top5,airline,2000,0.979208,0.991125,161,True,True,True,"{""poor_scoring"": 161}"
+final_10000,prompt_plus_source_hints,mm2_hybrid_top5,finance,2000,0.991625,0.990083,29,True,True,True,"{""poor_scoring"": 29}"
+final_10000,prompt_plus_source_hints,mm2_hybrid_top5,healthcare_admin,2000,1.0,0.99225,0,True,True,True,{}
+final_10000,prompt_plus_source_hints,mm2_hybrid_top5,research_ai,2000,0.966102,0.98,137,True,True,True,"{""chunk_too_broad"": 10, ""poor_scoring"": 97}"
+final_10000,prompt_plus_source_hints,mm2_hybrid_top5,retail,2000,0.9575,0.9995,170,True,True,True,"{""poor_scoring"": 170}"
+final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,airline,2000,0.979208,0.991125,161,True,True,True,"{""poor_scoring"": 161}"
+final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,finance,2000,0.991625,0.990083,29,True,True,True,"{""poor_scoring"": 29}"
+final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,healthcare_admin,2000,1.0,0.99225,0,True,True,True,{}
+final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,research_ai,2000,0.966102,0.98,137,True,True,True,"{""poor_scoring"": 97}"
+final_10000,prompt_plus_source_hints,mm3_compressed_hybrid_top5,retail,2000,0.9575,0.9995,170,True,True,True,"{""poor_scoring"": 170}"
+final_10000,prompt_text_only,mm0_no_context,airline,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_text_only,mm0_no_context,finance,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_text_only,mm0_no_context,healthcare_admin,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_text_only,mm0_no_context,research_ai,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_text_only,mm0_no_context,retail,2000,0.0,0.0,2000,True,False,False,{}
+final_10000,prompt_text_only,mm1_dense_top5,airline,2000,0.581917,0.745175,1389,True,False,False,"{""poor_scoring"": 1389}"
+final_10000,prompt_text_only,mm1_dense_top5,finance,2000,0.1755,0.102717,1657,True,False,False,"{""bad_query_terms"": 653, ""poor_scoring"": 1657}"
+final_10000,prompt_text_only,mm1_dense_top5,healthcare_admin,2000,0.821333,0.910392,672,True,False,False,"{""poor_scoring"": 672}"
+final_10000,prompt_text_only,mm1_dense_top5,research_ai,2000,0.275293,0.228125,1783,True,False,False,"{""poor_scoring"": 1743}"
+final_10000,prompt_text_only,mm1_dense_top5,retail,2000,0.144667,0.1419,1803,True,False,False,"{""poor_scoring"": 1803}"
+final_10000,prompt_text_only,mm2_hybrid_top5,airline,2000,0.721292,0.932375,1082,True,True,False,"{""poor_scoring"": 1082}"
+final_10000,prompt_text_only,mm2_hybrid_top5,finance,2000,0.160625,0.091908,1709,True,True,False,"{""bad_query_terms"": 652, ""chunk_too_broad"": 71, ""poor_scoring"": 1709}"
+final_10000,prompt_text_only,mm2_hybrid_top5,healthcare_admin,2000,0.856917,0.9855,594,True,True,False,"{""poor_scoring"": 594}"
+final_10000,prompt_text_only,mm2_hybrid_top5,research_ai,2000,0.322941,0.277167,1637,True,True,False,"{""chunk_too_broad"": 7, ""poor_scoring"": 1597}"
+final_10000,prompt_text_only,mm2_hybrid_top5,retail,2000,0.151417,0.154917,1799,True,True,False,"{""poor_scoring"": 1799}"
+final_10000,prompt_text_only,mm3_compressed_hybrid_top5,airline,2000,0.721292,0.932375,1082,True,True,False,"{""poor_scoring"": 1082}"
+final_10000,prompt_text_only,mm3_compressed_hybrid_top5,finance,2000,0.160625,0.091908,1709,True,True,False,"{""bad_query_terms"": 652, ""poor_scoring"": 1709}"
+final_10000,prompt_text_only,mm3_compressed_hybrid_top5,healthcare_admin,2000,0.856917,0.9855,594,True,True,False,"{""poor_scoring"": 594}"
+final_10000,prompt_text_only,mm3_compressed_hybrid_top5,research_ai,2000,0.322941,0.277167,1637,True,True,False,"{""poor_scoring"": 1597}"
+final_10000,prompt_text_only,mm3_compressed_hybrid_top5,retail,2000,0.151417,0.154917,1799,True,True,False,"{""poor_scoring"": 1799}"
+smoke_500,prompt_plus_metadata,mm0_no_context,airline,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_plus_metadata,mm0_no_context,finance,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_plus_metadata,mm0_no_context,healthcare_admin,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_plus_metadata,mm0_no_context,research_ai,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_plus_metadata,mm0_no_context,retail,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_plus_metadata,mm1_dense_top5,airline,100,0.575,0.696167,68,True,False,False,"{""poor_scoring"": 68}"
+smoke_500,prompt_plus_metadata,mm1_dense_top5,finance,100,0.33,0.258667,67,True,False,False,"{""poor_scoring"": 67}"
+smoke_500,prompt_plus_metadata,mm1_dense_top5,healthcare_admin,100,0.846667,0.955,31,True,False,False,"{""poor_scoring"": 31}"
+smoke_500,prompt_plus_metadata,mm1_dense_top5,research_ai,100,0.406667,0.395833,80,True,False,False,"{""poor_scoring"": 80}"
+smoke_500,prompt_plus_metadata,mm1_dense_top5,retail,100,0.36,0.260167,64,True,False,False,"{""poor_scoring"": 64}"
+smoke_500,prompt_plus_metadata,mm2_hybrid_top5,airline,100,0.73,0.938333,53,True,True,False,"{""poor_scoring"": 53}"
+smoke_500,prompt_plus_metadata,mm2_hybrid_top5,finance,100,0.295,0.206333,74,True,True,False,"{""chunk_too_broad"": 2, ""poor_scoring"": 74}"
+smoke_500,prompt_plus_metadata,mm2_hybrid_top5,healthcare_admin,100,0.858333,0.965,30,True,True,False,"{""poor_scoring"": 30}"
+smoke_500,prompt_plus_metadata,mm2_hybrid_top5,research_ai,100,0.81,0.84,23,True,True,False,"{""chunk_too_broad"": 11, ""poor_scoring"": 23}"
+smoke_500,prompt_plus_metadata,mm2_hybrid_top5,retail,100,0.42,0.41,61,True,True,False,"{""poor_scoring"": 61}"
+smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,airline,100,0.73,0.938333,53,True,True,False,"{""poor_scoring"": 53}"
+smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,finance,100,0.295,0.206333,74,True,True,False,"{""poor_scoring"": 74}"
+smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,healthcare_admin,100,0.858333,0.965,30,True,True,False,"{""poor_scoring"": 30}"
+smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,research_ai,100,0.81,0.84,23,True,True,False,"{""poor_scoring"": 23}"
+smoke_500,prompt_plus_metadata,mm3_compressed_hybrid_top5,retail,100,0.42,0.41,61,True,True,False,"{""poor_scoring"": 61}"
+smoke_500,prompt_plus_source_hints,mm0_no_context,airline,100,0.0,0.0,100,True,False,True,{}
+smoke_500,prompt_plus_source_hints,mm0_no_context,finance,100,0.0,0.0,100,True,False,True,{}
+smoke_500,prompt_plus_source_hints,mm0_no_context,healthcare_admin,100,0.0,0.0,100,True,False,True,{}
+smoke_500,prompt_plus_source_hints,mm0_no_context,research_ai,100,0.0,0.0,100,True,False,True,{}
+smoke_500,prompt_plus_source_hints,mm0_no_context,retail,100,0.0,0.0,100,True,False,True,{}
+smoke_500,prompt_plus_source_hints,mm1_dense_top5,airline,100,0.525,0.683167,74,True,False,True,"{""poor_scoring"": 74}"
+smoke_500,prompt_plus_source_hints,mm1_dense_top5,finance,100,0.54,0.3435,47,True,False,True,"{""chunk_too_broad"": 1, ""poor_scoring"": 47}"
+smoke_500,prompt_plus_source_hints,mm1_dense_top5,healthcare_admin,100,0.838333,0.958333,32,True,False,True,"{""poor_scoring"": 32}"
+smoke_500,prompt_plus_source_hints,mm1_dense_top5,research_ai,100,0.373333,0.361167,90,True,False,True,"{""poor_scoring"": 90}"
+smoke_500,prompt_plus_source_hints,mm1_dense_top5,retail,100,0.33,0.245833,67,True,False,True,"{""poor_scoring"": 67}"
+smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,airline,100,0.98,1.0,8,True,True,True,"{""poor_scoring"": 8}"
+smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,finance,100,1.0,1.0,0,True,True,True,{}
+smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,healthcare_admin,100,1.0,1.0,0,True,True,True,{}
+smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,research_ai,100,1.0,1.0,0,True,True,True,{}
+smoke_500,prompt_plus_source_hints,mm2_hybrid_top5,retail,100,0.985,1.0,3,True,True,True,"{""poor_scoring"": 3}"
+smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,airline,100,0.98,1.0,8,True,True,True,"{""poor_scoring"": 8}"
+smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,finance,100,1.0,1.0,0,True,True,True,{}
+smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,healthcare_admin,100,1.0,1.0,0,True,True,True,{}
+smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,research_ai,100,1.0,1.0,0,True,True,True,{}
+smoke_500,prompt_plus_source_hints,mm3_compressed_hybrid_top5,retail,100,0.985,1.0,3,True,True,True,"{""poor_scoring"": 3}"
+smoke_500,prompt_text_only,mm0_no_context,airline,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_text_only,mm0_no_context,finance,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_text_only,mm0_no_context,healthcare_admin,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_text_only,mm0_no_context,research_ai,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_text_only,mm0_no_context,retail,100,0.0,0.0,100,True,False,False,{}
+smoke_500,prompt_text_only,mm1_dense_top5,airline,100,0.588333,0.744167,69,True,False,False,"{""poor_scoring"": 69}"
+smoke_500,prompt_text_only,mm1_dense_top5,finance,100,0.135,0.090667,87,True,False,False,"{""bad_query_terms"": 20, ""poor_scoring"": 87}"
+smoke_500,prompt_text_only,mm1_dense_top5,healthcare_admin,100,0.843333,0.9225,30,True,False,False,"{""poor_scoring"": 30}"
+smoke_500,prompt_text_only,mm1_dense_top5,research_ai,100,0.36,0.313833,87,True,False,False,"{""poor_scoring"": 87}"
+smoke_500,prompt_text_only,mm1_dense_top5,retail,100,0.27,0.214,74,True,False,False,"{""poor_scoring"": 74}"
+smoke_500,prompt_text_only,mm2_hybrid_top5,airline,100,0.735833,0.941167,54,True,True,False,"{""poor_scoring"": 54}"
+smoke_500,prompt_text_only,mm2_hybrid_top5,finance,100,0.165,0.1045,86,True,True,False,"{""bad_query_terms"": 20, ""chunk_too_broad"": 2, ""poor_scoring"": 86}"
+smoke_500,prompt_text_only,mm2_hybrid_top5,healthcare_admin,100,0.863333,0.995,29,True,True,False,"{""poor_scoring"": 29}"
+smoke_500,prompt_text_only,mm2_hybrid_top5,research_ai,100,0.246667,0.1755,92,True,True,False,"{""chunk_too_broad"": 3, ""poor_scoring"": 92}"
+smoke_500,prompt_text_only,mm2_hybrid_top5,retail,100,0.29,0.246167,73,True,True,False,"{""poor_scoring"": 73}"
+smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,airline,100,0.735833,0.941167,54,True,True,False,"{""poor_scoring"": 54}"
+smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,finance,100,0.165,0.1045,86,True,True,False,"{""bad_query_terms"": 20, ""poor_scoring"": 86}"
+smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,healthcare_admin,100,0.863333,0.995,29,True,True,False,"{""poor_scoring"": 29}"
+smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,research_ai,100,0.246667,0.1755,92,True,True,False,"{""poor_scoring"": 92}"
+smoke_500,prompt_text_only,mm3_compressed_hybrid_top5,retail,100,0.29,0.246167,73,True,True,False,"{""poor_scoring"": 73}"

@@ -46,148 +46,147 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 316,
-            "mrr": 0.657125,
-            "recall_at_5": 0.469583,
+            "failure_count": 276,
+            "mrr": 0.700542,
+            "recall_at_5": 0.562708,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 316
+              "poor_scoring": 276
             }
           },
           "finance": {
-            "failure_count": 294,
-            "mrr": 0.198583,
-            "recall_at_5": 0.275,
+            "failure_count": 282,
+            "mrr": 0.186,
+            "recall_at_5": 0.299375,
             "record_count": 400,
             "top_failure_reasons": {
               "bad_query_terms": 11,
-              "poor_scoring": 294
+              "poor_scoring": 282
             }
           },
           "healthcare_admin": {
-            "failure_count": 159,
-            "mrr": 0.910417,
-            "recall_at_5": 0.767083,
+            "failure_count": 135,
+            "mrr": 0.926458,
+            "recall_at_5": 0.826667,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 159
+              "poor_scoring": 135
             }
           },
           "research_ai": {
-            "failure_count": 345,
-            "mrr": 0.329583,
-            "recall_at_5": 0.321306,
+            "failure_count": 328,
+            "mrr": 0.292417,
+            "recall_at_5": 0.357276,
             "record_count": 400,
             "top_failure_reasons": {
-              "chunk_too_broad": 3,
-              "poor_scoring": 337
+              "poor_scoring": 320
             }
           },
           "retail": {
-            "failure_count": 285,
-            "mrr": 0.247042,
-            "recall_at_5": 0.327083,
+            "failure_count": 310,
+            "mrr": 0.2245,
+            "recall_at_5": 0.271667,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 285
+              "poor_scoring": 310
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 187,
-            "mrr": 0.922375,
-            "recall_at_5": 0.755208,
+            "failure_count": 217,
+            "mrr": 0.905292,
+            "recall_at_5": 0.7225,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 187
+              "poor_scoring": 217
             }
           },
           "finance": {
-            "failure_count": 262,
-            "mrr": 0.268208,
-            "recall_at_5": 0.356875,
+            "failure_count": 316,
+            "mrr": 0.161708,
+            "recall_at_5": 0.24125,
             "record_count": 400,
             "top_failure_reasons": {
-              "bad_query_terms": 11,
-              "chunk_too_broad": 1,
-              "poor_scoring": 262
+              "bad_query_terms": 10,
+              "chunk_too_broad": 15,
+              "poor_scoring": 316
             }
           },
           "healthcare_admin": {
-            "failure_count": 127,
-            "mrr": 0.93,
-            "recall_at_5": 0.84125,
+            "failure_count": 126,
+            "mrr": 0.912833,
+            "recall_at_5": 0.834583,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 127
+              "poor_scoring": 126
             }
           },
           "research_ai": {
-            "failure_count": 174,
-            "mrr": 0.668833,
-            "recall_at_5": 0.688184,
+            "failure_count": 187,
+            "mrr": 0.634875,
+            "recall_at_5": 0.648552,
             "record_count": 400,
             "top_failure_reasons": {
-              "chunk_too_broad": 2,
-              "poor_scoring": 166
+              "chunk_too_broad": 16,
+              "poor_scoring": 179
             }
           },
           "retail": {
-            "failure_count": 309,
-            "mrr": 0.298333,
-            "recall_at_5": 0.274583,
+            "failure_count": 311,
+            "mrr": 0.32125,
+            "recall_at_5": 0.279583,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 309
+              "poor_scoring": 311
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 187,
-            "mrr": 0.922375,
-            "recall_at_5": 0.755208,
+            "failure_count": 217,
+            "mrr": 0.905292,
+            "recall_at_5": 0.7225,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 187
+              "poor_scoring": 217
             }
           },
           "finance": {
-            "failure_count": 262,
-            "mrr": 0.268208,
-            "recall_at_5": 0.356875,
+            "failure_count": 316,
+            "mrr": 0.161708,
+            "recall_at_5": 0.24125,
             "record_count": 400,
             "top_failure_reasons": {
-              "bad_query_terms": 11,
-              "poor_scoring": 262
+              "bad_query_terms": 10,
+              "poor_scoring": 316
             }
           },
           "healthcare_admin": {
-            "failure_count": 127,
-            "mrr": 0.93,
-            "recall_at_5": 0.84125,
+            "failure_count": 126,
+            "mrr": 0.912833,
+            "recall_at_5": 0.834583,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 127
+              "poor_scoring": 126
             }
           },
           "research_ai": {
-            "failure_count": 174,
-            "mrr": 0.668833,
-            "recall_at_5": 0.688184,
+            "failure_count": 187,
+            "mrr": 0.634875,
+            "recall_at_5": 0.648552,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 166
+              "poor_scoring": 179
             }
           },
           "retail": {
-            "failure_count": 309,
-            "mrr": 0.298333,
-            "recall_at_5": 0.274583,
+            "failure_count": 311,
+            "mrr": 0.32125,
+            "recall_at_5": 0.279583,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 309
+              "poor_scoring": 311
             }
           }
         }
@@ -232,74 +231,75 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 313,
-            "mrr": 0.715583,
-            "recall_at_5": 0.486667,
+            "failure_count": 290,
+            "mrr": 0.69925,
+            "recall_at_5": 0.536667,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 313
+              "poor_scoring": 290
             }
           },
           "finance": {
-            "failure_count": 320,
-            "mrr": 0.125375,
-            "recall_at_5": 0.219375,
+            "failure_count": 242,
+            "mrr": 0.239333,
+            "recall_at_5": 0.406875,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 320
+              "chunk_too_broad": 3,
+              "poor_scoring": 242
             }
           },
           "healthcare_admin": {
-            "failure_count": 164,
-            "mrr": 0.889792,
-            "recall_at_5": 0.760833,
+            "failure_count": 141,
+            "mrr": 0.928958,
+            "recall_at_5": 0.809167,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 164
+              "poor_scoring": 141
             }
           },
           "research_ai": {
-            "failure_count": 383,
-            "mrr": 0.1245,
-            "recall_at_5": 0.129526,
+            "failure_count": 332,
+            "mrr": 0.323542,
+            "recall_at_5": 0.393056,
             "record_count": 400,
             "top_failure_reasons": {
-              "chunk_too_broad": 10,
-              "poor_scoring": 375
+              "chunk_too_broad": 1,
+              "poor_scoring": 324
             }
           },
           "retail": {
-            "failure_count": 293,
-            "mrr": 0.211458,
-            "recall_at_5": 0.29,
+            "failure_count": 312,
+            "mrr": 0.187125,
+            "recall_at_5": 0.252083,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 293
+              "poor_scoring": 312
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 34,
-            "mrr": 0.992083,
-            "recall_at_5": 0.977708,
+            "failure_count": 32,
+            "mrr": 0.9925,
+            "recall_at_5": 0.979792,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 34
+              "poor_scoring": 32
             }
           },
           "finance": {
-            "failure_count": 10,
-            "mrr": 0.97,
-            "recall_at_5": 0.975,
+            "failure_count": 6,
+            "mrr": 0.991042,
+            "recall_at_5": 0.99125,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 10
+              "poor_scoring": 6
             }
           },
           "healthcare_admin": {
             "failure_count": 0,
-            "mrr": 0.990833,
+            "mrr": 0.99125,
             "recall_at_5": 1.0,
             "record_count": 400,
             "top_failure_reasons": {}
@@ -307,45 +307,44 @@
           "research_ai": {
             "failure_count": 23,
             "mrr": 0.98,
-            "recall_at_5": 0.970604,
+            "recall_at_5": 0.971235,
             "record_count": 400,
             "top_failure_reasons": {
-              "chunk_too_broad": 2,
               "poor_scoring": 15
             }
           },
           "retail": {
-            "failure_count": 49,
-            "mrr": 0.9975,
-            "recall_at_5": 0.9375,
+            "failure_count": 37,
+            "mrr": 1.0,
+            "recall_at_5": 0.95375,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 49
+              "poor_scoring": 37
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 34,
-            "mrr": 0.992083,
-            "recall_at_5": 0.977708,
+            "failure_count": 32,
+            "mrr": 0.9925,
+            "recall_at_5": 0.979792,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 34
+              "poor_scoring": 32
             }
           },
           "finance": {
-            "failure_count": 10,
-            "mrr": 0.97,
-            "recall_at_5": 0.975,
+            "failure_count": 6,
+            "mrr": 0.991042,
+            "recall_at_5": 0.99125,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 10
+              "poor_scoring": 6
             }
           },
           "healthcare_admin": {
             "failure_count": 0,
-            "mrr": 0.990833,
+            "mrr": 0.99125,
             "recall_at_5": 1.0,
             "record_count": 400,
             "top_failure_reasons": {}
@@ -353,19 +352,19 @@
           "research_ai": {
             "failure_count": 23,
             "mrr": 0.98,
-            "recall_at_5": 0.970604,
+            "recall_at_5": 0.971235,
             "record_count": 400,
             "top_failure_reasons": {
               "poor_scoring": 15
             }
           },
           "retail": {
-            "failure_count": 49,
-            "mrr": 0.9975,
-            "recall_at_5": 0.9375,
+            "failure_count": 37,
+            "mrr": 1.0,
+            "recall_at_5": 0.95375,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 49
+              "poor_scoring": 37
             }
           }
         }
@@ -410,148 +409,147 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 309,
-            "mrr": 0.669417,
-            "recall_at_5": 0.476458,
+            "failure_count": 280,
+            "mrr": 0.738792,
+            "recall_at_5": 0.575,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 309
+              "poor_scoring": 280
             }
           },
           "finance": {
-            "failure_count": 304,
-            "mrr": 0.1635,
-            "recall_at_5": 0.24375,
+            "failure_count": 327,
+            "mrr": 0.109708,
+            "recall_at_5": 0.18375,
             "record_count": 400,
             "top_failure_reasons": {
-              "bad_query_terms": 56,
-              "chunk_too_broad": 2,
-              "poor_scoring": 304
+              "bad_query_terms": 125,
+              "poor_scoring": 327
             }
           },
           "healthcare_admin": {
-            "failure_count": 155,
-            "mrr": 0.852625,
-            "recall_at_5": 0.760833,
+            "failure_count": 136,
+            "mrr": 0.9055,
+            "recall_at_5": 0.815833,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 155
+              "poor_scoring": 136
             }
           },
           "research_ai": {
-            "failure_count": 369,
-            "mrr": 0.163125,
-            "recall_at_5": 0.173938,
+            "failure_count": 361,
+            "mrr": 0.218583,
+            "recall_at_5": 0.26677,
             "record_count": 400,
             "top_failure_reasons": {
-              "chunk_too_broad": 12,
-              "poor_scoring": 361
+              "poor_scoring": 353
             }
           },
           "retail": {
-            "failure_count": 356,
-            "mrr": 0.166833,
-            "recall_at_5": 0.155833,
+            "failure_count": 343,
+            "mrr": 0.176875,
+            "recall_at_5": 0.189583,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 356
+              "poor_scoring": 343
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 181,
-            "mrr": 0.930375,
-            "recall_at_5": 0.759375,
+            "failure_count": 219,
+            "mrr": 0.923208,
+            "recall_at_5": 0.719167,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 181
+              "poor_scoring": 219
             }
           },
           "finance": {
-            "failure_count": 277,
-            "mrr": 0.257958,
-            "recall_at_5": 0.32,
+            "failure_count": 337,
+            "mrr": 0.103042,
+            "recall_at_5": 0.17125,
             "record_count": 400,
             "top_failure_reasons": {
-              "bad_query_terms": 54,
-              "chunk_too_broad": 18,
-              "poor_scoring": 277
+              "bad_query_terms": 123,
+              "chunk_too_broad": 16,
+              "poor_scoring": 337
             }
           },
           "healthcare_admin": {
-            "failure_count": 110,
-            "mrr": 0.97875,
-            "recall_at_5": 0.86375,
+            "failure_count": 120,
+            "mrr": 0.985,
+            "recall_at_5": 0.855417,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 110
+              "poor_scoring": 120
             }
           },
           "research_ai": {
             "failure_count": 332,
-            "mrr": 0.25725,
-            "recall_at_5": 0.302844,
+            "mrr": 0.26725,
+            "recall_at_5": 0.314921,
             "record_count": 400,
             "top_failure_reasons": {
+              "chunk_too_broad": 3,
               "poor_scoring": 324
             }
           },
           "retail": {
-            "failure_count": 343,
-            "mrr": 0.186,
-            "recall_at_5": 0.195,
+            "failure_count": 342,
+            "mrr": 0.197417,
+            "recall_at_5": 0.1975,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 343
+              "poor_scoring": 342
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 181,
-            "mrr": 0.930375,
-            "recall_at_5": 0.759375,
+            "failure_count": 219,
+            "mrr": 0.923208,
+            "recall_at_5": 0.719167,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 181
+              "poor_scoring": 219
             }
           },
           "finance": {
-            "failure_count": 277,
-            "mrr": 0.257958,
-            "recall_at_5": 0.32,
+            "failure_count": 337,
+            "mrr": 0.103042,
+            "recall_at_5": 0.17125,
             "record_count": 400,
             "top_failure_reasons": {
-              "bad_query_terms": 54,
-              "poor_scoring": 277
+              "bad_query_terms": 123,
+              "poor_scoring": 337
             }
           },
           "healthcare_admin": {
-            "failure_count": 110,
-            "mrr": 0.97875,
-            "recall_at_5": 0.86375,
+            "failure_count": 120,
+            "mrr": 0.985,
+            "recall_at_5": 0.855417,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 110
+              "poor_scoring": 120
             }
           },
           "research_ai": {
             "failure_count": 332,
-            "mrr": 0.25725,
-            "recall_at_5": 0.302844,
+            "mrr": 0.26725,
+            "recall_at_5": 0.314921,
             "record_count": 400,
             "top_failure_reasons": {
               "poor_scoring": 324
             }
           },
           "retail": {
-            "failure_count": 343,
-            "mrr": 0.186,
-            "recall_at_5": 0.195,
+            "failure_count": 342,
+            "mrr": 0.197417,
+            "recall_at_5": 0.1975,
             "record_count": 400,
             "top_failure_reasons": {
-              "poor_scoring": 343
+              "poor_scoring": 342
             }
           }
         }
@@ -598,148 +596,147 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 1564,
-            "mrr": 0.66435,
-            "recall_at_5": 0.474708,
+            "failure_count": 1369,
+            "mrr": 0.705308,
+            "recall_at_5": 0.564375,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1564
+              "poor_scoring": 1369
             }
           },
           "finance": {
-            "failure_count": 1469,
-            "mrr": 0.195275,
-            "recall_at_5": 0.272875,
+            "failure_count": 1420,
+            "mrr": 0.182817,
+            "recall_at_5": 0.29575,
             "record_count": 2000,
             "top_failure_reasons": {
-              "bad_query_terms": 56,
-              "poor_scoring": 1469
+              "bad_query_terms": 60,
+              "poor_scoring": 1420
             }
           },
           "healthcare_admin": {
-            "failure_count": 783,
-            "mrr": 0.909867,
-            "recall_at_5": 0.768583,
+            "failure_count": 662,
+            "mrr": 0.92975,
+            "recall_at_5": 0.83175,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 783
+              "poor_scoring": 662
             }
           },
           "research_ai": {
-            "failure_count": 1717,
-            "mrr": 0.314008,
-            "recall_at_5": 0.312416,
+            "failure_count": 1629,
+            "mrr": 0.289308,
+            "recall_at_5": 0.356693,
             "record_count": 2000,
             "top_failure_reasons": {
-              "chunk_too_broad": 17,
-              "poor_scoring": 1677
+              "poor_scoring": 1589
             }
           },
           "retail": {
-            "failure_count": 1454,
-            "mrr": 0.222833,
-            "recall_at_5": 0.315833,
+            "failure_count": 1588,
+            "mrr": 0.199292,
+            "recall_at_5": 0.253417,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1454
+              "poor_scoring": 1588
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 918,
-            "mrr": 0.925775,
-            "recall_at_5": 0.763333,
+            "failure_count": 1074,
+            "mrr": 0.910408,
+            "recall_at_5": 0.723458,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 918
+              "poor_scoring": 1074
             }
           },
           "finance": {
-            "failure_count": 1330,
-            "mrr": 0.265367,
-            "recall_at_5": 0.353375,
+            "failure_count": 1618,
+            "mrr": 0.131867,
+            "recall_at_5": 0.218,
             "record_count": 2000,
             "top_failure_reasons": {
-              "bad_query_terms": 56,
-              "chunk_too_broad": 4,
-              "poor_scoring": 1330
+              "bad_query_terms": 55,
+              "chunk_too_broad": 48,
+              "poor_scoring": 1618
             }
           },
           "healthcare_admin": {
-            "failure_count": 629,
-            "mrr": 0.928292,
-            "recall_at_5": 0.8435,
+            "failure_count": 617,
+            "mrr": 0.912633,
+            "recall_at_5": 0.838083,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 629
+              "poor_scoring": 617
             }
           },
           "research_ai": {
-            "failure_count": 891,
-            "mrr": 0.659125,
-            "recall_at_5": 0.676409,
+            "failure_count": 947,
+            "mrr": 0.638117,
+            "recall_at_5": 0.643333,
             "record_count": 2000,
             "top_failure_reasons": {
-              "chunk_too_broad": 13,
-              "poor_scoring": 851
+              "chunk_too_broad": 87,
+              "poor_scoring": 907
             }
           },
           "retail": {
-            "failure_count": 1661,
-            "mrr": 0.23625,
-            "recall_at_5": 0.2105,
+            "failure_count": 1645,
+            "mrr": 0.252183,
+            "recall_at_5": 0.219583,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1661
+              "poor_scoring": 1645
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 918,
-            "mrr": 0.925775,
-            "recall_at_5": 0.763333,
+            "failure_count": 1074,
+            "mrr": 0.910408,
+            "recall_at_5": 0.723458,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 918
+              "poor_scoring": 1074
             }
           },
           "finance": {
-            "failure_count": 1330,
-            "mrr": 0.265367,
-            "recall_at_5": 0.353375,
+            "failure_count": 1618,
+            "mrr": 0.131867,
+            "recall_at_5": 0.218,
             "record_count": 2000,
             "top_failure_reasons": {
-              "bad_query_terms": 56,
-              "poor_scoring": 1330
+              "bad_query_terms": 55,
+              "poor_scoring": 1618
             }
           },
           "healthcare_admin": {
-            "failure_count": 629,
-            "mrr": 0.928292,
-            "recall_at_5": 0.8435,
+            "failure_count": 617,
+            "mrr": 0.912633,
+            "recall_at_5": 0.838083,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 629
+              "poor_scoring": 617
             }
           },
           "research_ai": {
-            "failure_count": 891,
-            "mrr": 0.659125,
-            "recall_at_5": 0.676409,
+            "failure_count": 947,
+            "mrr": 0.638117,
+            "recall_at_5": 0.643333,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 851
+              "poor_scoring": 907
             }
           },
           "retail": {
-            "failure_count": 1661,
-            "mrr": 0.23625,
-            "recall_at_5": 0.2105,
+            "failure_count": 1645,
+            "mrr": 0.252183,
+            "recall_at_5": 0.219583,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1661
+              "poor_scoring": 1645
             }
           }
         }
@@ -784,140 +781,141 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 1553,
-            "mrr": 0.710892,
-            "recall_at_5": 0.487,
+            "failure_count": 1426,
+            "mrr": 0.70585,
+            "recall_at_5": 0.551042,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1553
+              "poor_scoring": 1426
             }
           },
           "finance": {
-            "failure_count": 1623,
-            "mrr": 0.119925,
-            "recall_at_5": 0.202125,
+            "failure_count": 1270,
+            "mrr": 0.243017,
+            "recall_at_5": 0.386875,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1623
+              "chunk_too_broad": 5,
+              "poor_scoring": 1270
             }
           },
           "healthcare_admin": {
-            "failure_count": 806,
-            "mrr": 0.8871,
-            "recall_at_5": 0.762333,
+            "failure_count": 686,
+            "mrr": 0.93175,
+            "recall_at_5": 0.815417,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 806
+              "poor_scoring": 686
             }
           },
           "research_ai": {
-            "failure_count": 1914,
-            "mrr": 0.130417,
-            "recall_at_5": 0.141277,
+            "failure_count": 1642,
+            "mrr": 0.336233,
+            "recall_at_5": 0.403502,
             "record_count": 2000,
             "top_failure_reasons": {
-              "chunk_too_broad": 59,
-              "poor_scoring": 1874
+              "chunk_too_broad": 5,
+              "poor_scoring": 1602
             }
           },
           "retail": {
-            "failure_count": 1465,
-            "mrr": 0.188258,
-            "recall_at_5": 0.289167,
+            "failure_count": 1614,
+            "mrr": 0.170533,
+            "recall_at_5": 0.22675,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1465
+              "poor_scoring": 1614
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 170,
-            "mrr": 0.99125,
-            "recall_at_5": 0.976875,
+            "failure_count": 161,
+            "mrr": 0.991125,
+            "recall_at_5": 0.979208,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 170
+              "poor_scoring": 161
             }
           },
           "finance": {
-            "failure_count": 52,
-            "mrr": 0.967792,
-            "recall_at_5": 0.974375,
+            "failure_count": 29,
+            "mrr": 0.990083,
+            "recall_at_5": 0.991625,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 52
+              "poor_scoring": 29
             }
           },
           "healthcare_admin": {
             "failure_count": 0,
-            "mrr": 0.991917,
+            "mrr": 0.99225,
             "recall_at_5": 1.0,
             "record_count": 2000,
             "top_failure_reasons": {}
           },
           "research_ai": {
-            "failure_count": 127,
+            "failure_count": 137,
             "mrr": 0.98,
-            "recall_at_5": 0.965953,
+            "recall_at_5": 0.966102,
             "record_count": 2000,
             "top_failure_reasons": {
-              "chunk_too_broad": 18,
-              "poor_scoring": 87
+              "chunk_too_broad": 10,
+              "poor_scoring": 97
             }
           },
           "retail": {
-            "failure_count": 224,
-            "mrr": 0.99825,
-            "recall_at_5": 0.94375,
+            "failure_count": 170,
+            "mrr": 0.9995,
+            "recall_at_5": 0.9575,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 224
+              "poor_scoring": 170
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 170,
-            "mrr": 0.99125,
-            "recall_at_5": 0.976875,
+            "failure_count": 161,
+            "mrr": 0.991125,
+            "recall_at_5": 0.979208,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 170
+              "poor_scoring": 161
             }
           },
           "finance": {
-            "failure_count": 52,
-            "mrr": 0.967792,
-            "recall_at_5": 0.974375,
+            "failure_count": 29,
+            "mrr": 0.990083,
+            "recall_at_5": 0.991625,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 52
+              "poor_scoring": 29
             }
           },
           "healthcare_admin": {
             "failure_count": 0,
-            "mrr": 0.991917,
+            "mrr": 0.99225,
             "recall_at_5": 1.0,
             "record_count": 2000,
             "top_failure_reasons": {}
           },
           "research_ai": {
-            "failure_count": 127,
+            "failure_count": 137,
             "mrr": 0.98,
-            "recall_at_5": 0.965953,
+            "recall_at_5": 0.966102,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 87
+              "poor_scoring": 97
             }
           },
           "retail": {
-            "failure_count": 224,
-            "mrr": 0.99825,
-            "recall_at_5": 0.94375,
+            "failure_count": 170,
+            "mrr": 0.9995,
+            "recall_at_5": 0.9575,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 224
+              "poor_scoring": 170
             }
           }
         }
@@ -962,148 +960,147 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 1543,
-            "mrr": 0.66995,
-            "recall_at_5": 0.48125,
+            "failure_count": 1389,
+            "mrr": 0.745175,
+            "recall_at_5": 0.581917,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1543
+              "poor_scoring": 1389
             }
           },
           "finance": {
-            "failure_count": 1539,
-            "mrr": 0.160217,
-            "recall_at_5": 0.2375,
+            "failure_count": 1657,
+            "mrr": 0.102717,
+            "recall_at_5": 0.1755,
             "record_count": 2000,
             "top_failure_reasons": {
-              "bad_query_terms": 305,
-              "chunk_too_broad": 16,
-              "poor_scoring": 1539
+              "bad_query_terms": 653,
+              "poor_scoring": 1657
             }
           },
           "healthcare_admin": {
-            "failure_count": 763,
-            "mrr": 0.851758,
-            "recall_at_5": 0.762833,
+            "failure_count": 672,
+            "mrr": 0.910392,
+            "recall_at_5": 0.821333,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 763
+              "poor_scoring": 672
             }
           },
           "research_ai": {
-            "failure_count": 1850,
-            "mrr": 0.166083,
-            "recall_at_5": 0.174553,
+            "failure_count": 1783,
+            "mrr": 0.228125,
+            "recall_at_5": 0.275293,
             "record_count": 2000,
             "top_failure_reasons": {
-              "chunk_too_broad": 49,
-              "poor_scoring": 1810
+              "poor_scoring": 1743
             }
           },
           "retail": {
-            "failure_count": 1806,
-            "mrr": 0.1399,
-            "recall_at_5": 0.143417,
+            "failure_count": 1803,
+            "mrr": 0.1419,
+            "recall_at_5": 0.144667,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1806
+              "poor_scoring": 1803
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 889,
-            "mrr": 0.933192,
-            "recall_at_5": 0.76825,
+            "failure_count": 1082,
+            "mrr": 0.932375,
+            "recall_at_5": 0.721292,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 889
+              "poor_scoring": 1082
             }
           },
           "finance": {
-            "failure_count": 1372,
-            "mrr": 0.262333,
-            "recall_at_5": 0.32825,
+            "failure_count": 1709,
+            "mrr": 0.091908,
+            "recall_at_5": 0.160625,
             "record_count": 2000,
             "top_failure_reasons": {
-              "bad_query_terms": 298,
-              "chunk_too_broad": 87,
-              "poor_scoring": 1372
+              "bad_query_terms": 652,
+              "chunk_too_broad": 71,
+              "poor_scoring": 1709
             }
           },
           "healthcare_admin": {
-            "failure_count": 549,
-            "mrr": 0.9775,
-            "recall_at_5": 0.865,
+            "failure_count": 594,
+            "mrr": 0.9855,
+            "recall_at_5": 0.856917,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 549
+              "poor_scoring": 594
             }
           },
           "research_ai": {
-            "failure_count": 1676,
-            "mrr": 0.255558,
-            "recall_at_5": 0.302628,
+            "failure_count": 1637,
+            "mrr": 0.277167,
+            "recall_at_5": 0.322941,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1636
+              "chunk_too_broad": 7,
+              "poor_scoring": 1597
             }
           },
           "retail": {
-            "failure_count": 1800,
-            "mrr": 0.140875,
-            "recall_at_5": 0.151667,
+            "failure_count": 1799,
+            "mrr": 0.154917,
+            "recall_at_5": 0.151417,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1800
+              "poor_scoring": 1799
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 889,
-            "mrr": 0.933192,
-            "recall_at_5": 0.76825,
+            "failure_count": 1082,
+            "mrr": 0.932375,
+            "recall_at_5": 0.721292,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 889
+              "poor_scoring": 1082
             }
           },
           "finance": {
-            "failure_count": 1372,
-            "mrr": 0.262333,
-            "recall_at_5": 0.32825,
+            "failure_count": 1709,
+            "mrr": 0.091908,
+            "recall_at_5": 0.160625,
             "record_count": 2000,
             "top_failure_reasons": {
-              "bad_query_terms": 298,
-              "poor_scoring": 1372
+              "bad_query_terms": 652,
+              "poor_scoring": 1709
             }
           },
           "healthcare_admin": {
-            "failure_count": 549,
-            "mrr": 0.9775,
-            "recall_at_5": 0.865,
+            "failure_count": 594,
+            "mrr": 0.9855,
+            "recall_at_5": 0.856917,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 549
+              "poor_scoring": 594
             }
           },
           "research_ai": {
-            "failure_count": 1676,
-            "mrr": 0.255558,
-            "recall_at_5": 0.302628,
+            "failure_count": 1637,
+            "mrr": 0.277167,
+            "recall_at_5": 0.322941,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1636
+              "poor_scoring": 1597
             }
           },
           "retail": {
-            "failure_count": 1800,
-            "mrr": 0.140875,
-            "recall_at_5": 0.151667,
+            "failure_count": 1799,
+            "mrr": 0.154917,
+            "recall_at_5": 0.151417,
             "record_count": 2000,
             "top_failure_reasons": {
-              "poor_scoring": 1800
+              "poor_scoring": 1799
             }
           }
         }
@@ -1150,143 +1147,144 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 79,
-            "mrr": 0.645833,
-            "recall_at_5": 0.465,
+            "failure_count": 68,
+            "mrr": 0.696167,
+            "recall_at_5": 0.575,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 79
+              "poor_scoring": 68
             }
           },
           "finance": {
-            "failure_count": 83,
-            "mrr": 0.168167,
-            "recall_at_5": 0.19,
+            "failure_count": 67,
+            "mrr": 0.258667,
+            "recall_at_5": 0.33,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 83
+              "poor_scoring": 67
             }
           },
           "healthcare_admin": {
-            "failure_count": 37,
-            "mrr": 0.95,
-            "recall_at_5": 0.791667,
+            "failure_count": 31,
+            "mrr": 0.955,
+            "recall_at_5": 0.846667,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 37
+              "poor_scoring": 31
             }
           },
           "research_ai": {
-            "failure_count": 95,
-            "mrr": 0.274333,
-            "recall_at_5": 0.226667,
+            "failure_count": 80,
+            "mrr": 0.395833,
+            "recall_at_5": 0.406667,
             "record_count": 100,
             "top_failure_reasons": {
-              "chunk_too_broad": 1,
-              "poor_scoring": 95
+              "poor_scoring": 80
             }
           },
           "retail": {
-            "failure_count": 55,
-            "mrr": 0.341333,
-            "recall_at_5": 0.455,
+            "failure_count": 64,
+            "mrr": 0.260167,
+            "recall_at_5": 0.36,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 55
+              "poor_scoring": 64
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 48,
-            "mrr": 0.955,
-            "recall_at_5": 0.754167,
+            "failure_count": 53,
+            "mrr": 0.938333,
+            "recall_at_5": 0.73,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 48
+              "poor_scoring": 53
             }
           },
           "finance": {
-            "failure_count": 68,
-            "mrr": 0.284167,
-            "recall_at_5": 0.335,
+            "failure_count": 74,
+            "mrr": 0.206333,
+            "recall_at_5": 0.295,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 68
+              "chunk_too_broad": 2,
+              "poor_scoring": 74
             }
           },
           "healthcare_admin": {
-            "failure_count": 29,
+            "failure_count": 30,
             "mrr": 0.965,
-            "recall_at_5": 0.86,
+            "recall_at_5": 0.858333,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 29
+              "poor_scoring": 30
             }
           },
           "research_ai": {
-            "failure_count": 20,
-            "mrr": 0.855,
-            "recall_at_5": 0.843333,
+            "failure_count": 23,
+            "mrr": 0.84,
+            "recall_at_5": 0.81,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 20
+              "chunk_too_broad": 11,
+              "poor_scoring": 23
             }
           },
           "retail": {
-            "failure_count": 60,
-            "mrr": 0.423333,
-            "recall_at_5": 0.43,
+            "failure_count": 61,
+            "mrr": 0.41,
+            "recall_at_5": 0.42,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 60
+              "poor_scoring": 61
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 48,
-            "mrr": 0.955,
-            "recall_at_5": 0.754167,
+            "failure_count": 53,
+            "mrr": 0.938333,
+            "recall_at_5": 0.73,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 48
+              "poor_scoring": 53
             }
           },
           "finance": {
-            "failure_count": 68,
-            "mrr": 0.284167,
-            "recall_at_5": 0.335,
+            "failure_count": 74,
+            "mrr": 0.206333,
+            "recall_at_5": 0.295,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 68
+              "poor_scoring": 74
             }
           },
           "healthcare_admin": {
-            "failure_count": 29,
+            "failure_count": 30,
             "mrr": 0.965,
-            "recall_at_5": 0.86,
+            "recall_at_5": 0.858333,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 29
+              "poor_scoring": 30
             }
           },
           "research_ai": {
-            "failure_count": 20,
-            "mrr": 0.855,
-            "recall_at_5": 0.843333,
+            "failure_count": 23,
+            "mrr": 0.84,
+            "recall_at_5": 0.81,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 20
+              "poor_scoring": 23
             }
           },
           "retail": {
-            "failure_count": 60,
-            "mrr": 0.423333,
-            "recall_at_5": 0.43,
+            "failure_count": 61,
+            "mrr": 0.41,
+            "recall_at_5": 0.42,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 60
+              "poor_scoring": 61
             }
           }
         }
@@ -1331,49 +1329,49 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 78,
-            "mrr": 0.692833,
-            "recall_at_5": 0.48,
+            "failure_count": 74,
+            "mrr": 0.683167,
+            "recall_at_5": 0.525,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 78
+              "poor_scoring": 74
             }
           },
           "finance": {
-            "failure_count": 81,
-            "mrr": 0.1575,
-            "recall_at_5": 0.22,
+            "failure_count": 47,
+            "mrr": 0.3435,
+            "recall_at_5": 0.54,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 81
+              "chunk_too_broad": 1,
+              "poor_scoring": 47
             }
           },
           "healthcare_admin": {
-            "failure_count": 38,
-            "mrr": 0.918333,
-            "recall_at_5": 0.781667,
+            "failure_count": 32,
+            "mrr": 0.958333,
+            "recall_at_5": 0.838333,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 38
+              "poor_scoring": 32
             }
           },
           "research_ai": {
-            "failure_count": 100,
-            "mrr": 0.0925,
-            "recall_at_5": 0.09,
+            "failure_count": 90,
+            "mrr": 0.361167,
+            "recall_at_5": 0.373333,
             "record_count": 100,
             "top_failure_reasons": {
-              "chunk_too_broad": 5,
-              "poor_scoring": 100
+              "poor_scoring": 90
             }
           },
           "retail": {
-            "failure_count": 63,
-            "mrr": 0.272667,
-            "recall_at_5": 0.375,
+            "failure_count": 67,
+            "mrr": 0.245833,
+            "recall_at_5": 0.33,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 63
+              "poor_scoring": 67
             }
           }
         },
@@ -1409,12 +1407,12 @@
             "top_failure_reasons": {}
           },
           "retail": {
-            "failure_count": 6,
-            "mrr": 0.99,
-            "recall_at_5": 0.965,
+            "failure_count": 3,
+            "mrr": 1.0,
+            "recall_at_5": 0.985,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 6
+              "poor_scoring": 3
             }
           }
         },
@@ -1450,12 +1448,12 @@
             "top_failure_reasons": {}
           },
           "retail": {
-            "failure_count": 6,
-            "mrr": 0.99,
-            "recall_at_5": 0.965,
+            "failure_count": 3,
+            "mrr": 1.0,
+            "recall_at_5": 0.985,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 6
+              "poor_scoring": 3
             }
           }
         }
@@ -1500,145 +1498,147 @@
         },
         "mm1_dense_top5": {
           "airline": {
-            "failure_count": 77,
-            "mrr": 0.653333,
-            "recall_at_5": 0.468333,
+            "failure_count": 69,
+            "mrr": 0.744167,
+            "recall_at_5": 0.588333,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 77
+              "poor_scoring": 69
             }
           },
           "finance": {
-            "failure_count": 80,
-            "mrr": 0.177833,
-            "recall_at_5": 0.21,
+            "failure_count": 87,
+            "mrr": 0.090667,
+            "recall_at_5": 0.135,
             "record_count": 100,
             "top_failure_reasons": {
-              "bad_query_terms": 1,
-              "poor_scoring": 80
+              "bad_query_terms": 20,
+              "poor_scoring": 87
             }
           },
           "healthcare_admin": {
-            "failure_count": 37,
-            "mrr": 0.877833,
-            "recall_at_5": 0.776667,
+            "failure_count": 30,
+            "mrr": 0.9225,
+            "recall_at_5": 0.843333,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 37
+              "poor_scoring": 30
             }
           },
           "research_ai": {
             "failure_count": 87,
-            "mrr": 0.2205,
-            "recall_at_5": 0.216667,
+            "mrr": 0.313833,
+            "recall_at_5": 0.36,
             "record_count": 100,
             "top_failure_reasons": {
-              "chunk_too_broad": 2,
               "poor_scoring": 87
             }
           },
           "retail": {
-            "failure_count": 78,
-            "mrr": 0.208333,
-            "recall_at_5": 0.23,
+            "failure_count": 74,
+            "mrr": 0.214,
+            "recall_at_5": 0.27,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 78
+              "poor_scoring": 74
             }
           }
         },
         "mm2_hybrid_top5": {
           "airline": {
-            "failure_count": 45,
-            "mrr": 0.9445,
-            "recall_at_5": 0.771667,
+            "failure_count": 54,
+            "mrr": 0.941167,
+            "recall_at_5": 0.735833,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 45
+              "poor_scoring": 54
             }
           },
           "finance": {
-            "failure_count": 72,
-            "mrr": 0.269167,
-            "recall_at_5": 0.295,
+            "failure_count": 86,
+            "mrr": 0.1045,
+            "recall_at_5": 0.165,
             "record_count": 100,
             "top_failure_reasons": {
-              "chunk_too_broad": 4,
-              "poor_scoring": 72
+              "bad_query_terms": 20,
+              "chunk_too_broad": 2,
+              "poor_scoring": 86
             }
           },
           "healthcare_admin": {
-            "failure_count": 27,
+            "failure_count": 29,
             "mrr": 0.995,
-            "recall_at_5": 0.87,
+            "recall_at_5": 0.863333,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 27
+              "poor_scoring": 29
             }
           },
           "research_ai": {
-            "failure_count": 91,
-            "mrr": 0.145333,
-            "recall_at_5": 0.195,
+            "failure_count": 92,
+            "mrr": 0.1755,
+            "recall_at_5": 0.246667,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 91
+              "chunk_too_broad": 3,
+              "poor_scoring": 92
             }
           },
           "retail": {
-            "failure_count": 66,
-            "mrr": 0.306167,
-            "recall_at_5": 0.365,
+            "failure_count": 73,
+            "mrr": 0.246167,
+            "recall_at_5": 0.29,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 66
+              "poor_scoring": 73
             }
           }
         },
         "mm3_compressed_hybrid_top5": {
           "airline": {
-            "failure_count": 45,
-            "mrr": 0.9445,
-            "recall_at_5": 0.771667,
+            "failure_count": 54,
+            "mrr": 0.941167,
+            "recall_at_5": 0.735833,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 45
+              "poor_scoring": 54
             }
           },
           "finance": {
-            "failure_count": 72,
-            "mrr": 0.269167,
-            "recall_at_5": 0.295,
+            "failure_count": 86,
+            "mrr": 0.1045,
+            "recall_at_5": 0.165,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 72
+              "bad_query_terms": 20,
+              "poor_scoring": 86
             }
           },
           "healthcare_admin": {
-            "failure_count": 27,
+            "failure_count": 29,
             "mrr": 0.995,
-            "recall_at_5": 0.87,
+            "recall_at_5": 0.863333,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 27
+              "poor_scoring": 29
             }
           },
           "research_ai": {
-            "failure_count": 91,
-            "mrr": 0.145333,
-            "recall_at_5": 0.195,
+            "failure_count": 92,
+            "mrr": 0.1755,
+            "recall_at_5": 0.246667,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 91
+              "poor_scoring": 92
             }
           },
           "retail": {
-            "failure_count": 66,
-            "mrr": 0.306167,
-            "recall_at_5": 0.365,
+            "failure_count": 73,
+            "mrr": 0.246167,
+            "recall_at_5": 0.29,
             "record_count": 100,
             "top_failure_reasons": {
-              "poor_scoring": 66
+              "poor_scoring": 73
             }
           }
         }
@@ -1650,450 +1650,517 @@
   "finance_specific": {
     "failure_examples": [
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
+          "finance_kb_xbrl_MSFT_finance_seed_0002_facts",
+          "finance_seed_0002"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1046",
-        "query_excerpt": "Compare the cited Finance evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense in a compact markdown table. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inven",
+        "prompt_id": "finance_scaleup_2000_0002",
+        "query_enrichment_used": true,
+        "query_excerpt": "What does the cited Finance evidence say about Microsoft Corporation (MSFT) 10-K? Stay within the records. what does the cited finance evidence say about microsoft corporation (msft) 10-k annual filing? stay within the records. 10-k annual azure fiscal year microsoft microsoft corporation msft",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsAccruedLiabilities",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
-        ]
+          "finance:finance_kb_sec_MSFT_10K_000095017024087843_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_MSFT_10K_000095017025100235_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017025100235managementdiscussionandanalysis3",
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017024087843managementdiscussionandanalysis3",
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017024087843notestofinancialstatements6"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
-          "poor_scoring"
+          "poor_scoring",
+          "bad_query_terms"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
+          "finance_kb_sec_MSFT_10K_000095017024087843_management_discussion_and_analysis",
+          "finance_section_MSFT_10K_000095017024087843_management_discussion_and_analysis_3"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1049",
-        "query_excerpt": "For scenario 1049, compare 10-K, 10-Q, or company evidence without adding claims. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_invento",
+        "prompt_id": "finance_scaleup_2000_0004",
+        "query_enrichment_used": true,
+        "query_excerpt": "For scenario 4, answer the single-filing Finance question using records for scenario 4, answer the single-filing finance question using records",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFinanceLeaseLiability",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedIntangibleAssetsOtherThanGoodwill",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedLiabilities"
-        ]
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesSingleMaturityDate",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsAmortizedCost",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingAfterYearTenFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterOneThroughFiveYearsAmortizedCost"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1058",
-        "query_excerpt": "What differs between the cited filings or companies for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense? Keep to the evidence. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_co",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsEmployeeBenefits"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1061",
-        "query_excerpt": "Compare the cited Finance evidence for Apple Inc. and Microsoft Corporation (MULTI) revenue in a compact markdown table. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_invento",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeAvailableForSaleSecuritiesAdjustmentNetOfTaxPeriodIncreaseDecrease",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearSixThroughTenFairValue"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_AMZN_concept_inventory",
-          "finance_kb_xbrl_TSLA_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1064",
-        "query_excerpt": "For scenario 1064, compare 10-K, 10-Q, or company evidence without adding claims. finance compare_filings markdown_table answer MULTI Amazon.com, Inc. and Tesla, Inc. (MULTI) assets compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_TSLA_concept_inventory finance_kb_xbrl_TSLA_concept_inventory fi",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872425000123quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872425000036quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872425000086quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872426000014quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872424000130quantitativeandqualitativedisclosures5"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1070",
-        "query_excerpt": "Create a table that contrasts the available filing evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventor",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsEmployeeBenefits"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1073",
-        "query_excerpt": "What differs between the cited filings or companies for Apple Inc. and Microsoft Corporation (MULTI) revenue? Keep to the evidence. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_conc",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearSixThroughTenFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLUnrecognizedTaxBenefitsIncomeTaxPenaltiesAndInterestAccrued"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1082",
-        "query_excerpt": "Using only SEC/XBRL records finance_kb_xbrl_NVDA_concept_inventory, finance_kb_xbrl_AMD_concept_inventory, create a grounded filing comparison. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_x",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsEmployeeBenefits"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1085",
-        "query_excerpt": "Create a table that contrasts the available filing evidence for Apple Inc. and Microsoft Corporation (MULTI) revenue. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory ",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesAccumulatedGrossUnrealizedLossBeforeTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesAccumulatedGrossUnrealizedGainBeforeTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1094",
-        "query_excerpt": "For scenario 1094, compare 10-K, 10-Q, or company evidence without adding claims. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_AMD_concept_invento",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedCurrentAssetsPrepaidExpenseAndOtherAssets",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1097",
-        "query_excerpt": "Using only SEC/XBRL records finance_kb_xbrl_AAPL_concept_inventory, finance_kb_xbrl_MSFT_concept_inventory, create a grounded filing comparison. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_x",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLUnrecognizedTaxBenefitsIncomeTaxPenaltiesAndInterestAccrued",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLBusinessCombinationRecognizedIdentifiableAssetsAcquiredAndLiabilitiesAssumedIntangibleAssetsOtherThanGoodwill",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLSellingAndMarketingExpense",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFinanceLeaseLiability"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis",
-          "finance_kb_sec_AMZN_10K_000101872425000004_management_discussion_and_analysis",
-          "finance_section_AMZN_10K_000101872424000008_management_discussion_and_analysis_5",
-          "finance_section_AMZN_10K_000101872425000004_management_discussion_and_analysis_5"
+          "finance_kb_sec_MSFT_10K_000095017025100235_management_discussion_and_analysis",
+          "finance_section_MSFT_10K_000095017025100235_management_discussion_and_analysis_3"
         ],
         "matched_gold_evidence_ids": [
-          "finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis",
-          "finance_section_AMZN_10K_000101872424000008_management_discussion_and_analysis_5",
-          "finance_section_AMZN_10K_000101872425000004_management_discussion_and_analysis_5"
+          "finance_section_MSFT_10K_000095017025100235_management_discussion_and_analysis_3"
         ],
         "mrr": 1.0,
-        "prompt_id": "finance_scaleup_2000_1098",
-        "query_excerpt": "What differs between the cited filings or companies for Amazon.com, Inc. (AMZN) and Amazon.com, Inc. (AMZN)? Keep to the evidence. finance compare_filings markdown_table answer AMZN Amazon.com, Inc. (AMZN) and Amazon.com, Inc. (AMZN) 10-K compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis finance_kb_sec_AMZN_10K",
-        "recall_at_5": 0.75,
+        "prompt_id": "finance_scaleup_2000_0005",
+        "query_enrichment_used": true,
+        "query_excerpt": "Explain the cited filing section or XBRL fact for Microsoft Corporation (MSFT) 10-K in finance-ready language. explain the cited filing section or xbrl fact for microsoft corporation (msft) 10-k annual filing in finance-ready language. 10-k annual azure fiscal year microsoft microsoft corporation msft",
+        "recall_at_5": 0.5,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis::chunk_001",
-          "finance:finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis::chunk_002",
-          "finance:finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis::chunk_003",
-          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872425000004managementdiscussionandanalysis5",
-          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008managementdiscussionandanalysis5"
-        ]
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017025100235managementdiscussionandanalysis3",
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017024087843managementdiscussionandanalysis3",
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017024087843notestofinancialstatements6",
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017025100235controlsandprocedures5",
+          "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017025100235liquidityandcapitalresources4"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
+          "finance_kb_xbrl_AAPL_finance_seed_0021_facts",
+          "finance_seed_0021"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1106",
-        "query_excerpt": "Compare the cited Finance evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense in a compact markdown table. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inven",
+        "prompt_id": "finance_scaleup_2000_0006",
+        "query_enrichment_used": true,
+        "query_excerpt": "Using only cited SEC filing evidence, summarize the finance-relevant point for Apple Inc. (AAPL) selected financial metric. using only cited sec filing evidence, summarize the finance-relevant point for apple inc. (aapl) selected financial metric. aapl apple apple inc",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsAccruedLiabilities",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther"
-        ]
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecurities",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueAssetsMeasuredOnRecurringBasisDerivativeFinancialInstrumentsAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueLiabilitiesMeasuredOnRecurringBasisDerivativeFinancialInstrumentsLiabilities",
+          "finance:finance_kb_sec_AAPL_8K_000032019326000005_filing_event"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
+          "finance_kb_xbrl_TSLA_finance_seed_0007_facts",
+          "finance_seed_0007"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1109",
-        "query_excerpt": "For scenario 1109, compare 10-K, 10-Q, or company evidence without adding claims. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_inventory finance_kb_xbrl_MSFT_concept_invento",
+        "prompt_id": "finance_scaleup_2000_0007",
+        "query_enrichment_used": true,
+        "query_excerpt": "What does the cited Finance evidence say about Tesla, Inc. (TSLA) 10-K? Stay within the records. what does the cited finance evidence say about tesla, inc. (tsla) 10-k annual filing? stay within the records. 10-k annual fiscal year tesla tesla inc tsla",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesAccumulatedGrossUnrealizedLossBeforeTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFinanceLeaseLiability",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost"
-        ]
+          "finance:finance_kb_sec_TSLA_10K_000162828026003952_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_TSLA_10K_000162828024002390_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_TSLA_10K_000162828025003063_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828026003952managementdiscussionandanalysis6",
+          "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390managementdiscussionandanalysis6"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring",
+          "bad_query_terms"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_NVDA_10K_000104581026000021_management_discussion_and_analysis",
+          "finance_section_NVDA_10K_000104581026000021_management_discussion_and_analysis_6"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0009",
+        "query_enrichment_used": true,
+        "query_excerpt": "For scenario 9, answer the single-filing Finance question using records for scenario 9, answer the single-filing finance question using records",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesSingleMaturityDate",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsAmortizedCost",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingAfterYearTenFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterOneThroughFiveYearsAmortizedCost"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
+          "finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis",
+          "finance_section_AMZN_10K_000101872424000008_management_discussion_and_analysis_5"
         ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1118",
-        "query_excerpt": "What differs between the cited filings or companies for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense? Keep to the evidence. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_co",
-        "recall_at_5": 0.0,
+        "matched_gold_evidence_ids": [
+          "finance_section_AMZN_10K_000101872424000008_management_discussion_and_analysis_5"
+        ],
+        "mrr": 0.25,
+        "prompt_id": "finance_scaleup_2000_0010",
+        "query_enrichment_used": true,
+        "query_excerpt": "Explain the cited filing section or XBRL fact for Amazon.com, Inc. (AMZN) 10-K in finance-ready language. explain the cited filing section or xbrl fact for amazon.com, inc. (amzn) 10-k annual filing in finance-ready language. 10-k amazon amazon com amzn annual aws fiscal year",
+        "recall_at_5": 0.5,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsEmployeeBenefits"
-        ]
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872426000004quantitativeandqualitativedisclosures8",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872425000004quantitativeandqualitativedisclosures8",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008quantitativeandqualitativedisclosures8",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008managementdiscussionandanalysis5",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872426000004managementdiscussionandanalysis5"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
+          "finance_kb_xbrl_AAPL_finance_seed_0021_facts",
+          "finance_seed_0021"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1121",
-        "query_excerpt": "Compare the cited Finance evidence for Apple Inc. and Microsoft Corporation (MULTI) revenue in a compact markdown table. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_concept_invento",
+        "prompt_id": "finance_scaleup_2000_0011",
+        "query_enrichment_used": true,
+        "query_excerpt": "Using only cited SEC filing evidence, summarize the finance-relevant point for Apple Inc. (AAPL) selected financial metric. using only cited sec filing evidence, summarize the finance-relevant point for apple inc. (aapl) selected financial metric. aapl apple apple inc",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInDeferredRevenue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeAvailableForSaleSecuritiesAdjustmentNetOfTaxPeriodIncreaseDecrease",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearSixThroughTenFairValue"
-        ]
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecurities",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueAssetsMeasuredOnRecurringBasisDerivativeFinancialInstrumentsAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueLiabilitiesMeasuredOnRecurringBasisDerivativeFinancialInstrumentsLiabilities",
+          "finance:finance_kb_sec_AAPL_8K_000032019326000005_filing_event"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_AMZN_concept_inventory",
-          "finance_kb_xbrl_TSLA_concept_inventory"
+          "finance_kb_xbrl_AMZN_finance_seed_0004_facts",
+          "finance_seed_0004"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1124",
-        "query_excerpt": "For scenario 1124, compare 10-K, 10-Q, or company evidence without adding claims. finance compare_filings markdown_table answer MULTI Amazon.com, Inc. and Tesla, Inc. (MULTI) assets compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_AMZN_concept_inventory finance_kb_xbrl_TSLA_concept_inventory finance_kb_xbrl_TSLA_concept_inventory fi",
+        "prompt_id": "finance_scaleup_2000_0012",
+        "query_enrichment_used": true,
+        "query_excerpt": "What does the cited Finance evidence say about Amazon.com, Inc. (AMZN) 10-K? Stay within the records. what does the cited finance evidence say about amazon.com, inc. (amzn) 10-k annual filing? stay within the records. 10-k amazon amazon com amzn annual aws fiscal year",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872425000123quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872425000036quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872425000086quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872426000014quantitativeandqualitativedisclosures5",
-          "finance:finance_kb_sec_AMZN_10-Q_financesectionAMZN10Q000101872424000130quantitativeandqualitativedisclosures5"
-        ]
+          "finance:finance_kb_sec_AMZN_10K_000101872426000004_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872426000004managementdiscussionandanalysis5",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872426000004quantitativeandqualitativedisclosures8",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008managementdiscussionandanalysis5",
+          "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872425000004managementdiscussionandanalysis5"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
-          "poor_scoring"
+          "poor_scoring",
+          "bad_query_terms"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
+          "finance_kb_sec_GOOGL_10K_000165204425000014_management_discussion_and_analysis",
+          "finance_section_GOOGL_10K_000165204425000014_management_discussion_and_analysis_5"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1130",
-        "query_excerpt": "Create a table that contrasts the available filing evidence for NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventor",
+        "prompt_id": "finance_scaleup_2000_0014",
+        "query_enrichment_used": true,
+        "query_excerpt": "For scenario 14, answer the single-filing Finance question using records for scenario 14, answer the single-filing finance question using records",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsEmployeeBenefits"
-        ]
-      },
-      {
-        "ablation_mode": "prompt_plus_source_hints",
-        "failure_reasons": [
-          "poor_scoring"
-        ],
-        "gold_evidence_ids": [
-          "finance_kb_xbrl_AAPL_concept_inventory",
-          "finance_kb_xbrl_MSFT_concept_inventory"
-        ],
-        "matched_gold_evidence_ids": [],
-        "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1133",
-        "query_excerpt": "What differs between the cited filings or companies for Apple Inc. and Microsoft Corporation (MULTI) revenue? Keep to the evidence. finance compare_filings markdown_table answer MULTI Apple Inc. and Microsoft Corporation (MULTI) revenue compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_AAPL_concept_inventory finance_kb_xbrl_MSFT_conc",
-        "recall_at_5": 0.0,
-        "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesSingleMaturityDate",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingAfterYearTenFairValue",
           "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearSixThroughTenFairValue",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsShareBasedCompensationCost",
-          "finance:finance_kb_xbrl_inventory_financexbrlAAPLUnrecognizedTaxBenefitsIncomeTaxPenaltiesAndInterestAccrued"
-        ]
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsAmortizedCost"
+        ],
+        "source_hints_used": false
       },
       {
-        "ablation_mode": "prompt_plus_source_hints",
+        "ablation_mode": "prompt_text_only",
         "failure_reasons": [
           "poor_scoring"
         ],
         "gold_evidence_ids": [
-          "finance_kb_xbrl_NVDA_concept_inventory",
-          "finance_kb_xbrl_AMD_concept_inventory"
+          "finance_kb_sec_META_8K_000162828025047114_filing_event",
+          "finance_sec_META_8K_000162828025047114"
+        ],
+        "matched_gold_evidence_ids": [
+          "finance_sec_META_8K_000162828025047114"
+        ],
+        "mrr": 0.2,
+        "prompt_id": "finance_scaleup_2000_0015",
+        "query_enrichment_used": true,
+        "query_excerpt": "Explain the cited filing section or XBRL fact for Meta Platforms, Inc. (META) 8-K in finance-ready language. explain the cited filing section or xbrl fact for meta platforms, inc. (meta) 8-k current report in finance-ready language.",
+        "recall_at_5": 0.5,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_sec_META_8-K_financesectionMETA8K000132680124000044resultsofoperations1",
+          "finance:finance_kb_sec_META_8-K_financesectionMETA8K000162828026028364resultsofoperations1",
+          "finance:finance_kb_sec_META_8-K_financesectionMETA8K000132680125000050resultsofoperations1",
+          "finance:finance_kb_sec_META_8-K_financesectionMETA8K000132680124000077resultsofoperations1",
+          "finance:finance_kb_sec_META_8-K_financesectionMETA8K000162828025047114resultsofoperations1"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_finance_seed_0021_facts",
+          "finance_seed_0021"
         ],
         "matched_gold_evidence_ids": [],
         "mrr": 0.0,
-        "prompt_id": "finance_scaleup_2000_1142",
-        "query_excerpt": "Using only SEC/XBRL records finance_kb_xbrl_NVDA_concept_inventory, finance_kb_xbrl_AMD_concept_inventory, create a grounded filing comparison. finance compare_filings markdown_table answer MULTI NVIDIA Corporation and Advanced Micro Devices, Inc. (MULTI) research and development expense compare_filings compare_filings sec_xbrl_filing_evidence sec_xbrl_filing_evidence finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_xbrl_NVDA_concept_inventory finance_kb_x",
+        "prompt_id": "finance_scaleup_2000_0016",
+        "query_enrichment_used": true,
+        "query_excerpt": "Using only cited SEC filing evidence, summarize the finance-relevant point for Apple Inc. (AAPL) selected financial metric. using only cited sec filing evidence, summarize the finance-relevant point for apple inc. (aapl) selected financial metric. aapl apple apple inc",
         "recall_at_5": 0.0,
+        "reranking_used": true,
         "retrieved_context_ids": [
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsInProcessResearchAndDevelopment",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredStateAndLocalIncomeTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseReservesAndAccrualsOther",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDCurrentStateAndLocalTaxExpenseBenefit",
-          "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsTaxDeferredExpenseCompensationAndBenefitsEmployeeBenefits"
-        ]
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecurities",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueAssetsMeasuredOnRecurringBasisDerivativeFinancialInstrumentsAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueLiabilitiesMeasuredOnRecurringBasisDerivativeFinancialInstrumentsLiabilities",
+          "finance:finance_kb_sec_AAPL_8K_000032019326000005_filing_event"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_finance_seed_0001_facts",
+          "finance_seed_0001"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0017",
+        "query_enrichment_used": true,
+        "query_excerpt": "What does the cited Finance evidence say about Apple Inc. (AAPL) 10-K? Stay within the records. what does the cited finance evidence say about apple inc. (aapl) 10-k annual filing? stay within the records. 10-k aapl annual apple apple inc fiscal year",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFinanceLeaseLiabilityPaymentsRemainderOfFiscalYear",
+          "finance:finance_kb_sec_AAPL_10K_000032019325000079_management_discussion_and_analysis::chunk_002",
+          "finance:finance_kb_sec_AAPL_10K_000032019325000079_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_AAPL_10K_000032019324000123_management_discussion_and_analysis::chunk_002",
+          "finance:finance_kb_sec_AAPL_10K_000032019324000123_management_discussion_and_analysis::chunk_001"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_META_10Q_000132680124000049_management_discussion_and_analysis",
+          "finance_section_META_10Q_000132680124000049_management_discussion_and_analysis_4"
+        ],
+        "matched_gold_evidence_ids": [
+          "finance_section_META_10Q_000132680124000049_management_discussion_and_analysis_4"
+        ],
+        "mrr": 0.3333333333333333,
+        "prompt_id": "finance_scaleup_2000_0018",
+        "query_enrichment_used": true,
+        "query_excerpt": "Summarize the selected SEC/XBRL evidence for Meta Platforms, Inc. (META) 10-Q without making projections. summarize the selected sec/xbrl evidence for meta platforms, inc. (meta) 10-q quarterly filing without making projections.",
+        "recall_at_5": 0.5,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000162828025047240quantitativeandqualitativedisclosures7",
+          "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000162828025036791quantitativeandqualitativedisclosures7",
+          "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000132680124000049managementdiscussionandanalysis4",
+          "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000162828026028526managementdiscussionandanalysis4",
+          "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000162828025047240managementdiscussionandanalysis4"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring",
+          "bad_query_terms"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_TSLA_10K_000162828024002390_management_discussion_and_analysis",
+          "finance_section_TSLA_10K_000162828024002390_management_discussion_and_analysis_6"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0019",
+        "query_enrichment_used": true,
+        "query_excerpt": "For scenario 19, answer the single-filing Finance question using records for scenario 19, answer the single-filing finance question using records",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesSingleMaturityDate",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsAmortizedCost",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingAfterYearTenFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterOneThroughFiveYearsAmortizedCost"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_TSLA_10K_000162828025003063_management_discussion_and_analysis",
+          "finance_section_TSLA_10K_000162828025003063_management_discussion_and_analysis_6"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0020",
+        "query_enrichment_used": true,
+        "query_excerpt": "Explain the cited filing section or XBRL fact for Tesla, Inc. (TSLA) 10-K in finance-ready language. explain the cited filing section or xbrl fact for tesla, inc. (tsla) 10-k annual filing in finance-ready language. 10-k annual fiscal year tesla tesla inc tsla",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390quantitativeandqualitativedisclosures9",
+          "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828026003952quantitativeandqualitativedisclosures9",
+          "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828025003063quantitativeandqualitativedisclosures9",
+          "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390managementdiscussionandanalysis6",
+          "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828026003952managementdiscussionandanalysis6"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_xbrl_AAPL_finance_seed_0021_facts",
+          "finance_seed_0021"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0021",
+        "query_enrichment_used": true,
+        "query_excerpt": "Using only cited SEC filing evidence, summarize the finance-relevant point for Apple Inc. (AAPL) selected financial metric. using only cited sec filing evidence, summarize the finance-relevant point for apple inc. (aapl) selected financial metric. aapl apple apple inc",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesCurrent",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecurities",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueAssetsMeasuredOnRecurringBasisDerivativeFinancialInstrumentsAssets",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLFairValueLiabilitiesMeasuredOnRecurringBasisDerivativeFinancialInstrumentsLiabilities",
+          "finance:finance_kb_sec_AAPL_8K_000032019326000005_filing_event"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_AMD_10K_000000248825000012_management_discussion_and_analysis",
+          "finance_section_AMD_10K_000000248825000012_management_discussion_and_analysis_5"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0023",
+        "query_enrichment_used": true,
+        "query_excerpt": "Summarize the selected SEC/XBRL evidence for Advanced Micro Devices, Inc. (AMD) 10-K without making projections. summarize the selected sec/xbrl evidence for advanced micro devices, inc. (amd) 10-k annual filing without making projections. 10-k annual fiscal year",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_sec_AMD_10K_000000248826000018_management_discussion_and_analysis::chunk_001",
+          "finance:finance_kb_sec_AMD_10K_000000248826000018_management_discussion_and_analysis::chunk_002",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDEquitySecuritiesWithoutReadilyDeterminableFairValueImpairmentLossAnnualAmount",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDEquitySecuritiesWithoutReadilyDeterminableFairValueUpwardPriceAdjustmentAnnualAmount",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesRollingYearTwoThroughFiveFairValue"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring",
+          "bad_query_terms"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_AMD_10K_000000248826000018_management_discussion_and_analysis",
+          "finance_section_AMD_10K_000000248826000018_management_discussion_and_analysis_5"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0024",
+        "query_enrichment_used": true,
+        "query_excerpt": "For scenario 24, answer the single-filing Finance question using records for scenario 24, answer the single-filing finance question using records",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesSingleMaturityDate",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsAmortizedCost",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterFiveThroughTenYearsFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAAPLAvailableForSaleSecuritiesDebtMaturitiesRollingAfterYearTenFairValue",
+          "finance:finance_kb_xbrl_inventory_financexbrlAMDAvailableForSaleSecuritiesDebtMaturitiesAfterOneThroughFiveYearsAmortizedCost"
+        ],
+        "source_hints_used": false
+      },
+      {
+        "ablation_mode": "prompt_text_only",
+        "failure_reasons": [
+          "poor_scoring"
+        ],
+        "gold_evidence_ids": [
+          "finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019326000013financialstatements1",
+          "finance_section_AAPL_10Q_000032019326000013_financial_statements_1"
+        ],
+        "matched_gold_evidence_ids": [],
+        "mrr": 0.0,
+        "prompt_id": "finance_scaleup_2000_0025",
+        "query_enrichment_used": true,
+        "query_excerpt": "Explain the cited filing section or XBRL fact for Apple Inc. (AAPL) 10-Q in finance-ready language. explain the cited filing section or xbrl fact for apple inc. (aapl) 10-q quarterly filing in finance-ready language. aapl apple apple inc",
+        "recall_at_5": 0.0,
+        "reranking_used": true,
+        "retrieved_context_ids": [
+          "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019324000006managementdiscussionandanalysis2",
+          "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019325000057managementdiscussionandanalysis2",
+          "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019324000069managementdiscussionandanalysis2",
+          "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019325000008managementdiscussionandanalysis2",
+          "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019326000013managementdiscussionandanalysis2"
+        ],
+        "source_hints_used": false
       }
     ],
     "failure_reason_labels": [
@@ -2106,19 +2173,41 @@
       "dense_fallback_limitation",
       "evaluation_mismatch"
     ],
+    "strict_modes_block_direct_source_hints": true,
     "uses_prompt_fields": [
       "ticker",
       "company",
-      "filing_form",
-      "required_doc_ids",
-      "required_evidence_ids",
-      "required_chunk_ids"
+      "filing_form"
     ]
   },
-  "generated_at_utc": "2026-06-01T22:40:41.719218+00:00",
+  "generated_at_utc": "2026-06-02T06:03:49.564500+00:00",
   "match_logic": "Evaluation matches gold evidence IDs against context IDs, source IDs, parent IDs, chunk IDs, and flattened context metadata values using exact and normalized forms.",
   "no_model_inference_triggered": true,
-  "query_logic": "Retrieval query text is built according to ablation mode. prompt_text_only uses only user-visible prompt text; prompt_plus_metadata adds realistic prompt metadata; prompt_plus_source_hints is explicitly hint-assisted. Gold/eval rows are not used for retrieval.",
+  "query_enrichment": {
+    "allowed_sources": [
+      "visible prompt text",
+      "realistic prompt metadata for prompt_plus_metadata"
+    ],
+    "blocked_sources": [
+      "gold evidence IDs",
+      "direct source IDs",
+      "direct parent IDs",
+      "answer-side evidence hints"
+    ],
+    "enabled": true
+  },
+  "query_logic": "Retrieval query text is built according to ablation mode. prompt_text_only uses only user-visible prompt text after generated evidence IDs are scrubbed; prompt_plus_metadata adds realistic prompt metadata but still blocks direct source identifiers; prompt_plus_source_hints is explicitly hint-assisted. Gold/eval rows are not used for retrieval.",
+  "reranking": {
+    "enabled_for_hybrid": true,
+    "signals": [
+      "lexical overlap",
+      "metadata overlap",
+      "finance ticker/company/form/metric/period matches",
+      "section/title matches",
+      "BM25 score",
+      "Qdrant score"
+    ]
+  },
   "sample_failure_examples": [
     {
       "ablation_mode": "prompt_text_only",
@@ -2136,18 +2225,8 @@
         "poor_scoring"
       ],
       "memory_mode": "mm1_dense_top5",
-      "prompt_id": "airline_scaleup_2000_0003",
-      "recall_at_5": 0.0,
-      "vertical": "airline"
-    },
-    {
-      "ablation_mode": "prompt_text_only",
-      "failure_reasons": [
-        "poor_scoring"
-      ],
-      "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0004",
-      "recall_at_5": 0.0,
+      "recall_at_5": 0.3333333333333333,
       "vertical": "airline"
     },
     {
@@ -2167,7 +2246,7 @@
       ],
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0006",
-      "recall_at_5": 0.25,
+      "recall_at_5": 0.5,
       "vertical": "airline"
     },
     {
@@ -2177,6 +2256,16 @@
       ],
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0007",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "failure_reasons": [
+        "poor_scoring"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0009",
       "recall_at_5": 0.5,
       "vertical": "airline"
     },
@@ -2207,16 +2296,6 @@
       ],
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0012",
-      "recall_at_5": 0.0,
-      "vertical": "airline"
-    },
-    {
-      "ablation_mode": "prompt_text_only",
-      "failure_reasons": [
-        "poor_scoring"
-      ],
-      "memory_mode": "mm1_dense_top5",
-      "prompt_id": "airline_scaleup_2000_0013",
       "recall_at_5": 0.5,
       "vertical": "airline"
     },
@@ -2237,7 +2316,7 @@
       ],
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0017",
-      "recall_at_5": 0.0,
+      "recall_at_5": 0.3333333333333333,
       "vertical": "airline"
     },
     {
@@ -2268,16 +2347,6 @@
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0020",
       "recall_at_5": 0.5,
-      "vertical": "airline"
-    },
-    {
-      "ablation_mode": "prompt_text_only",
-      "failure_reasons": [
-        "poor_scoring"
-      ],
-      "memory_mode": "mm1_dense_top5",
-      "prompt_id": "airline_scaleup_2000_0021",
-      "recall_at_5": 0.0,
       "vertical": "airline"
     },
     {
@@ -2326,18 +2395,8 @@
         "poor_scoring"
       ],
       "memory_mode": "mm1_dense_top5",
-      "prompt_id": "airline_scaleup_2000_0027",
-      "recall_at_5": 0.5,
-      "vertical": "airline"
-    },
-    {
-      "ablation_mode": "prompt_text_only",
-      "failure_reasons": [
-        "poor_scoring"
-      ],
-      "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0030",
-      "recall_at_5": 0.0,
+      "recall_at_5": 0.6666666666666666,
       "vertical": "airline"
     },
     {
@@ -2357,7 +2416,7 @@
       ],
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0032",
-      "recall_at_5": 0.25,
+      "recall_at_5": 0.5,
       "vertical": "airline"
     },
     {
@@ -2378,6 +2437,16 @@
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0034",
       "recall_at_5": 0.0,
+      "vertical": "airline"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "failure_reasons": [
+        "poor_scoring"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0035",
+      "recall_at_5": 0.5,
       "vertical": "airline"
     },
     {
@@ -2427,7 +2496,7 @@
       ],
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0043",
-      "recall_at_5": 0.0,
+      "recall_at_5": 0.3333333333333333,
       "vertical": "airline"
     },
     {
@@ -2466,16 +2535,6 @@
         "poor_scoring"
       ],
       "memory_mode": "mm1_dense_top5",
-      "prompt_id": "airline_scaleup_2000_0047",
-      "recall_at_5": 0.0,
-      "vertical": "airline"
-    },
-    {
-      "ablation_mode": "prompt_text_only",
-      "failure_reasons": [
-        "poor_scoring"
-      ],
-      "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0048",
       "recall_at_5": 0.5,
       "vertical": "airline"
@@ -2497,7 +2556,7 @@
       ],
       "memory_mode": "mm1_dense_top5",
       "prompt_id": "airline_scaleup_2000_0050",
-      "recall_at_5": 0.0,
+      "recall_at_5": 0.5,
       "vertical": "airline"
     },
     {
@@ -2516,29 +2575,64 @@
         "poor_scoring"
       ],
       "memory_mode": "mm1_dense_top5",
-      "prompt_id": "airline_scaleup_2000_0052",
+      "prompt_id": "airline_scaleup_2000_0053",
       "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "failure_reasons": [
+        "poor_scoring"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0056",
+      "recall_at_5": 0.6666666666666666,
+      "vertical": "airline"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "failure_reasons": [
+        "poor_scoring"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0057",
+      "recall_at_5": 0.5,
+      "vertical": "airline"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "failure_reasons": [
+        "poor_scoring"
+      ],
+      "memory_mode": "mm1_dense_top5",
+      "prompt_id": "airline_scaleup_2000_0058",
+      "recall_at_5": 0.75,
       "vertical": "airline"
     }
   ],
+  "strict_leakage_guard": {
+    "prompt_plus_metadata_blocks_direct_source_ids": true,
+    "prompt_text_only_blocks_direct_evidence_ids": true,
+    "source_hint_mode_is_assisted_upper_bound": true
+  },
   "top_failure_reasons_by_vertical": {
     "airline": {
-      "poor_scoring": 10792
+      "poor_scoring": 11041
     },
     "finance": {
-      "bad_query_terms": 1267,
-      "chunk_too_broad": 132,
-      "poor_scoring": 12679
+      "bad_query_terms": 2589,
+      "chunk_too_broad": 163,
+      "poor_scoring": 13749
     },
     "healthcare_admin": {
-      "poor_scoring": 5884
+      "poor_scoring": 5557
     },
     "research_ai": {
-      "chunk_too_broad": 193,
-      "poor_scoring": 13096
+      "chunk_too_broad": 143,
+      "poor_scoring": 12656
     },
     "retail": {
-      "poor_scoring": 14891
+      "poor_scoring": 15057
     }
   }
 }

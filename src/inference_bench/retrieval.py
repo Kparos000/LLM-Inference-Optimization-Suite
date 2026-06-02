@@ -40,6 +40,90 @@ FINANCE_METRIC_TERMS = {
     "profit",
     "loss",
 }
+FINANCE_METRIC_SYNONYMS = {
+    "revenue": {"revenue", "sales", "net sales", "contract customer revenue"},
+    "sales": {"revenue", "sales", "net sales"},
+    "operating income": {"operating income", "operating profit", "income from operations"},
+    "operating profit": {"operating income", "operating profit", "income from operations"},
+    "net income": {"net income", "earnings", "profit"},
+    "earnings": {"net income", "earnings", "profit"},
+    "margin": {"margin", "gross margin", "operating margin"},
+    "gross margin": {"margin", "gross margin"},
+    "operating margin": {"margin", "operating margin"},
+    "capex": {"capex", "capital expenditure", "capital expenditures"},
+    "capital expenditure": {"capex", "capital expenditure", "capital expenditures"},
+    "cash flow": {
+        "cash flow",
+        "operating cash flow",
+        "free cash flow",
+        "cash provided by operations",
+    },
+    "operating cash flow": {"cash flow", "operating cash flow", "cash provided by operations"},
+    "free cash flow": {"cash flow", "free cash flow"},
+    "r&d": {"r&d", "research and development", "research development"},
+    "research and development": {"r&d", "research and development", "research development"},
+    "cloud": {"cloud", "azure", "aws", "google cloud"},
+    "azure": {"cloud", "azure", "microsoft cloud"},
+    "aws": {"cloud", "aws", "amazon web services"},
+    "google cloud": {"cloud", "google cloud", "alphabet cloud"},
+    "risk": {"risk", "risks", "risk factor", "risk factors"},
+    "segment": {"segment", "segments", "business segment"},
+    "guidance": {"guidance", "outlook", "forecast"},
+}
+FINANCE_COMPANY_ALIASES = {
+    "aapl": {"aapl", "apple", "apple inc"},
+    "apple": {"aapl", "apple", "apple inc"},
+    "msft": {"msft", "microsoft", "microsoft corporation", "azure"},
+    "microsoft": {"msft", "microsoft", "microsoft corporation", "azure"},
+    "nvda": {"nvda", "nvidia", "nvidia corporation"},
+    "nvidia": {"nvda", "nvidia", "nvidia corporation"},
+    "tsla": {"tsla", "tesla", "tesla inc"},
+    "tesla": {"tsla", "tesla", "tesla inc"},
+    "amzn": {"amzn", "amazon", "amazon com", "aws"},
+    "amazon": {"amzn", "amazon", "amazon com", "aws"},
+    "googl": {"googl", "alphabet", "google", "google cloud"},
+    "alphabet": {"googl", "alphabet", "google", "google cloud"},
+    "google": {"googl", "alphabet", "google", "google cloud"},
+}
+RESEARCH_AI_SYNONYMS = {
+    "inference": {"inference", "serving", "decoding", "generation"},
+    "long context": {"long context", "long-context", "extended context"},
+    "attention": {"attention", "kv cache", "key value cache"},
+    "rag": {"rag", "retrieval augmented generation", "retrieval-augmented generation"},
+    "agentic": {"agentic", "agent", "agents", "workflow"},
+    "workflow": {"workflow", "workflows", "agentic"},
+    "benchmark": {"benchmark", "evaluation", "eval"},
+}
+DIRECT_EVIDENCE_ID_PATTERNS = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"\b(?:airline|healthcare_admin|retail|finance|research_ai)_(?:kb|doc|section|policy|review|summary|chunk|text|corpus)_[A-Za-z0-9:_\-/\.]+",
+        r"\b(?:required|source)_(?:doc|evidence|chunk|paper|policy|parent|product)_ids?\b",
+        r"\bCA-POL-[A-Za-z0-9-]+\b",
+        r"\bMCH-[A-Za-z0-9-]+\b",
+        r"\b(?:sec|xbrl)://\S+",
+        r"\b\d{10}-\d{2}-\d{6}\b",
+    )
+]
+STRICT_DIRECT_HINT_TOKENS = {
+    "source_id",
+    "parent_id",
+    "document_id",
+    "filing_id",
+    "gold_evidence_ids",
+    "required_doc_ids",
+    "required_evidence_ids",
+    "required_chunk_ids",
+}
+
+
+@dataclass(frozen=True)
+class QueryEnrichmentResult:
+    """Normalized query text and audit details for strict retrieval ablations."""
+
+    query_text: str
+    enrichment_terms: tuple[str, ...]
+    blocked_direct_hint_count: int
 
 
 @dataclass(frozen=True)
@@ -92,6 +176,8 @@ class BoostFeatures:
 
     match_ids: set[str]
     metadata_tokens: set[str]
+    title_tokens: set[str]
+    text_tokens: set[str]
     ticker: str
     form_normalized: str
     company_tokens: set[str]
@@ -105,6 +191,85 @@ def tokenize(text: str) -> list[str]:
     """Tokenize text for local retrieval."""
 
     return [token.lower() for token in TOKEN_RE.findall(text)]
+
+
+def normalize_query_for_retrieval(text: str) -> str:
+    """Normalize punctuation and common forms without adding hidden evidence hints."""
+
+    normalized = text.replace("\\text", " ").replace("$", " ")
+    normalized = normalized.replace("R&D", "research and development")
+    normalized = normalized.replace("r&d", "research and development")
+    normalized = re.sub(r"\b10\s*[- ]\s*k\b", "10-k annual filing", normalized, flags=re.I)
+    normalized = re.sub(r"\b10\s*[- ]\s*q\b", "10-q quarterly filing", normalized, flags=re.I)
+    normalized = re.sub(r"\b8\s*[- ]\s*k\b", "8-k current report", normalized, flags=re.I)
+    normalized = re.sub(r"\bQ([1-4])\b", r"quarter \1 q\1", normalized, flags=re.I)
+    normalized = re.sub(r"\bfy\s*(20\d{2})\b", r"fiscal year \1", normalized, flags=re.I)
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.strip()
+
+
+def scrub_direct_evidence_identifiers(text: str) -> tuple[str, int]:
+    """Remove generated source/evidence IDs from strict retrieval query text."""
+
+    scrubbed = text
+    blocked_count = 0
+    for pattern in DIRECT_EVIDENCE_ID_PATTERNS:
+        scrubbed, count = pattern.subn(" ", scrubbed)
+        blocked_count += count
+    for token in STRICT_DIRECT_HINT_TOKENS:
+        if token in scrubbed:
+            blocked_count += scrubbed.count(token)
+            scrubbed = scrubbed.replace(token, " ")
+    scrubbed = re.sub(r"\s+", " ", scrubbed).strip()
+    return scrubbed, blocked_count
+
+
+def synonym_terms_for_query(text: str, vertical: str | None = None) -> set[str]:
+    """Return deterministic query expansion terms allowed by strict ablation policy."""
+
+    normalized = normalize_query_for_retrieval(text).lower()
+    terms: set[str] = set()
+    synonym_maps = [FINANCE_METRIC_SYNONYMS]
+    if vertical == "research_ai":
+        synonym_maps.append(RESEARCH_AI_SYNONYMS)
+    for synonym_map in synonym_maps:
+        for trigger, expansions in synonym_map.items():
+            if trigger in normalized:
+                terms.update(expansions)
+    for token in tokenize(normalized):
+        terms.update(FINANCE_COMPANY_ALIASES.get(token, set()))
+    if "latest quarter" in normalized or "most recent quarter" in normalized:
+        terms.update({"quarter", "quarterly", "10-q"})
+    if "annual" in normalized or "fiscal year" in normalized:
+        terms.update({"annual", "fiscal year", "10-k"})
+    year_terms = {token for token in tokenize(normalized) if re.fullmatch(r"20\d{2}", token)}
+    terms.update(year_terms)
+    return {term for term in terms if term}
+
+
+def enrich_query_text(
+    text: str,
+    *,
+    vertical: str | None = None,
+    allow_direct_identifiers: bool = False,
+) -> QueryEnrichmentResult:
+    """Build retrieval query text with allowed deterministic enrichment."""
+
+    blocked_count = 0
+    query_text = text
+    if not allow_direct_identifiers:
+        query_text, blocked_count = scrub_direct_evidence_identifiers(query_text)
+    normalized = normalize_query_for_retrieval(query_text)
+    enrichment_terms = tuple(sorted(synonym_terms_for_query(normalized, vertical)))
+    enriched = " ".join(
+        part for part in [query_text, normalized.lower(), " ".join(enrichment_terms)] if part
+    )
+    enriched = re.sub(r"\s+", " ", enriched).strip()
+    return QueryEnrichmentResult(
+        query_text=enriched,
+        enrichment_terms=enrichment_terms,
+        blocked_direct_hint_count=blocked_count,
+    )
 
 
 def split_identifier_text(value: str) -> str:
@@ -222,6 +387,8 @@ def build_boost_features(record: ContextRecord) -> BoostFeatures:
     return BoostFeatures(
         match_ids=context_match_ids(record),
         metadata_tokens=set(tokenize(metadata_text(record))),
+        title_tokens=set(tokenize(record.title)),
+        text_tokens=set(tokenize(record.text)),
         ticker=str(metadata.get("ticker") or "").lower(),
         form_normalized=normalize_identifier(str(metadata.get("form") or "")),
         company_tokens=set(tokenize(str(metadata.get("company_name") or ""))),
@@ -305,6 +472,90 @@ def finance_metadata_boost_score(
         boost += 0.35
 
     return boost
+
+
+def lexical_overlap_ratio(query_tokens: set[str], record_tokens: set[str]) -> float:
+    """Return overlap share from query to record tokens."""
+
+    if not query_tokens:
+        return 0.0
+    return len(query_tokens & record_tokens) / len(query_tokens)
+
+
+def rerank_boost_score(
+    query: str,
+    record: ContextRecord,
+    features: BoostFeatures | None = None,
+) -> float:
+    """Return deterministic post-fusion rerank boost for strict retrieval."""
+
+    query_tokens = set(tokenize(query))
+    query_normalized = normalize_identifier(query)
+    active_features = features or build_boost_features(record)
+    return rerank_boost_score_from_features(
+        query_tokens=query_tokens,
+        query_normalized=query_normalized,
+        record=record,
+        features=active_features,
+    )
+
+
+def rerank_boost_score_from_features(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    record: ContextRecord,
+    features: BoostFeatures,
+) -> float:
+    """Return deterministic rerank boost using precomputed query and record features."""
+
+    title_overlap = lexical_overlap_ratio(query_tokens, features.title_tokens)
+    metadata_overlap = lexical_overlap_ratio(query_tokens, features.metadata_tokens)
+    text_overlap = lexical_overlap_ratio(query_tokens, features.text_tokens)
+    boost = 0.35 * title_overlap + 0.2 * metadata_overlap + 0.1 * text_overlap
+    if record.vertical == "finance":
+        boost += finance_rerank_boost_score(
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            features=features,
+        )
+    elif record.vertical == "retail":
+        boost += min(0.5, 0.18 * len(query_tokens & features.title_tokens))
+    elif record.vertical == "research_ai":
+        section_overlap = features.section_tokens & query_tokens
+        boost += min(0.45, 0.18 * len(section_overlap))
+        if features.title_tokens & query_tokens:
+            boost += 0.25
+    return boost
+
+
+def finance_rerank_boost_score(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    features: BoostFeatures,
+) -> float:
+    """Return finance-specific deterministic reranking score."""
+
+    score = 0.0
+    if features.ticker and features.ticker in query_tokens:
+        score += 1.4
+    if features.form_normalized and features.form_normalized in query_normalized:
+        score += 0.9
+    if features.company_tokens:
+        score += 0.8 * lexical_overlap_ratio(query_tokens, features.company_tokens)
+    metric_terms = set()
+    for token in query_tokens:
+        metric_terms.update(tokenize(" ".join(FINANCE_METRIC_SYNONYMS.get(token, set()))))
+    metric_overlap = (query_tokens | metric_terms) & (
+        features.concept_tokens | features.record_metric_terms
+    )
+    score += min(1.6, 0.35 * len(metric_overlap))
+    if features.section_tokens & query_tokens:
+        score += 0.5
+    if any(len(token) >= 4 and token in query_tokens for token in features.date_tokens):
+        score += 0.45
+    return score
 
 
 def retrieval_record_payload(result: RetrievalResult) -> dict[str, Any]:
@@ -519,7 +770,7 @@ class HybridRetriever:
         """Retrieve top-k contexts with weighted score fusion."""
 
         started = time.perf_counter()
-        candidate_k = max(top_k * 10, 50)
+        candidate_k = max(top_k * 24, 120)
         lexical = self.lexical_retriever.retrieve(query, candidate_k)
         dense = self.dense_retriever.retrieve(query, candidate_k)
         lexical_scores = {
@@ -532,28 +783,58 @@ class HybridRetriever:
         }
         max_lexical = max(lexical_scores.values(), default=0.0)
         max_dense = max(dense_scores.values(), default=0.0)
+        query_tokens = set(tokenize(query))
+        query_normalized = normalize_identifier(query)
 
-        fused: list[tuple[str, float, float, float, float]] = []
+        fused: list[tuple[str, float, float, float, float, float]] = []
         for context_id in records_by_id:
             record = records_by_id[context_id]
             lexical_score = lexical_scores.get(context_id, 0.0)
             dense_score = dense_scores.get(context_id, 0.0)
             lexical_norm = lexical_score / max_lexical if max_lexical > 0 else 0.0
             dense_norm = dense_score / max_dense if max_dense > 0 else 0.0
-            metadata_boost = metadata_boost_score(
-                query,
-                record,
-                self.boost_features.get(context_id),
+            boost_features = self.boost_features.get(context_id)
+            active_boost_features = boost_features or build_boost_features(record)
+            metadata_boost = metadata_boost_score_from_features(
+                query_tokens=query_tokens,
+                query_normalized=query_normalized,
+                record=record,
+                features=active_boost_features,
+            )
+            rerank_boost = rerank_boost_score_from_features(
+                query_tokens=query_tokens,
+                query_normalized=query_normalized,
+                record=record,
+                features=active_boost_features,
             )
             fused_score = (
-                self.lexical_weight * lexical_norm + self.dense_weight * dense_norm + metadata_boost
+                self.lexical_weight * lexical_norm
+                + self.dense_weight * dense_norm
+                + metadata_boost
+                + rerank_boost
             )
-            fused.append((context_id, fused_score, lexical_score, dense_score, metadata_boost))
+            fused.append(
+                (
+                    context_id,
+                    fused_score,
+                    lexical_score,
+                    dense_score,
+                    metadata_boost,
+                    rerank_boost,
+                )
+            )
 
         ranked = sorted(fused, key=lambda item: (-item[1], item[0]))
         results: list[RetrievalResult] = []
         seen_texts: set[str] = set()
-        for context_id, fused_score, lexical_score, dense_score, metadata_boost in ranked:
+        for (
+            context_id,
+            fused_score,
+            lexical_score,
+            dense_score,
+            metadata_boost,
+            rerank_boost,
+        ) in ranked:
             if fused_score <= 0:
                 continue
             record = records_by_id[context_id]
@@ -573,6 +854,8 @@ class HybridRetriever:
                         "lexical_weight": self.lexical_weight,
                         "dense_weight": self.dense_weight,
                         "metadata_boost": metadata_boost,
+                        "rerank_boost": rerank_boost,
+                        "reranking_used": 1.0,
                     },
                 )
             )

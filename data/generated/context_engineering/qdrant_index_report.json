@@ -9,7 +9,8 @@
       "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
       "failed_record_ids": [],
       "indexed_chunks": 300,
-      "indexing_time_seconds": 18.625583,
+      "indexed_text_strategy": "title_text_selected_metadata_v2",
+      "indexing_time_seconds": 22.106008,
       "payload_fields_stored": [
         "context_record",
         "context_id",
@@ -20,6 +21,8 @@
         "chunk_strategy",
         "source_type",
         "title",
+        "indexed_text",
+        "indexed_text_strategy",
         "metadata"
       ],
       "skipped_records": 0,
@@ -34,7 +37,8 @@
       "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
       "failed_record_ids": [],
       "indexed_chunks": 1588,
-      "indexing_time_seconds": 109.920504,
+      "indexed_text_strategy": "title_text_selected_metadata_v2",
+      "indexing_time_seconds": 102.11596,
       "payload_fields_stored": [
         "context_record",
         "context_id",
@@ -45,6 +49,8 @@
         "chunk_strategy",
         "source_type",
         "title",
+        "indexed_text",
+        "indexed_text_strategy",
         "metadata"
       ],
       "skipped_records": 0,
@@ -59,7 +65,8 @@
       "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
       "failed_record_ids": [],
       "indexed_chunks": 300,
-      "indexing_time_seconds": 16.439074,
+      "indexed_text_strategy": "title_text_selected_metadata_v2",
+      "indexing_time_seconds": 19.679841,
       "payload_fields_stored": [
         "context_record",
         "context_id",
@@ -70,6 +77,8 @@
         "chunk_strategy",
         "source_type",
         "title",
+        "indexed_text",
+        "indexed_text_strategy",
         "metadata"
       ],
       "skipped_records": 0,
@@ -84,7 +93,8 @@
       "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
       "failed_record_ids": [],
       "indexed_chunks": 1726,
-      "indexing_time_seconds": 112.671715,
+      "indexed_text_strategy": "title_text_selected_metadata_v2",
+      "indexing_time_seconds": 122.333198,
       "payload_fields_stored": [
         "context_record",
         "context_id",
@@ -95,6 +105,8 @@
         "chunk_strategy",
         "source_type",
         "title",
+        "indexed_text",
+        "indexed_text_strategy",
         "metadata"
       ],
       "skipped_records": 0,
@@ -109,7 +121,8 @@
       "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
       "failed_record_ids": [],
       "indexed_chunks": 1013,
-      "indexing_time_seconds": 67.788078,
+      "indexed_text_strategy": "title_text_selected_metadata_v2",
+      "indexing_time_seconds": 64.934708,
       "payload_fields_stored": [
         "context_record",
         "context_id",
@@ -120,6 +133,8 @@
         "chunk_strategy",
         "source_type",
         "title",
+        "indexed_text",
+        "indexed_text_strategy",
         "metadata"
       ],
       "skipped_records": 0,
@@ -131,7 +146,8 @@
   "embedding_backend_configured": "sentence_transformers",
   "embedding_backend_effective": "sentence_transformers",
   "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
-  "generated_at_utc": "2026-06-01T21:49:41.301240+00:00",
+  "generated_at_utc": "2026-06-02T02:17:23.971307+00:00",
+  "indexed_text_strategy": "title_text_selected_metadata_v2",
   "mode": "local",
   "no_external_api_calls_triggered": true,
   "no_gpu_work_triggered": true,

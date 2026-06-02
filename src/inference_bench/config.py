@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, cast
 
@@ -312,6 +313,13 @@ def load_memory_modes_config(
     path: str | Path = DEFAULT_MEMORY_MODES_PATH,
 ) -> dict[str, MemoryModeConfig]:
     """Load Phase 3 memory-mode configurations from YAML."""
+
+    return dict(_load_memory_modes_config_cached(str(path)))
+
+
+@lru_cache(maxsize=8)
+def _load_memory_modes_config_cached(path: str) -> dict[str, MemoryModeConfig]:
+    """Load and cache Phase 3 memory-mode configurations from YAML."""
 
     memory_modes: dict[str, MemoryModeConfig] = {}
     for key, value in _load_config_mapping(path).items():

@@ -21,6 +21,7 @@ from typing import Any, Protocol, cast
 from inference_bench.config import VectorStoreConfig, resolve_vector_store
 from inference_bench.context_corpora import VERTICALS, read_jsonl
 from inference_bench.context_schema import ContextRecord
+from inference_bench.retrieval import normalize_query_for_retrieval, split_identifier_text
 
 QDRANT_BUILD_COMMAND = (
     "python scripts/phase3/build_qdrant_index.py --context-root "
@@ -246,6 +247,8 @@ def context_payload(record: ContextRecord) -> dict[str, Any]:
         "chunk_strategy": record.chunk_strategy,
         "source_type": record.source_type,
         "title": record.title,
+        "indexed_text": vector_text(record),
+        "indexed_text_strategy": "title_text_selected_metadata_v2",
         "metadata": record.metadata,
     }
 
@@ -253,15 +256,47 @@ def context_payload(record: ContextRecord) -> dict[str, Any]:
 def vector_text(record: ContextRecord) -> str:
     """Return the text embedded into Qdrant."""
 
-    metadata_values = " ".join(str(value) for value in flatten_metadata(record.metadata))
+    metadata = record.metadata
+    selected_metadata_keys = (
+        "ticker",
+        "company_name",
+        "company",
+        "form",
+        "filing_date",
+        "report_date",
+        "period",
+        "fiscal_year",
+        "concept",
+        "concepts",
+        "section_type",
+        "section_title",
+        "category",
+        "product_title",
+        "rating",
+        "paper_id",
+        "title",
+        "topic",
+        "topics",
+        "evidence_type",
+    )
+    selected_metadata_values = [
+        str(metadata[key]) for key in selected_metadata_keys if metadata.get(key) is not None
+    ]
+    metadata_values = " ".join(str(value) for value in flatten_metadata(metadata))
     return " ".join(
         part
         for part in (
+            f"title: {record.title}",
+            f"vertical: {record.vertical}",
+            f"source type: {record.source_type}",
+            f"chunk strategy: {record.chunk_strategy}",
+            f"selected metadata: {' '.join(selected_metadata_values)}",
+            split_identifier_text(" ".join(selected_metadata_values)),
             record.title,
             record.source_type,
             record.chunk_strategy,
             metadata_values,
-            record.text,
+            f"text: {record.text}",
         )
         if part
     )
@@ -287,6 +322,30 @@ def batched(records: list[ContextRecord], batch_size: int) -> Iterable[list[Cont
 
     for start in range(0, len(records), batch_size):
         yield records[start : start + batch_size]
+
+
+def batched_strings(values: list[str], batch_size: int) -> Iterable[list[str]]:
+    """Yield strings in fixed-size batches."""
+
+    for start in range(0, len(values), batch_size):
+        yield values[start : start + batch_size]
+
+
+def compact_query_for_vector(query: str, max_terms: int = 160) -> str:
+    """Return a compact query string for vector embedding."""
+
+    normalized = normalize_query_for_retrieval(query).lower()
+    compact_terms: list[str] = []
+    term_counts: dict[str, int] = {}
+    for term in normalized.split():
+        count = term_counts.get(term, 0)
+        if count >= 2:
+            continue
+        compact_terms.append(term)
+        term_counts[term] = count + 1
+        if len(compact_terms) >= max_terms:
+            break
+    return " ".join(compact_terms)
 
 
 def build_qdrant_index(
@@ -316,6 +375,8 @@ def build_qdrant_index(
         "chunk_strategy",
         "source_type",
         "title",
+        "indexed_text",
+        "indexed_text_strategy",
         "metadata",
     ]
 
@@ -363,6 +424,7 @@ def build_qdrant_index(
                 "vector_dimension": embedding_provider.dimension,
                 "distance": config.distance,
                 "payload_fields_stored": payload_fields,
+                "indexed_text_strategy": "title_text_selected_metadata_v2",
                 "indexing_time_seconds": round(elapsed, 6),
                 "skipped_records": len(failed_records),
                 "failed_record_ids": failed_records[:25],
@@ -387,6 +449,7 @@ def build_qdrant_index(
         "embedding_model": embedding_provider.model_name,
         "vector_dimension": embedding_provider.dimension,
         "distance": config.distance,
+        "indexed_text_strategy": "title_text_selected_metadata_v2",
         "collections": collections,
     }
     output_path = Path(output_root)
@@ -404,6 +467,7 @@ def build_qdrant_index(
             "vector_dimension",
             "distance",
             "payload_fields_stored",
+            "indexed_text_strategy",
             "indexing_time_seconds",
             "skipped_records",
             "failed_record_ids",
@@ -424,15 +488,19 @@ class QdrantVectorSearcher:
         vertical: str,
         embedding_provider: EmbeddingProvider | None = None,
         client: Any | None = None,
+        records_by_id: dict[str, ContextRecord] | None = None,
     ) -> None:
         self.config = config
         self.vertical = vertical
         self.collection_name = qdrant_collection_name(config, vertical)
         self.embedding_provider = embedding_provider or build_embedding_provider(config)
         self.client = client or build_qdrant_client(config)
+        self.records_by_id = records_by_id or {}
         self._owns_client = client is None
         self._embedding_cache: dict[str, list[float]] = {}
         self._search_cache: dict[str, list[VectorSearchResult]] = {}
+        self._snapshot_matrix: Any | None = None
+        self._snapshot_records: list[ContextRecord] = []
         if not self.client.collection_exists(self.collection_name):
             if self._owns_client:
                 self.client.close()
@@ -451,15 +519,21 @@ class QdrantVectorSearcher:
     def retrieve(self, query: str, top_k: int) -> list[VectorSearchResult]:
         """Return top-k vector results for one query."""
 
-        cached = self._search_cache.get(query)
+        normalized_query = compact_query_for_vector(query)
+        cached = self._search_cache.get(normalized_query)
         if cached is not None and len(cached) >= top_k:
             return cached[:top_k]
 
-        query_vector = self._embedding_cache.get(query)
+        if self._snapshot_matrix is not None:
+            results = self._retrieve_from_snapshot(normalized_query, top_k)
+            self._search_cache[normalized_query] = results
+            return results[:top_k]
+
+        query_vector = self._embedding_cache.get(normalized_query)
         if query_vector is None:
-            query_vector = self.embedding_provider.encode([query])[0]
-            self._embedding_cache[query] = query_vector
-        limit = max(top_k, 50)
+            query_vector = self.embedding_provider.encode([normalized_query])[0]
+            self._embedding_cache[normalized_query] = query_vector
+        limit = max(top_k, 120)
         response = self.client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
@@ -467,9 +541,25 @@ class QdrantVectorSearcher:
             with_payload=True,
             with_vectors=False,
         )
+        results = self._points_to_results(response.points)
+        self._search_cache[normalized_query] = results
+        return results[:top_k]
+
+    def _points_to_results(self, points: list[Any]) -> list[VectorSearchResult]:
+        """Convert Qdrant points to vector search results."""
+
         results: list[VectorSearchResult] = []
-        for point in response.points:
+        for point in points:
             payload = point.payload or {}
+            context_id = str(payload.get("context_id") or "")
+            if context_id in self.records_by_id:
+                results.append(
+                    VectorSearchResult(
+                        context_record=self.records_by_id[context_id],
+                        score=float(point.score),
+                    )
+                )
+                continue
             context_payload_value = payload.get("context_record")
             if not isinstance(context_payload_value, dict):
                 continue
@@ -479,5 +569,183 @@ class QdrantVectorSearcher:
                     score=float(point.score),
                 )
             )
-        self._search_cache[query] = results
-        return results[:top_k]
+        return results
+
+    def warm_query_embeddings(self, queries: list[str]) -> None:
+        """Batch-encode query embeddings before a large workload build."""
+
+        normalized_queries = sorted(
+            {
+                compact_query_for_vector(query)
+                for query in queries
+                if compact_query_for_vector(query)
+            }
+        )
+        missing = [query for query in normalized_queries if query not in self._embedding_cache]
+        for batch in batched_strings(missing, self.config.batch_size):
+            vectors = self.embedding_provider.encode(batch)
+            for query, vector in zip(batch, vectors, strict=True):
+                self._embedding_cache[query] = vector
+
+    def load_vector_snapshot(self) -> None:
+        """Load Qdrant collection vectors into memory for high-volume local scoring."""
+
+        if self._snapshot_matrix is not None:
+            return
+        import numpy as np
+
+        vectors: list[list[float]] = []
+        records: list[ContextRecord] = []
+        offset: Any | None = None
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=512,
+                offset=offset,
+                with_payload=True,
+                with_vectors=True,
+            )
+            for point in points:
+                vector = point.vector
+                if not isinstance(vector, list):
+                    continue
+                payload = point.payload or {}
+                context_id = str(payload.get("context_id") or "")
+                if context_id in self.records_by_id:
+                    record = self.records_by_id[context_id]
+                else:
+                    context_payload_value = payload.get("context_record")
+                    if not isinstance(context_payload_value, dict):
+                        continue
+                    record = ContextRecord(**context_payload_value)
+                vectors.append([float(value) for value in vector])
+                records.append(record)
+            if offset is None:
+                break
+        self._snapshot_matrix = np.asarray(vectors, dtype="float32")
+        self._snapshot_records = records
+
+    def _retrieve_from_snapshot(
+        self,
+        normalized_query: str,
+        top_k: int,
+    ) -> list[VectorSearchResult]:
+        """Score a normalized query against the in-memory Qdrant vector snapshot."""
+
+        import numpy as np
+
+        if self._snapshot_matrix is None or len(self._snapshot_records) == 0:
+            return []
+        query_vector = self._embedding_cache.get(normalized_query)
+        if query_vector is None:
+            query_vector = self.embedding_provider.encode([normalized_query])[0]
+            self._embedding_cache[normalized_query] = query_vector
+        query_array = np.asarray(query_vector, dtype="float32")
+        scores = self._snapshot_matrix @ query_array
+        limit = min(max(top_k, 120), len(scores))
+        if limit <= 0:
+            return []
+        candidate_indices = np.argpartition(-scores, limit - 1)[:limit]
+        ranked_indices = sorted(
+            candidate_indices,
+            key=lambda index: (
+                -float(scores[index]),
+                self._snapshot_records[int(index)].context_id,
+            ),
+        )
+        return [
+            VectorSearchResult(
+                context_record=self._snapshot_records[int(index)],
+                score=float(scores[index]),
+            )
+            for index in ranked_indices
+            if float(scores[index]) > 0
+        ]
+
+    def warm_search_results(self, queries: list[str], top_k: int = 120) -> None:
+        """Batch-populate vector search results for large workload builds."""
+
+        self.warm_query_embeddings(queries)
+        normalized_queries = sorted(
+            {
+                compact_query_for_vector(query)
+                for query in queries
+                if compact_query_for_vector(query)
+            }
+        )
+        missing = [
+            query
+            for query in normalized_queries
+            if query not in self._search_cache or len(self._search_cache[query]) < top_k
+        ]
+        if not missing:
+            return
+
+        from qdrant_client import models
+
+        limit = max(top_k, 120)
+        for batch in batched_strings(missing, max(1, min(self.config.batch_size, 32))):
+            requests = [
+                models.QueryRequest(
+                    query=self._embedding_cache[query],
+                    limit=limit,
+                    with_payload=True,
+                    with_vector=False,
+                )
+                for query in batch
+            ]
+            responses = self.client.query_batch_points(
+                collection_name=self.collection_name,
+                requests=requests,
+            )
+            for query, response in zip(batch, responses, strict=True):
+                self._search_cache[query] = self._points_to_results(response.points)
+
+    def warm_snapshot_search_results(self, queries: list[str], top_k: int = 120) -> None:
+        """Batch-populate search results from the in-memory Qdrant vector snapshot."""
+
+        self.load_vector_snapshot()
+        self.warm_query_embeddings(queries)
+        if self._snapshot_matrix is None or len(self._snapshot_records) == 0:
+            return
+        import numpy as np
+
+        normalized_queries = sorted(
+            {
+                compact_query_for_vector(query)
+                for query in queries
+                if compact_query_for_vector(query)
+            }
+        )
+        missing = [
+            query
+            for query in normalized_queries
+            if query not in self._search_cache or len(self._search_cache[query]) < top_k
+        ]
+        limit = min(max(top_k, 120), len(self._snapshot_records))
+        if not missing or limit <= 0:
+            return
+        for batch in batched_strings(missing, max(1, min(self.config.batch_size, 128))):
+            query_matrix = np.asarray(
+                [self._embedding_cache[query] for query in batch],
+                dtype="float32",
+            )
+            scores_matrix = query_matrix @ self._snapshot_matrix.T
+            candidate_indices = np.argpartition(-scores_matrix, limit - 1, axis=1)[:, :limit]
+            for query_index, query in enumerate(batch):
+                scores = scores_matrix[query_index]
+                ranked_indices = sorted(
+                    candidate_indices[query_index],
+                    key=lambda index: (
+                        -float(scores[index]),
+                        self._snapshot_records[int(index)].context_id,
+                    ),
+                )
+                self._search_cache[query] = [
+                    VectorSearchResult(
+                        context_record=self._snapshot_records[int(index)],
+                        score=float(scores[index]),
+                    )
+                    for index in ranked_indices
+                    if float(scores[index]) > 0
+                ]

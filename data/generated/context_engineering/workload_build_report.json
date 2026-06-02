@@ -466,7 +466,7 @@
   "context_root": "data/generated/context_engineering",
   "dataset_root": "data/scaleup_2000_full",
   "dense_backend_requested": "qdrant_vector",
-  "generated_at_utc": "2026-06-01T21:50:28.044019+00:00",
+  "generated_at_utc": "2026-06-02T05:55:32.219128+00:00",
   "memory_modes": [
     "mm0_no_context",
     "mm1_dense_top5",
@@ -475,6 +475,13 @@
   ],
   "no_model_inference_triggered": true,
   "output_root": "data/workloads",
+  "qdrant_query_embedding_warmup": {
+    "airline": 6000,
+    "finance": 2761,
+    "healthcare_admin": 1134,
+    "research_ai": 2525,
+    "retail": 4180
+  },
   "splits": [
     "smoke_500",
     "controlled_2000",

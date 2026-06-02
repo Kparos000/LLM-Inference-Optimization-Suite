@@ -15,7 +15,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, cast
 
-from inference_bench.config import load_memory_modes_config, resolve_memory_mode
+from inference_bench.config import load_memory_modes_config
 from inference_bench.context_corpora import VERTICALS, benchmark_paths, read_jsonl
 from inference_bench.context_schema import ContextRecord, WorkloadRecord
 from inference_bench.retrieval import (
@@ -26,6 +26,7 @@ from inference_bench.retrieval import (
     RetrievalResult,
     TimedRetrieval,
     compress_retrieval_results,
+    enrich_query_text,
     evaluate_retrieval_results,
     retrieval_record_payload,
 )
@@ -83,6 +84,10 @@ class QueryBuildResult:
     uses_metadata: bool
     uses_source_hints: bool
     uses_gold_ids: bool = False
+    query_enrichment_used: bool = True
+    leakage_guard_applied: bool = True
+    blocked_direct_hint_count: int = 0
+    enrichment_terms: tuple[str, ...] = ()
 
 
 def utc_now() -> str:
@@ -204,6 +209,7 @@ def prompt_query_text(
 
     validate_ablation_mode(ablation_mode)
     metadata = prompt.get("metadata") if isinstance(prompt.get("metadata"), dict) else {}
+    vertical = str(prompt.get("vertical") or "")
     parts: list[str] = []
 
     def append_value(value: Any, repeat: int = 1) -> None:
@@ -221,11 +227,18 @@ def prompt_query_text(
     uses_source_hints = ablation_mode == "prompt_plus_source_hints"
 
     if not uses_metadata:
+        enriched = enrich_query_text(
+            " ".join(parts),
+            vertical=vertical,
+            allow_direct_identifiers=False,
+        )
         return QueryBuildResult(
-            query_text=" ".join(parts),
+            query_text=enriched.query_text,
             ablation_mode=ablation_mode,
             uses_metadata=False,
             uses_source_hints=False,
+            blocked_direct_hint_count=enriched.blocked_direct_hint_count,
+            enrichment_terms=enriched.enrichment_terms,
         )
 
     for field_name in (
@@ -252,7 +265,9 @@ def prompt_query_text(
     ):
         append_value(metadata.get(metadata_field), repeat=2)
 
+    allow_direct_identifiers = False
     if uses_source_hints:
+        allow_direct_identifiers = True
         for hint_field in (
             "required_doc_ids",
             "required_evidence_ids",
@@ -271,11 +286,19 @@ def prompt_query_text(
         ):
             append_value(metadata.get(metadata_field), repeat=2)
 
+    enriched = enrich_query_text(
+        " ".join(parts),
+        vertical=vertical,
+        allow_direct_identifiers=allow_direct_identifiers,
+    )
     return QueryBuildResult(
-        query_text=" ".join(parts),
+        query_text=enriched.query_text,
         ablation_mode=ablation_mode,
         uses_metadata=uses_metadata,
         uses_source_hints=uses_source_hints,
+        leakage_guard_applied=not allow_direct_identifiers,
+        blocked_direct_hint_count=enriched.blocked_direct_hint_count,
+        enrichment_terms=enriched.enrichment_terms,
     )
 
 
@@ -428,6 +451,7 @@ def build_retrievers(
                     vertical=vertical,
                     embedding_provider=qdrant_embedding_provider,
                     client=qdrant_client,
+                    records_by_id={record.context_id: record for record in records},
                 )
                 qdrant_searchers[vertical] = searcher
                 dense = QdrantDenseRetriever(searcher)
@@ -459,6 +483,41 @@ def close_retrievers(retrievers: dict[str, dict[str, Any]]) -> None:
     qdrant_client = qdrant_client_payload.get("client") if qdrant_client_payload else None
     if qdrant_client is not None:
         qdrant_client.close()
+
+
+def warm_qdrant_query_embeddings(
+    *,
+    retrievers: dict[str, dict[str, Any]],
+    prompts_by_vertical: dict[str, list[dict[str, Any]]],
+    splits: list[str],
+    ablation_modes: list[str],
+    split_plan: SplitPlan,
+) -> dict[str, int]:
+    """Batch-encode Qdrant query embeddings before large workload generation."""
+
+    qdrant_searchers = retrievers.get("_qdrant_searchers", {})
+    if not qdrant_searchers:
+        return {}
+
+    queries_by_vertical: dict[str, set[str]] = {vertical: set() for vertical in VERTICALS}
+    for split in splits:
+        for prompt in select_prompts_for_split(prompts_by_vertical, split, split_plan):
+            vertical = str(prompt.get("vertical") or "")
+            if vertical not in queries_by_vertical:
+                continue
+            for ablation_mode in ablation_modes:
+                queries_by_vertical[vertical].add(
+                    prompt_query_text(prompt, ablation_mode).query_text
+                )
+
+    warmed_counts: dict[str, int] = {}
+    for vertical, queries in queries_by_vertical.items():
+        searcher = qdrant_searchers.get(vertical)
+        if searcher is None:
+            continue
+        cast(Any, searcher).warm_snapshot_search_results(sorted(queries), top_k=120)
+        warmed_counts[vertical] = len(queries)
+    return warmed_counts
 
 
 def no_context_retrieval() -> TimedRetrieval:
@@ -562,6 +621,11 @@ def retrieval_metadata_payload(
         "source_hints_used": query_build.uses_source_hints,
         "metadata_used": query_build.uses_metadata,
         "gold_ids_used_in_query": query_build.uses_gold_ids,
+        "query_enrichment_used": query_build.query_enrichment_used,
+        "leakage_guard_applied": query_build.leakage_guard_applied,
+        "blocked_direct_hint_count": query_build.blocked_direct_hint_count,
+        "enrichment_terms": list(query_build.enrichment_terms),
+        "reranking_used": retrieval.retrieval_type == "hybrid",
         "retrieval_latency_ms": round(retrieval.latency_ms, 6),
         "configured_top_k": configured_top_k,
         "retrieved_count": len(retrieval.results),
@@ -591,11 +655,12 @@ def build_one_workload_record(
     memory_mode: str,
     ablation_mode: str,
     retrievers: dict[str, dict[str, Any]],
+    mode_configs: dict[str, Any],
     retrieval_cache: dict[tuple[str, str, str, int], TimedRetrieval] | None = None,
 ) -> tuple[WorkloadRecord, dict[str, Any]]:
     """Build one workload record and its evaluation row."""
 
-    mode_config = resolve_memory_mode(memory_mode)
+    mode_config = mode_configs[memory_mode]
     vertical = str(prompt.get("vertical") or "")
     prompt_id = str(prompt.get("prompt_id") or "")
     query_build = prompt_query_text(prompt, ablation_mode)
@@ -701,6 +766,11 @@ def build_one_workload_record(
         "source_hints_used": query_build.uses_source_hints,
         "metadata_used": query_build.uses_metadata,
         "gold_ids_used_in_query": query_build.uses_gold_ids,
+        "query_enrichment_used": query_build.query_enrichment_used,
+        "leakage_guard_applied": query_build.leakage_guard_applied,
+        "blocked_direct_hint_count": query_build.blocked_direct_hint_count,
+        "enrichment_terms": list(query_build.enrichment_terms),
+        "reranking_used": retrieval.retrieval_type == "hybrid",
         "compression_ratio": compression_metadata["compression_ratio"]
         if compression_metadata
         else None,
@@ -749,6 +819,11 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "token_reduction_pct": None,
             "recall_loss": None,
             "token_reduction": 0,
+            "query_enrichment_used": False,
+            "reranking_used": False,
+            "source_hints_used": False,
+            "leakage_guard_applied": False,
+            "blocked_direct_hint_count": 0,
         }
     distinct_context_ids: set[str] = set()
     compression_values = [
@@ -790,6 +865,13 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         else None,
         "recall_loss": round(mean(recall_loss_values), 6) if recall_loss_values else None,
         "token_reduction": sum(int(row["token_reduction"]) for row in rows),
+        "query_enrichment_used": any(bool(row.get("query_enrichment_used")) for row in rows),
+        "reranking_used": any(bool(row.get("reranking_used")) for row in rows),
+        "source_hints_used": any(bool(row.get("source_hints_used")) for row in rows),
+        "leakage_guard_applied": any(bool(row.get("leakage_guard_applied")) for row in rows),
+        "blocked_direct_hint_count": sum(
+            int(row.get("blocked_direct_hint_count") or 0) for row in rows
+        ),
     }
 
 
@@ -870,6 +952,8 @@ def build_evaluation_report(
     )
     vector_stores = sorted({str(row["vector_store"]) for row in evaluation_rows})
     ablation_modes = sorted({str(row["ablation_mode"]) for row in evaluation_rows})
+    query_enrichment_used = any(bool(row.get("query_enrichment_used")) for row in evaluation_rows)
+    reranking_used = any(bool(row.get("reranking_used")) for row in evaluation_rows)
 
     return (
         {
@@ -881,6 +965,9 @@ def build_evaluation_report(
             "ablation_modes": ablation_modes,
             "qdrant_used": "qdrant_vector" in dense_statuses or "qdrant_vector" in hybrid_statuses,
             "source_hint_modes_are_hint_assisted": ["prompt_plus_source_hints"],
+            "query_enrichment_used": query_enrichment_used,
+            "reranking_used": reranking_used,
+            "strict_modes_block_direct_source_hints": True,
             "by_split": by_split,
             "overall_by_split_ablation_mode": overall_by_split_ablation_mode,
             "overall_by_split_mode": overall_by_split_mode,
@@ -964,7 +1051,7 @@ def build_retrieval_diagnostic_report(
             reason_counts_by_vertical[vertical].update(reasons)
         if (
             split == "final_10000"
-            and ablation_mode == "prompt_plus_source_hints"
+            and ablation_mode in {"prompt_text_only", "prompt_plus_metadata"}
             and memory_mode == "mm2_hybrid_top5"
             and vertical == "finance"
             and float(row["recall_at_5"]) < 1.0
@@ -980,6 +1067,9 @@ def build_retrieval_diagnostic_report(
                     "matched_gold_evidence_ids": row.get("matched_gold_evidence_ids", []),
                     "retrieved_context_ids": row.get("retrieved_context_ids", []),
                     "failure_reasons": reasons,
+                    "query_enrichment_used": row.get("query_enrichment_used"),
+                    "reranking_used": row.get("reranking_used"),
+                    "source_hints_used": row.get("source_hints_used"),
                     "query_excerpt": str(row.get("query_text") or "")[:500],
                 }
             )
@@ -1035,6 +1125,11 @@ def build_retrieval_diagnostic_report(
                 "recall_at_5": payload["recall_at_5"],
                 "mrr": payload["mrr"],
                 "failure_count": payload["failure_count"],
+                "query_enrichment_used": any(
+                    bool(row.get("query_enrichment_used")) for row in rows
+                ),
+                "reranking_used": any(bool(row.get("reranking_used")) for row in rows),
+                "source_hints_used": any(bool(row.get("source_hints_used")) for row in rows),
                 "top_failure_reasons": json.dumps(payload["top_failure_reasons"], sort_keys=True),
             }
         )
@@ -1055,10 +1150,40 @@ def build_retrieval_diagnostic_report(
         ),
         "query_logic": (
             "Retrieval query text is built according to ablation mode. prompt_text_only uses "
-            "only user-visible prompt text; prompt_plus_metadata adds realistic prompt metadata; "
-            "prompt_plus_source_hints is explicitly hint-assisted. Gold/eval rows are not used "
-            "for retrieval."
+            "only user-visible prompt text after generated evidence IDs are scrubbed; "
+            "prompt_plus_metadata adds realistic prompt metadata but still blocks direct source "
+            "identifiers; prompt_plus_source_hints is explicitly hint-assisted. Gold/eval rows "
+            "are not used for retrieval."
         ),
+        "strict_leakage_guard": {
+            "prompt_text_only_blocks_direct_evidence_ids": True,
+            "prompt_plus_metadata_blocks_direct_source_ids": True,
+            "source_hint_mode_is_assisted_upper_bound": True,
+        },
+        "query_enrichment": {
+            "enabled": True,
+            "allowed_sources": [
+                "visible prompt text",
+                "realistic prompt metadata for prompt_plus_metadata",
+            ],
+            "blocked_sources": [
+                "gold evidence IDs",
+                "direct source IDs",
+                "direct parent IDs",
+                "answer-side evidence hints",
+            ],
+        },
+        "reranking": {
+            "enabled_for_hybrid": True,
+            "signals": [
+                "lexical overlap",
+                "metadata overlap",
+                "finance ticker/company/form/metric/period matches",
+                "section/title matches",
+                "BM25 score",
+                "Qdrant score",
+            ],
+        },
         "dense_status": ",".join(dense_statuses) or "unavailable",
         "ablation_modes": sorted(
             {str(row.get("ablation_mode") or "prompt_plus_source_hints") for row in evaluation_rows}
@@ -1074,10 +1199,8 @@ def build_retrieval_diagnostic_report(
                 "ticker",
                 "company",
                 "filing_form",
-                "required_doc_ids",
-                "required_evidence_ids",
-                "required_chunk_ids",
             ],
+            "strict_modes_block_direct_source_hints": True,
             "failure_reason_labels": [
                 "missing_gold_mapping",
                 "bad_query_terms",
@@ -1278,6 +1401,11 @@ def write_workload_reports(
             "total_context_rows_selected",
             "distinct_context_rows_used",
             "retrieval_backend_label",
+            "source_hints_used",
+            "query_enrichment_used",
+            "reranking_used",
+            "leakage_guard_applied",
+            "blocked_direct_hint_count",
             "compression_ratio",
             "token_reduction_pct",
             "recall_loss",
@@ -1296,6 +1424,9 @@ def write_workload_reports(
             "recall_at_5",
             "mrr",
             "failure_count",
+            "query_enrichment_used",
+            "reranking_used",
+            "source_hints_used",
             "top_failure_reasons",
         ],
     )
@@ -1373,6 +1504,18 @@ def build_memory_mode_workloads(
         vector_store_key=vector_store_key,
         allow_dense_fallback=allow_dense_fallback,
     )
+    qdrant_query_embedding_warmup = {}
+    if dense_backend == "qdrant_vector" and any(
+        mode in {"mm1_dense_top5", "mm2_hybrid_top5", "mm3_compressed_hybrid_top5"}
+        for mode in memory_modes
+    ):
+        qdrant_query_embedding_warmup = warm_qdrant_query_embeddings(
+            retrievers=retrievers,
+            prompts_by_vertical=prompts_by_vertical,
+            splits=splits,
+            ablation_modes=active_ablation_modes,
+            split_plan=active_split_plan,
+        )
     output_path = Path(output_root)
     report_root = Path(context_root)
     workload_report: dict[str, Any] = {
@@ -1385,6 +1528,7 @@ def build_memory_mode_workloads(
         "vector_store": vector_store_key if dense_backend == "qdrant_vector" else "none",
         "ablation_modes": active_ablation_modes,
         "splits": splits,
+        "qdrant_query_embedding_warmup": qdrant_query_embedding_warmup,
         "no_model_inference_triggered": True,
         "all_workload_records_validated": True,
         "by_split": {},
@@ -1424,6 +1568,7 @@ def build_memory_mode_workloads(
                                 memory_mode=memory_mode,
                                 ablation_mode=ablation_mode,
                                 retrievers=retrievers,
+                                mode_configs=configured_modes,
                                 retrieval_cache=retrieval_cache,
                             )
                             write_workload_jsonl_line(file, workload_record)
