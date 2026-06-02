@@ -1,0 +1,4 @@
+pricing_source_url: "https://router.huggingface.co/v1/models"
+snapshot_timestamp_utc: null
+notes: "Run scripts/phase3/snapshot_hf_inference_pricing.py to populate live Hugging Face Inference Provider pricing. Do not hard-code fake prices."
+models: {}

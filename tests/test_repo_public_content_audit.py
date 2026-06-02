@@ -1,5 +1,6 @@
 import importlib.util
 import re
+import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -58,10 +59,18 @@ def _repo_text_files() -> list[Path]:
         ".txt",
     }
     text_names = {".gitignore", ".env.example"}
+    result = subprocess.run(
+        ["git", "ls-files", "-z"],
+        check=True,
+        capture_output=True,
+        text=False,
+    )
+
     files: list[Path] = []
-    for path in Path(".").rglob("*"):
-        if not path.is_file():
+    for raw_path in result.stdout.split(b"\0"):
+        if not raw_path:
             continue
+        path = Path(raw_path.decode("utf-8"))
         if any(part in excluded_parts for part in path.parts):
             if not path.as_posix().startswith("results/samples/"):
                 continue

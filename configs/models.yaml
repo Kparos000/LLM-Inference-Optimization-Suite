@@ -4,6 +4,15 @@ qwen2_5_0_5b_instruct:
   model_id: "Qwen/Qwen2.5-0.5B-Instruct"
   parameter_count: 500000000
   default_dtype: "auto"
+  execution_target: "local_or_self_hosted"
+  allowed_backends:
+    - "huggingface"
+    - "vllm_optional"
+    - "sglang_optional"
+  access_type: "open"
+  requires_hf_token: false
+  requires_license_acceptance: false
+  intended_role: "local_smoke_model"
   notes: "Default lightweight development model for local smoke tests."
 
 qwen2_5_1_5b_instruct:
@@ -12,6 +21,15 @@ qwen2_5_1_5b_instruct:
   model_id: "Qwen/Qwen2.5-1.5B-Instruct"
   parameter_count: 1500000000
   default_dtype: "auto"
+  execution_target: "local_or_self_hosted"
+  allowed_backends:
+    - "huggingface"
+    - "vllm_optional"
+    - "sglang_optional"
+  access_type: "open"
+  requires_hf_token: false
+  requires_license_acceptance: false
+  intended_role: "small_baseline_model"
   notes: "Candidate small benchmark model after smoke tests."
 
 qwen2_5_7b_instruct:
@@ -20,6 +38,15 @@ qwen2_5_7b_instruct:
   model_id: "Qwen/Qwen2.5-7B-Instruct"
   parameter_count: 7000000000
   default_dtype: "auto"
+  execution_target: "self_hosted_gpu"
+  allowed_backends:
+    - "vllm"
+    - "sglang_optional"
+    - "huggingface_optional"
+  access_type: "open"
+  requires_hf_token: false
+  requires_license_acceptance: false
+  intended_role: "first_serious_gpu_model"
   notes: "Inactive placeholder for future model-scale benchmark comparison."
 
 qwen2_5_32b_instruct:
@@ -28,14 +55,63 @@ qwen2_5_32b_instruct:
   model_id: "Qwen/Qwen2.5-32B-Instruct"
   parameter_count: 32000000000
   default_dtype: "auto"
+  execution_target: "self_hosted_gpu_later"
+  allowed_backends:
+    - "vllm"
+    - "sglang_optional"
+  access_type: "open"
+  requires_hf_token: false
+  requires_license_acceptance: false
+  intended_role: "scale_comparison_model"
   notes: "Inactive placeholder for future model-scale benchmark comparison."
 
-large_model_placeholder:
+llama_3_2_3b_instruct_api:
+  name: "Llama 3.2 3B Instruct API"
+  provider: "huggingface"
+  model_id: "meta-llama/Llama-3.2-3B-Instruct"
+  parameter_count: 3000000000
+  default_dtype: "provider_default"
+  execution_target: "hf_inference_provider_api"
+  allowed_backends:
+    - "hf_inference_provider"
+    - "vllm_optional"
+    - "sglang_optional"
+  access_type: "gated"
+  requires_hf_token: true
+  requires_license_acceptance: true
+  intended_role: "api_priced_small_model"
+  notes: "Gated API-priced model for Hugging Face Inference Provider cost tracking."
+
+llama_3_1_8b_instruct_api:
+  name: "Llama 3.1 8B Instruct API"
+  provider: "huggingface"
+  model_id: "meta-llama/Llama-3.1-8B-Instruct"
+  parameter_count: 8000000000
+  default_dtype: "provider_default"
+  execution_target: "hf_inference_provider_api"
+  allowed_backends:
+    - "hf_inference_provider"
+    - "vllm_optional"
+    - "sglang_optional"
+  access_type: "gated"
+  requires_hf_token: true
+  requires_license_acceptance: true
+  intended_role: "api_priced_8b_model"
+  notes: "Gated API-priced 8B model for Hugging Face Inference Provider cost tracking."
+
+future_large_model_placeholder:
   name: "Large Model Placeholder"
   provider: "placeholder"
   model_id: "placeholder/large-model"
   parameter_count: null
   default_dtype: "auto"
+  execution_target: "future_large_model"
+  allowed_backends:
+    - "future"
+  access_type: "placeholder"
+  requires_hf_token: false
+  requires_license_acceptance: false
+  intended_role: "future_large_model_placeholder"
   notes: "Inactive placeholder for future large-model benchmark planning."
 
 model_aliases:
@@ -43,4 +119,10 @@ model_aliases:
   model2_1_5b: qwen2_5_1_5b_instruct
   model3_7b: qwen2_5_7b_instruct
   model4_32b: qwen2_5_32b_instruct
-  model5_large_placeholder: large_model_placeholder
+  model5_gated: llama_3_2_3b_instruct_api
+  model6_gated: llama_3_1_8b_instruct_api
+  model7_large_placeholder: future_large_model_placeholder
+
+deprecated_model_aliases:
+  large_model_placeholder: future_large_model_placeholder
+  model5_large_placeholder: future_large_model_placeholder

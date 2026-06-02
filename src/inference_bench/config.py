@@ -9,6 +9,7 @@ from typing import Any, cast
 import yaml  # type: ignore[import-untyped]
 
 MODEL_ALIASES_KEY = "model_aliases"
+DEPRECATED_MODEL_ALIASES_KEY = "deprecated_model_aliases"
 DEFAULT_MEMORY_MODES_PATH = "configs/memory_modes.yaml"
 DEFAULT_VECTOR_STORES_PATH = "configs/vector_stores.yaml"
 
@@ -41,12 +42,35 @@ class ModelConfig:
     parameter_count: int | None = None
     default_dtype: str | None = None
     notes: str | None = None
+    execution_target: str | None = None
+    allowed_backends: list[str] = field(default_factory=list)
+    access_type: str | None = None
+    requires_hf_token: bool = False
+    requires_license_acceptance: bool = False
+    intended_role: str | None = None
 
     def __post_init__(self) -> None:
         _validate_non_empty_string(self.name, "name")
         _validate_non_empty_string(self.provider, "provider")
         _validate_non_empty_string(self.model_id, "model_id")
         _validate_optional_positive_int(self.parameter_count, "parameter_count")
+        if self.execution_target is not None:
+            _validate_non_empty_string(self.execution_target, "execution_target")
+        if self.access_type is not None:
+            _validate_non_empty_string(self.access_type, "access_type")
+        if self.intended_role is not None:
+            _validate_non_empty_string(self.intended_role, "intended_role")
+        if not isinstance(self.allowed_backends, list):
+            msg = "allowed_backends must be a list"
+            raise ValueError(msg)
+        for backend in self.allowed_backends:
+            _validate_non_empty_string(backend, "allowed_backends entry")
+        if not isinstance(self.requires_hf_token, bool):
+            msg = "requires_hf_token must be boolean"
+            raise ValueError(msg)
+        if not isinstance(self.requires_license_acceptance, bool):
+            msg = "requires_license_acceptance must be boolean"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True)
@@ -242,7 +266,7 @@ def load_models_config(path: str | Path) -> dict[str, ModelConfig]:
     raw_config = load_yaml_file(path)
     models: dict[str, ModelConfig] = {}
     for key, value in raw_config.items():
-        if key == MODEL_ALIASES_KEY:
+        if key in {MODEL_ALIASES_KEY, DEPRECATED_MODEL_ALIASES_KEY}:
             continue
         if not isinstance(value, dict):
             msg = f"Config entry '{key}' in {path} must be a mapping"
@@ -262,21 +286,25 @@ def load_model_aliases_config(path: str | Path) -> dict[str, str]:
     """Load model aliases from the models YAML file."""
 
     raw_config = load_yaml_file(path)
-    raw_aliases = raw_config.get(MODEL_ALIASES_KEY, {})
-    if raw_aliases is None:
-        return {}
-    if not isinstance(raw_aliases, dict):
-        msg = f"Config entry '{MODEL_ALIASES_KEY}' in {path} must be a mapping"
-        raise ValueError(msg)
-
     aliases: dict[str, str] = {}
-    for alias, target in raw_aliases.items():
-        if not isinstance(alias, str) or not isinstance(target, str):
-            msg = f"Model aliases in {path} must contain only string keys and values"
+    for aliases_key in (MODEL_ALIASES_KEY, DEPRECATED_MODEL_ALIASES_KEY):
+        raw_aliases = raw_config.get(aliases_key, {})
+        if raw_aliases is None:
+            continue
+        if not isinstance(raw_aliases, dict):
+            msg = f"Config entry '{aliases_key}' in {path} must be a mapping"
             raise ValueError(msg)
-        _validate_non_empty_string(alias, "model alias")
-        _validate_non_empty_string(target, f"model alias '{alias}' target")
-        aliases[alias] = target
+
+        for alias, target in raw_aliases.items():
+            if not isinstance(alias, str) or not isinstance(target, str):
+                msg = f"Model aliases in {path} must contain only string keys and values"
+                raise ValueError(msg)
+            _validate_non_empty_string(alias, "model alias")
+            _validate_non_empty_string(target, f"model alias '{alias}' target")
+            if alias in aliases:
+                msg = f"Duplicate model alias '{alias}' in {path}"
+                raise ValueError(msg)
+            aliases[alias] = target
     return aliases
 
 

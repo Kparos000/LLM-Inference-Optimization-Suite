@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -91,12 +92,25 @@ def _is_text_like(path: Path) -> bool:
     return path.suffix in TEXT_SUFFIXES or path.name in TEXT_FILENAMES
 
 
+def _iter_tracked_files(repo_root: Path) -> list[Path]:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "ls-files", "-z"],
+            check=True,
+            capture_output=True,
+            text=False,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return [path.relative_to(repo_root) for path in repo_root.rglob("*") if path.is_file()]
+
+    return [Path(raw_path.decode("utf-8")) for raw_path in result.stdout.split(b"\0") if raw_path]
+
+
 def _iter_text_files(repo_root: Path) -> list[Path]:
     text_files: list[Path] = []
-    for path in repo_root.rglob("*"):
-        if path.is_dir():
-            continue
-        if any(_is_skipped_dir(parent) for parent in path.parents if parent != repo_root):
+    for relative_path in _iter_tracked_files(repo_root):
+        path = repo_root / relative_path
+        if any(_is_skipped_dir(parent) for parent in relative_path.parents):
             continue
         if _is_text_like(path):
             text_files.append(path)

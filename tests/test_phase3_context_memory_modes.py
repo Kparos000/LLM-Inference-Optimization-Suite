@@ -16,7 +16,19 @@ MODEL_ALIAS_PAIRS = {
     "model2_1_5b": "qwen2_5_1_5b_instruct",
     "model3_7b": "qwen2_5_7b_instruct",
     "model4_32b": "qwen2_5_32b_instruct",
-    "model5_large_placeholder": "large_model_placeholder",
+    "model5_gated": "llama_3_2_3b_instruct_api",
+    "model6_gated": "llama_3_1_8b_instruct_api",
+    "model7_large_placeholder": "future_large_model_placeholder",
+}
+OLD_MODEL_KEYS = {
+    "qwen2_5_0_5b_instruct",
+    "qwen2_5_1_5b_instruct",
+    "qwen2_5_7b_instruct",
+    "qwen2_5_32b_instruct",
+}
+DEPRECATED_MODEL_ALIASES = {
+    "large_model_placeholder": "future_large_model_placeholder",
+    "model5_large_placeholder": "future_large_model_placeholder",
 }
 
 
@@ -64,7 +76,7 @@ def valid_workload_record() -> WorkloadRecord:
 def test_old_model_keys_still_resolve() -> None:
     config = load_project_config()
 
-    for old_key in MODEL_ALIAS_PAIRS.values():
+    for old_key in OLD_MODEL_KEYS:
         assert old_key in config.models
         assert config.resolve_model_key(old_key) == old_key
         assert config.resolve_model_config(old_key).model_id
@@ -77,6 +89,10 @@ def test_new_model_aliases_resolve() -> None:
         assert config.model_aliases[alias] == old_key
         assert config.resolve_model_key(alias) == old_key
         assert config.resolve_model_config(alias).model_id
+    for alias, target in DEPRECATED_MODEL_ALIASES.items():
+        assert config.model_aliases[alias] == target
+        assert config.resolve_model_key(alias) == target
+        assert config.resolve_model_config(alias).model_id
 
 
 def test_aliases_point_to_same_model_id_as_old_keys() -> None:
@@ -84,13 +100,16 @@ def test_aliases_point_to_same_model_id_as_old_keys() -> None:
 
     for alias, old_key in MODEL_ALIAS_PAIRS.items():
         assert config.resolve_model_config(alias).model_id == config.models[old_key].model_id
+    for alias, old_key in DEPRECATED_MODEL_ALIASES.items():
+        assert config.resolve_model_config(alias).model_id == config.models[old_key].model_id
 
 
 def test_model_aliases_do_not_duplicate_canonical_model_records() -> None:
     models = load_models_config("configs/models.yaml")
 
     assert set(MODEL_ALIAS_PAIRS).isdisjoint(models)
-    assert len(models) == 5
+    assert set(DEPRECATED_MODEL_ALIASES).isdisjoint(models)
+    assert len(models) == 7
 
 
 def test_memory_modes_yaml_loads() -> None:
