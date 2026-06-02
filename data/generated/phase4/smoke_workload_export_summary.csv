@@ -1,0 +1,2 @@
+input_workload_path,output_path,record_count,memory_modes,ablation_modes,vertical,vertical_record_count
+data/workloads/smoke_500/mm2_hybrid_top5.jsonl,data\generated\phase4\smoke_500_mm2_runner_input.jsonl,25,mm2_hybrid_top5,none,airline,25

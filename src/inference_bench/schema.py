@@ -23,6 +23,44 @@ def _validate_non_negative_float(value: float | None, field_name: str) -> None:
         raise ValueError(msg)
 
 
+def _validate_optional_string(value: str | None, field_name: str) -> None:
+    if value is not None and not isinstance(value, str):
+        msg = f"{field_name} must be a string when provided"
+        raise ValueError(msg)
+
+
+def _validate_optional_non_negative_int(value: int | None, field_name: str) -> None:
+    if value is not None:
+        _validate_non_negative_int(value, field_name)
+
+
+def _optional_int_from_metadata(
+    metadata: dict[str, str],
+    field_name: str,
+) -> int | None:
+    raw_value = metadata.get(field_name)
+    if raw_value is None or raw_value == "":
+        return None
+    return int(raw_value)
+
+
+def benchmark_metadata_from_workload_item(item: WorkloadItem) -> dict[str, object]:
+    """Return optional benchmark metadata carried by an adapted workload item."""
+
+    metadata = item.metadata
+    return {
+        "workload_id": metadata.get("workload_id"),
+        "vertical": metadata.get("vertical"),
+        "memory_mode": metadata.get("memory_mode"),
+        "ablation_mode": metadata.get("ablation_mode"),
+        "context_token_estimate": _optional_int_from_metadata(
+            metadata,
+            "context_token_estimate",
+        ),
+        "gold_evidence_ids": metadata.get("gold_evidence_ids"),
+    }
+
+
 @dataclass(frozen=True)
 class WorkloadItem:
     """A single prompt record in a benchmark workload."""
@@ -65,6 +103,12 @@ class BenchmarkResult:
     estimated_cost_usd: float | None
     success: bool
     error_message: str | None = None
+    workload_id: str | None = None
+    vertical: str | None = None
+    memory_mode: str | None = None
+    ablation_mode: str | None = None
+    context_token_estimate: int | None = None
+    gold_evidence_ids: str | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -78,6 +122,15 @@ class BenchmarkResult:
         ):
             _validate_non_empty_string(getattr(self, field_name), field_name)
 
+        _validate_optional_string(self.workload_id, "workload_id")
+        _validate_optional_string(self.vertical, "vertical")
+        _validate_optional_string(self.memory_mode, "memory_mode")
+        _validate_optional_string(self.ablation_mode, "ablation_mode")
+        _validate_optional_non_negative_int(
+            self.context_token_estimate,
+            "context_token_estimate",
+        )
+        _validate_optional_string(self.gold_evidence_ids, "gold_evidence_ids")
         _validate_non_negative_int(self.input_tokens, "input_tokens")
         _validate_non_negative_int(self.output_tokens, "output_tokens")
         _validate_non_negative_float(self.ttft_ms, "ttft_ms")
@@ -110,6 +163,12 @@ class BenchmarkResult:
             "optimization",
             "workload_name",
             "prompt_id",
+            "workload_id",
+            "vertical",
+            "memory_mode",
+            "ablation_mode",
+            "context_token_estimate",
+            "gold_evidence_ids",
             "input_tokens",
             "output_tokens",
             "ttft_ms",

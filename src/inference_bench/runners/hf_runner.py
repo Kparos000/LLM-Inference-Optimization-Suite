@@ -22,7 +22,11 @@ from inference_bench.output_records import (
     write_generation_records_jsonl,
 )
 from inference_bench.results import write_results_csv
-from inference_bench.schema import BenchmarkResult
+from inference_bench.schema import (
+    BenchmarkResult,
+    WorkloadItem,
+    benchmark_metadata_from_workload_item,
+)
 from inference_bench.workloads.loader import load_jsonl_workload
 
 HF_EXTRA_INSTALL_MESSAGE = (
@@ -124,6 +128,7 @@ def _build_failure_result(
     input_tokens: int,
     request_start_s: float,
     error: Exception,
+    item: WorkloadItem | None = None,
 ) -> BenchmarkResult:
     request_end_s = time.perf_counter()
     return BenchmarkResult(
@@ -147,6 +152,7 @@ def _build_failure_result(
         estimated_cost_usd=0.0,
         success=False,
         error_message=str(error),
+        **(benchmark_metadata_from_workload_item(item) if item is not None else {}),
     )
 
 
@@ -190,6 +196,7 @@ def _build_failed_prompt_outputs(
     input_tokens: int,
     request_start_s: float,
     error: Exception,
+    item: WorkloadItem | None = None,
 ) -> tuple[BenchmarkResult, GenerationRecord]:
     failure_result = _build_failure_result(
         run_id=run_id,
@@ -200,6 +207,7 @@ def _build_failed_prompt_outputs(
         input_tokens=input_tokens,
         request_start_s=request_start_s,
         error=error,
+        item=item,
     )
     failure_record = _build_generation_record_from_result(
         result=failure_result,
@@ -363,6 +371,7 @@ def run_hf_benchmark(
                 estimated_cost_usd=0.0,
                 success=True,
                 error_message=None,
+                **benchmark_metadata_from_workload_item(item),
             )
             results.append(result)
             generation_records.append(
@@ -383,6 +392,7 @@ def run_hf_benchmark(
                 input_tokens=input_tokens,
                 request_start_s=request_start_s,
                 error=exc,
+                item=item,
             )
             results.append(result)
             generation_records.append(generation_record)

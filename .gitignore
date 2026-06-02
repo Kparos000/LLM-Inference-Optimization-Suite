@@ -118,6 +118,7 @@ data/generated/finance/*
 data/generated/finance_test_cache/*
 data/generated/context_engineering/corpora/*.jsonl
 data/generated/vector_store/
+data/generated/phase4/*.jsonl
 data/workloads/**/*.jsonl
 
 # Keep result folders

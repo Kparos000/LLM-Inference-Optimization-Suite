@@ -1,0 +1,2 @@
+results_path,row_count,joined_count,joined_rate,format_valid_count,format_valid_rate,grounded_count,grounded_rate,safety_violation_count,safety_violation_rate,memory_modes,verticals,expected_status_counts
+results/raw/phase4_mock_smoke_results.csv,25,25,1.0,0,0.0,0,0.0,0,0.0,mm2_hybrid_top5,airline,"{""answer"": 25}"

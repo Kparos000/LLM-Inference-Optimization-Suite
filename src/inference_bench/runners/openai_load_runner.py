@@ -289,6 +289,7 @@ async def _run_one_prompt(
                 first_token_s=first_token_s,
                 success=True,
                 error_message=None,
+                item=item,
             )
         except Exception as exc:  # noqa: BLE001
             request_end_s = time.perf_counter()
@@ -306,6 +307,7 @@ async def _run_one_prompt(
                 first_token_s=first_token_s,
                 success=False,
                 error_message=str(exc),
+                item=item,
             )
 
         generation_record = _build_generation_record(

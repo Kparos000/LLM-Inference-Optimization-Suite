@@ -18,7 +18,11 @@ from inference_bench.metrics import (
 from inference_bench.output_records import GenerationRecord, write_generation_records_jsonl
 from inference_bench.results import write_results_csv
 from inference_bench.runners.mock_runner import count_whitespace_tokens
-from inference_bench.schema import BenchmarkResult
+from inference_bench.schema import (
+    BenchmarkResult,
+    WorkloadItem,
+    benchmark_metadata_from_workload_item,
+)
 from inference_bench.workloads.loader import load_jsonl_workload
 
 OPENAI_EXTRA_INSTALL_MESSAGE = (
@@ -103,6 +107,7 @@ def _build_result(
     first_token_s: float | None,
     success: bool,
     error_message: str | None,
+    item: WorkloadItem | None = None,
 ) -> BenchmarkResult:
     elapsed_seconds = request_end_s - request_start_s
     end_to_end_latency_ms = calculate_end_to_end_latency_ms(request_start_s, request_end_s)
@@ -134,6 +139,7 @@ def _build_result(
         estimated_cost_usd=0.0,
         success=success,
         error_message=error_message,
+        **(benchmark_metadata_from_workload_item(item) if item is not None else {}),
     )
 
 
@@ -251,6 +257,7 @@ def run_openai_compatible_benchmark(
                 first_token_s=first_token_s,
                 success=True,
                 error_message=None,
+                item=item,
             )
         except Exception as exc:  # noqa: BLE001
             request_end_s = time.perf_counter()
@@ -268,6 +275,7 @@ def run_openai_compatible_benchmark(
                 first_token_s=first_token_s,
                 success=False,
                 error_message=str(exc),
+                item=item,
             )
 
         results.append(result)

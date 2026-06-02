@@ -12,7 +12,7 @@ from inference_bench.metrics import (
     estimate_token_cost_usd,
 )
 from inference_bench.results import write_results_csv
-from inference_bench.schema import BenchmarkResult
+from inference_bench.schema import BenchmarkResult, benchmark_metadata_from_workload_item
 from inference_bench.workloads.loader import load_jsonl_workload
 
 
@@ -74,6 +74,7 @@ def run_mock_benchmark(
                 ),
                 success=True,
                 error_message=None,
+                **benchmark_metadata_from_workload_item(item),
             )
         )
 

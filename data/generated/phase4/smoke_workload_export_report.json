@@ -1,0 +1,26 @@
+{
+  "ablation_modes": [
+    "none"
+  ],
+  "by_vertical": {
+    "airline": 25
+  },
+  "input_workload_path": "data/workloads/smoke_500/mm2_hybrid_top5.jsonl",
+  "limit": 25,
+  "memory_modes": [
+    "mm2_hybrid_top5"
+  ],
+  "metadata_fields_preserved": [
+    "prompt_id",
+    "workload_id",
+    "vertical",
+    "memory_mode",
+    "ablation_mode",
+    "retrieval_metadata",
+    "context_token_estimate",
+    "gold_evidence_ids"
+  ],
+  "no_model_inference_triggered": true,
+  "output_path": "data\\generated\\phase4\\smoke_500_mm2_runner_input.jsonl",
+  "record_count": 25
+}
