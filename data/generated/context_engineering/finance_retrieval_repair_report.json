@@ -1,0 +1,115 @@
+{
+  "generated_at_utc": "2026-06-03T22:03:40.044975+00:00",
+  "gold_quality_summary": {
+    "filing_explicitly_missing_count": 503,
+    "filing_explicitly_recoverable_count": 1497,
+    "filing_recoverable_from_linked_context_count": 1127,
+    "metric_explicitly_missing_count": 1174,
+    "metric_explicitly_recoverable_count": 826,
+    "metric_recoverable_from_linked_context_count": 2000,
+    "period_explicitly_missing_count": 2000,
+    "period_explicitly_recoverable_count": 0,
+    "period_recoverable_from_linked_context_count": 1127,
+    "section_explicitly_missing_count": 1683,
+    "section_explicitly_recoverable_count": 317,
+    "section_recoverable_from_linked_context_count": 1127,
+    "total_gold_records": 2000
+  },
+  "metadata_enrichment_summary": {
+    "company_enriched_count": 2000,
+    "filing_section_enriched_count": 1127,
+    "filing_type_enriched_count": 1516,
+    "fiscal_year_enriched_count": 1127,
+    "metric_family_enriched_count": 2000,
+    "period_enriched_count": 1147,
+    "rows_with_linked_context_count": 2000,
+    "ticker_enriched_count": 2000,
+    "total_prompts": 2000,
+    "xbrl_concept_enriched_count": 873
+  },
+  "output_files": {
+    "finance_gold_quality_report": "data\\generated\\context_engineering\\finance_gold_quality_report.json",
+    "finance_gold_quality_summary": "data\\generated\\context_engineering\\finance_gold_quality_summary.csv",
+    "finance_metadata_enrichment_report": "data\\generated\\context_engineering\\finance_metadata_enrichment_report.json",
+    "finance_prompt_quality_report": "data\\generated\\context_engineering\\finance_prompt_quality_report.json",
+    "finance_prompt_quality_summary": "data\\generated\\context_engineering\\finance_prompt_quality_summary.csv",
+    "finance_retrieval_repair_impact_report": "data\\generated\\context_engineering\\finance_retrieval_repair_impact_report.json",
+    "finance_retrieval_repair_impact_summary": "data\\generated\\context_engineering\\finance_retrieval_repair_impact_summary.csv"
+  },
+  "prompt_quality_summary": {
+    "company_or_ticker_missing_count": 0,
+    "company_or_ticker_present_count": 2000,
+    "filing_type_missing_count": 484,
+    "filing_type_present_count": 1516,
+    "metric_missing_count": 1835,
+    "metric_present_count": 165,
+    "period_missing_count": 2000,
+    "period_present_count": 0,
+    "section_missing_count": 1988,
+    "section_present_count": 12,
+    "total_prompts": 2000
+  },
+  "retrieval_impact": {
+    "prompt_plus_metadata": {
+      "after_metadata_repair": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.8,
+        "candidate_recall_at_50": 0.84075,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.6295,
+        "mrr": 0.442133,
+        "record_count": 2000,
+        "rewritten_query_count": 2000,
+        "vector_store": "none"
+      },
+      "before": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.495625,
+        "candidate_recall_at_50": 0.794375,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.288625,
+        "mrr": 0.190917,
+        "record_count": 2000,
+        "rewritten_query_count": 0,
+        "vector_store": "none"
+      },
+      "delta": {
+        "candidate_recall_at_20": 0.304375,
+        "candidate_recall_at_50": 0.046375,
+        "final_recall_at_5": 0.340875,
+        "mrr": 0.251216
+      }
+    },
+    "prompt_text_only": {
+      "after_metadata_repair": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.824625,
+        "candidate_recall_at_50": 0.8545,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.647125,
+        "mrr": 0.454942,
+        "record_count": 2000,
+        "rewritten_query_count": 2000,
+        "vector_store": "none"
+      },
+      "before": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.304,
+        "candidate_recall_at_50": 0.5665,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.1625,
+        "mrr": 0.091292,
+        "record_count": 2000,
+        "rewritten_query_count": 0,
+        "vector_store": "none"
+      },
+      "delta": {
+        "candidate_recall_at_20": 0.520625,
+        "candidate_recall_at_50": 0.288,
+        "final_recall_at_5": 0.484625,
+        "mrr": 0.36365
+      }
+    }
+  },
+  "scope": "offline_finance_retrieval_repair_no_inference_no_gpu_no_api"
+}

@@ -1,0 +1,749 @@
+{
+  "dense_backend_requested": "local_fallback",
+  "generated_at_utc": "2026-06-03T22:03:39.657127+00:00",
+  "impact_by_ablation": {
+    "prompt_plus_metadata": {
+      "after_metadata_repair": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.8,
+        "candidate_recall_at_50": 0.84075,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.6295,
+        "mrr": 0.442133,
+        "record_count": 2000,
+        "rewritten_query_count": 2000,
+        "vector_store": "none"
+      },
+      "before": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.495625,
+        "candidate_recall_at_50": 0.794375,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.288625,
+        "mrr": 0.190917,
+        "record_count": 2000,
+        "rewritten_query_count": 0,
+        "vector_store": "none"
+      },
+      "delta": {
+        "candidate_recall_at_20": 0.304375,
+        "candidate_recall_at_50": 0.046375,
+        "final_recall_at_5": 0.340875,
+        "mrr": 0.251216
+      }
+    },
+    "prompt_text_only": {
+      "after_metadata_repair": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.824625,
+        "candidate_recall_at_50": 0.8545,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.647125,
+        "mrr": 0.454942,
+        "record_count": 2000,
+        "rewritten_query_count": 2000,
+        "vector_store": "none"
+      },
+      "before": {
+        "avg_blocked_direct_hint_count": 0.212,
+        "candidate_recall_at_20": 0.304,
+        "candidate_recall_at_50": 0.5665,
+        "dense_backend": "local_fallback",
+        "final_recall_at_5": 0.1625,
+        "mrr": 0.091292,
+        "record_count": 2000,
+        "rewritten_query_count": 0,
+        "vector_store": "none"
+      },
+      "delta": {
+        "candidate_recall_at_20": 0.520625,
+        "candidate_recall_at_50": 0.288,
+        "final_recall_at_5": 0.484625,
+        "mrr": 0.36365
+      }
+    }
+  },
+  "leakage_guard": {
+    "direct_id_leakage_detected_count": 0,
+    "gold_ids_added_to_query": false,
+    "source_hints_used": false
+  },
+  "measurement_scope": "finance_only_mm2_hybrid_top5_final_10000",
+  "no_external_api_calls_triggered": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "sample_repaired_rows": [
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 0.5,
+      "candidate_recall_at_50": 0.5,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_sec_AAPL_8K_000032019326000011"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.5,
+      "prompt_id": "finance_scaleup_2000_0001",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 294.1432,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_AAPL_8-K_financesectionAAPL8K000032019326000005resultsofoperations1",
+        "finance:finance_kb_sec_AAPL_8-K_financesectionAAPL8K000032019326000011resultsofoperations1",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNetCurrent",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLAccountsReceivableNetCurrent",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLOtherComprehensiveIncomeLossForeignCurrencyTransactionAndTranslationAdjustmentNetOfTax"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.0,
+      "prompt_id": "finance_scaleup_2000_0002",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 191.4723,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_MSFT_concept_inventory",
+        "finance:finance_kb_xbrl_AAPL_concept_inventory",
+        "finance:finance_kb_xbrl_TSLA_concept_inventory",
+        "finance:finance_kb_xbrl_GOOGL_concept_inventory",
+        "finance:finance_kb_xbrl_NVDA_concept_inventory"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_sec_AAPL_10Q_000032019324000006_management_discussion_and_analysis",
+        "finance_section_AAPL_10Q_000032019324000006_management_discussion_and_analysis_2"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.3333333333333333,
+      "prompt_id": "finance_scaleup_2000_0003",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 242.5699,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_finance_seed_0034_facts",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNetCurrent",
+        "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019324000006managementdiscussionandanalysis2",
+        "finance:finance_kb_sec_AAPL_10Q_000032019324000006_management_discussion_and_analysis::chunk_003",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLRevenueFromContractWithCustomerExcludingAssessedTax"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 1,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_sec_MSFT_10K_000095017024087843_management_discussion_and_analysis",
+        "finance_section_MSFT_10K_000095017024087843_management_discussion_and_analysis_3"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.5,
+      "prompt_id": "finance_scaleup_2000_0004",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 202.0258,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_MSFT_finance_seed_0035_facts",
+        "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017024087843managementdiscussionandanalysis3",
+        "finance:finance_kb_sec_MSFT_10K_000095017024087843_management_discussion_and_analysis::chunk_002",
+        "finance:finance_kb_sec_MSFT_10K_000095017024087843_management_discussion_and_analysis::chunk_003",
+        "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017025100235managementdiscussionandanalysis3"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_sec_MSFT_10K_000095017025100235_management_discussion_and_analysis",
+        "finance_section_MSFT_10K_000095017025100235_management_discussion_and_analysis_3"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.5,
+      "prompt_id": "finance_scaleup_2000_0005",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 215.3545,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_MSFT_finance_seed_0035_facts",
+        "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017025100235managementdiscussionandanalysis3",
+        "finance:finance_kb_sec_MSFT_10K_000095017025100235_management_discussion_and_analysis::chunk_002",
+        "finance:finance_kb_sec_MSFT_10-K_financesectionMSFT10K000095017024087843managementdiscussionandanalysis3",
+        "finance:finance_kb_sec_MSFT_10-Q_financesectionMSFT10Q000119312525256321managementdiscussionandanalysis2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 0.0,
+      "candidate_recall_at_50": 0.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.0,
+      "prompt_id": "finance_scaleup_2000_0006",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 179.3672,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_finance_seed_0034_facts",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNetCurrent",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNet",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLRevenueFromContractWithCustomerExcludingAssessedTax",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLContractWithCustomerLiabilityRevenueRecognized"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_xbrl_TSLA_finance_seed_0007_facts",
+        "finance_seed_0007"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.3333333333333333,
+      "prompt_id": "finance_scaleup_2000_0007",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 196.7282,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_TSLA_concept_inventory",
+        "finance:finance_kb_xbrl_AAPL_concept_inventory",
+        "finance:finance_kb_xbrl_TSLA_finance_seed_0007_facts",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390business2",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828025003063business2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 0.5,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_sec_AMZN_8K_000101872426000002"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.5,
+      "prompt_id": "finance_scaleup_2000_0008",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 224.827,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872426000004business2",
+        "finance:finance_kb_sec_AMZN_8-K_financesectionAMZN8K000101872426000002resultsofoperations1",
+        "finance:finance_kb_sec_AMZN_8-K_financesectionAMZN8K000101872426000012resultsofoperations1",
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872426000004resultsofoperations7",
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008business2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 1,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_section_NVDA_10K_000104581026000021_management_discussion_and_analysis_6"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.3333333333333333,
+      "prompt_id": "finance_scaleup_2000_0009",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 220.7891,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_NVDA_10-K_financesectionNVDA10K000104581026000021business2",
+        "finance:finance_kb_xbrl_NVDA_finance_seed_0036_facts",
+        "finance:finance_kb_sec_NVDA_10-K_financesectionNVDA10K000104581026000021managementdiscussionandanalysis6",
+        "finance:finance_kb_sec_NVDA_10-K_financesectionNVDA10K000104581024000029business2",
+        "finance:finance_kb_sec_NVDA_10-K_financesectionNVDA10K000104581025000023business2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis",
+        "finance_section_AMZN_10K_000101872424000008_management_discussion_and_analysis_5"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.5,
+      "prompt_id": "finance_scaleup_2000_0010",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 320.2711,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008business2",
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008managementdiscussionandanalysis5",
+        "finance:finance_kb_sec_AMZN_10K_000101872424000008_management_discussion_and_analysis::chunk_002",
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872425000004business2",
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872426000004business2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 0.0,
+      "candidate_recall_at_50": 0.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.0,
+      "prompt_id": "finance_scaleup_2000_0011",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 179.3672,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_finance_seed_0034_facts",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNetCurrent",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNet",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLRevenueFromContractWithCustomerExcludingAssessedTax",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLContractWithCustomerLiabilityRevenueRecognized"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_xbrl_AMZN_finance_seed_0004_facts",
+        "finance_seed_0004"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.5,
+      "prompt_id": "finance_scaleup_2000_0012",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 271.3432,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_concept_inventory",
+        "finance:finance_kb_xbrl_AMZN_finance_seed_0004_facts",
+        "finance:finance_kb_xbrl_AMZN_finance_seed_0024_facts",
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872425000004business2",
+        "finance:finance_kb_sec_AMZN_10-K_financesectionAMZN10K000101872424000008business2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_section_GOOGL_10K_000165204424000022_management_discussion_and_analysis_5"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.25,
+      "prompt_id": "finance_scaleup_2000_0013",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 308.1473,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_concept_inventory",
+        "finance:finance_kb_xbrl_TSLA_concept_inventory",
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204424000022business2",
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204424000022managementdiscussionandanalysis5",
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204425000014business2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 1,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_section_GOOGL_10K_000165204425000014_management_discussion_and_analysis_5"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.25,
+      "prompt_id": "finance_scaleup_2000_0014",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 270.9727,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204424000022business2",
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204425000014business2",
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204424000022managementdiscussionandanalysis5",
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204425000014managementdiscussionandanalysis5",
+        "finance:finance_kb_sec_GOOGL_10-K_financesectionGOOGL10K000165204426000018managementdiscussionandanalysis5"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_sec_META_8K_000162828025047114"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.3333333333333333,
+      "prompt_id": "finance_scaleup_2000_0015",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 296.5788,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_META_10-K_financesectionMETA10K000132680125000017business2",
+        "finance:finance_kb_sec_META_10-K_financesectionMETA10K000162828026003942business2",
+        "finance:finance_kb_sec_META_8-K_financesectionMETA8K000162828025047114resultsofoperations1",
+        "finance:finance_kb_sec_META_8-K_financesectionMETA8K000132680125000014resultsofoperations1",
+        "finance:finance_kb_sec_META_8-K_financesectionMETA8K000132680125000050resultsofoperations1"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 0.0,
+      "candidate_recall_at_50": 0.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.0,
+      "prompt_id": "finance_scaleup_2000_0016",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 179.3672,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_finance_seed_0034_facts",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNetCurrent",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNet",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLRevenueFromContractWithCustomerExcludingAssessedTax",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLContractWithCustomerLiabilityRevenueRecognized"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.0,
+      "prompt_id": "finance_scaleup_2000_0017",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 314.5642,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_finance_seed_0034_facts",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLRevenueFromContractWithCustomerExcludingAssessedTax",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLContractWithCustomerLiabilityRevenueRecognized",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLIncreaseDecreaseInContractWithCustomerLiability",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLContractWithCustomerLiabilityCurrent"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_section_META_10Q_000132680124000049_management_discussion_and_analysis_4"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.3333333333333333,
+      "prompt_id": "finance_scaleup_2000_0018",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 294.7761,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_META_concept_inventory",
+        "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000132680124000081managementdiscussionandanalysis4",
+        "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000132680124000049managementdiscussionandanalysis4",
+        "finance:finance_kb_sec_META_10-Q_financesectionMETA10Q000132680124000069managementdiscussionandanalysis4",
+        "finance:finance_kb_sec_META_10K_000132680125000017_management_discussion_and_analysis::chunk_002"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 1,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_sec_TSLA_10K_000162828024002390_management_discussion_and_analysis",
+        "finance_section_TSLA_10K_000162828024002390_management_discussion_and_analysis_6"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.5,
+      "prompt_id": "finance_scaleup_2000_0019",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 248.5546,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390business2",
+        "finance:finance_kb_sec_TSLA_10K_000162828024002390_management_discussion_and_analysis::chunk_003",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390managementdiscussionandanalysis6",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828025003063business2",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828026003952business2"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_section_TSLA_10K_000162828025003063_management_discussion_and_analysis_6"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.25,
+      "prompt_id": "finance_scaleup_2000_0020",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 319.5851,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390business2",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828025003063business2",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828024002390managementdiscussionandanalysis6",
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828025003063managementdiscussionandanalysis6",
+        "finance:finance_kb_sec_TSLA_10K_000162828024002390_management_discussion_and_analysis::chunk_003"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 0.0,
+      "candidate_recall_at_50": 0.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.0,
+      "prompt_id": "finance_scaleup_2000_0021",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 179.3672,
+      "selected_context_ids": [
+        "finance:finance_kb_xbrl_AAPL_finance_seed_0034_facts",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNetCurrent",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLDeferredTaxAssetsLiabilitiesNet",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLRevenueFromContractWithCustomerExcludingAssessedTax",
+        "finance:finance_kb_xbrl_inventory_financexbrlAAPLContractWithCustomerLiabilityRevenueRecognized"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 0.5,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_sec_TSLA_8K_000162828026026551"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.2,
+      "prompt_id": "finance_scaleup_2000_0022",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 308.7467,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_TSLA_10-K_financesectionTSLA10K000162828026003952business2",
+        "finance:finance_kb_sec_TSLA_8-K_financesectionTSLA8K000162828026000016resultsofoperations1",
+        "finance:finance_kb_sec_TSLA_8-K_financesectionTSLA8K000162828026003837resultsofoperations1",
+        "finance:finance_kb_sec_TSLA_8-K_financesectionTSLA8K000162828026022956resultsofoperations1",
+        "finance:finance_kb_sec_TSLA_8-K_financesectionTSLA8K000162828026026551resultsofoperations1"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_section_AMD_10K_000000248825000012_management_discussion_and_analysis_5"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.2,
+      "prompt_id": "finance_scaleup_2000_0023",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 316.577,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248824000012business2",
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248825000012business2",
+        "finance:finance_kb_xbrl_inventory_financexbrlAMDDeferredTaxAssetsLiabilitiesNetNoncurrent",
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248824000012managementdiscussionandanalysis5",
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248825000012managementdiscussionandanalysis5"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 1,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 0.5,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_section_AMD_10K_000000248826000018_management_discussion_and_analysis_5"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 0.2,
+      "prompt_id": "finance_scaleup_2000_0024",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 345.0638,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248825000012business2",
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248826000018business2",
+        "finance:finance_kb_sec_AMD_10K_000000248825000012_management_discussion_and_analysis::chunk_002",
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248825000012managementdiscussionandanalysis5",
+        "finance:finance_kb_sec_AMD_10-K_financesectionAMD10K000000248826000018managementdiscussionandanalysis5"
+      ],
+      "vector_store": "none"
+    },
+    {
+      "ablation_mode": "prompt_text_only",
+      "blocked_direct_hint_count": 0,
+      "candidate_count": 50,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "local_fallback",
+      "direct_id_leakage_detected": false,
+      "final_recall_at_5": 1.0,
+      "gold_evidence_id_count": 2,
+      "matched_gold_evidence_ids": [
+        "finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019326000013financialstatements1",
+        "finance_section_AAPL_10Q_000032019326000013_financial_statements_1"
+      ],
+      "measurement": "after_metadata_repair",
+      "mrr": 1.0,
+      "prompt_id": "finance_scaleup_2000_0025",
+      "query_rewritten": true,
+      "retrieval_latency_ms": 131.2137,
+      "selected_context_ids": [
+        "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019326000013financialstatements1",
+        "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019326000006financialstatements1",
+        "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019325000008financialstatements1",
+        "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019324000081financialstatements1",
+        "finance:finance_kb_sec_AAPL_10-Q_financesectionAAPL10Q000032019325000057financialstatements1"
+      ],
+      "vector_store": "none"
+    }
+  ],
+  "scope": "offline_finance_retrieval_repair_no_inference_no_gpu_no_api"
+}

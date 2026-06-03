@@ -1,0 +1,2 @@
+total_prompts,company_or_ticker_present_count,company_or_ticker_missing_count,metric_present_count,metric_missing_count,period_present_count,period_missing_count,filing_type_present_count,filing_type_missing_count,section_present_count,section_missing_count
+2000,2000,0,165,1835,0,2000,1516,484,12,1988
