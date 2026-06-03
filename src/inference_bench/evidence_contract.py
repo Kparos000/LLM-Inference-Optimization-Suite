@@ -176,6 +176,11 @@ def build_evidence_selection_report(
         for row in rows:
             for reason in row.get("selection_reasons", []):
                 reason_counter[str(reason)] = reason_counter.get(str(reason), 0) + 1
+        selection_reason_sample = sorted(
+            reason_counter,
+            key=lambda reason: reason_counter[reason],
+            reverse=True,
+        )[:5]
         payload = {
             "record_count": len(rows),
             "evidence_selector_strategy": ",".join(strategy_values),
@@ -185,9 +190,7 @@ def build_evidence_selection_report(
             else 0.0,
             "duplicate_avoidance_applied_count": duplicate_avoidance_count,
             "evidence_contract_valid_count": valid_count,
-            "selection_reason_sample": sorted(reason_counter, key=reason_counter.get, reverse=True)[
-                :5
-            ],
+            "selection_reason_sample": selection_reason_sample,
         }
         by_split.setdefault(split, {}).setdefault(ablation_mode, {}).setdefault(memory_mode, {})[
             vertical
@@ -204,7 +207,7 @@ def build_evidence_selection_report(
                 "avg_selected_evidence_count": payload["avg_selected_evidence_count"],
                 "duplicate_avoidance_applied_count": payload["duplicate_avoidance_applied_count"],
                 "evidence_contract_valid_count": payload["evidence_contract_valid_count"],
-                "selection_reason_sample": ",".join(payload["selection_reason_sample"]),
+                "selection_reason_sample": ",".join(selection_reason_sample),
             }
         )
 

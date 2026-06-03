@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from typing import TypedDict
 
 
 def _validate_non_empty_string(value: str, field_name: str) -> None:
@@ -44,7 +45,18 @@ def _optional_int_from_metadata(
     return int(raw_value)
 
 
-def benchmark_metadata_from_workload_item(item: WorkloadItem) -> dict[str, object]:
+class BenchmarkMetadata(TypedDict):
+    """Optional metadata fields carried into benchmark result rows."""
+
+    workload_id: str | None
+    vertical: str | None
+    memory_mode: str | None
+    ablation_mode: str | None
+    context_token_estimate: int | None
+    gold_evidence_ids: str | None
+
+
+def benchmark_metadata_from_workload_item(item: WorkloadItem) -> BenchmarkMetadata:
     """Return optional benchmark metadata carried by an adapted workload item."""
 
     metadata = item.metadata
@@ -58,6 +70,19 @@ def benchmark_metadata_from_workload_item(item: WorkloadItem) -> dict[str, objec
             "context_token_estimate",
         ),
         "gold_evidence_ids": metadata.get("gold_evidence_ids"),
+    }
+
+
+def empty_benchmark_metadata() -> BenchmarkMetadata:
+    """Return an empty optional benchmark metadata payload."""
+
+    return {
+        "workload_id": None,
+        "vertical": None,
+        "memory_mode": None,
+        "ablation_mode": None,
+        "context_token_estimate": None,
+        "gold_evidence_ids": None,
     }
 
 

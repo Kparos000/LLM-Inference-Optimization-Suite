@@ -127,7 +127,9 @@ def test_output_schema_validates_and_metadata_is_preserved(tmp_path: Path) -> No
 
     validate_smoke_result_row(row)
     assert row["prompt_id"] == "airline_fixture_001"
-    assert row["workload_id"].startswith("smoke_500:")
+    workload_id = row["workload_id"]
+    assert isinstance(workload_id, str)
+    assert workload_id.startswith("smoke_500:")
     assert row["vertical"] == "airline"
     assert row["memory_mode"] == "mm2_hybrid_top5"
     assert row["ablation_mode"] == "prompt_plus_metadata"

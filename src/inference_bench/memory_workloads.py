@@ -40,6 +40,7 @@ from inference_bench.retrieval import (
     DEFAULT_FINAL_TOP_K,
     BM25Retriever,
     CompanyTickerResolver,
+    DenseRetrieverProtocol,
     HybridRetriever,
     LocalFallbackDenseRetriever,
     QdrantDenseRetriever,
@@ -240,7 +241,8 @@ def prompt_query_text(
     """Build retrieval query text under one strict ablation policy."""
 
     validate_ablation_mode(ablation_mode)
-    metadata = prompt.get("metadata") if isinstance(prompt.get("metadata"), dict) else {}
+    raw_metadata = prompt.get("metadata")
+    metadata = cast(dict[str, Any], raw_metadata) if isinstance(raw_metadata, dict) else {}
     vertical = str(prompt.get("vertical") or "")
     parts: list[str] = []
 
@@ -480,6 +482,7 @@ def build_retrievers(
             qdrant_vector_config = None
     for vertical, records in corpora_by_vertical.items():
         lexical = BM25Retriever(records)
+        dense: DenseRetrieverProtocol
         if (
             dense_backend == "qdrant_vector"
             and qdrant_client is not None
@@ -989,7 +992,7 @@ def build_one_workload_record(
             context_records=selected_context_records,
             memory_mode=memory_mode,
         ),
-        context_records=selected_context_records,
+        context_records=list(selected_context_records),
         context_token_estimate=sum(record.token_estimate for record in selected_context_records),
         retrieval_metadata=metadata,
         expected_output_format=expected_output_format(prompt, gold_record),

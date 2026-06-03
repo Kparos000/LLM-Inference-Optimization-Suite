@@ -36,7 +36,11 @@ MODEL_ALIAS_PAIRS = {
     "model2_1_5b": "qwen2_5_1_5b_instruct",
     "model3_7b": "qwen2_5_7b_instruct",
     "model4_32b": "qwen2_5_32b_instruct",
-    "model5_large_placeholder": "large_model_placeholder",
+    "model5_gated": "llama_3_2_3b_instruct_api",
+    "model6_gated": "llama_3_1_8b_instruct_api",
+    "model7_large_placeholder": "future_large_model_placeholder",
+    "large_model_placeholder": "future_large_model_placeholder",
+    "model5_large_placeholder": "future_large_model_placeholder",
 }
 
 
@@ -142,12 +146,16 @@ def inspect_model_aliases() -> dict[str, Any]:
     """Inspect model aliases and canonical model resolution."""
 
     config = load_project_config()
+    resolved_targets = {
+        alias: config.resolve_model_key(target) for alias, target in MODEL_ALIAS_PAIRS.items()
+    }
     alias_status = {
-        alias: config.resolve_model_key(alias) == target
-        for alias, target in MODEL_ALIAS_PAIRS.items()
+        alias: config.resolve_model_key(alias) == resolved_target
+        for alias, resolved_target in resolved_targets.items()
     }
     same_model_ids = {
-        alias: config.resolve_model_config(alias).model_id == config.models[target].model_id
+        alias: config.resolve_model_config(alias).model_id
+        == config.resolve_model_config(target).model_id
         for alias, target in MODEL_ALIAS_PAIRS.items()
     }
     return {

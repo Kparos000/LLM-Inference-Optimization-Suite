@@ -22,6 +22,7 @@ from inference_bench.schema import (
     BenchmarkResult,
     WorkloadItem,
     benchmark_metadata_from_workload_item,
+    empty_benchmark_metadata,
 )
 from inference_bench.workloads.loader import load_jsonl_workload
 
@@ -139,7 +140,11 @@ def _build_result(
         estimated_cost_usd=0.0,
         success=success,
         error_message=error_message,
-        **(benchmark_metadata_from_workload_item(item) if item is not None else {}),
+        **(
+            benchmark_metadata_from_workload_item(item)
+            if item is not None
+            else empty_benchmark_metadata()
+        ),
     )
 
 

@@ -1,3 +1,5 @@
+from typing import Any
+
 from inference_bench.context_schema import ContextRecord
 from inference_bench.memory_workloads import (
     build_retrieval_diagnostic_report,
@@ -279,7 +281,7 @@ def test_no_model_api_or_gpu_call_is_triggered() -> None:
         "vertical": "finance",
     }
     record = context_record(context_id="target", text="Apple revenue evidence.")
-    retrievers = {
+    retrievers: dict[str, dict[str, Any]] = {
         "finance": {
             "dense": LocalFallbackDenseRetriever([record]),
             "hybrid": HybridRetriever(

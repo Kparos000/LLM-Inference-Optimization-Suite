@@ -120,8 +120,9 @@ class SentenceTransformerEmbeddingProvider:
         self.model_name = model_name
         self.batch_size = max(batch_size, 256)
         self.model = SentenceTransformer(model_name, local_files_only=True)
-        if hasattr(self.model, "get_embedding_dimension"):
-            dimension = self.model.get_embedding_dimension()
+        get_embedding_dimension = getattr(self.model, "get_embedding_dimension", None)
+        if callable(get_embedding_dimension):
+            dimension = get_embedding_dimension()
         else:
             dimension = self.model.get_sentence_embedding_dimension()
         self.dimension = int(dimension or 0)

@@ -193,11 +193,13 @@ class AgenticTrace:
             msg = f"final_status must be one of: {', '.join(sorted(AGENTIC_FINAL_STATUSES))}"
             raise ValueError(msg)
         _validate_dict(self.token_estimates, "token_estimates")
-        for key, value in self.token_estimates.items():
-            _validate_non_negative_int(value, f"token_estimates.{key}")
+        for key, token_value in self.token_estimates.items():
+            _validate_non_negative_int(token_value, f"token_estimates.{key}")
         _validate_dict(self.latency_placeholders, "latency_placeholders")
-        for key, value in self.latency_placeholders.items():
-            if value is not None and (not isinstance(value, int | float) or value < 0):
+        for key, latency_value in self.latency_placeholders.items():
+            if latency_value is not None and (
+                not isinstance(latency_value, int | float) or latency_value < 0
+            ):
                 msg = f"latency_placeholders.{key} must be None or a number >= 0"
                 raise ValueError(msg)
         _validate_non_empty_string(self.backend_placeholder, "backend_placeholder")
