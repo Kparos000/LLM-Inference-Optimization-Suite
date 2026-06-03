@@ -1,10 +1,268 @@
+version: 1
+description: Production SLO targets for retrieval, generation quality, latency, throughput,
+  resource usage, and cost.
+verticals:
+  airline:
+    retrieval_slo:
+      candidate_recall_at_20_min: 0.9
+      candidate_recall_at_50_min: 0.95
+      final_recall_at_5_min: 0.9
+      mrr_min: 0.85
+    quality_slo:
+      groundedness_min: 0.95
+      citation_accuracy_min: 0.9
+      evidence_match_min: 0.9
+      task_success_min: 0.9
+      format_validity_min: 0.95
+      safety_violations_max: 0
+    latency_slo:
+      ttft_p50_ms_max: 500
+      ttft_p95_ms_max: 1000
+      ttft_p99_ms_max: 2000
+      itl_p50_ms_max: 25
+      itl_p95_ms_max: 50
+      itl_p99_ms_max: 100
+      tpot_p50_ms_max: 25
+      tpot_p95_ms_max: 50
+      tpot_p99_ms_max: 100
+      e2e_p50_ms_max: 2500
+      e2e_p95_ms_max: 4000
+      e2e_p99_ms_max: 7000
+    throughput_slo:
+      requests_per_second_min: 0.5
+      tokens_per_second_min: 20.0
+      successful_requests_per_second_min: 0.45
+    resource_slo:
+      gpu_utilization_min_pct: 50.0
+      gpu_memory_utilization_max_pct: 95.0
+      gpu_memory_peak_gb_max: 80.0
+      cpu_utilization_max_pct: 90.0
+      ram_usage_gb_max: 64.0
+    api_cost_slo:
+      input_tokens_per_request_max: 12000
+      output_tokens_per_request_max: 1024
+      total_tokens_per_request_max: 13000
+      api_cost_per_request_usd_max: 0.05
+      api_cost_per_1000_requests_usd_max: 50.0
+      api_cost_per_successful_answer_usd_max: 0.1
+      api_cost_per_grounded_successful_answer_usd_max: 0.15
+    gpu_cost_slo:
+      gpu_hourly_price_usd_required: true
+      gpu_cost_per_request_usd_max: 0.02
+      gpu_cost_per_1000_requests_usd_max: 20.0
+      gpu_cost_per_successful_answer_usd_max: 0.04
+      gpu_cost_per_grounded_successful_answer_usd_max: 0.06
+      tokens_per_gpu_dollar_min: 100000.0
+  retail:
+    retrieval_slo:
+      candidate_recall_at_20_min: 0.9
+      candidate_recall_at_50_min: 0.95
+      final_recall_at_5_min: 0.9
+      mrr_min: 0.85
+    quality_slo:
+      groundedness_min: 0.95
+      citation_accuracy_min: 0.9
+      evidence_match_min: 0.9
+      task_success_min: 0.9
+      format_validity_min: 0.95
+      safety_violations_max: 0
+    latency_slo:
+      ttft_p50_ms_max: 500
+      ttft_p95_ms_max: 1000
+      ttft_p99_ms_max: 2000
+      itl_p50_ms_max: 25
+      itl_p95_ms_max: 50
+      itl_p99_ms_max: 100
+      tpot_p50_ms_max: 25
+      tpot_p95_ms_max: 50
+      tpot_p99_ms_max: 100
+      e2e_p50_ms_max: 2500
+      e2e_p95_ms_max: 4000
+      e2e_p99_ms_max: 7000
+    throughput_slo:
+      requests_per_second_min: 0.5
+      tokens_per_second_min: 20.0
+      successful_requests_per_second_min: 0.45
+    resource_slo:
+      gpu_utilization_min_pct: 50.0
+      gpu_memory_utilization_max_pct: 95.0
+      gpu_memory_peak_gb_max: 80.0
+      cpu_utilization_max_pct: 90.0
+      ram_usage_gb_max: 64.0
+    api_cost_slo:
+      input_tokens_per_request_max: 12000
+      output_tokens_per_request_max: 1024
+      total_tokens_per_request_max: 13000
+      api_cost_per_request_usd_max: 0.05
+      api_cost_per_1000_requests_usd_max: 50.0
+      api_cost_per_successful_answer_usd_max: 0.1
+      api_cost_per_grounded_successful_answer_usd_max: 0.15
+    gpu_cost_slo:
+      gpu_hourly_price_usd_required: true
+      gpu_cost_per_request_usd_max: 0.02
+      gpu_cost_per_1000_requests_usd_max: 20.0
+      gpu_cost_per_successful_answer_usd_max: 0.04
+      gpu_cost_per_grounded_successful_answer_usd_max: 0.06
+      tokens_per_gpu_dollar_min: 100000.0
+  healthcare_admin:
+    retrieval_slo:
+      candidate_recall_at_20_min: 0.9
+      candidate_recall_at_50_min: 0.95
+      final_recall_at_5_min: 0.9
+      mrr_min: 0.85
+    quality_slo:
+      groundedness_min: 0.98
+      citation_accuracy_min: 0.9
+      evidence_match_min: 0.9
+      task_success_min: 0.9
+      format_validity_min: 0.95
+      safety_violations_max: 0
+    latency_slo:
+      ttft_p50_ms_max: 800
+      ttft_p95_ms_max: 1500
+      ttft_p99_ms_max: 3000
+      itl_p50_ms_max: 40
+      itl_p95_ms_max: 80
+      itl_p99_ms_max: 150
+      tpot_p50_ms_max: 40
+      tpot_p95_ms_max: 80
+      tpot_p99_ms_max: 150
+      e2e_p50_ms_max: 3500
+      e2e_p95_ms_max: 6000
+      e2e_p99_ms_max: 10000
+    throughput_slo:
+      requests_per_second_min: 0.5
+      tokens_per_second_min: 20.0
+      successful_requests_per_second_min: 0.45
+    resource_slo:
+      gpu_utilization_min_pct: 50.0
+      gpu_memory_utilization_max_pct: 95.0
+      gpu_memory_peak_gb_max: 80.0
+      cpu_utilization_max_pct: 90.0
+      ram_usage_gb_max: 64.0
+    api_cost_slo:
+      input_tokens_per_request_max: 12000
+      output_tokens_per_request_max: 1024
+      total_tokens_per_request_max: 13000
+      api_cost_per_request_usd_max: 0.05
+      api_cost_per_1000_requests_usd_max: 50.0
+      api_cost_per_successful_answer_usd_max: 0.1
+      api_cost_per_grounded_successful_answer_usd_max: 0.15
+    gpu_cost_slo:
+      gpu_hourly_price_usd_required: true
+      gpu_cost_per_request_usd_max: 0.02
+      gpu_cost_per_1000_requests_usd_max: 20.0
+      gpu_cost_per_successful_answer_usd_max: 0.04
+      gpu_cost_per_grounded_successful_answer_usd_max: 0.06
+      tokens_per_gpu_dollar_min: 100000.0
+  finance:
+    retrieval_slo:
+      candidate_recall_at_20_min: 0.9
+      candidate_recall_at_50_min: 0.95
+      final_recall_at_5_min: 0.9
+      mrr_min: 0.9
+    quality_slo:
+      groundedness_min: 0.98
+      citation_accuracy_min: 0.95
+      evidence_match_min: 0.95
+      task_success_min: 0.9
+      format_validity_min: 0.95
+      safety_violations_max: 0
+    latency_slo:
+      ttft_p50_ms_max: 1200
+      ttft_p95_ms_max: 2500
+      ttft_p99_ms_max: 5000
+      itl_p50_ms_max: 50
+      itl_p95_ms_max: 100
+      itl_p99_ms_max: 200
+      tpot_p50_ms_max: 50
+      tpot_p95_ms_max: 100
+      tpot_p99_ms_max: 200
+      e2e_p50_ms_max: 6000
+      e2e_p95_ms_max: 10000
+      e2e_p99_ms_max: 18000
+    throughput_slo:
+      requests_per_second_min: 0.5
+      tokens_per_second_min: 20.0
+      successful_requests_per_second_min: 0.45
+    resource_slo:
+      gpu_utilization_min_pct: 50.0
+      gpu_memory_utilization_max_pct: 95.0
+      gpu_memory_peak_gb_max: 80.0
+      cpu_utilization_max_pct: 90.0
+      ram_usage_gb_max: 64.0
+    api_cost_slo:
+      input_tokens_per_request_max: 12000
+      output_tokens_per_request_max: 1024
+      total_tokens_per_request_max: 13000
+      api_cost_per_request_usd_max: 0.05
+      api_cost_per_1000_requests_usd_max: 50.0
+      api_cost_per_successful_answer_usd_max: 0.1
+      api_cost_per_grounded_successful_answer_usd_max: 0.15
+    gpu_cost_slo:
+      gpu_hourly_price_usd_required: true
+      gpu_cost_per_request_usd_max: 0.02
+      gpu_cost_per_1000_requests_usd_max: 20.0
+      gpu_cost_per_successful_answer_usd_max: 0.04
+      gpu_cost_per_grounded_successful_answer_usd_max: 0.06
+      tokens_per_gpu_dollar_min: 100000.0
+  research_ai:
+    retrieval_slo:
+      candidate_recall_at_20_min: 0.9
+      candidate_recall_at_50_min: 0.95
+      final_recall_at_5_min: 0.9
+      mrr_min: 0.9
+    quality_slo:
+      groundedness_min: 0.95
+      citation_accuracy_min: 0.95
+      evidence_match_min: 0.95
+      task_success_min: 0.9
+      format_validity_min: 0.95
+      safety_violations_max: 0
+    latency_slo:
+      ttft_p50_ms_max: 1500
+      ttft_p95_ms_max: 3000
+      ttft_p99_ms_max: 7000
+      itl_p50_ms_max: 60
+      itl_p95_ms_max: 120
+      itl_p99_ms_max: 250
+      tpot_p50_ms_max: 60
+      tpot_p95_ms_max: 120
+      tpot_p99_ms_max: 250
+      e2e_p50_ms_max: 8000
+      e2e_p95_ms_max: 12000
+      e2e_p99_ms_max: 22000
+    throughput_slo:
+      requests_per_second_min: 0.5
+      tokens_per_second_min: 20.0
+      successful_requests_per_second_min: 0.45
+    resource_slo:
+      gpu_utilization_min_pct: 50.0
+      gpu_memory_utilization_max_pct: 95.0
+      gpu_memory_peak_gb_max: 80.0
+      cpu_utilization_max_pct: 90.0
+      ram_usage_gb_max: 64.0
+    api_cost_slo:
+      input_tokens_per_request_max: 12000
+      output_tokens_per_request_max: 1024
+      total_tokens_per_request_max: 13000
+      api_cost_per_request_usd_max: 0.05
+      api_cost_per_1000_requests_usd_max: 50.0
+      api_cost_per_successful_answer_usd_max: 0.1
+      api_cost_per_grounded_successful_answer_usd_max: 0.15
+    gpu_cost_slo:
+      gpu_hourly_price_usd_required: true
+      gpu_cost_per_request_usd_max: 0.02
+      gpu_cost_per_1000_requests_usd_max: 20.0
+      gpu_cost_per_successful_answer_usd_max: 0.04
+      gpu_cost_per_grounded_successful_answer_usd_max: 0.06
+      tokens_per_gpu_dollar_min: 100000.0
 retrieval:
-  overall_prompt_plus_metadata_hybrid_recall_at_5: 0.80
-  finance_prompt_plus_metadata_hybrid_recall_at_5: 0.80
-  overall_prompt_text_only_hybrid_recall_at_5: 0.70
+  overall_prompt_plus_metadata_hybrid_recall_at_5: 0.8
+  finance_prompt_plus_metadata_hybrid_recall_at_5: 0.8
+  overall_prompt_text_only_hybrid_recall_at_5: 0.7
   finance_prompt_text_only_hybrid_recall_at_5: 0.65
   source_hint_assisted_hybrid_recall_at_5: 0.95
-
 compression:
-  mm3_compression_token_reduction_pct: 0.20
+  mm3_compression_token_reduction_pct: 0.2
   mm3_compression_recall_loss: 0.05
