@@ -118,7 +118,7 @@ class SentenceTransformerEmbeddingProvider:
         from sentence_transformers import SentenceTransformer
 
         self.model_name = model_name
-        self.batch_size = batch_size
+        self.batch_size = max(batch_size, 256)
         self.model = SentenceTransformer(model_name, local_files_only=True)
         if hasattr(self.model, "get_embedding_dimension"):
             dimension = self.model.get_embedding_dimension()
@@ -712,7 +712,8 @@ class QdrantVectorSearcher:
         from qdrant_client import models
 
         limit = max(top_k, 120)
-        for batch in batched_strings(missing, max(1, min(self.config.batch_size, 32))):
+        query_batch_size = max(1, min(max(self.config.batch_size, 256), 512))
+        for batch in batched_strings(missing, query_batch_size):
             requests = [
                 models.QueryRequest(
                     query=self._embedding_cache[query],
@@ -753,7 +754,8 @@ class QdrantVectorSearcher:
         limit = min(max(top_k, 120), len(self._snapshot_records))
         if not missing or limit <= 0:
             return
-        for batch in batched_strings(missing, max(1, min(self.config.batch_size, 128))):
+        query_batch_size = max(1, min(max(self.config.batch_size, 256), 512))
+        for batch in batched_strings(missing, query_batch_size):
             query_matrix = np.asarray(
                 [self._embedding_cache[query] for query in batch],
                 dtype="float32",

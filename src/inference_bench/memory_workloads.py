@@ -20,6 +20,20 @@ from typing import Any, cast
 from inference_bench.config import load_memory_modes_config
 from inference_bench.context_corpora import VERTICALS, benchmark_paths, read_jsonl
 from inference_bench.context_schema import ContextRecord, WorkloadRecord
+from inference_bench.evidence_contract import (
+    EVIDENCE_SELECTION_SUMMARY_FIELDS,
+    build_evidence_selection_report,
+    evidence_contracts_from_results,
+    validate_evidence_contract,
+)
+from inference_bench.gold_evidence_audit import (
+    GOLD_EVIDENCE_AUDIT_SUMMARY_FIELDS,
+    build_gold_evidence_audit_report,
+)
+from inference_bench.reranker_calibration import (
+    RERANKER_CALIBRATION_SUMMARY_FIELDS,
+    build_reranker_calibration_report,
+)
 from inference_bench.retrieval import (
     DEFAULT_CANDIDATE_TOP_K_DENSE,
     DEFAULT_CANDIDATE_TOP_K_LEXICAL,
@@ -38,6 +52,10 @@ from inference_bench.retrieval import (
     rerank_candidate_results,
     retrieval_record_payload,
     tokenize,
+)
+from inference_bench.retrieval_quality_gate import (
+    QUALITY_GATE_SUMMARY_FIELDS,
+    build_retrieval_quality_gate_report,
 )
 from inference_bench.run_safety_audit import build_run_safety_audit
 from inference_bench.vector_store import QdrantVectorSearcher
@@ -736,6 +754,38 @@ def context_records_from_results(results: list[RetrievalResult]) -> list[Context
     return [result.context_record for result in results]
 
 
+def recall_at_candidate_k(
+    *,
+    gold_ids: list[str],
+    candidate_results: list[RetrievalResult],
+    top_k: int,
+) -> float:
+    """Return recall against the candidate list truncated to top-k."""
+
+    return float(
+        evaluate_retrieval_results(
+            gold_evidence_ids=gold_ids,
+            results=candidate_results[:top_k],
+        )["recall_at_5"]
+    )
+
+
+def mrr_at_candidate_k(
+    *,
+    gold_ids: list[str],
+    candidate_results: list[RetrievalResult],
+    top_k: int,
+) -> float:
+    """Return MRR against the candidate list truncated to top-k."""
+
+    return float(
+        evaluate_retrieval_results(
+            gold_evidence_ids=gold_ids,
+            results=candidate_results[:top_k],
+        )["mrr"]
+    )
+
+
 def build_one_workload_record(
     *,
     prompt: dict[str, Any],
@@ -806,6 +856,36 @@ def build_one_workload_record(
         gold_evidence_ids=gold_ids,
         results=candidate_results,
     )
+    candidate_recall_at_10 = recall_at_candidate_k(
+        gold_ids=gold_ids,
+        candidate_results=candidate_results,
+        top_k=10,
+    )
+    candidate_recall_at_20 = recall_at_candidate_k(
+        gold_ids=gold_ids,
+        candidate_results=candidate_results,
+        top_k=20,
+    )
+    candidate_recall_at_50 = recall_at_candidate_k(
+        gold_ids=gold_ids,
+        candidate_results=candidate_results,
+        top_k=50,
+    )
+    candidate_recall_at_100 = recall_at_candidate_k(
+        gold_ids=gold_ids,
+        candidate_results=candidate_results,
+        top_k=100,
+    )
+    candidate_recall_at_200 = recall_at_candidate_k(
+        gold_ids=gold_ids,
+        candidate_results=candidate_results,
+        top_k=200,
+    )
+    candidate_mrr_at_100 = mrr_at_candidate_k(
+        gold_ids=gold_ids,
+        candidate_results=candidate_results,
+        top_k=100,
+    )
     pre_rerank_context_ids = [
         str(context_id)
         for context_id in retrieval.diagnostics.get("pre_rerank_top_context_ids", [])
@@ -863,6 +943,20 @@ def build_one_workload_record(
         gold_evidence_ids=gold_ids,
         results=selected_results,
     )
+    selection_reasons_by_context_id = {
+        str(context_id): str(reason)
+        for context_id, reason in (
+            retrieval.diagnostics.get("selection_reasons_by_context_id") or {}
+        ).items()
+    }
+    evidence_contract_valid = True
+    evidence_contract_count = 0
+    for contract in evidence_contracts_from_results(
+        selected_results[:1],
+        selection_reasons_by_context_id=selection_reasons_by_context_id,
+    ):
+        validate_evidence_contract(contract)
+        evidence_contract_count += 1
     metadata = retrieval_metadata_payload(
         retrieval=retrieval,
         selected_results=selected_results,
@@ -871,6 +965,19 @@ def build_one_workload_record(
         query_build=query_build,
         compression_metadata=compression_metadata,
     )
+    metadata["reranker_backend"] = retrieval.diagnostics.get("reranker_backend", "heuristic")
+    metadata["calibrated_reranker_enabled"] = retrieval.diagnostics.get(
+        "calibrated_reranker_enabled",
+        False,
+    )
+    metadata["evidence_selector_strategy"] = retrieval.diagnostics.get(
+        "evidence_selector_strategy",
+        "unavailable",
+    )
+    metadata["selection_reasons_by_context_id"] = selection_reasons_by_context_id
+    metadata["evidence_contract_schema"] = "phase3_block12"
+    metadata["selected_evidence_contract_count_validated"] = evidence_contract_count
+    metadata["evidence_contract_valid"] = evidence_contract_valid
     question = str(prompt.get("question") or prompt.get("issue") or "")
     workload_record = WorkloadRecord(
         workload_id=f"{dataset_split}:{ablation_mode}:{memory_mode}:{prompt_id}",
@@ -942,13 +1049,43 @@ def build_one_workload_record(
         "candidate_context_ids": candidate_context_ids,
         "pre_rerank_top_context_ids": pre_rerank_context_ids,
         "gold_in_candidate_pool": candidate_evaluation["gold_evidence_included"],
-        "candidate_recall_at_50": candidate_evaluation["recall_at_5"],
+        "candidate_recall_at_10": candidate_recall_at_10,
+        "candidate_recall_at_20": candidate_recall_at_20,
+        "candidate_recall_at_50": candidate_recall_at_50,
+        "candidate_recall_at_100": candidate_recall_at_100,
+        "candidate_recall_at_200": candidate_recall_at_200,
+        "candidate_mrr_at_100": candidate_mrr_at_100,
+        "candidate_diagnostic_max_k_available": len(candidate_results),
+        "candidate_recall_at_100_feasible": len(candidate_results) >= 100,
+        "candidate_recall_at_200_feasible": len(candidate_results) >= 200,
         "pre_rerank_recall_at_5": pre_rerank_evaluation["recall_at_5"],
+        "gold_in_top50_but_not_top5": (
+            candidate_recall_at_50 > 0 and float(evaluation["recall_at_5"]) <= 0
+        ),
+        "gold_in_top100_but_not_top5": (
+            candidate_recall_at_100 > 0 and float(evaluation["recall_at_5"]) <= 0
+        ),
+        "gold_absent_from_top100": candidate_recall_at_100 <= 0 and bool(gold_ids),
         "reranker_rescued_gold": (
             bool(evaluation["gold_evidence_included"])
             and not bool(pre_rerank_evaluation["gold_evidence_included"])
             and bool(candidate_evaluation["gold_evidence_included"])
         ),
+        "reranker_backend": retrieval.diagnostics.get("reranker_backend", "heuristic"),
+        "calibrated_reranker_enabled": retrieval.diagnostics.get(
+            "calibrated_reranker_enabled",
+            False,
+        ),
+        "evidence_selector_strategy": retrieval.diagnostics.get(
+            "evidence_selector_strategy",
+            "unavailable",
+        ),
+        "selection_reasons": [
+            selection_reasons_by_context_id.get(result.context_record.context_id, "")
+            for result in selected_results
+        ],
+        "evidence_contract_valid": evidence_contract_valid,
+        "duplicate_avoidance_applied": True,
         "candidate_top_k_dense": retrieval.diagnostics.get(
             "candidate_top_k_dense",
             0,
@@ -1001,13 +1138,27 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "avg_candidates_after_dedupe": 0.0,
             "avg_expanded_query_count": 0.0,
             "gold_in_candidate_pool_count": 0,
+            "candidate_recall_at_10": 0.0,
+            "candidate_recall_at_20": 0.0,
             "candidate_recall_at_50": 0.0,
+            "candidate_recall_at_100": 0.0,
+            "candidate_recall_at_200": 0.0,
+            "candidate_mrr_at_100": 0.0,
+            "candidate_diagnostic_max_k_available": 0,
+            "candidate_recall_at_100_feasible": False,
+            "candidate_recall_at_200_feasible": False,
             "pre_rerank_recall_at_5": 0.0,
             "reranker_rescued_gold_count": 0,
+            "gold_in_top50_but_not_top5_rate": 0.0,
+            "gold_in_top100_but_not_top5_rate": 0.0,
+            "gold_absent_from_top100_rate": 0.0,
+            "reranker_backend": "unavailable",
+            "calibrated_reranker_enabled": False,
+            "evidence_selector_strategy": "unavailable",
         }
     distinct_context_ids: set[str] = set()
     compression_values = [
-        float(row["compression_ratio"]) for row in rows if row["compression_ratio"] is not None
+        float(row["compression_ratio"]) for row in rows if row.get("compression_ratio") is not None
     ]
     token_reduction_pct_values = [
         float(row["token_reduction_pct"])
@@ -1073,9 +1224,38 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "gold_in_candidate_pool_count": sum(
             1 for row in rows if bool(row.get("gold_in_candidate_pool"))
         ),
+        "candidate_recall_at_10": round(
+            mean(float(row.get("candidate_recall_at_10") or 0.0) for row in rows),
+            6,
+        ),
+        "candidate_recall_at_20": round(
+            mean(float(row.get("candidate_recall_at_20") or 0.0) for row in rows),
+            6,
+        ),
         "candidate_recall_at_50": round(
             mean(float(row.get("candidate_recall_at_50") or 0.0) for row in rows),
             6,
+        ),
+        "candidate_recall_at_100": round(
+            mean(float(row.get("candidate_recall_at_100") or 0.0) for row in rows),
+            6,
+        ),
+        "candidate_recall_at_200": round(
+            mean(float(row.get("candidate_recall_at_200") or 0.0) for row in rows),
+            6,
+        ),
+        "candidate_mrr_at_100": round(
+            mean(float(row.get("candidate_mrr_at_100") or 0.0) for row in rows),
+            6,
+        ),
+        "candidate_diagnostic_max_k_available": max(
+            int(row.get("candidate_diagnostic_max_k_available") or 0) for row in rows
+        ),
+        "candidate_recall_at_100_feasible": all(
+            bool(row.get("candidate_recall_at_100_feasible")) for row in rows
+        ),
+        "candidate_recall_at_200_feasible": all(
+            bool(row.get("candidate_recall_at_200_feasible")) for row in rows
         ),
         "pre_rerank_recall_at_5": round(
             mean(float(row.get("pre_rerank_recall_at_5") or 0.0) for row in rows),
@@ -1083,6 +1263,27 @@ def aggregate_eval_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "reranker_rescued_gold_count": sum(
             1 for row in rows if bool(row.get("reranker_rescued_gold"))
+        ),
+        "gold_in_top50_but_not_top5_rate": round(
+            mean(1.0 if row.get("gold_in_top50_but_not_top5") else 0.0 for row in rows),
+            6,
+        ),
+        "gold_in_top100_but_not_top5_rate": round(
+            mean(1.0 if row.get("gold_in_top100_but_not_top5") else 0.0 for row in rows),
+            6,
+        ),
+        "gold_absent_from_top100_rate": round(
+            mean(1.0 if row.get("gold_absent_from_top100") else 0.0 for row in rows),
+            6,
+        ),
+        "reranker_backend": ",".join(
+            sorted({str(row.get("reranker_backend") or "unavailable") for row in rows})
+        ),
+        "calibrated_reranker_enabled": any(
+            bool(row.get("calibrated_reranker_enabled")) for row in rows
+        ),
+        "evidence_selector_strategy": ",".join(
+            sorted({str(row.get("evidence_selector_strategy") or "unavailable") for row in rows})
         ),
     }
 
@@ -1311,7 +1512,11 @@ def build_retrieval_diagnostic_report(
                     "retrieved_context_ids": row.get("retrieved_context_ids", []),
                     "candidate_context_ids": row.get("candidate_context_ids", [])[:50],
                     "gold_in_candidate_pool": row.get("gold_in_candidate_pool"),
+                    "candidate_recall_at_10": row.get("candidate_recall_at_10"),
+                    "candidate_recall_at_20": row.get("candidate_recall_at_20"),
                     "candidate_recall_at_50": row.get("candidate_recall_at_50"),
+                    "candidate_recall_at_100": row.get("candidate_recall_at_100"),
+                    "candidate_recall_at_200": row.get("candidate_recall_at_200"),
                     "pre_rerank_top_context_ids": row.get("pre_rerank_top_context_ids", []),
                     "pre_rerank_recall_at_5": row.get("pre_rerank_recall_at_5"),
                     "reranker_rescued_gold": row.get("reranker_rescued_gold"),
@@ -1357,6 +1562,29 @@ def build_retrieval_diagnostic_report(
                     mean(float(row.get("candidate_recall_at_50") or 0.0) for row in rows),
                     6,
                 ),
+                "candidate_recall_at_100": round(
+                    mean(float(row.get("candidate_recall_at_100") or 0.0) for row in rows),
+                    6,
+                ),
+                "candidate_recall_at_200": round(
+                    mean(float(row.get("candidate_recall_at_200") or 0.0) for row in rows),
+                    6,
+                ),
+                "candidate_diagnostic_max_k_available": max(
+                    int(row.get("candidate_diagnostic_max_k_available") or 0) for row in rows
+                ),
+                "gold_in_top50_but_not_top5_rate": round(
+                    mean(1.0 if row.get("gold_in_top50_but_not_top5") else 0.0 for row in rows),
+                    6,
+                ),
+                "gold_in_top100_but_not_top5_rate": round(
+                    mean(1.0 if row.get("gold_in_top100_but_not_top5") else 0.0 for row in rows),
+                    6,
+                ),
+                "gold_absent_from_top100_rate": round(
+                    mean(1.0 if row.get("gold_absent_from_top100") else 0.0 for row in rows),
+                    6,
+                ),
                 "gold_in_candidate_pool_count": sum(
                     1 for row in rows if bool(row.get("gold_in_candidate_pool"))
                 ),
@@ -1372,6 +1600,12 @@ def build_retrieval_diagnostic_report(
                 "mrr": 0.0,
                 "failure_count": 0,
                 "candidate_recall_at_50": 0.0,
+                "candidate_recall_at_100": 0.0,
+                "candidate_recall_at_200": 0.0,
+                "candidate_diagnostic_max_k_available": 0,
+                "gold_in_top50_but_not_top5_rate": 0.0,
+                "gold_in_top100_but_not_top5_rate": 0.0,
+                "gold_absent_from_top100_rate": 0.0,
                 "gold_in_candidate_pool_count": 0,
                 "reranker_rescued_gold_count": 0,
                 "top_failure_reasons": {},
@@ -1390,6 +1624,14 @@ def build_retrieval_diagnostic_report(
                 "mrr": payload["mrr"],
                 "failure_count": payload["failure_count"],
                 "candidate_recall_at_50": payload["candidate_recall_at_50"],
+                "candidate_recall_at_100": payload["candidate_recall_at_100"],
+                "candidate_recall_at_200": payload["candidate_recall_at_200"],
+                "candidate_diagnostic_max_k_available": payload[
+                    "candidate_diagnostic_max_k_available"
+                ],
+                "gold_in_top50_but_not_top5_rate": payload["gold_in_top50_but_not_top5_rate"],
+                "gold_in_top100_but_not_top5_rate": payload["gold_in_top100_but_not_top5_rate"],
+                "gold_absent_from_top100_rate": payload["gold_absent_from_top100_rate"],
                 "gold_in_candidate_pool_count": payload["gold_in_candidate_pool_count"],
                 "reranker_rescued_gold_count": payload["reranker_rescued_gold_count"],
                 "query_enrichment_used": any(
@@ -1688,9 +1930,23 @@ def write_workload_reports(
             "avg_candidates_after_dedupe",
             "avg_expanded_query_count",
             "gold_in_candidate_pool_count",
+            "candidate_recall_at_10",
+            "candidate_recall_at_20",
             "candidate_recall_at_50",
+            "candidate_recall_at_100",
+            "candidate_recall_at_200",
+            "candidate_mrr_at_100",
+            "candidate_diagnostic_max_k_available",
+            "candidate_recall_at_100_feasible",
+            "candidate_recall_at_200_feasible",
             "pre_rerank_recall_at_5",
             "reranker_rescued_gold_count",
+            "gold_in_top50_but_not_top5_rate",
+            "gold_in_top100_but_not_top5_rate",
+            "gold_absent_from_top100_rate",
+            "reranker_backend",
+            "calibrated_reranker_enabled",
+            "evidence_selector_strategy",
             "compression_ratio",
             "token_reduction_pct",
             "recall_loss",
@@ -1710,6 +1966,12 @@ def write_workload_reports(
             "mrr",
             "failure_count",
             "candidate_recall_at_50",
+            "candidate_recall_at_100",
+            "candidate_recall_at_200",
+            "candidate_diagnostic_max_k_available",
+            "gold_in_top50_but_not_top5_rate",
+            "gold_in_top100_but_not_top5_rate",
+            "gold_absent_from_top100_rate",
             "gold_in_candidate_pool_count",
             "reranker_rescued_gold_count",
             "query_enrichment_used",
@@ -1901,6 +2163,24 @@ def build_memory_mode_workloads(
     compression_diagnostic_report, compression_diagnostic_rows = (
         build_compression_diagnostic_report(evaluation_rows)
     )
+    quality_gate_report, quality_gate_rows = build_retrieval_quality_gate_report(
+        retrieval_summary_rows,
+        compression_diagnostic_rows,
+    )
+    gold_evidence_audit_report, gold_evidence_audit_rows = build_gold_evidence_audit_report(
+        prompts_by_vertical=prompts_by_vertical,
+        gold_by_vertical=gold_by_vertical,
+        corpora_by_vertical=corpora_by_vertical,
+        evaluation_rows=evaluation_rows,
+    )
+    reranker_calibration_report, reranker_calibration_rows = build_reranker_calibration_report(
+        evaluation_rows
+    )
+    evidence_selection_report, evidence_selection_rows = build_evidence_selection_report(
+        evaluation_rows
+    )
+    workload_report["quality_gate_status"] = quality_gate_report["quality_gate_status"]
+    workload_report["quality_gate_passed"] = quality_gate_report["passed"]
     run_safety_report, run_safety_rows = build_run_safety_audit()
     write_workload_reports(
         output_report_root=report_root,
@@ -1914,6 +2194,30 @@ def build_memory_mode_workloads(
         compression_diagnostic_rows=compression_diagnostic_rows,
         run_safety_report=run_safety_report,
         run_safety_rows=run_safety_rows,
+    )
+    write_json(report_root / "retrieval_quality_gate_report.json", quality_gate_report)
+    write_csv(
+        report_root / "retrieval_quality_gate_summary.csv",
+        quality_gate_rows,
+        QUALITY_GATE_SUMMARY_FIELDS,
+    )
+    write_json(report_root / "gold_evidence_audit_report.json", gold_evidence_audit_report)
+    write_csv(
+        report_root / "gold_evidence_audit_summary.csv",
+        gold_evidence_audit_rows,
+        GOLD_EVIDENCE_AUDIT_SUMMARY_FIELDS,
+    )
+    write_json(report_root / "reranker_calibration_report.json", reranker_calibration_report)
+    write_csv(
+        report_root / "reranker_calibration_summary.csv",
+        reranker_calibration_rows,
+        RERANKER_CALIBRATION_SUMMARY_FIELDS,
+    )
+    write_json(report_root / "evidence_selection_report.json", evidence_selection_report)
+    write_csv(
+        report_root / "evidence_selection_summary.csv",
+        evidence_selection_rows,
+        EVIDENCE_SELECTION_SUMMARY_FIELDS,
     )
     return WorkloadBuildResult(
         workload_build_report=workload_report,

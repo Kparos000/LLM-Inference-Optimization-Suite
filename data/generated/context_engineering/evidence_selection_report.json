@@ -1,0 +1,2209 @@
+{
+  "by_split": {
+    "controlled_2000": {
+      "prompt_plus_metadata": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          }
+        }
+      },
+      "prompt_plus_source_hints": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          }
+        }
+      },
+      "prompt_text_only": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 400,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 400,
+            "evidence_contract_valid_count": 400,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 400,
+            "record_count": 400,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          }
+        }
+      }
+    },
+    "final_10000": {
+      "prompt_plus_metadata": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          }
+        }
+      },
+      "prompt_plus_source_hints": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        }
+      },
+      "prompt_text_only": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 2000,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "metadata_overlap,finance_selector",
+              "title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 2000,
+            "evidence_contract_valid_count": 2000,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 2000,
+            "record_count": 2000,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          }
+        }
+      }
+    },
+    "smoke_500": {
+      "prompt_plus_metadata": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        }
+      },
+      "prompt_plus_source_hints": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,section_match,title_overlap,metadata_overlap,source_hint_match_assisted,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted",
+              "metric_or_concept_match,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap,source_hint_match_assisted"
+            ]
+          }
+        }
+      },
+      "prompt_text_only": {
+        "mm0_no_context": {
+          "airline": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "finance": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          },
+          "retail": {
+            "avg_selected_evidence_count": 0,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "unavailable",
+            "exact_top5_count": 0,
+            "record_count": 100,
+            "selection_reason_sample": []
+          }
+        },
+        "mm1_dense_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        },
+        "mm2_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        },
+        "mm3_compressed_hybrid_top5": {
+          "airline": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "finance": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "finance_calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "company_or_ticker_match,title_overlap,metadata_overlap,finance_selector",
+              "metric_or_concept_match,title_overlap,metadata_overlap,finance_selector",
+              "company_or_ticker_match,metric_or_concept_match,title_overlap,metadata_overlap,finance_selector"
+            ]
+          },
+          "healthcare_admin": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap",
+              "hybrid_score_rank",
+              "metric_or_concept_match,metadata_overlap"
+            ]
+          },
+          "research_ai": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          },
+          "retail": {
+            "avg_selected_evidence_count": 5,
+            "duplicate_avoidance_applied_count": 100,
+            "evidence_contract_valid_count": 100,
+            "evidence_selector_strategy": "calibrated_top5",
+            "exact_top5_count": 100,
+            "record_count": 100,
+            "selection_reason_sample": [
+              "metric_or_concept_match,title_overlap,metadata_overlap"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "contract_excludes_gold_labels": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "oracle_strategy_used_for_final_selection": false,
+  "selector_strategies": [
+    "calibrated_top5",
+    "finance_calibrated_top5",
+    "finance_diverse_metric_period_top5",
+    "oracle_diagnostic_only"
+  ]
+}

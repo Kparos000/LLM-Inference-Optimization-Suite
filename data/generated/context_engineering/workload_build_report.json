@@ -472,7 +472,7 @@
   "context_root": "data/generated/context_engineering",
   "dataset_root": "data/scaleup_2000_full",
   "dense_backend_requested": "qdrant_vector",
-  "generated_at_utc": "2026-06-02T19:02:50.944836+00:00",
+  "generated_at_utc": "2026-06-03T00:13:00.061982+00:00",
   "memory_modes": [
     "mm0_no_context",
     "mm1_dense_top5",
@@ -488,6 +488,8 @@
     "research_ai": 1532,
     "retail": 3584
   },
+  "quality_gate_passed": false,
+  "quality_gate_status": "BLOCKED",
   "splits": [
     "smoke_500",
     "controlled_2000",

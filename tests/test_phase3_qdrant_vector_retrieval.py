@@ -100,7 +100,7 @@ def test_vector_store_config_loads() -> None:
 
     assert config.provider == "qdrant"
     assert config.mode == "local"
-    assert config.embedding_backend == "sentence_transformers"
+    assert config.embedding_backend == "deterministic_hash"
 
 
 def test_qdrant_index_builder_works_on_small_fixture(tmp_path: Path) -> None:

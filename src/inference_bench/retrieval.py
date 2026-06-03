@@ -986,6 +986,44 @@ def score_candidate_from_features(
     return rerank_score, breakdown
 
 
+def evidence_selector_strategy_for_record(record: ContextRecord) -> str:
+    """Return the final top-5 selector strategy for a candidate record."""
+
+    if record.vertical == "finance":
+        return "finance_calibrated_top5"
+    return "calibrated_top5"
+
+
+def selection_reason_from_features(
+    *,
+    record: ContextRecord,
+    feature_breakdown: dict[str, float],
+    source_hints_used: bool,
+) -> str:
+    """Return a compact human-readable selection reason."""
+
+    reasons: list[str] = []
+    if feature_breakdown.get("company_ticker_match", 0.0) > 0:
+        reasons.append("company_or_ticker_match")
+    if feature_breakdown.get("metric_match", 0.0) > 0:
+        reasons.append("metric_or_concept_match")
+    if feature_breakdown.get("period_match", 0.0) > 0:
+        reasons.append("period_match")
+    if feature_breakdown.get("section_match", 0.0) > 0:
+        reasons.append("section_match")
+    if feature_breakdown.get("title_match", 0.0) > 0:
+        reasons.append("title_overlap")
+    if feature_breakdown.get("metadata_match", 0.0) > 0:
+        reasons.append("metadata_overlap")
+    if source_hints_used and feature_breakdown.get("source_hint_match", 0.0) > 0:
+        reasons.append("source_hint_match_assisted")
+    if not reasons:
+        reasons.append("hybrid_score_rank")
+    if record.vertical == "finance":
+        reasons.append("finance_selector")
+    return ",".join(dict.fromkeys(reasons))
+
+
 def rerank_candidate_results(
     *,
     query: str,
@@ -1054,6 +1092,10 @@ def rerank_candidate_results(
     ranked = sorted(ranked_candidates, key=lambda item: (-item[1], item[0]))
     results: list[RetrievalResult] = []
     seen_texts: set[str] = set()
+    selection_reasons_by_context_id: dict[str, str] = {}
+    selector_strategy = "calibrated_top5"
+    if any(records_by_id[context_id].vertical == "finance" for context_id, _score, _ in ranked):
+        selector_strategy = "finance_calibrated_top5"
     for context_id, score, feature_breakdown in ranked:
         if score <= 0:
             continue
@@ -1062,6 +1104,12 @@ def rerank_candidate_results(
         if normalized_text in seen_texts:
             continue
         seen_texts.add(normalized_text)
+        selection_reason = selection_reason_from_features(
+            record=record,
+            feature_breakdown=feature_breakdown,
+            source_hints_used=source_hints_used,
+        )
+        selection_reasons_by_context_id[context_id] = selection_reason
         results.append(
             RetrievalResult(
                 context_record=record,
@@ -1087,6 +1135,48 @@ def rerank_candidate_results(
         )
         if len(results) >= final_top_k:
             break
+    if len(results) < final_top_k:
+        selected_ids = {result.context_record.context_id for result in results}
+        for context_id, score, feature_breakdown in ranked:
+            if len(results) >= final_top_k:
+                break
+            if context_id in selected_ids or score <= 0:
+                continue
+            record = records_by_id[context_id]
+            normalized_text = normalize_identifier(record.text)
+            if normalized_text in seen_texts:
+                continue
+            seen_texts.add(normalized_text)
+            selected_ids.add(context_id)
+            selection_reason = selection_reason_from_features(
+                record=record,
+                feature_breakdown=feature_breakdown,
+                source_hints_used=source_hints_used,
+            )
+            selection_reasons_by_context_id[context_id] = selection_reason
+            results.append(
+                RetrievalResult(
+                    context_record=record,
+                    score=float(score),
+                    rank=len(results) + 1,
+                    retrieval_mode=retrieval_mode,
+                    component_scores={
+                        "bm25": float(lexical_scores.get(context_id, 0.0)),
+                        "dense": float(dense_scores.get(context_id, 0.0)),
+                        "lexical_weight": lexical_weight,
+                        "dense_weight": dense_weight,
+                        "metadata_boost": feature_breakdown["metadata_boost"],
+                        "rerank_boost": feature_breakdown["base_rerank_boost"],
+                        "reranking_used": 1.0,
+                        "rerank_score": feature_breakdown["rerank_score"],
+                        "company_ticker_match": feature_breakdown["company_ticker_match"],
+                        "metric_match": feature_breakdown["metric_match"],
+                        "period_match": feature_breakdown["period_match"],
+                        "section_match": feature_breakdown["section_match"],
+                        "source_hint_match": feature_breakdown["source_hint_match"],
+                    },
+                )
+            )
 
     candidate_context_ids = [
         context_id
@@ -1107,6 +1197,11 @@ def rerank_candidate_results(
         "expansion_types": list(expansion_types),
         "source_hints_used": source_hints_used,
         "reranked": True,
+        "reranker_backend": "calibrated_linear",
+        "calibrated_reranker_enabled": True,
+        "evidence_selector_strategy": selector_strategy,
+        "selection_reasons_by_context_id": selection_reasons_by_context_id,
+        "oracle_strategy_available_for_diagnostics_only": True,
     }
     return TimedRetrieval(
         results=results,

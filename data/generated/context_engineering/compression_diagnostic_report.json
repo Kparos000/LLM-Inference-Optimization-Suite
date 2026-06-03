@@ -8,541 +8,541 @@
     "controlled_2000": {
       "prompt_plus_metadata": {
         "airline": {
-          "compressed_context_tokens": 58135,
-          "gold_evidence_retained_count": 381,
-          "original_context_tokens": 71725,
-          "recall_after_compression": 0.712708,
-          "recall_before_compression": 0.712708,
+          "compressed_context_tokens": 67738,
+          "gold_evidence_retained_count": 395,
+          "original_context_tokens": 88998,
+          "recall_after_compression": 0.706042,
+          "recall_before_compression": 0.706042,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 13590,
-          "token_reduction_pct": 0.189474
+          "token_reduction": 21260,
+          "token_reduction_pct": 0.238882
         },
         "finance": {
-          "compressed_context_tokens": 94319,
-          "gold_evidence_retained_count": 118,
-          "original_context_tokens": 132362,
-          "recall_after_compression": 0.27375,
-          "recall_before_compression": 0.27375,
+          "compressed_context_tokens": 74406,
+          "gold_evidence_retained_count": 116,
+          "original_context_tokens": 104852,
+          "recall_after_compression": 0.266875,
+          "recall_before_compression": 0.266875,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 38043,
-          "token_reduction_pct": 0.287416
+          "token_reduction": 30446,
+          "token_reduction_pct": 0.290371
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 56581,
-          "gold_evidence_retained_count": 392,
-          "original_context_tokens": 67667,
-          "recall_after_compression": 0.824583,
-          "recall_before_compression": 0.824583,
+          "compressed_context_tokens": 64257,
+          "gold_evidence_retained_count": 396,
+          "original_context_tokens": 81794,
+          "recall_after_compression": 0.789583,
+          "recall_before_compression": 0.789583,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 11086,
-          "token_reduction_pct": 0.163832
+          "token_reduction": 17537,
+          "token_reduction_pct": 0.214404
         },
         "research_ai": {
-          "compressed_context_tokens": 107885,
-          "gold_evidence_retained_count": 305,
-          "original_context_tokens": 151205,
-          "recall_after_compression": 0.651694,
-          "recall_before_compression": 0.651694,
+          "compressed_context_tokens": 113996,
+          "gold_evidence_retained_count": 300,
+          "original_context_tokens": 159663,
+          "recall_after_compression": 0.645117,
+          "recall_before_compression": 0.645117,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 43320,
-          "token_reduction_pct": 0.286498
+          "token_reduction": 45667,
+          "token_reduction_pct": 0.286021
         },
         "retail": {
-          "compressed_context_tokens": 85327,
-          "gold_evidence_retained_count": 123,
-          "original_context_tokens": 119474,
-          "recall_after_compression": 0.264583,
-          "recall_before_compression": 0.264583,
+          "compressed_context_tokens": 82036,
+          "gold_evidence_retained_count": 139,
+          "original_context_tokens": 114884,
+          "recall_after_compression": 0.312083,
+          "recall_before_compression": 0.312083,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 34147,
-          "token_reduction_pct": 0.285811
+          "token_reduction": 32848,
+          "token_reduction_pct": 0.285923
         }
       },
       "prompt_plus_source_hints": {
         "airline": {
-          "compressed_context_tokens": 64504,
+          "compressed_context_tokens": 67964,
           "gold_evidence_retained_count": 400,
-          "original_context_tokens": 82703,
+          "original_context_tokens": 89315,
           "recall_after_compression": 0.977708,
           "recall_before_compression": 0.977708,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 18199,
-          "token_reduction_pct": 0.220052
+          "token_reduction": 21351,
+          "token_reduction_pct": 0.239053
         },
         "finance": {
-          "compressed_context_tokens": 88292,
+          "compressed_context_tokens": 78720,
           "gold_evidence_retained_count": 399,
-          "original_context_tokens": 123958,
+          "original_context_tokens": 110758,
           "recall_after_compression": 0.9975,
           "recall_before_compression": 0.9975,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 35666,
-          "token_reduction_pct": 0.287726
+          "token_reduction": 32038,
+          "token_reduction_pct": 0.289261
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 55908,
-          "gold_evidence_retained_count": 393,
-          "original_context_tokens": 66109,
-          "recall_after_compression": 0.9075,
-          "recall_before_compression": 0.9075,
+          "compressed_context_tokens": 64652,
+          "gold_evidence_retained_count": 400,
+          "original_context_tokens": 82523,
+          "recall_after_compression": 0.964583,
+          "recall_before_compression": 0.964583,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 10201,
-          "token_reduction_pct": 0.154306
+          "token_reduction": 17871,
+          "token_reduction_pct": 0.216558
         },
         "research_ai": {
-          "compressed_context_tokens": 100181,
+          "compressed_context_tokens": 101035,
           "gold_evidence_retained_count": 392,
-          "original_context_tokens": 140424,
-          "recall_after_compression": 0.970604,
-          "recall_before_compression": 0.970604,
+          "original_context_tokens": 141608,
+          "recall_after_compression": 0.971168,
+          "recall_before_compression": 0.971168,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 40243,
-          "token_reduction_pct": 0.286582
+          "token_reduction": 40573,
+          "token_reduction_pct": 0.286516
         },
         "retail": {
-          "compressed_context_tokens": 84882,
+          "compressed_context_tokens": 81371,
           "gold_evidence_retained_count": 399,
-          "original_context_tokens": 118794,
-          "recall_after_compression": 0.93625,
-          "recall_before_compression": 0.93625,
+          "original_context_tokens": 113917,
+          "recall_after_compression": 0.93375,
+          "recall_before_compression": 0.93375,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 33912,
-          "token_reduction_pct": 0.285469
+          "token_reduction": 32546,
+          "token_reduction_pct": 0.285699
         }
       },
       "prompt_text_only": {
         "airline": {
-          "compressed_context_tokens": 58093,
-          "gold_evidence_retained_count": 383,
-          "original_context_tokens": 71653,
-          "recall_after_compression": 0.717708,
-          "recall_before_compression": 0.717708,
+          "compressed_context_tokens": 67610,
+          "gold_evidence_retained_count": 394,
+          "original_context_tokens": 88847,
+          "recall_after_compression": 0.6925,
+          "recall_before_compression": 0.6925,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 13560,
-          "token_reduction_pct": 0.189245
+          "token_reduction": 21237,
+          "token_reduction_pct": 0.239029
         },
         "finance": {
-          "compressed_context_tokens": 103841,
-          "gold_evidence_retained_count": 64,
-          "original_context_tokens": 145582,
-          "recall_after_compression": 0.155,
-          "recall_before_compression": 0.155,
+          "compressed_context_tokens": 82601,
+          "gold_evidence_retained_count": 62,
+          "original_context_tokens": 116137,
+          "recall_after_compression": 0.14875,
+          "recall_before_compression": 0.14875,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 41741,
-          "token_reduction_pct": 0.286718
+          "token_reduction": 33536,
+          "token_reduction_pct": 0.288762
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 58850,
+          "compressed_context_tokens": 67151,
           "gold_evidence_retained_count": 396,
-          "original_context_tokens": 72129,
-          "recall_after_compression": 0.838333,
-          "recall_before_compression": 0.838333,
+          "original_context_tokens": 87178,
+          "recall_after_compression": 0.804583,
+          "recall_before_compression": 0.804583,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 13279,
-          "token_reduction_pct": 0.184101
+          "token_reduction": 20027,
+          "token_reduction_pct": 0.229725
         },
         "research_ai": {
-          "compressed_context_tokens": 98981,
-          "gold_evidence_retained_count": 167,
-          "original_context_tokens": 138860,
-          "recall_after_compression": 0.284093,
-          "recall_before_compression": 0.284093,
+          "compressed_context_tokens": 99445,
+          "gold_evidence_retained_count": 168,
+          "original_context_tokens": 139518,
+          "recall_after_compression": 0.267147,
+          "recall_before_compression": 0.267147,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 39879,
-          "token_reduction_pct": 0.287189
+          "token_reduction": 40073,
+          "token_reduction_pct": 0.287225
         },
         "retail": {
-          "compressed_context_tokens": 108613,
-          "gold_evidence_retained_count": 99,
-          "original_context_tokens": 151501,
-          "recall_after_compression": 0.19375,
-          "recall_before_compression": 0.19375,
+          "compressed_context_tokens": 113176,
+          "gold_evidence_retained_count": 114,
+          "original_context_tokens": 157822,
+          "recall_after_compression": 0.23125,
+          "recall_before_compression": 0.23125,
           "recall_loss": 0.0,
           "record_count": 400,
-          "token_reduction": 42888,
-          "token_reduction_pct": 0.283087
+          "token_reduction": 44646,
+          "token_reduction_pct": 0.282888
         }
       }
     },
     "final_10000": {
       "prompt_plus_metadata": {
         "airline": {
-          "compressed_context_tokens": 290142,
-          "gold_evidence_retained_count": 1893,
-          "original_context_tokens": 357595,
-          "recall_after_compression": 0.711833,
-          "recall_before_compression": 0.711833,
+          "compressed_context_tokens": 336968,
+          "gold_evidence_retained_count": 1971,
+          "original_context_tokens": 442003,
+          "recall_after_compression": 0.7065,
+          "recall_before_compression": 0.7065,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 67453,
-          "token_reduction_pct": 0.18863
+          "token_reduction": 105035,
+          "token_reduction_pct": 0.237634
         },
         "finance": {
-          "compressed_context_tokens": 449912,
+          "compressed_context_tokens": 375253,
           "gold_evidence_retained_count": 603,
-          "original_context_tokens": 631486,
-          "recall_after_compression": 0.27725,
-          "recall_before_compression": 0.27725,
+          "original_context_tokens": 528232,
+          "recall_after_compression": 0.28075,
+          "recall_before_compression": 0.28075,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 181574,
-          "token_reduction_pct": 0.287534
+          "token_reduction": 152979,
+          "token_reduction_pct": 0.289606
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 282247,
-          "gold_evidence_retained_count": 1961,
-          "original_context_tokens": 337156,
-          "recall_after_compression": 0.827333,
-          "recall_before_compression": 0.827333,
+          "compressed_context_tokens": 320800,
+          "gold_evidence_retained_count": 1980,
+          "original_context_tokens": 408077,
+          "recall_after_compression": 0.794333,
+          "recall_before_compression": 0.794333,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 54909,
-          "token_reduction_pct": 0.162859
+          "token_reduction": 87277,
+          "token_reduction_pct": 0.213874
         },
         "research_ai": {
-          "compressed_context_tokens": 544706,
-          "gold_evidence_retained_count": 1496,
-          "original_context_tokens": 763420,
-          "recall_after_compression": 0.640421,
-          "recall_before_compression": 0.640421,
+          "compressed_context_tokens": 574847,
+          "gold_evidence_retained_count": 1493,
+          "original_context_tokens": 805126,
+          "recall_after_compression": 0.641715,
+          "recall_before_compression": 0.641715,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 218714,
-          "token_reduction_pct": 0.286492
+          "token_reduction": 230279,
+          "token_reduction_pct": 0.286016
         },
         "retail": {
-          "compressed_context_tokens": 421215,
+          "compressed_context_tokens": 402937,
           "gold_evidence_retained_count": 510,
-          "original_context_tokens": 589954,
-          "recall_after_compression": 0.218583,
-          "recall_before_compression": 0.218583,
+          "original_context_tokens": 564512,
+          "recall_after_compression": 0.221583,
+          "recall_before_compression": 0.221583,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 168739,
-          "token_reduction_pct": 0.286021
+          "token_reduction": 161575,
+          "token_reduction_pct": 0.286221
         }
       },
       "prompt_plus_source_hints": {
         "airline": {
-          "compressed_context_tokens": 323007,
+          "compressed_context_tokens": 339532,
           "gold_evidence_retained_count": 2000,
-          "original_context_tokens": 414383,
-          "recall_after_compression": 0.978208,
-          "recall_before_compression": 0.978208,
+          "original_context_tokens": 446152,
+          "recall_after_compression": 0.979042,
+          "recall_before_compression": 0.979042,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 91376,
-          "token_reduction_pct": 0.220511
+          "token_reduction": 106620,
+          "token_reduction_pct": 0.238977
         },
         "finance": {
-          "compressed_context_tokens": 422240,
+          "compressed_context_tokens": 381631,
           "gold_evidence_retained_count": 1995,
-          "original_context_tokens": 593037,
+          "original_context_tokens": 537064,
           "recall_after_compression": 0.997375,
           "recall_before_compression": 0.997375,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 170797,
-          "token_reduction_pct": 0.288004
+          "token_reduction": 155433,
+          "token_reduction_pct": 0.289412
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 278869,
-          "gold_evidence_retained_count": 1967,
-          "original_context_tokens": 329339,
-          "recall_after_compression": 0.904833,
-          "recall_before_compression": 0.904833,
+          "compressed_context_tokens": 323064,
+          "gold_evidence_retained_count": 2000,
+          "original_context_tokens": 412215,
+          "recall_after_compression": 0.962417,
+          "recall_before_compression": 0.962417,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 50470,
-          "token_reduction_pct": 0.153246
+          "token_reduction": 89151,
+          "token_reduction_pct": 0.216273
         },
         "research_ai": {
-          "compressed_context_tokens": 506848,
+          "compressed_context_tokens": 508383,
           "gold_evidence_retained_count": 1960,
-          "original_context_tokens": 710410,
-          "recall_after_compression": 0.965126,
-          "recall_before_compression": 0.965126,
+          "original_context_tokens": 712558,
+          "recall_after_compression": 0.966893,
+          "recall_before_compression": 0.966893,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 203562,
-          "token_reduction_pct": 0.286542
+          "token_reduction": 204175,
+          "token_reduction_pct": 0.286538
         },
         "retail": {
-          "compressed_context_tokens": 413518,
+          "compressed_context_tokens": 391977,
           "gold_evidence_retained_count": 1999,
-          "original_context_tokens": 578960,
-          "recall_after_compression": 0.94375,
-          "recall_before_compression": 0.94375,
+          "original_context_tokens": 549038,
+          "recall_after_compression": 0.942,
+          "recall_before_compression": 0.942,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 165442,
-          "token_reduction_pct": 0.285757
+          "token_reduction": 157061,
+          "token_reduction_pct": 0.286066
         }
       },
       "prompt_text_only": {
         "airline": {
-          "compressed_context_tokens": 291106,
-          "gold_evidence_retained_count": 1908,
-          "original_context_tokens": 359361,
-          "recall_after_compression": 0.717667,
-          "recall_before_compression": 0.717667,
+          "compressed_context_tokens": 337645,
+          "gold_evidence_retained_count": 1968,
+          "original_context_tokens": 443616,
+          "recall_after_compression": 0.691417,
+          "recall_before_compression": 0.691417,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 68255,
-          "token_reduction_pct": 0.189934
+          "token_reduction": 105971,
+          "token_reduction_pct": 0.23888
         },
         "finance": {
-          "compressed_context_tokens": 503744,
-          "gold_evidence_retained_count": 332,
-          "original_context_tokens": 706275,
-          "recall_after_compression": 0.156,
-          "recall_before_compression": 0.156,
+          "compressed_context_tokens": 407381,
+          "gold_evidence_retained_count": 345,
+          "original_context_tokens": 572629,
+          "recall_after_compression": 0.163,
+          "recall_before_compression": 0.163,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 202531,
-          "token_reduction_pct": 0.286759
+          "token_reduction": 165248,
+          "token_reduction_pct": 0.288578
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 294098,
+          "compressed_context_tokens": 335427,
           "gold_evidence_retained_count": 1980,
-          "original_context_tokens": 360374,
-          "recall_after_compression": 0.840833,
-          "recall_before_compression": 0.840833,
+          "original_context_tokens": 435300,
+          "recall_after_compression": 0.807583,
+          "recall_before_compression": 0.807583,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 66276,
-          "token_reduction_pct": 0.183909
+          "token_reduction": 99873,
+          "token_reduction_pct": 0.229435
         },
         "research_ai": {
-          "compressed_context_tokens": 498340,
-          "gold_evidence_retained_count": 831,
-          "original_context_tokens": 699077,
-          "recall_after_compression": 0.288645,
-          "recall_before_compression": 0.288645,
+          "compressed_context_tokens": 502280,
+          "gold_evidence_retained_count": 849,
+          "original_context_tokens": 704611,
+          "recall_after_compression": 0.275987,
+          "recall_before_compression": 0.275987,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 200737,
-          "token_reduction_pct": 0.287146
+          "token_reduction": 202331,
+          "token_reduction_pct": 0.287153
         },
         "retail": {
-          "compressed_context_tokens": 544382,
-          "gold_evidence_retained_count": 403,
-          "original_context_tokens": 759424,
-          "recall_after_compression": 0.147417,
-          "recall_before_compression": 0.147417,
+          "compressed_context_tokens": 569335,
+          "gold_evidence_retained_count": 422,
+          "original_context_tokens": 793951,
+          "recall_after_compression": 0.161167,
+          "recall_before_compression": 0.161167,
           "recall_loss": 0.0,
           "record_count": 2000,
-          "token_reduction": 215042,
-          "token_reduction_pct": 0.283165
+          "token_reduction": 224616,
+          "token_reduction_pct": 0.282909
         }
       }
     },
     "smoke_500": {
       "prompt_plus_metadata": {
         "airline": {
-          "compressed_context_tokens": 14557,
-          "gold_evidence_retained_count": 96,
-          "original_context_tokens": 17926,
-          "recall_after_compression": 0.731667,
-          "recall_before_compression": 0.731667,
+          "compressed_context_tokens": 17047,
+          "gold_evidence_retained_count": 99,
+          "original_context_tokens": 22430,
+          "recall_after_compression": 0.7075,
+          "recall_before_compression": 0.7075,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 3369,
-          "token_reduction_pct": 0.187939
+          "token_reduction": 5383,
+          "token_reduction_pct": 0.239991
         },
         "finance": {
-          "compressed_context_tokens": 23855,
+          "compressed_context_tokens": 16966,
           "gold_evidence_retained_count": 27,
-          "original_context_tokens": 33508,
-          "recall_after_compression": 0.26,
-          "recall_before_compression": 0.26,
+          "original_context_tokens": 23947,
+          "recall_after_compression": 0.27,
+          "recall_before_compression": 0.27,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 9653,
-          "token_reduction_pct": 0.28808
+          "token_reduction": 6981,
+          "token_reduction_pct": 0.291519
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 14600,
+          "compressed_context_tokens": 16173,
           "gold_evidence_retained_count": 100,
-          "original_context_tokens": 17822,
-          "recall_after_compression": 0.841667,
-          "recall_before_compression": 0.841667,
+          "original_context_tokens": 20687,
+          "recall_after_compression": 0.811667,
+          "recall_before_compression": 0.811667,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 3222,
-          "token_reduction_pct": 0.180788
+          "token_reduction": 4514,
+          "token_reduction_pct": 0.218205
         },
         "research_ai": {
-          "compressed_context_tokens": 30856,
-          "gold_evidence_retained_count": 83,
-          "original_context_tokens": 43204,
-          "recall_after_compression": 0.796667,
-          "recall_before_compression": 0.796667,
+          "compressed_context_tokens": 30867,
+          "gold_evidence_retained_count": 85,
+          "original_context_tokens": 43223,
+          "recall_after_compression": 0.82,
+          "recall_before_compression": 0.82,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 12348,
-          "token_reduction_pct": 0.285807
+          "token_reduction": 12356,
+          "token_reduction_pct": 0.285866
         },
         "retail": {
-          "compressed_context_tokens": 22524,
-          "gold_evidence_retained_count": 41,
-          "original_context_tokens": 31575,
-          "recall_after_compression": 0.385,
-          "recall_before_compression": 0.385,
+          "compressed_context_tokens": 21172,
+          "gold_evidence_retained_count": 60,
+          "original_context_tokens": 29695,
+          "recall_after_compression": 0.58,
+          "recall_before_compression": 0.58,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 9051,
-          "token_reduction_pct": 0.286651
+          "token_reduction": 8523,
+          "token_reduction_pct": 0.287018
         }
       },
       "prompt_plus_source_hints": {
         "airline": {
-          "compressed_context_tokens": 16169,
+          "compressed_context_tokens": 17107,
           "gold_evidence_retained_count": 100,
-          "original_context_tokens": 20732,
+          "original_context_tokens": 22542,
           "recall_after_compression": 0.98,
           "recall_before_compression": 0.98,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 4563,
-          "token_reduction_pct": 0.220095
+          "token_reduction": 5435,
+          "token_reduction_pct": 0.241105
         },
         "finance": {
-          "compressed_context_tokens": 23089,
+          "compressed_context_tokens": 20189,
           "gold_evidence_retained_count": 100,
-          "original_context_tokens": 32439,
+          "original_context_tokens": 28419,
           "recall_after_compression": 1.0,
           "recall_before_compression": 1.0,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 9350,
-          "token_reduction_pct": 0.288233
+          "token_reduction": 8230,
+          "token_reduction_pct": 0.289595
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 14538,
+          "compressed_context_tokens": 16510,
           "gold_evidence_retained_count": 100,
-          "original_context_tokens": 17613,
-          "recall_after_compression": 0.926667,
-          "recall_before_compression": 0.926667,
+          "original_context_tokens": 21327,
+          "recall_after_compression": 0.975,
+          "recall_before_compression": 0.975,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 3075,
-          "token_reduction_pct": 0.174587
+          "token_reduction": 4817,
+          "token_reduction_pct": 0.225864
         },
         "research_ai": {
-          "compressed_context_tokens": 24817,
+          "compressed_context_tokens": 24664,
           "gold_evidence_retained_count": 100,
-          "original_context_tokens": 34802,
+          "original_context_tokens": 34596,
           "recall_after_compression": 1.0,
           "recall_before_compression": 1.0,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 9985,
-          "token_reduction_pct": 0.286909
+          "token_reduction": 9932,
+          "token_reduction_pct": 0.287085
         },
         "retail": {
-          "compressed_context_tokens": 24062,
+          "compressed_context_tokens": 23112,
           "gold_evidence_retained_count": 99,
-          "original_context_tokens": 33711,
-          "recall_after_compression": 0.965,
-          "recall_before_compression": 0.965,
+          "original_context_tokens": 32396,
+          "recall_after_compression": 0.96,
+          "recall_before_compression": 0.96,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 9649,
-          "token_reduction_pct": 0.286227
+          "token_reduction": 9284,
+          "token_reduction_pct": 0.286579
         }
       },
       "prompt_text_only": {
         "airline": {
-          "compressed_context_tokens": 14605,
-          "gold_evidence_retained_count": 96,
-          "original_context_tokens": 18058,
-          "recall_after_compression": 0.731667,
-          "recall_before_compression": 0.731667,
+          "compressed_context_tokens": 16897,
+          "gold_evidence_retained_count": 99,
+          "original_context_tokens": 22228,
+          "recall_after_compression": 0.6925,
+          "recall_before_compression": 0.6925,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 3453,
-          "token_reduction_pct": 0.191217
+          "token_reduction": 5331,
+          "token_reduction_pct": 0.239833
         },
         "finance": {
-          "compressed_context_tokens": 25225,
-          "gold_evidence_retained_count": 15,
-          "original_context_tokens": 35353,
-          "recall_after_compression": 0.145,
-          "recall_before_compression": 0.145,
+          "compressed_context_tokens": 19897,
+          "gold_evidence_retained_count": 14,
+          "original_context_tokens": 28017,
+          "recall_after_compression": 0.14,
+          "recall_before_compression": 0.14,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 10128,
-          "token_reduction_pct": 0.286482
+          "token_reduction": 8120,
+          "token_reduction_pct": 0.289824
         },
         "healthcare_admin": {
-          "compressed_context_tokens": 14687,
+          "compressed_context_tokens": 16881,
           "gold_evidence_retained_count": 100,
-          "original_context_tokens": 17980,
-          "recall_after_compression": 0.851667,
-          "recall_before_compression": 0.851667,
+          "original_context_tokens": 21976,
+          "recall_after_compression": 0.826667,
+          "recall_before_compression": 0.826667,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 3293,
-          "token_reduction_pct": 0.183148
+          "token_reduction": 5095,
+          "token_reduction_pct": 0.231844
         },
         "research_ai": {
-          "compressed_context_tokens": 28383,
-          "gold_evidence_retained_count": 33,
-          "original_context_tokens": 39770,
-          "recall_after_compression": 0.191667,
-          "recall_before_compression": 0.191667,
+          "compressed_context_tokens": 24789,
+          "gold_evidence_retained_count": 28,
+          "original_context_tokens": 34791,
+          "recall_after_compression": 0.156667,
+          "recall_before_compression": 0.156667,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 11387,
-          "token_reduction_pct": 0.286321
+          "token_reduction": 10002,
+          "token_reduction_pct": 0.287488
         },
         "retail": {
-          "compressed_context_tokens": 31600,
-          "gold_evidence_retained_count": 33,
-          "original_context_tokens": 44188,
-          "recall_after_compression": 0.3,
-          "recall_before_compression": 0.3,
+          "compressed_context_tokens": 31678,
+          "gold_evidence_retained_count": 42,
+          "original_context_tokens": 44172,
+          "recall_after_compression": 0.39,
+          "recall_before_compression": 0.39,
           "recall_loss": 0.0,
           "record_count": 100,
-          "token_reduction": 12588,
-          "token_reduction_pct": 0.284874
+          "token_reduction": 12494,
+          "token_reduction_pct": 0.282849
         }
       }
     }
   },
   "compression_type": "deterministic_score_dedupe_budget_and_extractive_truncation",
-  "generated_at_utc": "2026-06-02T19:23:47.255027+00:00",
+  "generated_at_utc": "2026-06-03T01:08:35.208207+00:00",
   "no_model_inference_triggered": true,
   "overall_by_split": {
     "controlled_2000": {
       "recall_loss": 0.0,
       "record_count": 2000,
-      "token_reduction_pct": 0.25982
+      "token_reduction_pct": 0.268302
     },
     "final_10000": {
       "recall_loss": 0.0,
       "record_count": 10000,
-      "token_reduction_pct": 0.259563
+      "token_reduction_pct": 0.268134
     },
     "smoke_500": {
       "recall_loss": 0.0,
       "record_count": 500,
-      "token_reduction_pct": 0.262906
+      "token_reduction_pct": 0.270663
     }
   },
   "overall_by_split_ablation_mode": {
@@ -550,51 +550,51 @@
       "prompt_plus_metadata": {
         "recall_loss": 0.0,
         "record_count": 2000,
-        "token_reduction_pct": 0.258439
+        "token_reduction_pct": 0.268558
       },
       "prompt_plus_source_hints": {
         "recall_loss": 0.0,
         "record_count": 2000,
-        "token_reduction_pct": 0.25982
+        "token_reduction_pct": 0.268302
       },
       "prompt_text_only": {
         "recall_loss": 0.0,
         "record_count": 2000,
-        "token_reduction_pct": 0.261067
+        "token_reduction_pct": 0.2706
       }
     },
     "final_10000": {
       "prompt_plus_metadata": {
         "recall_loss": 0.0,
         "record_count": 10000,
-        "token_reduction_pct": 0.258018
+        "token_reduction_pct": 0.268253
       },
       "prompt_plus_source_hints": {
         "recall_loss": 0.0,
         "record_count": 10000,
-        "token_reduction_pct": 0.259563
+        "token_reduction_pct": 0.268134
       },
       "prompt_text_only": {
         "recall_loss": 0.0,
         "record_count": 10000,
-        "token_reduction_pct": 0.260994
+        "token_reduction_pct": 0.270512
       }
     },
     "smoke_500": {
       "prompt_plus_metadata": {
         "recall_loss": 0.0,
         "record_count": 500,
-        "token_reduction_pct": 0.261346
+        "token_reduction_pct": 0.269728
       },
       "prompt_plus_source_hints": {
         "recall_loss": 0.0,
         "record_count": 500,
-        "token_reduction_pct": 0.262906
+        "token_reduction_pct": 0.270663
       },
       "prompt_text_only": {
         "recall_loss": 0.0,
         "record_count": 500,
-        "token_reduction_pct": 0.26295
+        "token_reduction_pct": 0.271471
       }
     }
   },

@@ -1,0 +1,90 @@
+{
+  "audit_scope": "gold_context_alignment_and_candidate_failure_modes",
+  "by_vertical": {
+    "airline": {
+      "avg_context_token_estimate": 57.876667,
+      "context_record_count": 300,
+      "gold_absent_from_top100_count": 27,
+      "gold_absent_from_top50_count": 27,
+      "gold_in_top50_but_not_top5_count": 154,
+      "gold_not_in_corpus_count": 0,
+      "gold_record_count": 2000,
+      "missing_gold_ids_count": 0,
+      "prompt_missing_entity_count": 0,
+      "prompt_missing_metric_count": 0,
+      "prompt_missing_period_count": 0,
+      "suspected_gold_misalignment_count": 0,
+      "vertical": "airline"
+    },
+    "finance": {
+      "avg_context_token_estimate": 50.397985,
+      "context_record_count": 1588,
+      "gold_absent_from_top100_count": 1116,
+      "gold_absent_from_top50_count": 1116,
+      "gold_in_top50_but_not_top5_count": 1940,
+      "gold_not_in_corpus_count": 0,
+      "gold_record_count": 2000,
+      "missing_gold_ids_count": 0,
+      "prompt_missing_entity_count": 0,
+      "prompt_missing_metric_count": 1835,
+      "prompt_missing_period_count": 2000,
+      "suspected_gold_misalignment_count": 0,
+      "vertical": "finance"
+    },
+    "healthcare_admin": {
+      "avg_context_token_estimate": 56.35,
+      "context_record_count": 300,
+      "gold_absent_from_top100_count": 32,
+      "gold_absent_from_top50_count": 32,
+      "gold_in_top50_but_not_top5_count": 35,
+      "gold_not_in_corpus_count": 0,
+      "gold_record_count": 2000,
+      "missing_gold_ids_count": 0,
+      "prompt_missing_entity_count": 0,
+      "prompt_missing_metric_count": 0,
+      "prompt_missing_period_count": 0,
+      "suspected_gold_misalignment_count": 0,
+      "vertical": "healthcare_admin"
+    },
+    "research_ai": {
+      "avg_context_token_estimate": 71.414253,
+      "context_record_count": 1726,
+      "gold_absent_from_top100_count": 637,
+      "gold_absent_from_top50_count": 637,
+      "gold_in_top50_but_not_top5_count": 1019,
+      "gold_not_in_corpus_count": 0,
+      "gold_record_count": 2000,
+      "missing_gold_ids_count": 40,
+      "prompt_missing_entity_count": 0,
+      "prompt_missing_metric_count": 0,
+      "prompt_missing_period_count": 0,
+      "suspected_gold_misalignment_count": 0,
+      "vertical": "research_ai"
+    },
+    "retail": {
+      "avg_context_token_estimate": 53.711747,
+      "context_record_count": 1013,
+      "gold_absent_from_top100_count": 653,
+      "gold_absent_from_top50_count": 653,
+      "gold_in_top50_but_not_top5_count": 1490,
+      "gold_not_in_corpus_count": 0,
+      "gold_record_count": 2000,
+      "missing_gold_ids_count": 0,
+      "prompt_missing_entity_count": 0,
+      "prompt_missing_metric_count": 0,
+      "prompt_missing_period_count": 0,
+      "suspected_gold_misalignment_count": 0,
+      "vertical": "retail"
+    }
+  },
+  "diagnostic_interpretation": "Large gold_in_top50_but_not_top5 counts indicate a final selector/reranking problem. Large gold_absent_from_top100 counts indicate candidate retrieval, chunking, prompt ambiguity, or gold/corpus alignment problems.",
+  "examples": {
+    "airline": [],
+    "finance": [],
+    "healthcare_admin": [],
+    "research_ai": [],
+    "retail": []
+  },
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true
+}

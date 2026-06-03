@@ -21,13 +21,20 @@ qdrant_local:
   storage_path: data/generated/vector_store/qdrant
   collection_prefix: llm_inference_suite
   distance: cosine
-  embedding_backend: sentence_transformers
-  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  embedding_backend: deterministic_hash
+  embedding_model: local_hashing
   batch_size: 64
 ```
 
 The Qdrant store is local and embedded. No external Qdrant server is required.
 The generated vector store is local state and should not be committed.
+
+The default local configuration uses deterministic hash vectors so the full
+no-API/no-GPU report build remains reproducible on CPU. The index and retrieval
+path still use persisted Qdrant collections and clearly report the effective
+embedding backend. A sentence-transformers configuration can be used for a
+separate semantic-vector experiment, but that result must be reported
+separately.
 
 ## Direct Scan vs Vector Database Retrieval
 

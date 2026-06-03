@@ -4,6 +4,6 @@ qdrant_local:
   storage_path: data/generated/vector_store/qdrant
   collection_prefix: llm_inference_suite
   distance: cosine
-  embedding_backend: sentence_transformers
-  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  embedding_backend: deterministic_hash
+  embedding_model: local_hashing
   batch_size: 64

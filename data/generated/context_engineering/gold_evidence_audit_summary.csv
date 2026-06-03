@@ -1,0 +1,6 @@
+vertical,gold_record_count,context_record_count,missing_gold_ids_count,gold_not_in_corpus_count,prompt_missing_entity_count,prompt_missing_metric_count,prompt_missing_period_count,gold_in_top50_but_not_top5_count,gold_absent_from_top50_count,gold_absent_from_top100_count,suspected_gold_misalignment_count,avg_context_token_estimate
+airline,2000,300,0,0,0,0,0,154,27,27,0,57.876667
+finance,2000,1588,0,0,0,1835,2000,1940,1116,1116,0,50.397985
+healthcare_admin,2000,300,0,0,0,0,0,35,32,32,0,56.35
+research_ai,2000,1726,40,0,0,0,0,1019,637,637,0,71.414253
+retail,2000,1013,0,0,0,0,0,1490,653,653,0,53.711747

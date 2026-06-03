@@ -1,0 +1,8 @@
+target_name,split,ablation_mode,memory_mode,vertical,metric,threshold,actual,margin,status,recommended_next_repair_action
+overall_prompt_plus_metadata_hybrid_recall_at_5,final_10000,prompt_plus_metadata,mm2_hybrid_top5,overall,recall_at_5,0.8,0.528976,-0.271024,FAILED,Improve calibrated final top-5 selection and finance metadata features.
+finance_prompt_plus_metadata_hybrid_recall_at_5,final_10000,prompt_plus_metadata,mm2_hybrid_top5,finance,recall_at_5,0.8,0.28075,-0.51925,FAILED,"Repair finance reranking, period extraction, and chunk disambiguation."
+overall_prompt_text_only_hybrid_recall_at_5,final_10000,prompt_text_only,mm2_hybrid_top5,overall,recall_at_5,0.7,0.419831,-0.280169,FAILED,"Improve prompt-visible entity, metric, and section inference."
+finance_prompt_text_only_hybrid_recall_at_5,final_10000,prompt_text_only,mm2_hybrid_top5,finance,recall_at_5,0.65,0.163,-0.487,FAILED,Audit whether finance prompts contain enough visible company/metric/period signal.
+source_hint_assisted_hybrid_recall_at_5,final_10000,prompt_plus_source_hints,mm2_hybrid_top5,overall,recall_at_5,0.95,0.969545,0.019545,PASSED,Preserve assisted upper-bound retrieval while keeping it labeled as hint-assisted.
+mm3_compression_token_reduction_pct,final_10000,all,mm3_compressed_hybrid_top5,overall,token_reduction_pct,0.2,0.263838,0.063838,PASSED,Increase deterministic compression while preserving evidence.
+mm3_compression_recall_loss,final_10000,all,mm3_compressed_hybrid_top5,overall,recall_loss,0.05,0.0,0.05,PASSED,Reduce compression aggressiveness if gold evidence is dropped.
