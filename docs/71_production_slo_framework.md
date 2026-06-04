@@ -93,21 +93,21 @@ This avoids mixing API token economics with self-hosted GPU economics.
 Run:
 
 ```powershell
-python scripts/phase3/evaluate_slo_readiness.py `
-  --slo-config configs/slo_targets.yaml `
-  --retrieval-report data/generated/context_engineering/retrieval_evaluation_report.json `
-  --quality-gate-report data/generated/context_engineering/retrieval_quality_gate_report.json `
-  --output-root data/generated/context_engineering
+python scripts/phase3/evaluate_slo_readiness.py
 ```
 
 Outputs:
 
 - `data/generated/context_engineering/slo_readiness_report.json`
 - `data/generated/context_engineering/slo_readiness_summary.csv`
+- `data/generated/context_engineering/retrieval_promotion_registry.json`
+- `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`
 
-Current readiness status is `BLOCKED` because retrieval SLOs are not yet met.
-Inference, latency, cost, throughput, and telemetry metrics are marked
-`NOT_AVAILABLE` until Phase 4 and Phase 5 experiments produce those reports.
+The default command reads the promoted retrieval source-of-truth manifest. After
+Block 20, retrieval readiness is `PASS` with zero retrieval blockers, while the
+overall status remains `READY_WITH_GAPS`. Inference, latency, cost, throughput,
+and telemetry metrics are marked `NOT_AVAILABLE` until Phase 4 and Phase 5
+experiments produce those reports.
 
 ## Future Charts
 
@@ -131,4 +131,3 @@ The intended loop is:
 5. Promote only results that meet the relevant SLO gate.
 
 This keeps future optimization work tied to measurable engineering outcomes.
-

@@ -131,6 +131,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Qdrant vector retrieval and ablation](docs/62_qdrant_vector_retrieval_and_ablation.md)
 - [API-priced gated models and cost tracking](docs/63_api_priced_gated_models_and_cost_tracking.md)
 - [Phase 4 runner adapter and smoke readiness](docs/64_phase4_runner_adapter_and_smoke_readiness.md)
+- [Phase 4 handoff and retrieval promotion](docs/79_phase4_handoff_and_retrieval_promotion.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

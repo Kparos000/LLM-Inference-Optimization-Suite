@@ -15,10 +15,9 @@ API calls were performed for this signoff.
 - `data/generated/context_engineering/qdrant_index_summary.csv`
 
 The repaired retrieval validation report is the final retrieval-readiness source
-of truth. The legacy `evaluate_slo_readiness.py` command was also run into a
-temporary directory; it reported `BLOCKED` because that script reads the older
-`retrieval_evaluation_report.json` path by default rather than the repaired
-retrieval validation summary.
+of truth. Block 20 promotes that repaired validation output through
+`retrieval_source_of_truth_manifest.json`, and `evaluate_slo_readiness.py` now
+uses the promoted manifest by default.
 
 ## Retrieval SLO Signoff
 
@@ -105,11 +104,9 @@ Status: PASS
 
 Retrieval blockers: none.
 
-Reporting caveat: `scripts/phase3/evaluate_slo_readiness.py` still reads the
-older retrieval evaluation report by default. The command was run successfully
-for audit, but its default output is not the repaired retrieval signoff source.
-Future reporting work should add an input path for
-`repaired_retrieval_validation_summary.csv`.
+Reporting caveat: none for retrieval readiness. The legacy
+`retrieval_evaluation_report.json` remains historical output, but the default
+SLO readiness command now reads the promoted source-of-truth manifest.
 
 ## Phase Decision
 

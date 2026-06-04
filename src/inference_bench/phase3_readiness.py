@@ -219,7 +219,7 @@ def inspect_context_artifacts(context_root: Path) -> dict[str, Any]:
 
 
 def inspect_workload_artifacts(context_root: Path, workload_root: Path) -> dict[str, Any]:
-    """Inspect mm0-mm3 workload files and retrieval evaluation artifacts."""
+    """Inspect mm0-mm3 workload files and retrieval source-of-truth artifacts."""
 
     workload_paths = {
         split: {mode: workload_root / split / f"{mode}.jsonl" for mode in MM0_TO_MM3}
@@ -230,6 +230,13 @@ def inspect_workload_artifacts(context_root: Path, workload_root: Path) -> dict[
         for split, modes in workload_paths.items()
     }
     retrieval_artifacts = {
+        "retrieval_source_of_truth_manifest": context_root
+        / "retrieval_source_of_truth_manifest.json",
+        "retrieval_promotion_registry": context_root / "retrieval_promotion_registry.json",
+        "repaired_retrieval_validation_report": context_root
+        / "repaired_retrieval_validation_report.json",
+        "repaired_retrieval_validation_summary": context_root
+        / "repaired_retrieval_validation_summary.csv",
         "retrieval_evaluation_report": context_root / "retrieval_evaluation_report.json",
         "retrieval_evaluation_summary": context_root / "retrieval_evaluation_summary.csv",
         "workload_build_report": context_root / "workload_build_report.json",
@@ -251,7 +258,15 @@ def inspect_workload_artifacts(context_root: Path, workload_root: Path) -> dict[
         "retrieval_status": retrieval_status,
         "ready": (
             all(all(modes.values()) for modes in workload_status.values())
-            and all(retrieval_status.values())
+            and all(
+                retrieval_status[artifact]
+                for artifact in (
+                    "retrieval_evaluation_report",
+                    "retrieval_evaluation_summary",
+                    "workload_build_report",
+                    "workload_build_summary",
+                )
+            )
         ),
     }
 
@@ -306,7 +321,7 @@ def build_readiness_rows(
             str(workload_artifacts["workload_root"]),
             bool(workload_artifacts["ready"]),
             "ready" if workload_artifacts["ready"] else "regenerate",
-            "mm0-mm3 workload JSONL files and retrieval reports are inspected.",
+            "mm0-mm3 workload JSONL files and retrieval source-of-truth reports are inspected.",
             "Regenerate with scripts/phase3/build_memory_mode_workloads.py.",
         ),
         ReadinessRow(

@@ -1,0 +1,82 @@
+{
+  "active_ablation_mode": "prompt_plus_metadata",
+  "active_dataset_variant": "repaired_generated",
+  "active_dense_backend": "qdrant_vector",
+  "active_stage_size": 2000,
+  "active_vector_store": "qdrant_local",
+  "all_repaired_2000_slos_pass": true,
+  "artifact_type": "retrieval_promotion_registry",
+  "generated_at_utc": "2026-06-04T19:31:02.438629+00:00",
+  "no_external_api_calls_triggered": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "promotion_date_utc": "2026-06-04T19:31:02.438629+00:00",
+  "promotion_reason": "All five repaired 2,000-record vertical retrieval validations pass candidate@20, candidate@50, final recall@5, and MRR SLOs with Qdrant-backed prompt_plus_metadata retrieval, leakage protections, and compression checks.",
+  "promotion_recommended": true,
+  "promotion_status": "PROMOTED",
+  "retrieval_metrics_by_vertical": {
+    "airline": {
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 1.0,
+      "mrr": 1.0,
+      "query_rewrite_count": 2000,
+      "record_count": 2000,
+      "slo_status": "PASSED",
+      "vector_store": "qdrant_local"
+    },
+    "finance": {
+      "candidate_recall_at_20": 0.948875,
+      "candidate_recall_at_50": 0.95575,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.939,
+      "mrr": 0.941833,
+      "query_rewrite_count": 2000,
+      "record_count": 2000,
+      "slo_status": "PASSED",
+      "vector_store": "qdrant_local"
+    },
+    "healthcare_admin": {
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 1.0,
+      "mrr": 0.99425,
+      "query_rewrite_count": 2000,
+      "record_count": 2000,
+      "slo_status": "PASSED",
+      "vector_store": "qdrant_local"
+    },
+    "research_ai": {
+      "candidate_recall_at_20": 0.975172,
+      "candidate_recall_at_50": 0.979826,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.91746,
+      "mrr": 0.953233,
+      "query_rewrite_count": 2000,
+      "record_count": 2000,
+      "slo_status": "PASSED",
+      "vector_store": "qdrant_local"
+    },
+    "retail": {
+      "candidate_recall_at_20": 0.974333,
+      "candidate_recall_at_50": 0.982083,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.959917,
+      "mrr": 0.922592,
+      "query_rewrite_count": 2000,
+      "record_count": 2000,
+      "slo_status": "PASSED",
+      "vector_store": "qdrant_local"
+    }
+  },
+  "source_artifacts": {
+    "compression_diagnostic_summary": "data\\generated\\context_engineering\\compression_diagnostic_summary.csv",
+    "qdrant_index_summary": "data\\generated\\context_engineering\\qdrant_index_summary.csv",
+    "repaired_promotion_plan": "data\\generated\\context_engineering\\repaired_retrieval_promotion_plan.json",
+    "repaired_validation_report": "data\\generated\\context_engineering\\repaired_retrieval_validation_report.json",
+    "repaired_validation_summary": "data\\generated\\context_engineering\\repaired_retrieval_validation_summary.csv",
+    "retrieval_quality_gate_report": "data\\generated\\context_engineering\\retrieval_quality_gate_report.json"
+  }
+}

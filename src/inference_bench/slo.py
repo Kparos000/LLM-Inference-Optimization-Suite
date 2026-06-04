@@ -321,6 +321,98 @@ def read_json(path: str | Path) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(Path(path).read_text(encoding="utf-8")))
 
 
+def read_csv_rows(path: str | Path) -> list[dict[str, str]]:
+    """Read CSV rows as dictionaries."""
+
+    with Path(path).open("r", encoding="utf-8", newline="") as file:
+        return list(csv.DictReader(file))
+
+
+REPAIRED_VALIDATION_METRIC_MAP = {
+    "candidate_recall_at_20_min": "candidate_recall_at_20",
+    "candidate_recall_at_50_min": "candidate_recall_at_50",
+    "final_recall_at_5_min": "final_recall_at_5",
+    "mrr_min": "mrr",
+}
+
+
+def _row_matches_repaired_source_of_truth(
+    row: dict[str, Any],
+    *,
+    stage_size: int,
+    ablation_mode: str,
+) -> bool:
+    """Return whether a repaired retrieval validation row is active."""
+
+    if row.get("vertical") not in SLO_VERTICALS:
+        return False
+    if row.get("dataset_variant") not in (None, "", "repaired_generated"):
+        return False
+    if row.get("ablation_mode") not in (None, "", ablation_mode):
+        return False
+    if row.get("stage_size") not in (None, "", str(stage_size), stage_size):
+        return False
+    return row.get("slo_status") in (None, "", "PASSED", "PASS")
+
+
+def retrieval_observations_from_repaired_rows(
+    rows: list[dict[str, Any]],
+    *,
+    stage_size: int = 2000,
+    ablation_mode: str = "prompt_plus_metadata",
+) -> dict[str, dict[str, float]]:
+    """Extract SLO observations from repaired retrieval validation rows."""
+
+    observations: dict[str, dict[str, float]] = {}
+    for row in rows:
+        if not _row_matches_repaired_source_of_truth(
+            row,
+            stage_size=stage_size,
+            ablation_mode=ablation_mode,
+        ):
+            continue
+        vertical = str(row["vertical"])
+        observations[vertical] = {}
+        for slo_metric, report_metric in REPAIRED_VALIDATION_METRIC_MAP.items():
+            raw_observed = row.get(report_metric)
+            if raw_observed not in (None, ""):
+                observations[vertical][slo_metric] = float(str(raw_observed))
+    return observations
+
+
+def _retrieval_observations_from_manifest(
+    manifest_path: Path,
+    *,
+    ablation_mode: str,
+) -> dict[str, dict[str, float]]:
+    """Extract observations through the promoted retrieval manifest."""
+
+    manifest = read_json(manifest_path)
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, dict):
+        return {}
+
+    candidate_keys = (
+        "active_retrieval_validation_summary",
+        "active_retrieval_validation_report",
+    )
+    for key in candidate_keys:
+        raw_path = artifacts.get(key)
+        if not raw_path:
+            continue
+        artifact_path = Path(str(raw_path))
+        if not artifact_path.exists():
+            artifact_path = manifest_path.parent / artifact_path
+        if artifact_path.exists() and artifact_path != manifest_path:
+            observations = retrieval_observations_from_report(
+                artifact_path,
+                ablation_mode=ablation_mode,
+            )
+            if observations:
+                return observations
+    return {}
+
+
 def retrieval_observations_from_report(
     report_path: str | Path | None,
     *,
@@ -332,7 +424,26 @@ def retrieval_observations_from_report(
 
     if report_path is None or not Path(report_path).exists():
         return {}
-    report = read_json(report_path)
+    report_file = Path(report_path)
+    if report_file.suffix.lower() == ".csv":
+        return retrieval_observations_from_repaired_rows(
+            cast(list[dict[str, Any]], read_csv_rows(report_file)),
+            ablation_mode=ablation_mode,
+        )
+
+    report = read_json(report_file)
+    if report.get("artifact_type") == "retrieval_source_of_truth_manifest":
+        return _retrieval_observations_from_manifest(
+            report_file,
+            ablation_mode=ablation_mode,
+        )
+    summary_rows = report.get("summary_rows")
+    if isinstance(summary_rows, list):
+        return retrieval_observations_from_repaired_rows(
+            [cast(dict[str, Any], row) for row in summary_rows if isinstance(row, dict)],
+            ablation_mode=ablation_mode,
+        )
+
     by_split = report.get("by_split")
     if not isinstance(by_split, dict):
         return {}

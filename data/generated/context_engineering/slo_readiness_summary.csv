@@ -3,49 +3,214 @@ airline,retrieval_slo,candidate_recall_at_20_min,0.9,1.0,PASS,0.1,No action requ
 airline,retrieval_slo,candidate_recall_at_50_min,0.95,1.0,PASS,0.05,No action required.
 airline,retrieval_slo,final_recall_at_5_min,0.9,1.0,PASS,0.1,No action required.
 airline,retrieval_slo,mrr_min,0.85,1.0,PASS,0.15,No action required.
-airline,quality_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
-airline,latency_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
-airline,throughput_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
-airline,resource_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
-airline,api_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
-airline,gpu_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
-finance,retrieval_slo,candidate_recall_at_20_min,0.9,0.948875,PASS,0.048875,No action required.
-finance,retrieval_slo,candidate_recall_at_50_min,0.95,0.95575,PASS,0.00575,No action required.
-finance,retrieval_slo,final_recall_at_5_min,0.9,0.939,PASS,0.039,No action required.
-finance,retrieval_slo,mrr_min,0.9,0.941833,PASS,0.041833,No action required.
-finance,quality_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
-finance,latency_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
-finance,throughput_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
-finance,resource_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
-finance,api_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
-finance,gpu_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
-healthcare_admin,retrieval_slo,candidate_recall_at_20_min,0.9,1.0,PASS,0.1,No action required.
-healthcare_admin,retrieval_slo,candidate_recall_at_50_min,0.95,1.0,PASS,0.05,No action required.
-healthcare_admin,retrieval_slo,final_recall_at_5_min,0.9,1.0,PASS,0.1,No action required.
-healthcare_admin,retrieval_slo,mrr_min,0.85,0.99425,PASS,0.14425,No action required.
-healthcare_admin,quality_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
-healthcare_admin,latency_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
-healthcare_admin,throughput_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
-healthcare_admin,resource_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
-healthcare_admin,api_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
-healthcare_admin,gpu_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
-research_ai,retrieval_slo,candidate_recall_at_20_min,0.9,0.975172,PASS,0.075172,No action required.
-research_ai,retrieval_slo,candidate_recall_at_50_min,0.95,0.979826,PASS,0.029826,No action required.
-research_ai,retrieval_slo,final_recall_at_5_min,0.9,0.91746,PASS,0.01746,No action required.
-research_ai,retrieval_slo,mrr_min,0.9,0.953233,PASS,0.053233,No action required.
-research_ai,quality_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
-research_ai,latency_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
-research_ai,throughput_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
-research_ai,resource_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
-research_ai,api_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
-research_ai,gpu_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+airline,quality_slo,groundedness_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+airline,quality_slo,citation_accuracy_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+airline,quality_slo,evidence_match_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+airline,quality_slo,task_success_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+airline,quality_slo,format_validity_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+airline,quality_slo,safety_violations_max,0,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+airline,latency_slo,ttft_p50_ms_max,500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,ttft_p95_ms_max,1000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,ttft_p99_ms_max,2000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,itl_p50_ms_max,25,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,itl_p95_ms_max,50,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,itl_p99_ms_max,100,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,tpot_p50_ms_max,25,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,tpot_p95_ms_max,50,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,tpot_p99_ms_max,100,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,e2e_p50_ms_max,2500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,e2e_p95_ms_max,4000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,latency_slo,e2e_p99_ms_max,7000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+airline,throughput_slo,requests_per_second_min,0.5,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+airline,throughput_slo,tokens_per_second_min,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+airline,throughput_slo,successful_requests_per_second_min,0.45,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+airline,resource_slo,gpu_utilization_min_pct,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+airline,resource_slo,gpu_memory_utilization_max_pct,95.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+airline,resource_slo,gpu_memory_peak_gb_max,80.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+airline,resource_slo,cpu_utilization_max_pct,90.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+airline,resource_slo,ram_usage_gb_max,64.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+airline,api_cost_slo,input_tokens_per_request_max,12000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+airline,api_cost_slo,output_tokens_per_request_max,1024,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+airline,api_cost_slo,total_tokens_per_request_max,13000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+airline,api_cost_slo,api_cost_per_request_usd_max,0.05,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+airline,api_cost_slo,api_cost_per_1000_requests_usd_max,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+airline,api_cost_slo,api_cost_per_successful_answer_usd_max,0.1,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+airline,api_cost_slo,api_cost_per_grounded_successful_answer_usd_max,0.15,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+airline,gpu_cost_slo,gpu_hourly_price_usd_required,True,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+airline,gpu_cost_slo,gpu_cost_per_request_usd_max,0.02,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+airline,gpu_cost_slo,gpu_cost_per_1000_requests_usd_max,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+airline,gpu_cost_slo,gpu_cost_per_successful_answer_usd_max,0.04,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+airline,gpu_cost_slo,gpu_cost_per_grounded_successful_answer_usd_max,0.06,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+airline,gpu_cost_slo,tokens_per_gpu_dollar_min,100000.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
 retail,retrieval_slo,candidate_recall_at_20_min,0.9,0.974333,PASS,0.074333,No action required.
 retail,retrieval_slo,candidate_recall_at_50_min,0.95,0.982083,PASS,0.032083,No action required.
 retail,retrieval_slo,final_recall_at_5_min,0.9,0.959917,PASS,0.059917,No action required.
 retail,retrieval_slo,mrr_min,0.85,0.922592,PASS,0.072592,No action required.
-retail,quality_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
-retail,latency_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
-retail,throughput_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
-retail,resource_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
-retail,api_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
-retail,gpu_cost_slo,not_measured_yet,,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+retail,quality_slo,groundedness_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+retail,quality_slo,citation_accuracy_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+retail,quality_slo,evidence_match_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+retail,quality_slo,task_success_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+retail,quality_slo,format_validity_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+retail,quality_slo,safety_violations_max,0,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+retail,latency_slo,ttft_p50_ms_max,500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,ttft_p95_ms_max,1000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,ttft_p99_ms_max,2000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,itl_p50_ms_max,25,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,itl_p95_ms_max,50,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,itl_p99_ms_max,100,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,tpot_p50_ms_max,25,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,tpot_p95_ms_max,50,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,tpot_p99_ms_max,100,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,e2e_p50_ms_max,2500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,e2e_p95_ms_max,4000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,latency_slo,e2e_p99_ms_max,7000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+retail,throughput_slo,requests_per_second_min,0.5,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+retail,throughput_slo,tokens_per_second_min,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+retail,throughput_slo,successful_requests_per_second_min,0.45,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+retail,resource_slo,gpu_utilization_min_pct,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+retail,resource_slo,gpu_memory_utilization_max_pct,95.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+retail,resource_slo,gpu_memory_peak_gb_max,80.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+retail,resource_slo,cpu_utilization_max_pct,90.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+retail,resource_slo,ram_usage_gb_max,64.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+retail,api_cost_slo,input_tokens_per_request_max,12000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+retail,api_cost_slo,output_tokens_per_request_max,1024,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+retail,api_cost_slo,total_tokens_per_request_max,13000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+retail,api_cost_slo,api_cost_per_request_usd_max,0.05,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+retail,api_cost_slo,api_cost_per_1000_requests_usd_max,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+retail,api_cost_slo,api_cost_per_successful_answer_usd_max,0.1,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+retail,api_cost_slo,api_cost_per_grounded_successful_answer_usd_max,0.15,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+retail,gpu_cost_slo,gpu_hourly_price_usd_required,True,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+retail,gpu_cost_slo,gpu_cost_per_request_usd_max,0.02,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+retail,gpu_cost_slo,gpu_cost_per_1000_requests_usd_max,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+retail,gpu_cost_slo,gpu_cost_per_successful_answer_usd_max,0.04,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+retail,gpu_cost_slo,gpu_cost_per_grounded_successful_answer_usd_max,0.06,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+retail,gpu_cost_slo,tokens_per_gpu_dollar_min,100000.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+healthcare_admin,retrieval_slo,candidate_recall_at_20_min,0.9,1.0,PASS,0.1,No action required.
+healthcare_admin,retrieval_slo,candidate_recall_at_50_min,0.95,1.0,PASS,0.05,No action required.
+healthcare_admin,retrieval_slo,final_recall_at_5_min,0.9,1.0,PASS,0.1,No action required.
+healthcare_admin,retrieval_slo,mrr_min,0.85,0.99425,PASS,0.14425,No action required.
+healthcare_admin,quality_slo,groundedness_min,0.98,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+healthcare_admin,quality_slo,citation_accuracy_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+healthcare_admin,quality_slo,evidence_match_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+healthcare_admin,quality_slo,task_success_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+healthcare_admin,quality_slo,format_validity_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+healthcare_admin,quality_slo,safety_violations_max,0,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+healthcare_admin,latency_slo,ttft_p50_ms_max,800,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,ttft_p95_ms_max,1500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,ttft_p99_ms_max,3000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,itl_p50_ms_max,40,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,itl_p95_ms_max,80,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,itl_p99_ms_max,150,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,tpot_p50_ms_max,40,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,tpot_p95_ms_max,80,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,tpot_p99_ms_max,150,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,e2e_p50_ms_max,3500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,e2e_p95_ms_max,6000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,latency_slo,e2e_p99_ms_max,10000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+healthcare_admin,throughput_slo,requests_per_second_min,0.5,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+healthcare_admin,throughput_slo,tokens_per_second_min,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+healthcare_admin,throughput_slo,successful_requests_per_second_min,0.45,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+healthcare_admin,resource_slo,gpu_utilization_min_pct,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+healthcare_admin,resource_slo,gpu_memory_utilization_max_pct,95.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+healthcare_admin,resource_slo,gpu_memory_peak_gb_max,80.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+healthcare_admin,resource_slo,cpu_utilization_max_pct,90.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+healthcare_admin,resource_slo,ram_usage_gb_max,64.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+healthcare_admin,api_cost_slo,input_tokens_per_request_max,12000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+healthcare_admin,api_cost_slo,output_tokens_per_request_max,1024,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+healthcare_admin,api_cost_slo,total_tokens_per_request_max,13000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+healthcare_admin,api_cost_slo,api_cost_per_request_usd_max,0.05,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+healthcare_admin,api_cost_slo,api_cost_per_1000_requests_usd_max,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+healthcare_admin,api_cost_slo,api_cost_per_successful_answer_usd_max,0.1,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+healthcare_admin,api_cost_slo,api_cost_per_grounded_successful_answer_usd_max,0.15,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+healthcare_admin,gpu_cost_slo,gpu_hourly_price_usd_required,True,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+healthcare_admin,gpu_cost_slo,gpu_cost_per_request_usd_max,0.02,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+healthcare_admin,gpu_cost_slo,gpu_cost_per_1000_requests_usd_max,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+healthcare_admin,gpu_cost_slo,gpu_cost_per_successful_answer_usd_max,0.04,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+healthcare_admin,gpu_cost_slo,gpu_cost_per_grounded_successful_answer_usd_max,0.06,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+healthcare_admin,gpu_cost_slo,tokens_per_gpu_dollar_min,100000.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+finance,retrieval_slo,candidate_recall_at_20_min,0.9,0.948875,PASS,0.048875,No action required.
+finance,retrieval_slo,candidate_recall_at_50_min,0.95,0.95575,PASS,0.00575,No action required.
+finance,retrieval_slo,final_recall_at_5_min,0.9,0.939,PASS,0.039,No action required.
+finance,retrieval_slo,mrr_min,0.9,0.941833,PASS,0.041833,No action required.
+finance,quality_slo,groundedness_min,0.98,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+finance,quality_slo,citation_accuracy_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+finance,quality_slo,evidence_match_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+finance,quality_slo,task_success_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+finance,quality_slo,format_validity_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+finance,quality_slo,safety_violations_max,0,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+finance,latency_slo,ttft_p50_ms_max,1200,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,ttft_p95_ms_max,2500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,ttft_p99_ms_max,5000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,itl_p50_ms_max,50,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,itl_p95_ms_max,100,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,itl_p99_ms_max,200,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,tpot_p50_ms_max,50,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,tpot_p95_ms_max,100,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,tpot_p99_ms_max,200,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,e2e_p50_ms_max,6000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,e2e_p95_ms_max,10000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,latency_slo,e2e_p99_ms_max,18000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+finance,throughput_slo,requests_per_second_min,0.5,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+finance,throughput_slo,tokens_per_second_min,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+finance,throughput_slo,successful_requests_per_second_min,0.45,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+finance,resource_slo,gpu_utilization_min_pct,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+finance,resource_slo,gpu_memory_utilization_max_pct,95.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+finance,resource_slo,gpu_memory_peak_gb_max,80.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+finance,resource_slo,cpu_utilization_max_pct,90.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+finance,resource_slo,ram_usage_gb_max,64.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+finance,api_cost_slo,input_tokens_per_request_max,12000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+finance,api_cost_slo,output_tokens_per_request_max,1024,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+finance,api_cost_slo,total_tokens_per_request_max,13000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+finance,api_cost_slo,api_cost_per_request_usd_max,0.05,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+finance,api_cost_slo,api_cost_per_1000_requests_usd_max,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+finance,api_cost_slo,api_cost_per_successful_answer_usd_max,0.1,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+finance,api_cost_slo,api_cost_per_grounded_successful_answer_usd_max,0.15,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+finance,gpu_cost_slo,gpu_hourly_price_usd_required,True,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+finance,gpu_cost_slo,gpu_cost_per_request_usd_max,0.02,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+finance,gpu_cost_slo,gpu_cost_per_1000_requests_usd_max,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+finance,gpu_cost_slo,gpu_cost_per_successful_answer_usd_max,0.04,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+finance,gpu_cost_slo,gpu_cost_per_grounded_successful_answer_usd_max,0.06,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+finance,gpu_cost_slo,tokens_per_gpu_dollar_min,100000.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+research_ai,retrieval_slo,candidate_recall_at_20_min,0.9,0.975172,PASS,0.075172,No action required.
+research_ai,retrieval_slo,candidate_recall_at_50_min,0.95,0.979826,PASS,0.029826,No action required.
+research_ai,retrieval_slo,final_recall_at_5_min,0.9,0.91746,PASS,0.01746,No action required.
+research_ai,retrieval_slo,mrr_min,0.9,0.953233,PASS,0.053233,No action required.
+research_ai,quality_slo,groundedness_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+research_ai,quality_slo,citation_accuracy_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+research_ai,quality_slo,evidence_match_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+research_ai,quality_slo,task_success_min,0.9,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+research_ai,quality_slo,format_validity_min,0.95,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+research_ai,quality_slo,safety_violations_max,0,,NOT_AVAILABLE,,Run an experiment/report that measures quality_slo.
+research_ai,latency_slo,ttft_p50_ms_max,1500,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,ttft_p95_ms_max,3000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,ttft_p99_ms_max,7000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,itl_p50_ms_max,60,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,itl_p95_ms_max,120,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,itl_p99_ms_max,250,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,tpot_p50_ms_max,60,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,tpot_p95_ms_max,120,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,tpot_p99_ms_max,250,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,e2e_p50_ms_max,8000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,e2e_p95_ms_max,12000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,latency_slo,e2e_p99_ms_max,22000,,NOT_AVAILABLE,,Run an experiment/report that measures latency_slo.
+research_ai,throughput_slo,requests_per_second_min,0.5,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+research_ai,throughput_slo,tokens_per_second_min,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+research_ai,throughput_slo,successful_requests_per_second_min,0.45,,NOT_AVAILABLE,,Run an experiment/report that measures throughput_slo.
+research_ai,resource_slo,gpu_utilization_min_pct,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+research_ai,resource_slo,gpu_memory_utilization_max_pct,95.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+research_ai,resource_slo,gpu_memory_peak_gb_max,80.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+research_ai,resource_slo,cpu_utilization_max_pct,90.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+research_ai,resource_slo,ram_usage_gb_max,64.0,,NOT_AVAILABLE,,Run an experiment/report that measures resource_slo.
+research_ai,api_cost_slo,input_tokens_per_request_max,12000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+research_ai,api_cost_slo,output_tokens_per_request_max,1024,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+research_ai,api_cost_slo,total_tokens_per_request_max,13000,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+research_ai,api_cost_slo,api_cost_per_request_usd_max,0.05,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+research_ai,api_cost_slo,api_cost_per_1000_requests_usd_max,50.0,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+research_ai,api_cost_slo,api_cost_per_successful_answer_usd_max,0.1,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+research_ai,api_cost_slo,api_cost_per_grounded_successful_answer_usd_max,0.15,,NOT_AVAILABLE,,Run an experiment/report that measures api_cost_slo.
+research_ai,gpu_cost_slo,gpu_hourly_price_usd_required,True,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+research_ai,gpu_cost_slo,gpu_cost_per_request_usd_max,0.02,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+research_ai,gpu_cost_slo,gpu_cost_per_1000_requests_usd_max,20.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+research_ai,gpu_cost_slo,gpu_cost_per_successful_answer_usd_max,0.04,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+research_ai,gpu_cost_slo,gpu_cost_per_grounded_successful_answer_usd_max,0.06,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
+research_ai,gpu_cost_slo,tokens_per_gpu_dollar_min,100000.0,,NOT_AVAILABLE,,Run an experiment/report that measures gpu_cost_slo.
