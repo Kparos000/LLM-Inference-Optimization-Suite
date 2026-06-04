@@ -1,0 +1,779 @@
+{
+  "block18_repaired_baseline_metrics": {
+    "500": {
+      "candidate_recall_at_20": 0.738,
+      "candidate_recall_at_50": 0.9745,
+      "final_recall_at_5": 0.6175,
+      "mrr": 1.0
+    },
+    "2000": {
+      "candidate_recall_at_20": 0.742017,
+      "candidate_recall_at_50": 0.939806,
+      "final_recall_at_5": 0.596498,
+      "mrr": 0.882217
+    }
+  },
+  "expanded_valid_evidence_used_only_for_offline_evaluation": true,
+  "failure_class_definitions": {
+    "candidate_absent_from_top50": "Expanded valid evidence is absent from top 50.",
+    "candidate_present_but_not_top5": "Expanded valid evidence is in candidates but not top 5.",
+    "limitation_vs_discussion_confusion": "Limitation, discussion, and conclusion sections are interchangeable.",
+    "method_vs_result_confusion": "Method and result sections compete in top candidates.",
+    "multiple_valid_sections_not_counted": "Multiple same-paper sections can ground the prompt.",
+    "narrow_gold_section": "Original gold IDs undercount same-paper section alternatives.",
+    "near_duplicate_section_confusion": "Several same-paper/section chunks compete for limited top-5 slots.",
+    "paper_title_ambiguity": "Paper-title cues are absent or hard to distinguish.",
+    "section_type_ambiguity": "Prompt lacks a specific paper-section family.",
+    "topic_overlap_across_papers": "Many candidate papers share the same topic terms."
+  },
+  "generated_at_utc": "2026-06-04T18:09:11.739527+00:00",
+  "no_external_api_calls_triggered": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "record_count": 2000,
+  "repair_scope": "research_ai_only",
+  "runtime_query_uses_gold_or_source_ids": false,
+  "sample_repaired_records": [
+    {
+      "expanded_valid_evidence_count": 81,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "text",
+        "d",
+        "_",
+        "2",
+        "text",
+        "o",
+        "dynamic",
+        "discriminative",
+        "operations",
+        "efficient"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0001",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 72,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "a",
+        "little",
+        "goes",
+        "a",
+        "long",
+        "way",
+        "efficient",
+        "long",
+        "context",
+        "training"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0002",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 234,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "a",
+        "training",
+        "free",
+        "sub",
+        "quadratic",
+        "cost",
+        "transformer",
+        "model",
+        "serving",
+        "framework"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0003",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 99,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "aflow",
+        "automating",
+        "agentic",
+        "workflow",
+        "generation"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0004",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 63,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "accelerating",
+        "inference",
+        "of",
+        "retrieval",
+        "augmented",
+        "generation",
+        "via",
+        "sparse",
+        "context",
+        "selection"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0005",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 63,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "agent",
+        "oriented",
+        "planning",
+        "in",
+        "multi",
+        "agent",
+        "systems"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0006",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 72,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "agentharm",
+        "a",
+        "benchmark",
+        "measuring",
+        "harmfulness",
+        "of",
+        "llm",
+        "agents"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0007",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "agentic_workflows_tool_use"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 98,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "agenttrek",
+        "agent",
+        "trajectory",
+        "synthesis",
+        "via",
+        "guiding",
+        "replay",
+        "web",
+        "tutorials"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0008",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "agentic_workflows_tool_use"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 153,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "attention",
+        "in",
+        "large",
+        "language",
+        "models",
+        "yields",
+        "efficient",
+        "zero",
+        "shot",
+        "re"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0009",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 132,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "benchmarking",
+        "agentic",
+        "workflow",
+        "generation"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0010",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 75,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "benchmarking",
+        "multimodal",
+        "retrieval",
+        "augmented",
+        "generation",
+        "dynamic",
+        "vqa",
+        "dataset",
+        "self",
+        "adaptive"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0011",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "rag_context_engineering"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 33,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "beyond",
+        "next",
+        "language",
+        "unit",
+        "prediction",
+        "patch",
+        "level",
+        "training",
+        "large",
+        "language"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0012",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "speculative_decoding_kv_cache"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 81,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "block",
+        "attention",
+        "efficient",
+        "prefilling"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0013",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 123,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "catastrophic",
+        "failure",
+        "of",
+        "llm",
+        "unlearning",
+        "via",
+        "quantization"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0014",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 73,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "codemmlu",
+        "a",
+        "multi",
+        "task",
+        "benchmark",
+        "assessing",
+        "code",
+        "understanding",
+        "reasoning",
+        "capabilities"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0015",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": true,
+      "section_type": "abstract",
+      "topic_terms": [
+        "evaluation_benchmark_uncertainty"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 96,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "codeplan",
+        "unlocking",
+        "reasoning",
+        "potential",
+        "in",
+        "large",
+        "language",
+        "models",
+        "by",
+        "scaling"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0016",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 84,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "collab",
+        "controlled",
+        "decoding",
+        "mixture",
+        "of",
+        "agents",
+        "llm",
+        "alignment"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0017",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 20,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "compute",
+        "optimal",
+        "llms",
+        "provably",
+        "generalize",
+        "better",
+        "scale"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0018",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "compute_data_efficiency"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 78,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "ds",
+        "llm",
+        "leveraging",
+        "dynamical",
+        "systems",
+        "to",
+        "enhance",
+        "both",
+        "training",
+        "inference"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0019",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "introduction",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 63,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "delta",
+        "an",
+        "online",
+        "document",
+        "level",
+        "translation",
+        "agent",
+        "on",
+        "multi",
+        "level"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0020",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 104,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "do",
+        "llms",
+        "estimate",
+        "uncertainty",
+        "well",
+        "in",
+        "instruction",
+        "following"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0021",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": true,
+      "section_type": "abstract",
+      "topic_terms": [
+        "evaluation_benchmark_uncertainty"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 66,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "duoattention",
+        "efficient",
+        "long",
+        "context",
+        "llm",
+        "inference",
+        "retrieval",
+        "streaming",
+        "heads"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0022",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 64,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "faster",
+        "cascades",
+        "via",
+        "speculative",
+        "decoding"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0023",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "speculative_decoding_kv_cache"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 75,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "flashmask",
+        "efficient",
+        "rich",
+        "mask",
+        "extension",
+        "of",
+        "flashattention"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0024",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "llm_serving_inference_optimization"
+      ]
+    },
+    {
+      "expanded_valid_evidence_count": 95,
+      "limitation_signal": false,
+      "method_signal": false,
+      "paper_title_terms": [
+        "from",
+        "an",
+        "llm",
+        "swarm",
+        "to",
+        "a",
+        "pddl",
+        "empowered",
+        "hive",
+        "planning"
+      ],
+      "prompt_id": "research_ai_scaleup_2000_0025",
+      "repair_reason": [
+        "narrow_gold_section",
+        "multiple_valid_sections_not_counted",
+        "near_duplicate_section_confusion"
+      ],
+      "result_signal": false,
+      "section_type": "abstract",
+      "topic_terms": [
+        "agentic_workflows_tool_use"
+      ]
+    }
+  ],
+  "scope": "research_ai_retrieval_dataset_gold_alignment_repair_no_inference_no_gpu_no_api",
+  "summary_rows": [
+    {
+      "candidate_absent_from_top50": 0,
+      "candidate_present_but_not_top5": 1,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dataset_variant": "previous_repaired_generated",
+      "final_recall_at_5": 0.999,
+      "limitation_vs_discussion_confusion": 0,
+      "method_vs_result_confusion": 0,
+      "mrr": 1.0,
+      "multiple_valid_sections_not_counted": 500,
+      "narrow_gold_section": 500,
+      "near_duplicate_section_confusion": 381,
+      "paper_title_ambiguity": 15,
+      "record_count": 500,
+      "section_type_ambiguity": 0,
+      "slo_status": "PASSED",
+      "stage_size": 500,
+      "topic_overlap_across_papers": 343
+    },
+    {
+      "candidate_absent_from_top50": 42,
+      "candidate_present_but_not_top5": 283,
+      "candidate_recall_at_20": 0.975172,
+      "candidate_recall_at_50": 0.979826,
+      "dataset_variant": "previous_repaired_generated",
+      "final_recall_at_5": 0.91746,
+      "limitation_vs_discussion_confusion": 0,
+      "method_vs_result_confusion": 123,
+      "mrr": 0.953233,
+      "multiple_valid_sections_not_counted": 1960,
+      "narrow_gold_section": 1960,
+      "near_duplicate_section_confusion": 1669,
+      "paper_title_ambiguity": 60,
+      "record_count": 2000,
+      "section_type_ambiguity": 45,
+      "slo_status": "PASSED",
+      "stage_size": 2000,
+      "topic_overlap_across_papers": 920
+    },
+    {
+      "candidate_absent_from_top50": 0,
+      "candidate_present_but_not_top5": 1,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dataset_variant": "repaired_generated",
+      "final_recall_at_5": 0.999,
+      "limitation_vs_discussion_confusion": 0,
+      "method_vs_result_confusion": 0,
+      "mrr": 1.0,
+      "multiple_valid_sections_not_counted": 500,
+      "narrow_gold_section": 500,
+      "near_duplicate_section_confusion": 381,
+      "paper_title_ambiguity": 15,
+      "record_count": 500,
+      "section_type_ambiguity": 0,
+      "slo_status": "PASSED",
+      "stage_size": 500,
+      "topic_overlap_across_papers": 343
+    },
+    {
+      "candidate_absent_from_top50": 42,
+      "candidate_present_but_not_top5": 283,
+      "candidate_recall_at_20": 0.975172,
+      "candidate_recall_at_50": 0.979826,
+      "dataset_variant": "repaired_generated",
+      "final_recall_at_5": 0.91746,
+      "limitation_vs_discussion_confusion": 0,
+      "method_vs_result_confusion": 123,
+      "mrr": 0.953233,
+      "multiple_valid_sections_not_counted": 1960,
+      "narrow_gold_section": 1960,
+      "near_duplicate_section_confusion": 1669,
+      "paper_title_ambiguity": 60,
+      "record_count": 2000,
+      "section_type_ambiguity": 45,
+      "slo_status": "PASSED",
+      "stage_size": 2000,
+      "topic_overlap_across_papers": 920
+    }
+  ]
+}

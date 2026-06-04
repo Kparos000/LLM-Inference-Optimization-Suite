@@ -1,216 +1,46 @@
 {
-  "blocked_retrieval_metrics": [
-    {
-      "gap": -0.198792,
-      "metric_family": "retrieval_slo",
-      "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.701208,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "airline"
-    },
-    {
-      "gap": -0.188958,
-      "metric_family": "retrieval_slo",
-      "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.761042,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.95,
-      "vertical": "airline"
-    },
-    {
-      "gap": -0.1935,
-      "metric_family": "retrieval_slo",
-      "metric_name": "final_recall_at_5_min",
-      "observed": 0.7065,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "airline"
-    },
-    {
-      "gap": -0.678417,
-      "metric_family": "retrieval_slo",
-      "metric_name": "final_recall_at_5_min",
-      "observed": 0.221583,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "retail"
-    },
-    {
-      "gap": -0.601583,
-      "metric_family": "retrieval_slo",
-      "metric_name": "mrr_min",
-      "observed": 0.248417,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.85,
-      "vertical": "retail"
-    },
-    {
-      "gap": -0.105917,
-      "metric_family": "retrieval_slo",
-      "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.794083,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": -0.133667,
-      "metric_family": "retrieval_slo",
-      "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.816333,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.95,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": -0.105667,
-      "metric_family": "retrieval_slo",
-      "metric_name": "final_recall_at_5_min",
-      "observed": 0.794333,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": -0.410375,
-      "metric_family": "retrieval_slo",
-      "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.489625,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "finance"
-    },
-    {
-      "gap": -0.12925,
-      "metric_family": "retrieval_slo",
-      "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.82075,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.95,
-      "vertical": "finance"
-    },
-    {
-      "gap": -0.61925,
-      "metric_family": "retrieval_slo",
-      "metric_name": "final_recall_at_5_min",
-      "observed": 0.28075,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "finance"
-    },
-    {
-      "gap": -0.725667,
-      "metric_family": "retrieval_slo",
-      "metric_name": "mrr_min",
-      "observed": 0.174333,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "finance"
-    },
-    {
-      "gap": -0.103149,
-      "metric_family": "retrieval_slo",
-      "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.796851,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": -0.258285,
-      "metric_family": "retrieval_slo",
-      "metric_name": "final_recall_at_5_min",
-      "observed": 0.641715,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": -0.281775,
-      "metric_family": "retrieval_slo",
-      "metric_name": "mrr_min",
-      "observed": 0.618225,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "research_ai"
-    }
-  ],
-  "generated_at_utc": "2026-06-04T15:20:09.510668+00:00",
-  "inference_scaling_blocked_by_retrieval_slos": true,
-  "metric_families": [
-    "retrieval_slo",
-    "quality_slo",
-    "latency_slo",
-    "throughput_slo",
-    "resource_slo",
-    "api_cost_slo",
-    "gpu_cost_slo"
-  ],
+  "blocked_retrieval_metrics": [],
+  "generated_at_utc": "2026-06-04T18:09:13.617198+00:00",
+  "inference_scaling_blocked_by_retrieval_slos": false,
   "no_external_api_calls_triggered": true,
   "no_gpu_work_triggered": true,
   "no_model_inference_triggered": true,
-  "not_available_metric_count": 195,
-  "not_available_metric_families": [
-    "api_cost_slo",
-    "gpu_cost_slo",
-    "latency_slo",
-    "quality_slo",
-    "resource_slo",
-    "throughput_slo"
-  ],
-  "quality_gate_report_path": "data\\generated\\context_engineering\\retrieval_quality_gate_report.json",
   "results": [
     {
-      "gap": -0.198792,
+      "gap": 0.1,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.701208,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 1.0,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
       "vertical": "airline"
     },
     {
-      "gap": -0.188958,
+      "gap": 0.05,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.761042,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 1.0,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.95,
       "vertical": "airline"
     },
     {
-      "gap": -0.1935,
+      "gap": 0.1,
       "metric_family": "retrieval_slo",
       "metric_name": "final_recall_at_5_min",
-      "observed": 0.7065,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 1.0,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
       "vertical": "airline"
     },
     {
-      "gap": 0.086125,
+      "gap": 0.15,
       "metric_family": "retrieval_slo",
       "metric_name": "mrr_min",
-      "observed": 0.936125,
+      "observed": 1.0,
       "recommended_action": "No action required.",
       "status": "PASS",
       "target": 0.85,
@@ -219,858 +49,198 @@
     {
       "gap": "",
       "metric_family": "quality_slo",
-      "metric_name": "groundedness_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures quality_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "citation_accuracy_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "evidence_match_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "task_success_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "format_validity_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "safety_violations_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0,
+      "target": "",
       "vertical": "airline"
     },
     {
       "gap": "",
       "metric_family": "latency_slo",
-      "metric_name": "ttft_p50_ms_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures latency_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 500,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1000,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 2000,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 25,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 25,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 2500,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 4000,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 7000,
+      "target": "",
       "vertical": "airline"
     },
     {
       "gap": "",
       "metric_family": "throughput_slo",
-      "metric_name": "requests_per_second_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures throughput_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.5,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "tokens_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "successful_requests_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.45,
+      "target": "",
       "vertical": "airline"
     },
     {
       "gap": "",
       "metric_family": "resource_slo",
-      "metric_name": "gpu_utilization_min_pct",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures resource_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 95.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_peak_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 80.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "cpu_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 90.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "ram_usage_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 64.0,
+      "target": "",
       "vertical": "airline"
     },
     {
       "gap": "",
       "metric_family": "api_cost_slo",
-      "metric_name": "input_tokens_per_request_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures api_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 12000,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "output_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1024,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "total_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 13000,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.05,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.1,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.15,
+      "target": "",
       "vertical": "airline"
     },
     {
       "gap": "",
       "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_hourly_price_usd_required",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": true,
+      "target": "",
       "vertical": "airline"
     },
     {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.02,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.04,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.06,
-      "vertical": "airline"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "tokens_per_gpu_dollar_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100000.0,
-      "vertical": "airline"
-    },
-    {
-      "gap": 0.007083,
+      "gap": 0.048875,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.907083,
+      "observed": 0.948875,
       "recommended_action": "No action required.",
       "status": "PASS",
       "target": 0.9,
-      "vertical": "retail"
+      "vertical": "finance"
     },
     {
-      "gap": -0.025333,
+      "gap": 0.00575,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.924667,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "WARN",
+      "observed": 0.95575,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.95,
-      "vertical": "retail"
+      "vertical": "finance"
     },
     {
-      "gap": -0.678417,
+      "gap": 0.039,
       "metric_family": "retrieval_slo",
       "metric_name": "final_recall_at_5_min",
-      "observed": 0.221583,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 0.939,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
-      "vertical": "retail"
+      "vertical": "finance"
     },
     {
-      "gap": -0.601583,
+      "gap": 0.041833,
       "metric_family": "retrieval_slo",
       "metric_name": "mrr_min",
-      "observed": 0.248417,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.85,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "groundedness_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "citation_accuracy_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
+      "observed": 0.941833,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
-      "vertical": "retail"
+      "vertical": "finance"
     },
     {
       "gap": "",
       "metric_family": "quality_slo",
-      "metric_name": "evidence_match_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures quality_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "task_success_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "format_validity_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "safety_violations_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0,
-      "vertical": "retail"
+      "target": "",
+      "vertical": "finance"
     },
     {
       "gap": "",
       "metric_family": "latency_slo",
-      "metric_name": "ttft_p50_ms_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures latency_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 500,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1000,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 2000,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 25,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 25,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 2500,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 4000,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 7000,
-      "vertical": "retail"
+      "target": "",
+      "vertical": "finance"
     },
     {
       "gap": "",
       "metric_family": "throughput_slo",
-      "metric_name": "requests_per_second_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures throughput_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.5,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "tokens_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "successful_requests_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.45,
-      "vertical": "retail"
+      "target": "",
+      "vertical": "finance"
     },
     {
       "gap": "",
       "metric_family": "resource_slo",
-      "metric_name": "gpu_utilization_min_pct",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures resource_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 95.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_peak_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 80.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "cpu_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 90.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "ram_usage_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 64.0,
-      "vertical": "retail"
+      "target": "",
+      "vertical": "finance"
     },
     {
       "gap": "",
       "metric_family": "api_cost_slo",
-      "metric_name": "input_tokens_per_request_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures api_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 12000,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "output_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1024,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "total_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 13000,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.05,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.1,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.15,
-      "vertical": "retail"
+      "target": "",
+      "vertical": "finance"
     },
     {
       "gap": "",
       "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_hourly_price_usd_required",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": true,
-      "vertical": "retail"
+      "target": "",
+      "vertical": "finance"
     },
     {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.02,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.04,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.06,
-      "vertical": "retail"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "tokens_per_gpu_dollar_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100000.0,
-      "vertical": "retail"
-    },
-    {
-      "gap": -0.105917,
+      "gap": 0.1,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.794083,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 1.0,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
       "vertical": "healthcare_admin"
     },
     {
-      "gap": -0.133667,
+      "gap": 0.05,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.816333,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 1.0,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.95,
       "vertical": "healthcare_admin"
     },
     {
-      "gap": -0.105667,
+      "gap": 0.1,
       "metric_family": "retrieval_slo",
       "metric_name": "final_recall_at_5_min",
-      "observed": 0.794333,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 1.0,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
       "vertical": "healthcare_admin"
     },
     {
-      "gap": 0.086125,
+      "gap": 0.14425,
       "metric_family": "retrieval_slo",
       "metric_name": "mrr_min",
-      "observed": 0.936125,
+      "observed": 0.99425,
       "recommended_action": "No action required.",
       "status": "PASS",
       "target": 0.85,
@@ -1079,1273 +249,274 @@
     {
       "gap": "",
       "metric_family": "quality_slo",
-      "metric_name": "groundedness_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures quality_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.98,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "citation_accuracy_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "evidence_match_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "task_success_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "format_validity_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "safety_violations_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0,
+      "target": "",
       "vertical": "healthcare_admin"
     },
     {
       "gap": "",
       "metric_family": "latency_slo",
-      "metric_name": "ttft_p50_ms_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures latency_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 800,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1500,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 3000,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 40,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 80,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 150,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 40,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 80,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 150,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 3500,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 6000,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 10000,
+      "target": "",
       "vertical": "healthcare_admin"
     },
     {
       "gap": "",
       "metric_family": "throughput_slo",
-      "metric_name": "requests_per_second_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures throughput_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.5,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "tokens_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "successful_requests_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.45,
+      "target": "",
       "vertical": "healthcare_admin"
     },
     {
       "gap": "",
       "metric_family": "resource_slo",
-      "metric_name": "gpu_utilization_min_pct",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures resource_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 95.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_peak_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 80.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "cpu_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 90.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "ram_usage_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 64.0,
+      "target": "",
       "vertical": "healthcare_admin"
     },
     {
       "gap": "",
       "metric_family": "api_cost_slo",
-      "metric_name": "input_tokens_per_request_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures api_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 12000,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "output_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1024,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "total_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 13000,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.05,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.1,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.15,
+      "target": "",
       "vertical": "healthcare_admin"
     },
     {
       "gap": "",
       "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_hourly_price_usd_required",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": true,
+      "target": "",
       "vertical": "healthcare_admin"
     },
     {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.02,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.04,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.06,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "tokens_per_gpu_dollar_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100000.0,
-      "vertical": "healthcare_admin"
-    },
-    {
-      "gap": -0.410375,
+      "gap": 0.075172,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.489625,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 0.975172,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
-      "vertical": "finance"
+      "vertical": "research_ai"
     },
     {
-      "gap": -0.12925,
+      "gap": 0.029826,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.82075,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 0.979826,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.95,
-      "vertical": "finance"
+      "vertical": "research_ai"
     },
     {
-      "gap": -0.61925,
+      "gap": 0.01746,
       "metric_family": "retrieval_slo",
       "metric_name": "final_recall_at_5_min",
-      "observed": 0.28075,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 0.91746,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
-      "vertical": "finance"
+      "vertical": "research_ai"
     },
     {
-      "gap": -0.725667,
+      "gap": 0.053233,
       "metric_family": "retrieval_slo",
       "metric_name": "mrr_min",
-      "observed": 0.174333,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 0.953233,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
-      "vertical": "finance"
+      "vertical": "research_ai"
     },
     {
       "gap": "",
       "metric_family": "quality_slo",
-      "metric_name": "groundedness_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures quality_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.98,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "citation_accuracy_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "evidence_match_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "task_success_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "format_validity_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "safety_violations_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0,
-      "vertical": "finance"
+      "target": "",
+      "vertical": "research_ai"
     },
     {
       "gap": "",
       "metric_family": "latency_slo",
-      "metric_name": "ttft_p50_ms_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures latency_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 1200,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 2500,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 5000,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 200,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 200,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 6000,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 10000,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 18000,
-      "vertical": "finance"
+      "target": "",
+      "vertical": "research_ai"
     },
     {
       "gap": "",
       "metric_family": "throughput_slo",
-      "metric_name": "requests_per_second_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures throughput_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.5,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "tokens_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "successful_requests_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.45,
-      "vertical": "finance"
+      "target": "",
+      "vertical": "research_ai"
     },
     {
       "gap": "",
       "metric_family": "resource_slo",
-      "metric_name": "gpu_utilization_min_pct",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures resource_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 95.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_peak_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 80.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "cpu_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 90.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "ram_usage_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 64.0,
-      "vertical": "finance"
+      "target": "",
+      "vertical": "research_ai"
     },
     {
       "gap": "",
       "metric_family": "api_cost_slo",
-      "metric_name": "input_tokens_per_request_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures api_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 12000,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "output_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1024,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "total_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 13000,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.05,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.1,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.15,
-      "vertical": "finance"
+      "target": "",
+      "vertical": "research_ai"
     },
     {
       "gap": "",
       "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_hourly_price_usd_required",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": true,
-      "vertical": "finance"
+      "target": "",
+      "vertical": "research_ai"
     },
     {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.02,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.04,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.06,
-      "vertical": "finance"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "tokens_per_gpu_dollar_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100000.0,
-      "vertical": "finance"
-    },
-    {
-      "gap": -0.103149,
+      "gap": 0.074333,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_20_min",
-      "observed": 0.796851,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 0.974333,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
-      "vertical": "research_ai"
+      "vertical": "retail"
     },
     {
-      "gap": -0.083514,
+      "gap": 0.032083,
       "metric_family": "retrieval_slo",
       "metric_name": "candidate_recall_at_50_min",
-      "observed": 0.866486,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "WARN",
+      "observed": 0.982083,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.95,
-      "vertical": "research_ai"
+      "vertical": "retail"
     },
     {
-      "gap": -0.258285,
+      "gap": 0.059917,
       "metric_family": "retrieval_slo",
       "metric_name": "final_recall_at_5_min",
-      "observed": 0.641715,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
+      "observed": 0.959917,
+      "recommended_action": "No action required.",
+      "status": "PASS",
       "target": 0.9,
-      "vertical": "research_ai"
+      "vertical": "retail"
     },
     {
-      "gap": -0.281775,
+      "gap": 0.072592,
       "metric_family": "retrieval_slo",
       "metric_name": "mrr_min",
-      "observed": 0.618225,
-      "recommended_action": "Repair retrieval before inference scaling or final benchmark claims.",
-      "status": "BLOCKED",
-      "target": 0.9,
-      "vertical": "research_ai"
+      "observed": 0.922592,
+      "recommended_action": "No action required.",
+      "status": "PASS",
+      "target": 0.85,
+      "vertical": "retail"
     },
     {
       "gap": "",
       "metric_family": "quality_slo",
-      "metric_name": "groundedness_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures quality_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "citation_accuracy_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "evidence_match_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "task_success_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.9,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "format_validity_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.95,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "quality_slo",
-      "metric_name": "safety_violations_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures quality_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0,
-      "vertical": "research_ai"
+      "target": "",
+      "vertical": "retail"
     },
     {
       "gap": "",
       "metric_family": "latency_slo",
-      "metric_name": "ttft_p50_ms_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures latency_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 1500,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 3000,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "ttft_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 7000,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 60,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 120,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "itl_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 250,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 60,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 120,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "tpot_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 250,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p50_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 8000,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p95_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 12000,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "latency_slo",
-      "metric_name": "e2e_p99_ms_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures latency_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 22000,
-      "vertical": "research_ai"
+      "target": "",
+      "vertical": "retail"
     },
     {
       "gap": "",
       "metric_family": "throughput_slo",
-      "metric_name": "requests_per_second_min",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures throughput_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 0.5,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "tokens_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "throughput_slo",
-      "metric_name": "successful_requests_per_second_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures throughput_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.45,
-      "vertical": "research_ai"
+      "target": "",
+      "vertical": "retail"
     },
     {
       "gap": "",
       "metric_family": "resource_slo",
-      "metric_name": "gpu_utilization_min_pct",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures resource_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 95.0,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "gpu_memory_peak_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 80.0,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "cpu_utilization_max_pct",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 90.0,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "resource_slo",
-      "metric_name": "ram_usage_gb_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures resource_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 64.0,
-      "vertical": "research_ai"
+      "target": "",
+      "vertical": "retail"
     },
     {
       "gap": "",
       "metric_family": "api_cost_slo",
-      "metric_name": "input_tokens_per_request_max",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures api_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": 12000,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "output_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 1024,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "total_tokens_per_request_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 13000,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.05,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 50.0,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.1,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "api_cost_slo",
-      "metric_name": "api_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures api_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.15,
-      "vertical": "research_ai"
+      "target": "",
+      "vertical": "retail"
     },
     {
       "gap": "",
       "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_hourly_price_usd_required",
+      "metric_name": "not_measured_yet",
       "observed": "",
       "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
       "status": "NOT_AVAILABLE",
-      "target": true,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_request_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.02,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_1000_requests_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 20.0,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.04,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "gpu_cost_per_grounded_successful_answer_usd_max",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 0.06,
-      "vertical": "research_ai"
-    },
-    {
-      "gap": "",
-      "metric_family": "gpu_cost_slo",
-      "metric_name": "tokens_per_gpu_dollar_min",
-      "observed": "",
-      "recommended_action": "Run an experiment/report that measures gpu_cost_slo.",
-      "status": "NOT_AVAILABLE",
-      "target": 100000.0,
-      "vertical": "research_ai"
+      "target": "",
+      "vertical": "retail"
     }
   ],
-  "retrieval_report_path": "data\\generated\\context_engineering\\retrieval_evaluation_report.json",
-  "retrieval_slo_blocked_count": 15,
-  "scope": "production_slo_readiness_no_inference_no_gpu_no_api",
+  "retrieval_slo_blocked_count": 0,
+  "retrieval_validation_report_path": "data\\generated\\context_engineering\\repaired_retrieval_validation_report.json",
+  "scope": "production_slo_readiness_from_repaired_retrieval_validation",
   "status_counts": {
-    "BLOCKED": 15,
-    "NOT_AVAILABLE": 195,
-    "PASS": 3,
-    "WARN": 2
+    "NOT_AVAILABLE": 30,
+    "PASS": 20
   },
   "summary": {
     "future_inference_cost_resource_metrics_available": false,
-    "overall_status": "BLOCKED",
+    "overall_status": "READY_WITH_GAPS",
     "retrieval_slos_currently_measured": true
-  },
-  "verticals": [
-    "airline",
-    "retail",
-    "healthcare_admin",
-    "finance",
-    "research_ai"
-  ]
+  }
 }

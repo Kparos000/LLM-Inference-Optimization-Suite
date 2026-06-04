@@ -15,6 +15,89 @@ from inference_bench.context_schema import ContextRecord
 TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
 
 RankedCandidate = tuple[str, float, dict[str, float]]
+RESEARCH_SECTION_FAMILY_MAP = {
+    "abstract": "overview",
+    "introduction": "overview",
+    "background": "overview",
+    "overview": "overview",
+    "related_work": "overview",
+    "related": "overview",
+    "relatedwork": "overview",
+    "relatedworks": "overview",
+    "method": "method",
+    "methods": "method",
+    "methodology": "method",
+    "approach": "method",
+    "model": "method",
+    "algorithm": "method",
+    "training": "method",
+    "data": "method",
+    "dataset": "method",
+    "datasets": "method",
+    "experiment": "results",
+    "experiments": "results",
+    "experimental": "results",
+    "evaluation": "results",
+    "results": "results",
+    "result": "results",
+    "analysis": "results",
+    "ablation": "results",
+    "experimentalsetup": "results",
+    "mainresults": "results",
+    "limitations": "limitations",
+    "limitation": "limitations",
+    "discussion": "limitations",
+    "conclusion": "limitations",
+    "conclusions": "limitations",
+}
+RESEARCH_TARGET_TERMS = {
+    "overview": {
+        "abstract",
+        "introduction",
+        "overview",
+        "claim",
+        "contribution",
+        "boundary",
+        "cited",
+        "section",
+        "evidence",
+    },
+    "method": {
+        "method",
+        "methods",
+        "methodology",
+        "approach",
+        "algorithm",
+        "model",
+        "training",
+        "data",
+        "dataset",
+        "pipeline",
+        "framework",
+        "architecture",
+    },
+    "results": {
+        "result",
+        "results",
+        "experiment",
+        "experiments",
+        "evaluation",
+        "benchmark",
+        "ablation",
+        "performance",
+        "outperform",
+        "accuracy",
+    },
+    "limitations": {
+        "limitation",
+        "limitations",
+        "discussion",
+        "conclusion",
+        "risk",
+        "caveat",
+        "failure",
+    },
+}
 
 
 def tokens(text: str) -> set[str]:
@@ -63,6 +146,56 @@ def metadata_tokens(record: ContextRecord, fields: Iterable[str]) -> set[str]:
         elif value is not None:
             values.append(str(value))
     return tokens(" ".join(values))
+
+
+def research_paper_key(record: ContextRecord) -> str:
+    """Return the stable Research AI paper grouping key."""
+
+    meta = record.metadata
+    return normalize(
+        " ".join(
+            str(value)
+            for value in (
+                meta.get("paper_id"),
+                meta.get("paper_title"),
+                record.parent_id,
+                record.title,
+            )
+            if value
+        )
+    )
+
+
+def research_section_family(record: ContextRecord) -> str:
+    """Return the coarse Research AI section family for selector balancing."""
+
+    meta = record.metadata
+    values: list[str] = []
+    for field in ("section_type", "evidence_type", "section_title", "document_type"):
+        value = meta.get(field)
+        if value is not None:
+            values.extend(tokens(str(value).replace("-", "_")))
+    for value in values:
+        normalized_value = value.lower()
+        if normalized_value in RESEARCH_SECTION_FAMILY_MAP:
+            return RESEARCH_SECTION_FAMILY_MAP[normalized_value]
+    if record.source_type == "paper_abstract":
+        return "overview"
+    return "other"
+
+
+def infer_research_target_families(query_tokens: set[str]) -> list[str]:
+    """Infer target Research AI section families from prompt-visible query terms."""
+
+    families: list[str] = []
+    for family in ("method", "results", "limitations", "overview"):
+        if query_tokens & RESEARCH_TARGET_TERMS[family]:
+            families.append(family)
+    if "abstract" in query_tokens and "introduction" in query_tokens:
+        families = ["overview", *[family for family in families if family != "overview"]]
+    if not families:
+        families = ["overview", "method", "results"]
+    return list(dict.fromkeys(families))
 
 
 def item_record_tokens(record: ContextRecord) -> set[str]:
@@ -174,21 +307,27 @@ def research_selector_score(
     item: RankedCandidate,
     record: ContextRecord,
     query_tokens: set[str],
-    seen_papers: set[str],
 ) -> float:
-    """Score Research AI final selection while encouraging section diversity."""
+    """Score Research AI final selection with paper and section-family focus."""
 
     candidate_tokens = item_record_tokens(record)
     meta = record.metadata
     score = item[1]
     section_tokens = metadata_tokens(record, ("section_type", "section_title", "section"))
     title_tokens = metadata_tokens(record, ("paper_title", "title"))
-    score += 1.0 * lexical_overlap(query_tokens, section_tokens)
-    score += 0.7 * lexical_overlap(query_tokens, title_tokens)
+    family = research_section_family(record)
+    target_families = set(infer_research_target_families(query_tokens))
+    score += 1.3 * lexical_overlap(query_tokens, section_tokens)
+    score += 1.2 * lexical_overlap(query_tokens, title_tokens)
     score += 0.5 * lexical_overlap(query_tokens, candidate_tokens)
-    paper_key = str(meta.get("paper_id") or meta.get("paper_title") or record.parent_id)
-    if paper_key in seen_papers:
-        score -= 0.35
+    if family in target_families:
+        score += 1.15
+    if family == "overview" and {"abstract", "introduction"} & query_tokens:
+        score += 0.65
+    if family == "other":
+        score -= 0.4
+    if meta.get("paper_title") and title_tokens & query_tokens:
+        score += 0.55
     return score
 
 
@@ -281,7 +420,6 @@ def ranked_with_scores(
                 item=item,
                 record=record,
                 query_tokens=query_tokens,
-                seen_papers=set(),
             )
         elif record.vertical == "airline":
             score = airline_selector_score(item=item, record=record, query_tokens=query_tokens)
@@ -297,6 +435,132 @@ def ranked_with_scores(
         new_breakdown["canonical_selector_score"] = float(score - item[1])
         scored.append((context_id, score, new_breakdown))
     return sorted(scored, key=lambda candidate: (-candidate[1], candidate[0]))
+
+
+def select_research_ai_section_candidates(
+    *,
+    rescored: list[RankedCandidate],
+    records_by_id: dict[str, ContextRecord],
+    query_tokens: set[str],
+    final_top_k: int,
+) -> list[RankedCandidate]:
+    """Select Research AI top-k with target paper and section-family coverage."""
+
+    research_ranked = [
+        item
+        for item in rescored
+        if item[1] > 0 and records_by_id[item[0]].vertical == "research_ai"
+    ]
+    if not research_ranked:
+        return rescored
+
+    target_families = infer_research_target_families(query_tokens)
+    paper_scores: dict[str, float] = {}
+    for index, item in enumerate(research_ranked[:50]):
+        record = records_by_id[item[0]]
+        paper_key = research_paper_key(record)
+        if not paper_key:
+            continue
+        title_overlap = lexical_overlap(
+            query_tokens,
+            metadata_tokens(record, ("paper_title", "title")),
+        )
+        section_bonus = 0.35 if research_section_family(record) in target_families else 0.0
+        paper_scores[paper_key] = paper_scores.get(paper_key, 0.0) + (
+            (item[1] / (index + 1)) + (2.4 * title_overlap) + section_bonus
+        )
+    anchor_papers = [
+        paper
+        for paper, _score in sorted(
+            paper_scores.items(),
+            key=lambda pair: (-pair[1], pair[0]),
+        )[:2]
+    ]
+
+    selected: list[RankedCandidate] = []
+    selected_ids: set[str] = set()
+    selected_texts: set[str] = set()
+    selected_family_counts: dict[str, int] = {}
+
+    def add_candidate(item: RankedCandidate) -> None:
+        if len(selected) >= final_top_k:
+            return
+        context_id = item[0]
+        if context_id in selected_ids:
+            return
+        record = records_by_id[context_id]
+        normalized_text = normalize(record.text)
+        if normalized_text in selected_texts:
+            return
+        selected.append(item)
+        selected_ids.add(context_id)
+        selected_texts.add(normalized_text)
+        family = research_section_family(record)
+        selected_family_counts[family] = selected_family_counts.get(family, 0) + 1
+
+    def candidates_for(
+        *,
+        paper_key: str | None = None,
+        family: str | None = None,
+    ) -> list[RankedCandidate]:
+        candidates: list[RankedCandidate] = []
+        for item in research_ranked:
+            record = records_by_id[item[0]]
+            if paper_key is not None and research_paper_key(record) != paper_key:
+                continue
+            if family is not None and research_section_family(record) != family:
+                continue
+            candidates.append(item)
+        return candidates
+
+    for paper_key in anchor_papers[:1]:
+        for family in target_families:
+            for item in candidates_for(paper_key=paper_key, family=family)[:2]:
+                add_candidate(item)
+                if len(selected) >= final_top_k:
+                    break
+            if len(selected) >= final_top_k:
+                break
+
+        if "overview" in target_families:
+            for family in ("overview", "method", "results"):
+                if selected_family_counts.get(family, 0) > 0:
+                    continue
+                for item in candidates_for(paper_key=paper_key, family=family)[:1]:
+                    add_candidate(item)
+                    break
+
+    for paper_key in anchor_papers:
+        for item in candidates_for(paper_key=paper_key):
+            add_candidate(item)
+            if len(selected) >= final_top_k:
+                break
+        if len(selected) >= final_top_k:
+            break
+
+    if len(selected) < final_top_k:
+        for family in target_families:
+            for item in candidates_for(family=family):
+                add_candidate(item)
+                if len(selected) >= final_top_k:
+                    break
+            if len(selected) >= final_top_k:
+                break
+
+    for item in research_ranked:
+        add_candidate(item)
+        if len(selected) >= final_top_k:
+            break
+
+    if len(selected) < final_top_k:
+        for item in rescored:
+            add_candidate(item)
+            if len(selected) >= final_top_k:
+                break
+
+    selected_id_set = {item[0] for item in selected}
+    remainder = [item for item in rescored if item[0] not in selected_id_set]
+    return [*selected, *remainder]
 
 
 def select_canonical_final_candidates(
@@ -317,6 +581,13 @@ def select_canonical_final_candidates(
         query_tokens=query_tokens,
         query_text=query_text,
     )
+    if any(records_by_id[item[0]].vertical == "research_ai" for item in rescored):
+        rescored = select_research_ai_section_candidates(
+            rescored=rescored,
+            records_by_id=records_by_id,
+            query_tokens=query_tokens,
+            final_top_k=final_top_k,
+        )
     selected: list[RankedCandidate] = []
     selected_ids: set[str] = set()
     seen_texts: set[str] = set()

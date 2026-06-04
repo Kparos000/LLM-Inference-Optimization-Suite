@@ -1,0 +1,7 @@
+stage_size,dataset_variant,record_count,candidate_recall_at_20,candidate_recall_at_50,final_recall_at_5,mrr,slo_status,paper_title_ambiguity,section_type_ambiguity,method_vs_result_confusion,limitation_vs_discussion_confusion,topic_overlap_across_papers,narrow_gold_section,multiple_valid_sections_not_counted,candidate_absent_from_top50,candidate_present_but_not_top5,near_duplicate_section_confusion
+500,block18_repaired_baseline,500,0.738,0.9745,0.6175,1.0,FAILED,,,,,,,,,,
+2000,block18_repaired_baseline,2000,0.742017,0.939806,0.596498,0.882217,FAILED,,,,,,,,,,
+500,previous_repaired_generated,500,1.0,1.0,0.999,1.0,PASSED,15,0,0,0,343,500,500,0,1,381
+2000,previous_repaired_generated,2000,0.975172,0.979826,0.91746,0.953233,PASSED,60,45,123,0,920,1960,1960,42,283,1669
+500,repaired_generated,500,1.0,1.0,0.999,1.0,PASSED,15,0,0,0,343,500,500,0,1,381
+2000,repaired_generated,2000,0.975172,0.979826,0.91746,0.953233,PASSED,60,45,123,0,920,1960,1960,42,283,1669
