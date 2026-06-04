@@ -1,0 +1,24 @@
+{
+  "all_repaired_2000_slos_pass": false,
+  "do_not_overwrite_promoted_dataset_automatically": true,
+  "generated_at_utc": "2026-06-04T15:20:05.021541+00:00",
+  "materially_improved": true,
+  "promotion_recommended": false,
+  "recommended_action": "Do not promote yet; continue repairing listed blockers.",
+  "records_repaired_by_vertical": {
+    "airline": 2000,
+    "finance": 2000,
+    "healthcare_admin": 2000,
+    "research_ai": 2000,
+    "retail": 2000
+  },
+  "remaining_blockers": [
+    {
+      "final_recall_at_5": 0.596498,
+      "mrr": 0.882217,
+      "primary_blocker": "candidate_retrieval_top20",
+      "stage_size": 2000,
+      "vertical": "research_ai"
+    }
+  ]
+}

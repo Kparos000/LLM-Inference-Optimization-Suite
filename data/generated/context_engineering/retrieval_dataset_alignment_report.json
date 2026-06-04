@@ -1,0 +1,1493 @@
+{
+  "generated_at_utc": "2026-06-04T15:20:05.012044+00:00",
+  "no_external_api_calls_triggered": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "reason_definitions": {
+    "missing_canonical_retrieval_query": "The promoted prompt did not contain an explicit runtime retrieval_query field.",
+    "multiple_valid_evidence_not_counted": "The prompt can be satisfied by additional context chunks not present in the original narrow gold IDs."
+  },
+  "record_count": 10000,
+  "records_needing_repair_count": 10000,
+  "repaired_dataset_root": "data\\generated\\context_engineering\\repaired_retrieval_dataset",
+  "sample_records_needing_repair": [
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 102,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0001",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 2,
+      "expanded_valid_evidence_count": 156,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0002",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 108,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0003",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0004",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 117,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0005",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 94,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0006",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 150,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0007",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 106,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0008",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0009",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 114,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0010",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 99,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0011",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 150,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0012",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 107,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0013",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 102,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0014",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 122,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0015",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 104,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0016",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 6,
+      "expanded_valid_evidence_count": 152,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0017",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 103,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0018",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 94,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0019",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 140,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0020",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 92,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0021",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 152,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0022",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 100,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0023",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 83,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0024",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 118,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0025",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 100,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0026",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 132,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0027",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 108,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0028",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0029",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 124,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0030",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 101,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0031",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 8,
+      "expanded_valid_evidence_count": 140,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0032",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 131,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0033",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 102,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0034",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 112,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0035",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 92,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0036",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 149,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0037",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 110,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0038",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0039",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 100,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0040",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 108,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0041",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 2,
+      "expanded_valid_evidence_count": 156,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0042",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 112,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0043",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 102,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0044",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 116,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0045",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 122,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0046",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 2,
+      "expanded_valid_evidence_count": 146,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0047",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 110,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0048",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0049",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 112,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0050",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 104,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0051",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 148,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0052",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 86,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0053",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0054",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 122,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0055",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 104,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0056",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 148,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0057",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 97,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0058",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 101,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0059",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 110,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0060",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 96,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0061",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 136,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0062",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 108,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0063",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0064",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 120,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0065",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 102,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0066",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 2,
+      "expanded_valid_evidence_count": 156,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0067",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 108,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0068",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0069",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 117,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0070",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 94,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0071",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 150,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0072",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 106,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0073",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0074",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 114,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0075",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 99,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0076",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 150,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0077",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 107,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0078",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 102,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0079",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 122,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0080",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 104,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0081",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 6,
+      "expanded_valid_evidence_count": 152,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0082",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 103,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0083",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 94,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0084",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 140,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0085",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 92,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0086",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 152,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0087",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 100,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0088",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 83,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0089",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 118,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0090",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 100,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0091",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 4,
+      "expanded_valid_evidence_count": 132,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0092",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 108,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0093",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 82,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0094",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 124,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 3,
+      "prompt_id": "airline_scaleup_2000_0095",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 101,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0096",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 8,
+      "expanded_valid_evidence_count": 140,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 4,
+      "prompt_id": "airline_scaleup_2000_0097",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 131,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0098",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 102,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 1,
+      "prompt_id": "airline_scaleup_2000_0099",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    },
+    {
+      "blocked_direct_hint_count": 0,
+      "expanded_valid_evidence_count": 112,
+      "missing_canonical_metadata_fields": [],
+      "original_gold_evidence_count": 2,
+      "prompt_id": "airline_scaleup_2000_0100",
+      "repair_reason": [
+        "gold_label_too_narrow",
+        "multiple_valid_evidence_not_counted",
+        "missing_canonical_retrieval_query"
+      ],
+      "runtime_query_uses_valid_evidence_ids": false,
+      "vertical": "airline"
+    }
+  ],
+  "scope": "retrieval_dataset_gold_alignment_repair_no_inference_no_gpu_no_api",
+  "summary_rows": [
+    {
+      "candidate_retrieval_failure": 0,
+      "chunk_too_broad": 0,
+      "chunk_too_narrow": 0,
+      "corpus_near_duplicate_confusion": 0,
+      "evidence_not_recoverable": 0,
+      "final_selection_failure": 0,
+      "gold_label_too_narrow": 2000,
+      "metadata_missing": 0,
+      "missing_canonical_retrieval_query": 2000,
+      "multiple_valid_evidence_not_counted": 2000,
+      "prompt_lacks_required_retrieval_cues": 0,
+      "record_count": 2000,
+      "vertical": "airline"
+    },
+    {
+      "candidate_retrieval_failure": 0,
+      "chunk_too_broad": 0,
+      "chunk_too_narrow": 0,
+      "corpus_near_duplicate_confusion": 1804,
+      "evidence_not_recoverable": 0,
+      "final_selection_failure": 0,
+      "gold_label_too_narrow": 1938,
+      "metadata_missing": 0,
+      "missing_canonical_retrieval_query": 2000,
+      "multiple_valid_evidence_not_counted": 1938,
+      "prompt_lacks_required_retrieval_cues": 0,
+      "record_count": 2000,
+      "vertical": "retail"
+    },
+    {
+      "candidate_retrieval_failure": 0,
+      "chunk_too_broad": 0,
+      "chunk_too_narrow": 185,
+      "corpus_near_duplicate_confusion": 0,
+      "evidence_not_recoverable": 0,
+      "final_selection_failure": 0,
+      "gold_label_too_narrow": 2000,
+      "metadata_missing": 0,
+      "missing_canonical_retrieval_query": 2000,
+      "multiple_valid_evidence_not_counted": 2000,
+      "prompt_lacks_required_retrieval_cues": 0,
+      "record_count": 2000,
+      "vertical": "healthcare_admin"
+    },
+    {
+      "candidate_retrieval_failure": 0,
+      "chunk_too_broad": 0,
+      "chunk_too_narrow": 0,
+      "corpus_near_duplicate_confusion": 0,
+      "evidence_not_recoverable": 0,
+      "final_selection_failure": 0,
+      "gold_label_too_narrow": 1907,
+      "metadata_missing": 2000,
+      "missing_canonical_retrieval_query": 2000,
+      "multiple_valid_evidence_not_counted": 1907,
+      "prompt_lacks_required_retrieval_cues": 2000,
+      "record_count": 2000,
+      "vertical": "finance"
+    },
+    {
+      "candidate_retrieval_failure": 0,
+      "chunk_too_broad": 0,
+      "chunk_too_narrow": 9,
+      "corpus_near_duplicate_confusion": 1960,
+      "evidence_not_recoverable": 0,
+      "final_selection_failure": 0,
+      "gold_label_too_narrow": 1960,
+      "metadata_missing": 45,
+      "missing_canonical_retrieval_query": 2000,
+      "multiple_valid_evidence_not_counted": 1960,
+      "prompt_lacks_required_retrieval_cues": 45,
+      "record_count": 2000,
+      "vertical": "research_ai"
+    }
+  ]
+}

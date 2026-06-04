@@ -1,0 +1,6 @@
+vertical,record_count,prompt_lacks_required_retrieval_cues,gold_label_too_narrow,multiple_valid_evidence_not_counted,corpus_near_duplicate_confusion,chunk_too_broad,chunk_too_narrow,missing_canonical_retrieval_query,metadata_missing,evidence_not_recoverable,candidate_retrieval_failure,final_selection_failure
+airline,2000,0,2000,2000,0,0,0,2000,0,0,0,0
+retail,2000,0,1938,1938,1804,0,0,2000,0,0,0,0
+healthcare_admin,2000,0,2000,2000,0,0,185,2000,0,0,0,0
+finance,2000,2000,1907,1907,0,0,0,2000,2000,0,0,0
+research_ai,2000,45,1960,1960,1960,0,9,2000,45,0,0,0

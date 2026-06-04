@@ -151,7 +151,7 @@
       "vertical": "research_ai"
     }
   ],
-  "generated_at_utc": "2026-06-04T08:35:44.584816+00:00",
+  "generated_at_utc": "2026-06-04T15:20:09.510668+00:00",
   "inference_scaling_blocked_by_retrieval_slos": true,
   "metric_families": [
     "retrieval_slo",
@@ -174,7 +174,7 @@
     "resource_slo",
     "throughput_slo"
   ],
-  "quality_gate_report_path": "data/generated/context_engineering/retrieval_quality_gate_report.json",
+  "quality_gate_report_path": "data\\generated\\context_engineering\\retrieval_quality_gate_report.json",
   "results": [
     {
       "gap": -0.198792,
@@ -2327,7 +2327,7 @@
       "vertical": "research_ai"
     }
   ],
-  "retrieval_report_path": "data/generated/context_engineering/retrieval_evaluation_report.json",
+  "retrieval_report_path": "data\\generated\\context_engineering\\retrieval_evaluation_report.json",
   "retrieval_slo_blocked_count": 15,
   "scope": "production_slo_readiness_no_inference_no_gpu_no_api",
   "status_counts": {
