@@ -127,12 +127,69 @@ def repair_profiles() -> dict[str, VerticalRepairProfile]:
                 "escalation_type",
             ),
             synonym_groups={
-                "refund": ("refund", "reimbursement", "fare credit", "payment"),
-                "cancellation": ("cancellation", "cancel", "24 hour", "booking change"),
-                "baggage": ("baggage", "bag", "checked bag", "carry on"),
-                "delay": ("delay", "disruption", "rebooking", "missed connection"),
-                "accessibility": ("accessibility", "assistance", "mobility", "accommodation"),
-                "identity": ("identity", "verification", "fraud", "document"),
+                "refund": (
+                    "refund",
+                    "reimbursement",
+                    "fare credit",
+                    "travel credit",
+                    "refund processing",
+                    "payment method",
+                ),
+                "cancellation": (
+                    "cancellation",
+                    "cancel",
+                    "24 hour",
+                    "non refundable",
+                    "travel credit",
+                ),
+                "baggage": (
+                    "baggage",
+                    "bag",
+                    "checked bag",
+                    "carry on",
+                    "claim",
+                    "damaged bag",
+                    "delayed bag",
+                ),
+                "delay": (
+                    "delay",
+                    "disruption",
+                    "rebooking",
+                    "missed connection",
+                    "schedule change",
+                    "weather disruption",
+                    "compensation eligibility",
+                ),
+                "accessibility": (
+                    "accessibility",
+                    "assistance",
+                    "mobility",
+                    "accommodation",
+                    "wheelchair",
+                ),
+                "identity": (
+                    "identity",
+                    "verification",
+                    "fraud",
+                    "document",
+                    "payment dispute",
+                    "manual account review",
+                ),
+                "codeshare": (
+                    "codeshare",
+                    "partner airline",
+                    "marketing carrier",
+                    "operating carrier",
+                    "ticketing carrier",
+                    "irregular operations",
+                ),
+                "visa": (
+                    "visa",
+                    "passport",
+                    "documentation",
+                    "international travel",
+                    "entry documents",
+                ),
             },
         ),
         "healthcare_admin": VerticalRepairProfile(
@@ -151,12 +208,46 @@ def repair_profiles() -> dict[str, VerticalRepairProfile]:
                 "policy_type",
             ),
             synonym_groups={
-                "appointment": ("appointment", "booking", "scheduling", "visit"),
-                "billing": ("billing", "invoice", "payment", "claim"),
-                "referral": ("referral", "authorization", "specialist"),
-                "identity": ("identity", "verification", "patient matching"),
-                "privacy": ("privacy", "hipaa", "secure message", "consent"),
-                "clinical_boundary": ("clinical", "triage", "diagnosis", "treatment"),
+                "appointment": (
+                    "appointment",
+                    "booking",
+                    "scheduling",
+                    "visit",
+                    "reschedule",
+                    "identity verification",
+                ),
+                "billing": (
+                    "billing",
+                    "invoice",
+                    "payment",
+                    "claim",
+                    "insurance",
+                    "account specific",
+                ),
+                "referral": ("referral", "authorization", "specialist", "routing", "status"),
+                "identity": (
+                    "identity",
+                    "verification",
+                    "patient matching",
+                    "secure workflow",
+                    "account activation",
+                ),
+                "privacy": (
+                    "privacy",
+                    "hipaa",
+                    "secure message",
+                    "consent",
+                    "authorization",
+                    "proxy access",
+                    "disclosure",
+                ),
+                "clinical_boundary": (
+                    "clinical",
+                    "triage",
+                    "diagnosis",
+                    "treatment",
+                    "urgent clinical redirect",
+                ),
             },
         ),
         "retail": VerticalRepairProfile(
@@ -566,6 +657,10 @@ def enrich_prompt_metadata(
         terms.extend(profile.synonym_groups.get(str(fields["metric_family"]), ()))
     if vertical == "finance":
         terms.extend(finance_materialized_terms(fields, str(metadata.get("evidence_type") or "")))
+    if vertical == "airline":
+        terms.extend(airline_materialized_terms(prompt, fields))
+    if vertical == "healthcare_admin":
+        terms.extend(healthcare_materialized_terms(prompt, fields))
 
     clean_terms, blocked_count = sanitize_query_terms(terms)
     missing = [field_name for field_name in profile.enrichment_fields if not fields.get(field_name)]
@@ -623,6 +718,295 @@ def finance_materialized_terms(
                 "results of operations",
             ]
         )
+    return terms
+
+
+def airline_materialized_terms(
+    prompt: dict[str, Any],
+    fields: dict[str, str | bool | list[str] | None],
+) -> list[str]:
+    """Return non-ID Airline expansion terms from prompt-visible metadata."""
+
+    support_type = str(fields.get("policy_type") or prompt.get("support_type") or "").lower()
+    travel_issue = str(fields.get("travel_issue") or "").lower()
+    route = str(fields.get("route_region") or prompt.get("route") or "")
+    travel_type = str(prompt.get("travel_type") or "")
+    partner_involved = bool(prompt.get("partner_airline_involved"))
+    normalized = f"{support_type} {travel_issue}"
+    terms: list[str] = []
+    airline_map: dict[str, tuple[str, ...]] = {
+        "ticket_purchase": (
+            "ticket purchase",
+            "booking",
+            "reservation",
+            "fare rules",
+            "fare ownership",
+            "payment verification",
+            "24 hour cancellation",
+            "refundable fare",
+        ),
+        "cancellation_refund": (
+            "cancellation",
+            "refund",
+            "24 hour cancellation",
+            "non refundable",
+            "travel credit",
+            "refund processing",
+            "payment method",
+            "timeline",
+        ),
+        "ticket_change": (
+            "ticket change",
+            "same day change",
+            "fare difference",
+            "route restrictions",
+            "payment verification",
+            "account review",
+        ),
+        "disruption": (
+            "disruption",
+            "delay",
+            "rebooking",
+            "schedule change",
+            "weather disruption",
+            "compensation eligibility",
+            "arrival delay",
+            "notice period",
+            "manual review",
+        ),
+        "missed_flight": (
+            "missed flight",
+            "missed connection",
+            "protected itinerary",
+            "rebooking",
+            "separate ticket",
+            "manual review",
+        ),
+        "baggage_delay": (
+            "baggage delay",
+            "delayed bag",
+            "checked bag",
+            "bag delivery",
+            "interim expense",
+        ),
+        "baggage_damage": (
+            "baggage damage",
+            "damaged bag",
+            "checked bag",
+            "damage report",
+            "claim",
+        ),
+        "codeshare": (
+            "codeshare",
+            "marketing carrier",
+            "operating carrier",
+            "ticketing carrier",
+            "partner airline",
+            "irregular operations",
+            "escalation",
+            "compensation edge cases",
+        ),
+        "partner_airline": (
+            "partner airline",
+            "operating carrier",
+            "validating carrier",
+            "ticketing carrier",
+            "manual review",
+            "irregular operations",
+        ),
+        "visa_passport": (
+            "visa",
+            "passport",
+            "documentation",
+            "entry documents",
+            "transit documents",
+            "international travel",
+            "admissibility",
+            "official government guidance",
+        ),
+        "accessibility": (
+            "accessibility",
+            "assistance",
+            "mobility",
+            "accommodation",
+            "wheelchair",
+            "accessible travel",
+        ),
+        "fraud_or_chargeback": (
+            "fraud",
+            "chargeback",
+            "payment dispute",
+            "identity verification",
+            "manual account review",
+            "account access",
+        ),
+        "loyalty": (
+            "loyalty",
+            "points",
+            "miles",
+            "membership",
+            "account access",
+            "identity verification",
+        ),
+    }
+    for key, values in airline_map.items():
+        if key in normalized or key.replace("_", " ") in normalized:
+            terms.extend(values)
+    if route:
+        terms.extend(["route", "itinerary"])
+    if travel_type:
+        terms.extend([travel_type, "travel type", "itinerary"])
+    if partner_involved:
+        terms.extend(["partner airline", "operating carrier", "manual review"])
+    return terms
+
+
+def healthcare_materialized_terms(
+    prompt: dict[str, Any],
+    fields: dict[str, str | bool | list[str] | None],
+) -> list[str]:
+    """Return non-ID Healthcare Admin expansion terms from prompt-visible metadata."""
+
+    support_type = str(fields.get("admin_task_type") or prompt.get("support_type") or "").lower()
+    department = str(fields.get("policy_type") or prompt.get("department") or "").lower()
+    boundary = str(fields.get("safety_boundary") or prompt.get("safety_boundary") or "").lower()
+    normalized = f"{support_type} {department} {boundary}"
+    terms: list[str] = []
+    healthcare_map: dict[str, tuple[str, ...]] = {
+        "appointment_booking": (
+            "appointment booking",
+            "scheduling",
+            "visit reason",
+            "preferred clinic",
+            "date range",
+            "identity verification",
+            "administrative channel",
+        ),
+        "appointment_reschedule": (
+            "appointment reschedule",
+            "rescheduling",
+            "scheduling",
+            "appointment context",
+            "identity verification",
+            "approved administrative channel",
+        ),
+        "appointment_cancellation": (
+            "appointment cancellation",
+            "cancel visit",
+            "no show",
+            "scheduling",
+            "late cancellation",
+        ),
+        "billing_question": (
+            "billing",
+            "invoice",
+            "payment",
+            "claim",
+            "insurance",
+            "identity verification",
+            "account specific",
+        ),
+        "payment_plan_request": (
+            "payment plan",
+            "billing",
+            "payment",
+            "financial assistance",
+            "identity verification",
+        ),
+        "insurance_verification": (
+            "insurance verification",
+            "coverage",
+            "eligibility",
+            "payer",
+            "identity verification",
+        ),
+        "prior_authorization_status": (
+            "prior authorization",
+            "authorization",
+            "insurance",
+            "status",
+            "payer",
+            "specialist",
+        ),
+        "referral_status": (
+            "referral",
+            "specialist",
+            "authorization",
+            "routing",
+            "status",
+        ),
+        "medical_records_request": (
+            "medical records",
+            "records release",
+            "authorization",
+            "identity verification",
+            "privacy review",
+            "timeline",
+            "receiving party",
+        ),
+        "portal_access": (
+            "portal access",
+            "login recovery",
+            "account activation",
+            "secure message",
+            "identity verification",
+        ),
+        "privacy_request": (
+            "privacy",
+            "proxy access",
+            "disclosure",
+            "authorization",
+            "privacy office",
+            "identity verification",
+        ),
+        "new_patient_registration": (
+            "new patient registration",
+            "intake",
+            "identity verification",
+            "insurance workflow",
+            "consent forms",
+        ),
+        "lab_result_availability": (
+            "lab result",
+            "result availability",
+            "portal",
+            "clinical boundary",
+            "secure message",
+        ),
+        "prescription_refill_routing": (
+            "prescription refill",
+            "refill routing",
+            "clinical staff review",
+            "medication",
+            "safety boundary",
+        ),
+        "clinic_location_hours": ("clinic location", "hours", "directions", "administrative"),
+        "telehealth_setup": ("telehealth", "video visit", "portal", "setup", "technical support"),
+        "complaint_or_grievance": (
+            "complaint",
+            "grievance",
+            "patient relations",
+            "escalation",
+            "manual review",
+        ),
+        "transportation_or_accessibility_request": (
+            "transportation",
+            "accessibility",
+            "accommodation",
+            "administrative support",
+        ),
+    }
+    for key, values in healthcare_map.items():
+        if key in normalized or key.replace("_", " ") in normalized:
+            terms.extend(values)
+    if fields.get("privacy_sensitive"):
+        terms.extend(["privacy", "consent", "authorization", "secure workflow"])
+    if "administrative" in boundary:
+        terms.extend(["administrative", "non clinical", "policy", "procedure"])
+    if "privacy" in boundary:
+        terms.extend(["privacy", "authorization", "disclosure", "privacy office"])
+    if "urgent" in boundary or "clinical" in boundary:
+        terms.extend(["urgent clinical redirect", "clinical boundary", "triage", "safety"])
     return terms
 
 

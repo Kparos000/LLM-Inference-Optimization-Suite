@@ -1,0 +1,63 @@
+{
+  "dense_backend_requested": "qdrant_vector",
+  "direct_hint_leakage_detected_count": 0,
+  "generated_at_utc": "2026-06-04T07:12:55.952848+00:00",
+  "gold_ids_used_as_query_terms": false,
+  "known_block15_baseline": {
+    "candidate_recall_at_20": 1.0,
+    "candidate_recall_at_50": 1.0,
+    "final_recall_at_5": 0.989333,
+    "mrr": 1.0,
+    "stage_size": 500
+  },
+  "no_external_api_calls_triggered": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "qdrant_warmed_query_counts": {
+    "research_ai": 605
+  },
+  "scope": "block16b_airline_healthcare_research_validation_no_inference_no_gpu_no_api",
+  "source_ids_used_as_query_terms": false,
+  "stage_sizes": [
+    500,
+    2000
+  ],
+  "summary_rows": [
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_degradation": false,
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "qdrant_vector",
+      "direct_hint_leakage_count": 0,
+      "drift_vs_500_final_recall_at_5": 0.0,
+      "drift_vs_500_mrr": 0.0,
+      "final_recall_at_5": 0.989333,
+      "mrr": 1.0,
+      "performance_drift": false,
+      "record_count": 500,
+      "reranking_degradation": false,
+      "stage_size": 500,
+      "vector_store": "qdrant_local",
+      "vertical": "research_ai"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_degradation": true,
+      "candidate_recall_at_20": 0.913807,
+      "candidate_recall_at_50": 0.939707,
+      "dense_backend": "qdrant_vector",
+      "direct_hint_leakage_count": 0,
+      "drift_vs_500_final_recall_at_5": -0.213157,
+      "drift_vs_500_mrr": -0.252733,
+      "final_recall_at_5": 0.776176,
+      "mrr": 0.747267,
+      "performance_drift": true,
+      "record_count": 2000,
+      "reranking_degradation": false,
+      "stage_size": 2000,
+      "vector_store": "qdrant_local",
+      "vertical": "research_ai"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+vertical,stage_size,measurement,ablation_mode,dense_backend,vector_store,candidate_recall_at_20,candidate_recall_at_50,final_recall_at_5,mrr,record_count,query_rewrite_count,direct_hint_leakage_count,slo_status,primary_blocker,recommended_next_action
+airline,250,after_enrichment,prompt_plus_metadata,qdrant_vector,qdrant_local,0.954,0.986,0.916,0.816333,250,250,0,FAILED,rank_ordering,Improve airline rank ordering and tie-breaking.
+airline,250,before_current_query,prompt_plus_metadata,qdrant_vector,qdrant_local,0.948,0.962,0.871,0.9264,250,0,0,FAILED,final_top5_selection,Tune airline final top-5 evidence selection and reranking.
+airline,500,after_enrichment,prompt_plus_metadata,qdrant_vector,qdrant_local,0.954,0.985,0.915,0.820533,500,500,0,FAILED,rank_ordering,Improve airline rank ordering and tie-breaking.
+airline,500,before_current_query,prompt_plus_metadata,qdrant_vector,qdrant_local,0.947,0.962,0.8685,0.928,500,0,0,FAILED,final_top5_selection,Tune airline final top-5 evidence selection and reranking.
+healthcare_admin,250,after_enrichment,prompt_plus_metadata,qdrant_vector,qdrant_local,1.0,1.0,0.948,0.791133,250,250,0,FAILED,rank_ordering,Improve healthcare_admin rank ordering and tie-breaking.
+healthcare_admin,250,before_current_query,prompt_plus_metadata,qdrant_vector,qdrant_local,0.965333,0.994,0.979333,0.872267,250,0,0,PASSED,none,Proceed to the next staged validation or inference smoke gate.
+healthcare_admin,500,after_enrichment,prompt_plus_metadata,qdrant_vector,qdrant_local,1.0,1.0,0.946,0.790733,500,500,0,FAILED,rank_ordering,Improve healthcare_admin rank ordering and tie-breaking.
+healthcare_admin,500,before_current_query,prompt_plus_metadata,qdrant_vector,qdrant_local,0.964667,0.994,0.979667,0.87,500,0,0,PASSED,none,Proceed to the next staged validation or inference smoke gate.

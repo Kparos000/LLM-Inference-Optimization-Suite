@@ -186,6 +186,310 @@ RETAIL_ISSUE_SYNONYMS = {
     "evidence_lookup": {"evidence", "lookup", "selected", "record"},
     "policy_reasoning": {"policy", "reasoning", "support", "eligibility"},
 }
+AIRLINE_SYNONYMS = {
+    "ticket_purchase": {
+        "ticket purchase",
+        "booking",
+        "reservation",
+        "fare rules",
+        "fare ownership",
+        "payment verification",
+        "24 hour cancellation",
+        "refundable fare",
+    },
+    "purchase": {
+        "ticket purchase",
+        "booking",
+        "reservation",
+        "fare rules",
+        "payment verification",
+    },
+    "booking": {
+        "booking",
+        "reservation",
+        "ticket purchase",
+        "fare rules",
+        "payment verification",
+    },
+    "cancellation_refund": {
+        "cancellation",
+        "refund",
+        "non refundable",
+        "travel credit",
+        "refund processing",
+        "payment method",
+        "timeline",
+    },
+    "cancellation": {
+        "cancellation",
+        "cancel",
+        "24 hour",
+        "refund",
+        "non refundable",
+        "travel credit",
+    },
+    "refund": {
+        "refund",
+        "reimbursement",
+        "refundable fare",
+        "non refundable",
+        "travel credit",
+        "processing timeline",
+    },
+    "ticket_change": {
+        "ticket change",
+        "same day change",
+        "change fees",
+        "fare difference",
+        "route restriction",
+        "payment verification",
+    },
+    "change": {
+        "ticket change",
+        "same day change",
+        "fare difference",
+        "route restriction",
+    },
+    "disruption": {
+        "disruption",
+        "delay",
+        "rebooking",
+        "schedule change",
+        "weather disruption",
+        "compensation eligibility",
+        "arrival delay",
+        "manual review",
+    },
+    "delay": {
+        "delay",
+        "disruption",
+        "rebooking",
+        "schedule change",
+        "weather disruption",
+        "compensation eligibility",
+    },
+    "missed_flight": {
+        "missed flight",
+        "missed connection",
+        "connection",
+        "rebooking",
+        "separate ticket",
+        "manual review",
+    },
+    "missed": {"missed flight", "missed connection", "connection", "rebooking"},
+    "baggage_delay": {
+        "baggage delay",
+        "delayed bag",
+        "checked bag",
+        "bag delivery",
+        "interim expense",
+    },
+    "baggage_damage": {
+        "baggage damage",
+        "damaged bag",
+        "checked bag",
+        "claim",
+        "damage report",
+    },
+    "baggage": {"baggage", "bag", "checked bag", "carry on", "claim"},
+    "codeshare": {
+        "codeshare",
+        "partner airline",
+        "marketing carrier",
+        "operating carrier",
+        "ticketing carrier",
+        "irregular operations",
+        "escalation",
+    },
+    "partner_airline": {
+        "partner airline",
+        "operating carrier",
+        "validating carrier",
+        "ticketing carrier",
+        "manual review",
+        "irregular operations",
+    },
+    "partner": {
+        "partner airline",
+        "operating carrier",
+        "validating carrier",
+        "manual review",
+    },
+    "visa_passport": {
+        "visa",
+        "passport",
+        "documentation",
+        "international travel",
+        "entry documents",
+        "transit documents",
+        "admissibility",
+    },
+    "visa": {"visa", "passport", "documentation", "entry documents", "transit"},
+    "passport": {"passport", "visa", "documentation", "international travel"},
+    "accessibility": {
+        "accessibility",
+        "assistance",
+        "mobility",
+        "accommodation",
+        "wheelchair",
+        "accessible travel",
+    },
+    "fraud_or_chargeback": {
+        "fraud",
+        "chargeback",
+        "payment dispute",
+        "identity verification",
+        "manual account review",
+        "account access",
+    },
+    "fraud": {"fraud", "chargeback", "payment dispute", "identity verification"},
+    "loyalty": {"loyalty", "points", "miles", "membership", "account access"},
+    "route": {"route", "domestic", "transborder", "international", "itinerary"},
+}
+HEALTHCARE_ADMIN_SYNONYMS = {
+    "appointment_booking": {
+        "appointment booking",
+        "scheduling",
+        "visit reason",
+        "preferred clinic",
+        "date range",
+        "identity verification",
+        "administrative channel",
+    },
+    "appointment_reschedule": {
+        "appointment reschedule",
+        "rescheduling",
+        "scheduling",
+        "appointment context",
+        "identity verification",
+        "approved administrative channel",
+    },
+    "appointment_cancellation": {
+        "appointment cancellation",
+        "cancel visit",
+        "no show",
+        "scheduling",
+        "late cancellation",
+    },
+    "appointment": {"appointment", "booking", "scheduling", "reschedule", "cancellation"},
+    "billing_question": {
+        "billing",
+        "invoice",
+        "payment",
+        "claim",
+        "insurance",
+        "identity verification",
+        "account specific",
+    },
+    "payment_plan_request": {
+        "payment plan",
+        "billing",
+        "payment",
+        "financial assistance",
+        "account specific",
+        "identity verification",
+    },
+    "insurance_verification": {
+        "insurance verification",
+        "coverage",
+        "eligibility",
+        "payer",
+        "identity verification",
+    },
+    "prior_authorization_status": {
+        "prior authorization",
+        "authorization",
+        "insurance",
+        "status",
+        "payer",
+        "specialist",
+    },
+    "referral_status": {
+        "referral",
+        "specialist",
+        "authorization",
+        "routing",
+        "status",
+    },
+    "medical_records_request": {
+        "medical records",
+        "records release",
+        "authorization",
+        "identity verification",
+        "privacy review",
+        "timeline",
+        "receiving party",
+    },
+    "records": {
+        "medical records",
+        "records release",
+        "authorization",
+        "identity verification",
+        "timeline",
+    },
+    "portal_access": {
+        "portal access",
+        "login recovery",
+        "account activation",
+        "secure message",
+        "identity verification",
+    },
+    "privacy_request": {
+        "privacy",
+        "proxy access",
+        "disclosure",
+        "authorization",
+        "privacy office",
+        "identity verification",
+    },
+    "privacy": {"privacy", "consent", "authorization", "disclosure", "privacy office"},
+    "identity": {
+        "identity verification",
+        "patient matching",
+        "authorization",
+        "secure workflow",
+    },
+    "new_patient_registration": {
+        "new patient registration",
+        "intake",
+        "identity verification",
+        "insurance workflow",
+        "consent forms",
+    },
+    "registration": {"registration", "intake", "identity verification", "consent forms"},
+    "lab_result_availability": {
+        "lab result",
+        "result availability",
+        "portal",
+        "clinical boundary",
+        "secure message",
+    },
+    "prescription_refill_routing": {
+        "prescription refill",
+        "refill routing",
+        "clinical staff review",
+        "medication",
+        "safety boundary",
+    },
+    "clinic_location_hours": {"clinic location", "hours", "directions", "administrative"},
+    "telehealth_setup": {"telehealth", "video visit", "portal", "setup", "technical support"},
+    "complaint_or_grievance": {
+        "complaint",
+        "grievance",
+        "patient relations",
+        "escalation",
+        "manual review",
+    },
+    "safety_boundary": {
+        "clinical boundary",
+        "urgent clinical redirect",
+        "diagnosis",
+        "treatment",
+        "triage",
+        "safety",
+    },
+    "administrative_only": {"administrative", "non clinical", "policy", "procedure"},
+}
 RESEARCH_AI_SYNONYMS = {
     "inference": {"inference", "serving", "decoding", "generation"},
     "long context": {"long context", "long-context", "extended context"},
@@ -295,6 +599,12 @@ class BoostFeatures:
     retail_policy_tokens: set[str] = field(default_factory=set)
     retail_evidence_kind: str = ""
     retail_parent_key: str = ""
+    airline_policy_tokens: set[str] = field(default_factory=set)
+    airline_escalation_tokens: set[str] = field(default_factory=set)
+    airline_document_kind: str = ""
+    healthcare_admin_tokens: set[str] = field(default_factory=set)
+    healthcare_boundary_tokens: set[str] = field(default_factory=set)
+    healthcare_document_kind: str = ""
 
 
 @dataclass(frozen=True)
@@ -501,13 +811,25 @@ def synonym_terms_for_query(text: str, vertical: str | None = None) -> set[str]:
     normalized = normalize_query_for_retrieval(text).lower()
     terms: set[str] = set()
     synonym_maps = [FINANCE_METRIC_SYNONYMS]
+    if vertical == "airline":
+        synonym_maps.append(AIRLINE_SYNONYMS)
+    if vertical == "healthcare_admin":
+        synonym_maps.append(HEALTHCARE_ADMIN_SYNONYMS)
     if vertical == "research_ai":
         synonym_maps.append(RESEARCH_AI_SYNONYMS)
     for synonym_map in synonym_maps:
         for trigger, expansions in synonym_map.items():
-            if trigger in normalized:
+            trigger_text = " ".join(tokenize(split_identifier_text(trigger)))
+            if trigger in normalized or trigger_text in normalized:
                 terms.update(expansions)
     for token in tokenize(normalized):
+        token_text = " ".join(tokenize(split_identifier_text(token)))
+        if vertical == "airline":
+            terms.update(AIRLINE_SYNONYMS.get(token, set()))
+            terms.update(AIRLINE_SYNONYMS.get(token_text, set()))
+        if vertical == "healthcare_admin":
+            terms.update(HEALTHCARE_ADMIN_SYNONYMS.get(token, set()))
+            terms.update(HEALTHCARE_ADMIN_SYNONYMS.get(token_text, set()))
         terms.update(FINANCE_COMPANY_ALIASES.get(token, set()))
     if "latest quarter" in normalized or "most recent quarter" in normalized:
         terms.update({"quarter", "quarterly", "10-q"})
@@ -767,10 +1089,94 @@ def retail_evidence_kind(record: ContextRecord) -> str:
     return "other"
 
 
+def domain_tokens_from_metadata(record: ContextRecord) -> set[str]:
+    """Return split, tokenized domain metadata/text terms for scoring."""
+
+    metadata = record.metadata
+    parts = [
+        record.source_type,
+        record.title,
+        str(metadata.get("document_type") or ""),
+        str(metadata.get("source_type") or ""),
+        str(metadata.get("policy_family_id") or ""),
+        str(metadata.get("admin_procedure_family_id") or ""),
+    ]
+    for field_name in ("tags", "policy_tags", "issue_terms"):
+        value = metadata.get(field_name)
+        if isinstance(value, list):
+            parts.extend(str(item) for item in value if item)
+        elif value:
+            parts.append(str(value))
+    metadata_tokens = set(tokenize(split_identifier_text(" ".join(parts))))
+    domain_vocabulary = set(
+        tokenize(
+            split_identifier_text(
+                " ".join(
+                    [
+                        *AIRLINE_SYNONYMS,
+                        *(term for values in AIRLINE_SYNONYMS.values() for term in values),
+                        *HEALTHCARE_ADMIN_SYNONYMS,
+                        *(term for values in HEALTHCARE_ADMIN_SYNONYMS.values() for term in values),
+                    ]
+                )
+            )
+        )
+    )
+    body_domain_tokens = set(tokenize(split_identifier_text(record.text))) & domain_vocabulary
+    return metadata_tokens | body_domain_tokens
+
+
+def airline_document_kind(record: ContextRecord) -> str:
+    """Classify Airline context records by public document role."""
+
+    haystack = " ".join(
+        [
+            record.source_type,
+            record.title,
+            str(record.metadata.get("document_type") or ""),
+            str(record.metadata.get("source_type") or ""),
+        ]
+    ).lower()
+    if "compliance" in haystack or "documentation" in haystack:
+        return "compliance"
+    if "procedure" in haystack:
+        return "procedure"
+    if "faq" in haystack:
+        return "faq"
+    if "policy" in haystack:
+        return "policy"
+    return "other"
+
+
+def healthcare_document_kind(record: ContextRecord) -> str:
+    """Classify Healthcare Admin context records by public document role."""
+
+    haystack = " ".join(
+        [
+            record.source_type,
+            record.title,
+            str(record.metadata.get("document_type") or ""),
+            str(record.metadata.get("source_type") or ""),
+        ]
+    ).lower()
+    if "compliance" in haystack:
+        return "compliance"
+    if "troubleshooting" in haystack:
+        return "troubleshooting"
+    if "faq" in haystack:
+        return "faq"
+    if "procedure" in haystack:
+        return "procedure"
+    if "policy" in haystack:
+        return "policy"
+    return "other"
+
+
 def build_boost_features(record: ContextRecord) -> BoostFeatures:
     """Precompute metadata features for one context record."""
 
     metadata = record.metadata
+    domain_tokens = domain_tokens_from_metadata(record)
     issue_values = metadata.get("issue_terms")
     retail_issue_tokens: set[str] = set()
     if isinstance(issue_values, list):
@@ -800,6 +1206,55 @@ def build_boost_features(record: ContextRecord) -> BoostFeatures:
             for value in concept_values
             for token in tokenize(split_identifier_text(str(value)))
         )
+    airline_escalation_tokens = {
+        token
+        for token in domain_tokens
+        if token
+        in {
+            "manual",
+            "review",
+            "verification",
+            "identity",
+            "fraud",
+            "chargeback",
+            "payment",
+            "partner",
+            "codeshare",
+            "compensation",
+            "irregular",
+            "operations",
+            "escalation",
+        }
+    }
+    healthcare_boundary_tokens = {
+        token
+        for token in domain_tokens
+        if token
+        in {
+            "privacy",
+            "identity",
+            "authorization",
+            "consent",
+            "proxy",
+            "disclosure",
+            "clinical",
+            "triage",
+            "diagnosis",
+            "treatment",
+            "urgent",
+            "safety",
+            "verification",
+            "secure",
+        }
+    }
+    for boundary_field, tokens in (
+        ("contains_privacy_boundary", {"privacy", "disclosure", "consent"}),
+        ("contains_identity_boundary", {"identity", "verification", "secure"}),
+        ("contains_clinical_boundary", {"clinical", "diagnosis", "treatment", "triage"}),
+        ("contains_escalation_boundary", {"escalation", "manual", "review"}),
+    ):
+        if metadata.get(boundary_field):
+            healthcare_boundary_tokens.update(tokens)
     date_tokens: set[str] = set()
     for date_field in (
         "filing_date",
@@ -836,6 +1291,12 @@ def build_boost_features(record: ContextRecord) -> BoostFeatures:
         retail_parent_key=str(
             metadata.get("parent_asin") or metadata.get("asin") or record.parent_id
         ),
+        airline_policy_tokens=domain_tokens,
+        airline_escalation_tokens=airline_escalation_tokens,
+        airline_document_kind=airline_document_kind(record),
+        healthcare_admin_tokens=domain_tokens,
+        healthcare_boundary_tokens=healthcare_boundary_tokens,
+        healthcare_document_kind=healthcare_document_kind(record),
     )
 
 
@@ -881,6 +1342,18 @@ def metadata_boost_score_from_features(
         )
     elif record.vertical == "retail":
         boost += retail_metadata_boost_score(
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            features=features,
+        )
+    elif record.vertical == "airline":
+        boost += airline_metadata_boost_score(
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            features=features,
+        )
+    elif record.vertical == "healthcare_admin":
+        boost += healthcare_metadata_boost_score(
             query_tokens=query_tokens,
             query_normalized=query_normalized,
             features=features,
@@ -1092,6 +1565,18 @@ def rerank_boost_score_from_features(
             query_normalized=query_normalized,
             features=features,
         )
+    elif record.vertical == "airline":
+        boost += airline_rerank_boost_score(
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            features=features,
+        )
+    elif record.vertical == "healthcare_admin":
+        boost += healthcare_rerank_boost_score(
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            features=features,
+        )
     elif record.vertical == "research_ai":
         section_overlap = features.section_tokens & query_tokens
         boost += min(0.45, 0.18 * len(section_overlap))
@@ -1156,6 +1641,325 @@ def retail_rerank_boost_score(
         and not intent_flags["multicategory"]
     ):
         score -= 0.7
+    return score
+
+
+def expanded_airline_query_terms(query_tokens: set[str], query_normalized: str) -> set[str]:
+    """Return Airline synonyms allowed from visible query terms."""
+
+    base_terms = set(query_tokens)
+    for token in query_tokens:
+        base_terms.update(tokenize(split_identifier_text(token)))
+    normalized = " ".join(sorted(base_terms)) + " " + query_normalized
+    terms = set(base_terms)
+    for trigger, expansions in AIRLINE_SYNONYMS.items():
+        trigger_text = " ".join(tokenize(split_identifier_text(trigger)))
+        if trigger in query_tokens or trigger in normalized or trigger_text in normalized:
+            terms.update(expansions)
+    return set(tokenize(split_identifier_text(" ".join(terms))))
+
+
+def expanded_healthcare_query_terms(query_tokens: set[str], query_normalized: str) -> set[str]:
+    """Return Healthcare Admin synonyms allowed from visible query terms."""
+
+    base_terms = set(query_tokens)
+    for token in query_tokens:
+        base_terms.update(tokenize(split_identifier_text(token)))
+    normalized = " ".join(sorted(base_terms)) + " " + query_normalized
+    terms = set(base_terms)
+    for trigger, expansions in HEALTHCARE_ADMIN_SYNONYMS.items():
+        trigger_text = " ".join(tokenize(split_identifier_text(trigger)))
+        if trigger in query_tokens or trigger in normalized or trigger_text in normalized:
+            terms.update(expansions)
+    return set(tokenize(split_identifier_text(" ".join(terms))))
+
+
+def airline_policy_kind_score(
+    *,
+    document_kind: str,
+    expanded_terms: set[str],
+    query_tokens: set[str],
+) -> float:
+    """Score Airline document kind against visible query intent."""
+
+    if document_kind == "compliance":
+        if expanded_terms & {
+            "visa",
+            "passport",
+            "documentation",
+            "entry",
+            "transit",
+            "admissibility",
+        }:
+            return 1.0
+        return 0.15
+    if document_kind == "procedure":
+        if expanded_terms & {
+            "change",
+            "rebooking",
+            "partner",
+            "codeshare",
+            "manual",
+            "review",
+            "verification",
+            "fraud",
+            "chargeback",
+        }:
+            return 1.0
+        return 0.45
+    if document_kind == "faq":
+        if expanded_terms & {"refund", "timeline", "processing", "baggage", "delay"}:
+            return 0.9
+        return 0.35
+    if document_kind == "policy":
+        if query_tokens & {"policy", "policies"} or expanded_terms:
+            return 0.75
+        return 0.45
+    return 0.25
+
+
+def healthcare_document_kind_score(
+    *,
+    document_kind: str,
+    expanded_terms: set[str],
+) -> float:
+    """Score Healthcare Admin document kind against visible query intent."""
+
+    if document_kind == "compliance":
+        if expanded_terms & {"privacy", "authorization", "proxy", "disclosure", "consent"}:
+            return 1.0
+        return 0.25
+    if document_kind == "troubleshooting":
+        if expanded_terms & {"portal", "login", "activation", "telehealth", "setup"}:
+            return 1.0
+        return 0.25
+    if document_kind == "faq":
+        if expanded_terms & {"timeline", "records", "hours", "availability"}:
+            return 0.9
+        return 0.3
+    if document_kind == "procedure":
+        return 0.9
+    if document_kind == "policy":
+        return 0.75
+    return 0.25
+
+
+def any_terms(tokens: set[str], terms: set[str]) -> bool:
+    """Return whether any term appears in a token set."""
+
+    return bool(tokens & terms)
+
+
+def airline_primary_family_score(
+    *,
+    expanded_terms: set[str],
+    features: BoostFeatures,
+) -> float:
+    """Score exact Airline support-family match without using policy IDs."""
+
+    tokens = features.airline_policy_tokens | features.title_tokens
+    rules: list[tuple[set[str], set[str], set[str] | None]] = [
+        ({"baggage"}, {"damage", "damaged", "claim"}, {"baggage", "bag"}),
+        ({"baggage"}, {"delay", "delayed", "delivery"}, {"baggage", "bag"}),
+        ({"accessibility", "mobility", "wheelchair"}, {"accessibility", "mobility"}, None),
+        ({"fraud", "chargeback"}, {"fraud", "chargeback", "payment"}, None),
+        ({"loyalty", "points", "miles"}, {"loyalty", "points", "miles"}, None),
+        ({"missed", "connection"}, {"missed", "connection"}, None),
+        ({"codeshare"}, {"codeshare", "marketing", "operating"}, None),
+        ({"partner"}, {"partner", "operating", "validating"}, None),
+        ({"visa", "passport"}, {"visa", "passport", "documentation"}, None),
+        ({"change"}, {"change", "same", "day"}, None),
+        ({"disruption"}, {"disruption", "schedule", "weather", "compensation"}, None),
+        ({"refund", "cancellation"}, {"refund", "cancellation", "refundable", "credit"}, None),
+        ({"ticket", "purchase", "booking"}, {"purchase", "booking", "fare", "refundable"}, None),
+    ]
+    for query_terms, record_terms, required_record_terms in rules:
+        if not any_terms(expanded_terms, query_terms):
+            continue
+        if required_record_terms and not any_terms(tokens, required_record_terms):
+            continue
+        if any_terms(tokens, record_terms):
+            return 1.0
+    return 0.0
+
+
+def healthcare_primary_family_score(
+    *,
+    expanded_terms: set[str],
+    features: BoostFeatures,
+) -> float:
+    """Score exact Healthcare Admin support-family match without policy IDs."""
+
+    tokens = features.healthcare_admin_tokens | features.title_tokens
+    rules: list[tuple[set[str], set[str], set[str] | None]] = [
+        ({"appointment", "booking"}, {"appointment", "booking"}, None),
+        ({"reschedule", "rescheduling"}, {"reschedule", "rescheduling"}, None),
+        ({"cancellation", "cancel"}, {"cancellation", "cancel", "show"}, None),
+        ({"billing", "invoice"}, {"billing", "invoice"}, None),
+        ({"payment", "plan"}, {"payment", "plan"}, None),
+        ({"insurance", "verification"}, {"insurance", "verification", "coverage"}, None),
+        ({"prior", "authorization"}, {"prior", "authorization"}, None),
+        ({"referral"}, {"referral", "specialist"}, None),
+        ({"medical", "records"}, {"medical", "records", "release"}, None),
+        ({"portal"}, {"portal", "login", "activation"}, None),
+        ({"privacy"}, {"privacy", "disclosure"}, None),
+        ({"proxy"}, {"proxy", "access"}, None),
+        ({"registration", "intake"}, {"registration", "intake"}, None),
+        ({"lab", "result"}, {"lab", "result", "availability"}, None),
+        ({"prescription", "refill"}, {"prescription", "refill"}, None),
+        ({"clinic", "hours", "location"}, {"clinic", "hours", "location"}, None),
+        ({"telehealth"}, {"telehealth", "video"}, None),
+        ({"complaint", "grievance"}, {"complaint", "grievance"}, None),
+        ({"transportation", "accessibility"}, {"transportation", "accessibility"}, None),
+    ]
+    for query_terms, record_terms, required_record_terms in rules:
+        if not any_terms(expanded_terms, query_terms):
+            continue
+        if required_record_terms and not any_terms(tokens, required_record_terms):
+            continue
+        if any_terms(tokens, record_terms):
+            return 1.0
+    return 0.0
+
+
+def airline_metadata_boost_score(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    features: BoostFeatures,
+) -> float:
+    """Return Airline-specific boosts from prompt-visible policy signals."""
+
+    expanded_terms = expanded_airline_query_terms(query_tokens, query_normalized)
+    policy_overlap = lexical_overlap_ratio(expanded_terms, features.airline_policy_tokens)
+    escalation_overlap = lexical_overlap_ratio(
+        expanded_terms,
+        features.airline_escalation_tokens,
+    )
+    primary_score = airline_primary_family_score(
+        expanded_terms=expanded_terms,
+        features=features,
+    )
+    kind_score = airline_policy_kind_score(
+        document_kind=features.airline_document_kind,
+        expanded_terms=expanded_terms,
+        query_tokens=query_tokens,
+    )
+    boost = 0.0
+    boost += min(1.1, 1.25 * policy_overlap)
+    boost += min(0.45, 0.65 * escalation_overlap)
+    boost += 0.35 * kind_score
+    boost += 1.25 * primary_score
+    if expanded_terms & {"route", "domestic", "transborder", "international", "itinerary"}:
+        if features.airline_policy_tokens & {"route", "itinerary", "international"}:
+            boost += 0.25
+    return boost
+
+
+def healthcare_metadata_boost_score(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    features: BoostFeatures,
+) -> float:
+    """Return Healthcare Admin-specific boosts from prompt-visible admin signals."""
+
+    expanded_terms = expanded_healthcare_query_terms(query_tokens, query_normalized)
+    admin_overlap = lexical_overlap_ratio(expanded_terms, features.healthcare_admin_tokens)
+    boundary_overlap = lexical_overlap_ratio(
+        expanded_terms,
+        features.healthcare_boundary_tokens,
+    )
+    primary_score = healthcare_primary_family_score(
+        expanded_terms=expanded_terms,
+        features=features,
+    )
+    kind_score = healthcare_document_kind_score(
+        document_kind=features.healthcare_document_kind,
+        expanded_terms=expanded_terms,
+    )
+    boost = 0.0
+    boost += min(1.15, 1.35 * admin_overlap)
+    boost += min(0.45, 0.75 * boundary_overlap)
+    boost += 0.35 * kind_score
+    boost += 1.25 * primary_score
+    if expanded_terms & {"identity", "verification", "account", "secure"}:
+        if features.healthcare_boundary_tokens & {"identity", "verification", "secure"}:
+            boost += 0.2
+    if expanded_terms & {"privacy", "authorization", "consent", "proxy"}:
+        if features.healthcare_boundary_tokens & {"privacy", "authorization", "consent"}:
+            boost += 0.25
+    return boost
+
+
+def airline_rerank_boost_score(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    features: BoostFeatures,
+) -> float:
+    """Return Airline-specific deterministic reranking score."""
+
+    expanded_terms = expanded_airline_query_terms(query_tokens, query_normalized)
+    score = 0.0
+    score += min(
+        1.45,
+        1.55 * lexical_overlap_ratio(expanded_terms, features.airline_policy_tokens),
+    )
+    score += min(
+        0.55,
+        0.8 * lexical_overlap_ratio(expanded_terms, features.airline_escalation_tokens),
+    )
+    score += 0.45 * airline_policy_kind_score(
+        document_kind=features.airline_document_kind,
+        expanded_terms=expanded_terms,
+        query_tokens=query_tokens,
+    )
+    score += 1.6 * airline_primary_family_score(
+        expanded_terms=expanded_terms,
+        features=features,
+    )
+    if expanded_terms & {"visa", "passport", "documentation", "international"}:
+        if features.airline_document_kind == "compliance":
+            score += 0.55
+    if expanded_terms & {"refund", "timeline", "processing"}:
+        if features.airline_document_kind in {"faq", "policy"}:
+            score += 0.35
+    return score
+
+
+def healthcare_rerank_boost_score(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    features: BoostFeatures,
+) -> float:
+    """Return Healthcare Admin-specific deterministic reranking score."""
+
+    expanded_terms = expanded_healthcare_query_terms(query_tokens, query_normalized)
+    score = 0.0
+    score += min(
+        1.45,
+        1.55 * lexical_overlap_ratio(expanded_terms, features.healthcare_admin_tokens),
+    )
+    score += min(
+        0.65,
+        0.9 * lexical_overlap_ratio(expanded_terms, features.healthcare_boundary_tokens),
+    )
+    score += 0.45 * healthcare_document_kind_score(
+        document_kind=features.healthcare_document_kind,
+        expanded_terms=expanded_terms,
+    )
+    score += 1.6 * healthcare_primary_family_score(
+        expanded_terms=expanded_terms,
+        features=features,
+    )
+    if expanded_terms & {"identity", "verification", "account", "secure"}:
+        if features.healthcare_boundary_tokens & {"identity", "verification", "secure"}:
+            score += 0.25
+    if expanded_terms & {"privacy", "authorization", "proxy", "disclosure"}:
+        if features.healthcare_boundary_tokens & {"privacy", "authorization", "disclosure"}:
+            score += 0.35
     return score
 
 
@@ -1263,6 +2067,61 @@ def rerank_feature_breakdown(
             / 2.0,
         )
         breakdown["section_match"] = breakdown["retail_policy_match"]
+    elif record.vertical == "airline":
+        expanded_terms = expanded_airline_query_terms(query_tokens, query_normalized)
+        breakdown.update(
+            {
+                "airline_policy_match": lexical_overlap_ratio(
+                    expanded_terms,
+                    features.airline_policy_tokens,
+                ),
+                "airline_escalation_match": lexical_overlap_ratio(
+                    expanded_terms,
+                    features.airline_escalation_tokens,
+                ),
+                "airline_document_kind_match": airline_policy_kind_score(
+                    document_kind=features.airline_document_kind,
+                    expanded_terms=expanded_terms,
+                    query_tokens=query_tokens,
+                ),
+                "airline_primary_family_match": airline_primary_family_score(
+                    expanded_terms=expanded_terms,
+                    features=features,
+                ),
+            }
+        )
+        breakdown["metric_match"] = min(
+            1.0,
+            breakdown["airline_primary_family_match"] + breakdown["airline_policy_match"] / 2,
+        )
+        breakdown["section_match"] = breakdown["airline_escalation_match"]
+    elif record.vertical == "healthcare_admin":
+        expanded_terms = expanded_healthcare_query_terms(query_tokens, query_normalized)
+        breakdown.update(
+            {
+                "healthcare_admin_match": lexical_overlap_ratio(
+                    expanded_terms,
+                    features.healthcare_admin_tokens,
+                ),
+                "healthcare_boundary_match": lexical_overlap_ratio(
+                    expanded_terms,
+                    features.healthcare_boundary_tokens,
+                ),
+                "healthcare_document_kind_match": healthcare_document_kind_score(
+                    document_kind=features.healthcare_document_kind,
+                    expanded_terms=expanded_terms,
+                ),
+                "healthcare_primary_family_match": healthcare_primary_family_score(
+                    expanded_terms=expanded_terms,
+                    features=features,
+                ),
+            }
+        )
+        breakdown["metric_match"] = min(
+            1.0,
+            breakdown["healthcare_primary_family_match"] + breakdown["healthcare_admin_match"] / 2,
+        )
+        breakdown["section_match"] = breakdown["healthcare_boundary_match"]
     elif record.vertical != "finance":
         breakdown["metric_match"] = min(
             1.0,
@@ -1320,6 +2179,28 @@ def score_candidate_from_features(
             + 0.15 * breakdown["metadata_match"]
             + (1.25 * breakdown["source_hint_match"] if source_hints_used else 0.0)
         )
+    elif record.vertical == "airline":
+        feature_score = (
+            1.1 * breakdown.get("airline_policy_match", 0.0)
+            + 0.35 * breakdown.get("airline_escalation_match", 0.0)
+            + 0.35 * breakdown.get("airline_document_kind_match", 0.0)
+            + 1.65 * breakdown.get("airline_primary_family_match", 0.0)
+            + 0.35 * breakdown["title_match"]
+            + 0.2 * breakdown["metadata_match"]
+            + 0.1 * breakdown["text_match"]
+            + (1.25 * breakdown["source_hint_match"] if source_hints_used else 0.0)
+        )
+    elif record.vertical == "healthcare_admin":
+        feature_score = (
+            1.1 * breakdown.get("healthcare_admin_match", 0.0)
+            + 0.45 * breakdown.get("healthcare_boundary_match", 0.0)
+            + 0.35 * breakdown.get("healthcare_document_kind_match", 0.0)
+            + 1.65 * breakdown.get("healthcare_primary_family_match", 0.0)
+            + 0.35 * breakdown["title_match"]
+            + 0.2 * breakdown["metadata_match"]
+            + 0.1 * breakdown["text_match"]
+            + (1.25 * breakdown["source_hint_match"] if source_hints_used else 0.0)
+        )
     else:
         feature_score = (
             0.45 * breakdown["company_ticker_match"]
@@ -1361,6 +2242,10 @@ def evidence_selector_strategy_for_record(record: ContextRecord) -> str:
         return "finance_calibrated_top5"
     if record.vertical == "retail":
         return "retail_balanced_top5"
+    if record.vertical == "airline":
+        return "airline_policy_enriched_top5"
+    if record.vertical == "healthcare_admin":
+        return "healthcare_admin_enriched_top5"
     return "calibrated_top5"
 
 
@@ -1396,6 +2281,24 @@ def selection_reason_from_features(
             reasons.append("retail_policy_match")
         if feature_breakdown.get("retail_kind_match", 0.0) > 0:
             reasons.append("retail_evidence_kind_match")
+    if record.vertical == "airline":
+        if feature_breakdown.get("airline_policy_match", 0.0) > 0:
+            reasons.append("airline_policy_signal_match")
+        if feature_breakdown.get("airline_escalation_match", 0.0) > 0:
+            reasons.append("airline_escalation_signal_match")
+        if feature_breakdown.get("airline_document_kind_match", 0.0) > 0:
+            reasons.append("airline_document_kind_match")
+        if feature_breakdown.get("airline_primary_family_match", 0.0) > 0:
+            reasons.append("airline_primary_family_match")
+    if record.vertical == "healthcare_admin":
+        if feature_breakdown.get("healthcare_admin_match", 0.0) > 0:
+            reasons.append("healthcare_admin_procedure_match")
+        if feature_breakdown.get("healthcare_boundary_match", 0.0) > 0:
+            reasons.append("healthcare_boundary_match")
+        if feature_breakdown.get("healthcare_document_kind_match", 0.0) > 0:
+            reasons.append("healthcare_document_kind_match")
+        if feature_breakdown.get("healthcare_primary_family_match", 0.0) > 0:
+            reasons.append("healthcare_primary_family_match")
     if source_hints_used and feature_breakdown.get("source_hint_match", 0.0) > 0:
         reasons.append("source_hint_match_assisted")
     if not reasons:
@@ -1404,6 +2307,10 @@ def selection_reason_from_features(
         reasons.append("finance_selector")
     if record.vertical == "retail":
         reasons.append("retail_selector")
+    if record.vertical == "airline":
+        reasons.append("airline_selector")
+    if record.vertical == "healthcare_admin":
+        reasons.append("healthcare_admin_selector")
     return ",".join(dict.fromkeys(reasons))
 
 
@@ -1504,6 +2411,206 @@ def select_retail_balanced_candidates(
     return [*selected, *remainder]
 
 
+def select_airline_enriched_candidates(
+    *,
+    ranked: list[tuple[str, float, dict[str, float]]],
+    records_by_id: dict[str, ContextRecord],
+    query_tokens: set[str],
+    query_normalized: str,
+    final_top_k: int,
+) -> list[tuple[str, float, dict[str, float]]]:
+    """Select Airline top-k candidates with primary policy first plus support coverage."""
+
+    airline_ranked = [
+        item for item in ranked if item[1] > 0 and records_by_id[item[0]].vertical == "airline"
+    ]
+    if not airline_ranked:
+        return ranked
+
+    expanded_terms = expanded_airline_query_terms(query_tokens, query_normalized)
+    selected: list[tuple[str, float, dict[str, float]]] = []
+    selected_ids: set[str] = set()
+    features_cache: dict[str, BoostFeatures] = {}
+
+    def features_for(item: tuple[str, float, dict[str, float]]) -> BoostFeatures:
+        context_id = item[0]
+        if context_id not in features_cache:
+            features_cache[context_id] = build_boost_features(records_by_id[context_id])
+        return features_cache[context_id]
+
+    def record_tokens(item: tuple[str, float, dict[str, float]]) -> set[str]:
+        features = features_for(item)
+        return features.airline_policy_tokens | features.title_tokens
+
+    def add_candidate(item: tuple[str, float, dict[str, float]]) -> None:
+        if len(selected) >= final_top_k:
+            return
+        context_id = item[0]
+        if context_id in selected_ids:
+            return
+        selected.append(item)
+        selected_ids.add(context_id)
+
+    def add_first_matching(groups: tuple[set[str], ...]) -> None:
+        for item in airline_ranked:
+            tokens = record_tokens(item)
+            if all(tokens & group for group in groups):
+                add_candidate(item)
+                return
+
+    add_first_matching(
+        (
+            {
+                "baggage",
+                "refund",
+                "cancellation",
+                "change",
+                "disruption",
+                "visa",
+                "passport",
+                "codeshare",
+                "partner",
+                "accessibility",
+                "loyalty",
+                "fraud",
+                "missed",
+                "connection",
+                "purchase",
+                "booking",
+            },
+        )
+    )
+    if not selected:
+        add_candidate(airline_ranked[0])
+
+    if expanded_terms & {"refund", "cancellation", "cancel"}:
+        add_first_matching(({"cancellation", "24"},))
+        add_first_matching(({"refund", "refundable"},))
+        add_first_matching(({"credit", "non", "refundable"},))
+        add_first_matching(({"timeline", "processing"},))
+    if expanded_terms & {"ticket", "purchase", "booking"}:
+        add_first_matching(({"purchase", "booking"},))
+        add_first_matching(({"refundable", "fare"},))
+        add_first_matching(({"cancellation", "24"},))
+    if expanded_terms & {"change", "same"}:
+        add_first_matching(({"change"},))
+        add_first_matching(({"payment", "verification"},))
+    if expanded_terms & {"disruption", "delay", "rebooking"}:
+        add_first_matching(({"disruption", "rebook", "rebooking"},))
+        add_first_matching(({"schedule", "change"},))
+        add_first_matching(({"weather", "safety"},))
+        add_first_matching(({"compensation", "eligibility"},))
+    if expanded_terms & {"codeshare", "partner", "operating", "carrier"}:
+        add_first_matching(({"codeshare"},))
+        add_first_matching(({"partner", "operating", "validating"},))
+        add_first_matching(({"manual", "review", "escalation"},))
+    if expanded_terms & {"visa", "passport", "documentation"}:
+        add_first_matching(({"visa", "passport"},))
+        add_first_matching(({"international", "entry", "transit", "documentation"},))
+    if expanded_terms & {"baggage", "bag"}:
+        add_first_matching(({"baggage", "bag"}, {"damage", "damaged", "claim"}))
+        add_first_matching(({"baggage", "bag"}, {"delay", "delayed", "delivery"}))
+    if expanded_terms & {"fraud", "chargeback", "payment"}:
+        add_first_matching(({"fraud", "chargeback", "payment"},))
+        add_first_matching(({"identity", "verification"},))
+    if expanded_terms & {"loyalty", "points", "miles"}:
+        add_first_matching(({"loyalty", "points", "miles"},))
+        add_first_matching(({"account", "identity", "verification"},))
+
+    for item in airline_ranked:
+        add_candidate(item)
+        if len(selected) >= final_top_k:
+            break
+
+    ordered_ids = {context_id for context_id, _score, _breakdown in selected}
+    remainder = [item for item in ranked if item[0] not in ordered_ids]
+    return [*selected, *remainder]
+
+
+def select_healthcare_enriched_candidates(
+    *,
+    ranked: list[tuple[str, float, dict[str, float]]],
+    records_by_id: dict[str, ContextRecord],
+    query_tokens: set[str],
+    query_normalized: str,
+    final_top_k: int,
+) -> list[tuple[str, float, dict[str, float]]]:
+    """Select Healthcare Admin top-k candidates with primary procedure first."""
+
+    healthcare_ranked = [
+        item
+        for item in ranked
+        if item[1] > 0 and records_by_id[item[0]].vertical == "healthcare_admin"
+    ]
+    if not healthcare_ranked:
+        return ranked
+
+    selected: list[tuple[str, float, dict[str, float]]] = []
+    selected_ids: set[str] = set()
+    features_cache: dict[str, BoostFeatures] = {}
+
+    def features_for(item: tuple[str, float, dict[str, float]]) -> BoostFeatures:
+        context_id = item[0]
+        if context_id not in features_cache:
+            features_cache[context_id] = build_boost_features(records_by_id[context_id])
+        return features_cache[context_id]
+
+    def record_tokens(item: tuple[str, float, dict[str, float]]) -> set[str]:
+        features = features_for(item)
+        return features.healthcare_admin_tokens | features.title_tokens
+
+    def add_candidate(item: tuple[str, float, dict[str, float]]) -> None:
+        if len(selected) >= final_top_k:
+            return
+        context_id = item[0]
+        if context_id in selected_ids:
+            return
+        selected.append(item)
+        selected_ids.add(context_id)
+
+    def add_first_matching(groups: tuple[set[str], ...]) -> None:
+        for item in healthcare_ranked:
+            tokens = record_tokens(item)
+            if all(tokens & group for group in groups):
+                add_candidate(item)
+                return
+
+    primary_terms = {
+        "appointment",
+        "reschedule",
+        "cancellation",
+        "billing",
+        "payment",
+        "insurance",
+        "authorization",
+        "referral",
+        "records",
+        "portal",
+        "privacy",
+        "registration",
+        "lab",
+        "prescription",
+        "clinic",
+        "telehealth",
+        "complaint",
+        "grievance",
+        "transportation",
+        "accessibility",
+    }
+    add_first_matching((primary_terms,))
+    if not selected:
+        add_candidate(healthcare_ranked[0])
+
+    for item in healthcare_ranked:
+        add_candidate(item)
+        if len(selected) >= final_top_k:
+            break
+
+    ordered_ids = {context_id for context_id, _score, _breakdown in selected}
+    remainder = [item for item in ranked if item[0] not in ordered_ids]
+    return [*selected, *remainder]
+
+
 def rerank_candidate_results(
     *,
     query: str,
@@ -1578,6 +2685,24 @@ def rerank_candidate_results(
             query_normalized=query_normalized,
             final_top_k=final_top_k,
         )
+    if any(records_by_id[context_id].vertical == "airline" for context_id, _score, _ in ranked):
+        ranked = select_airline_enriched_candidates(
+            ranked=ranked,
+            records_by_id=records_by_id,
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            final_top_k=final_top_k,
+        )
+    if any(
+        records_by_id[context_id].vertical == "healthcare_admin" for context_id, _score, _ in ranked
+    ):
+        ranked = select_healthcare_enriched_candidates(
+            ranked=ranked,
+            records_by_id=records_by_id,
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            final_top_k=final_top_k,
+        )
     results: list[RetrievalResult] = []
     seen_texts: set[str] = set()
     selection_reasons_by_context_id: dict[str, str] = {}
@@ -1586,6 +2711,12 @@ def rerank_candidate_results(
         selector_strategy = "finance_calibrated_top5"
     if any(records_by_id[context_id].vertical == "retail" for context_id, _score, _ in ranked):
         selector_strategy = "retail_balanced_top5"
+    if any(records_by_id[context_id].vertical == "airline" for context_id, _score, _ in ranked):
+        selector_strategy = "airline_policy_enriched_top5"
+    if any(
+        records_by_id[context_id].vertical == "healthcare_admin" for context_id, _score, _ in ranked
+    ):
+        selector_strategy = "healthcare_admin_enriched_top5"
     for context_id, score, feature_breakdown in ranked:
         if score <= 0:
             continue
@@ -1625,6 +2756,38 @@ def rerank_candidate_results(
                     "retail_issue_match": feature_breakdown.get("retail_issue_match", 0.0),
                     "retail_policy_match": feature_breakdown.get("retail_policy_match", 0.0),
                     "retail_kind_match": feature_breakdown.get("retail_kind_match", 0.0),
+                    "airline_policy_match": feature_breakdown.get(
+                        "airline_policy_match",
+                        0.0,
+                    ),
+                    "airline_escalation_match": feature_breakdown.get(
+                        "airline_escalation_match",
+                        0.0,
+                    ),
+                    "airline_document_kind_match": feature_breakdown.get(
+                        "airline_document_kind_match",
+                        0.0,
+                    ),
+                    "airline_primary_family_match": feature_breakdown.get(
+                        "airline_primary_family_match",
+                        0.0,
+                    ),
+                    "healthcare_admin_match": feature_breakdown.get(
+                        "healthcare_admin_match",
+                        0.0,
+                    ),
+                    "healthcare_boundary_match": feature_breakdown.get(
+                        "healthcare_boundary_match",
+                        0.0,
+                    ),
+                    "healthcare_document_kind_match": feature_breakdown.get(
+                        "healthcare_document_kind_match",
+                        0.0,
+                    ),
+                    "healthcare_primary_family_match": feature_breakdown.get(
+                        "healthcare_primary_family_match",
+                        0.0,
+                    ),
                 },
             )
         )
@@ -1686,6 +2849,38 @@ def rerank_candidate_results(
                             0.0,
                         ),
                         "retail_kind_match": feature_breakdown.get("retail_kind_match", 0.0),
+                        "airline_policy_match": feature_breakdown.get(
+                            "airline_policy_match",
+                            0.0,
+                        ),
+                        "airline_escalation_match": feature_breakdown.get(
+                            "airline_escalation_match",
+                            0.0,
+                        ),
+                        "airline_document_kind_match": feature_breakdown.get(
+                            "airline_document_kind_match",
+                            0.0,
+                        ),
+                        "airline_primary_family_match": feature_breakdown.get(
+                            "airline_primary_family_match",
+                            0.0,
+                        ),
+                        "healthcare_admin_match": feature_breakdown.get(
+                            "healthcare_admin_match",
+                            0.0,
+                        ),
+                        "healthcare_boundary_match": feature_breakdown.get(
+                            "healthcare_boundary_match",
+                            0.0,
+                        ),
+                        "healthcare_document_kind_match": feature_breakdown.get(
+                            "healthcare_document_kind_match",
+                            0.0,
+                        ),
+                        "healthcare_primary_family_match": feature_breakdown.get(
+                            "healthcare_primary_family_match",
+                            0.0,
+                        ),
                     },
                 )
             )
