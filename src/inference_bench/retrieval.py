@@ -118,6 +118,74 @@ FINANCE_COMPANY_ALIASES = {
     "amd": {"amd", "advanced micro devices"},
     "advanced": {"amd", "advanced micro devices"},
 }
+RETAIL_REVIEW_INTENT_TERMS = {
+    "review_summary",
+    "quality_complaint",
+    "recommendation",
+    "suspicious_review",
+    "general_review_signal",
+    "scent_texture",
+    "fit_compatibility",
+    "positive_signal",
+    "catalog_metadata",
+    "review",
+    "reviews",
+    "rating",
+    "ratings",
+    "complaint",
+    "quality",
+    "defect",
+    "defective",
+    "broken",
+    "damaged",
+    "scent",
+    "smell",
+    "texture",
+    "fit",
+    "compatibility",
+    "recommend",
+    "suspicious",
+}
+RETAIL_POLICY_INTENT_TERMS = {
+    "policy_reasoning",
+    "return_refund",
+    "delivery_packaging",
+    "product_question",
+    "return",
+    "refund",
+    "exchange",
+    "policy",
+    "eligibility",
+    "shipping",
+    "delivery",
+    "package",
+    "packaging",
+    "wrong",
+    "missing",
+}
+RETAIL_MULTICATEGORY_INTENT_TERMS = {
+    "issue_identification",
+    "product_comparison",
+    "evidence_lookup",
+    "compare",
+    "comparison",
+    "identify",
+    "lookup",
+    "selected",
+    "signal",
+}
+RETAIL_ISSUE_SYNONYMS = {
+    "return_refund": {"return", "refund", "exchange", "eligibility"},
+    "quality_complaint": {"quality", "complaint", "defect", "defective", "broken", "damaged"},
+    "delivery_packaging": {"delivery", "shipping", "package", "packaging", "missing"},
+    "suspicious_review": {"suspicious", "spam", "fake", "authenticity"},
+    "review_summary": {"review", "summary", "rating", "signal"},
+    "recommendation": {"recommend", "recommendation", "compare", "rating", "review"},
+    "product_comparison": {"compare", "comparison", "versus", "vs", "review"},
+    "issue_identification": {"issue", "identify", "complaint", "signal"},
+    "evidence_lookup": {"evidence", "lookup", "selected", "record"},
+    "policy_reasoning": {"policy", "reasoning", "support", "eligibility"},
+}
 RESEARCH_AI_SYNONYMS = {
     "inference": {"inference", "serving", "decoding", "generation"},
     "long context": {"long context", "long-context", "extended context"},
@@ -221,6 +289,12 @@ class BoostFeatures:
     section_tokens: set[str]
     date_tokens: set[str]
     record_metric_terms: set[str]
+    retail_product_title_tokens: set[str] = field(default_factory=set)
+    retail_category_tokens: set[str] = field(default_factory=set)
+    retail_issue_tokens: set[str] = field(default_factory=set)
+    retail_policy_tokens: set[str] = field(default_factory=set)
+    retail_evidence_kind: str = ""
+    retail_parent_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -642,10 +716,82 @@ def metadata_text(record: ContextRecord) -> str:
     )
 
 
+def retail_evidence_kind(record: ContextRecord) -> str:
+    """Classify Retail context into a non-gold evidence kind."""
+
+    metadata = record.metadata
+    explicit_text = " ".join(
+        str(value or "")
+        for value in (
+            metadata.get("evidence_type"),
+            metadata.get("document_type"),
+            record.source_type,
+        )
+    ).lower()
+    if "policy" in explicit_text:
+        return "policy"
+    if "multicategory" in explicit_text:
+        return "multicategory"
+    if "summary" in explicit_text:
+        return "summary"
+    if "review_evidence" in explicit_text:
+        return "review"
+    if "product_metadata" in explicit_text:
+        return "metadata"
+
+    tags_value = metadata.get("tags")
+    tags_text = (
+        " ".join(str(item) for item in tags_value if item) if isinstance(tags_value, list) else ""
+    )
+    haystack = " ".join(
+        str(value or "")
+        for value in (
+            metadata.get("evidence_type"),
+            metadata.get("document_type"),
+            metadata.get("source_type"),
+            record.source_type,
+            record.title,
+            tags_text,
+        )
+    ).lower()
+    if "policy" in haystack:
+        return "policy"
+    if "summary" in haystack:
+        return "summary"
+    if "multicategory" in haystack or "support evidence" in haystack:
+        return "multicategory"
+    if "review_evidence" in haystack or re.search(r"\breview\b", haystack):
+        return "review"
+    if "metadata" in haystack:
+        return "metadata"
+    return "other"
+
+
 def build_boost_features(record: ContextRecord) -> BoostFeatures:
     """Precompute metadata features for one context record."""
 
     metadata = record.metadata
+    issue_values = metadata.get("issue_terms")
+    retail_issue_tokens: set[str] = set()
+    if isinstance(issue_values, list):
+        retail_issue_tokens.update(
+            token for value in issue_values for token in tokenize(split_identifier_text(str(value)))
+        )
+    retail_issue_tokens.update(
+        tokenize(split_identifier_text(str(metadata.get("issue_type") or "")))
+    )
+    retail_policy_tokens = set(
+        tokenize(split_identifier_text(str(metadata.get("policy_key") or "")))
+    )
+    tags_value = metadata.get("tags")
+    tags_text = (
+        " ".join(str(item) for item in tags_value if item) if isinstance(tags_value, list) else ""
+    )
+    retail_policy_tokens.update(
+        token
+        for token in tokenize(split_identifier_text(tags_text))
+        if token in RETAIL_POLICY_INTENT_TERMS
+    )
     concept_values = metadata.get("concepts")
     concepts = set(tokenize(split_identifier_text(str(metadata.get("concept") or ""))))
     if isinstance(concept_values, list):
@@ -678,6 +824,18 @@ def build_boost_features(record: ContextRecord) -> BoostFeatures:
         section_tokens=set(tokenize(str(metadata.get("section_type") or ""))),
         date_tokens=date_tokens,
         record_metric_terms=set(tokenize(record_search_text(record))) & FINANCE_METRIC_TERMS,
+        retail_product_title_tokens=set(
+            tokenize(str(metadata.get("product_title") or record.title))
+        ),
+        retail_category_tokens=set(
+            tokenize(split_identifier_text(str(metadata.get("category") or "")))
+        ),
+        retail_issue_tokens=retail_issue_tokens,
+        retail_policy_tokens=retail_policy_tokens,
+        retail_evidence_kind=retail_evidence_kind(record),
+        retail_parent_key=str(
+            metadata.get("parent_asin") or metadata.get("asin") or record.parent_id
+        ),
     )
 
 
@@ -721,6 +879,12 @@ def metadata_boost_score_from_features(
             query_normalized=query_normalized,
             features=features,
         )
+    elif record.vertical == "retail":
+        boost += retail_metadata_boost_score(
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            features=features,
+        )
     return boost
 
 
@@ -753,6 +917,127 @@ def finance_metadata_boost_score(
     if any(len(token) >= 4 and token in query_tokens for token in features.date_tokens):
         boost += 0.35
 
+    return boost
+
+
+def expanded_retail_query_terms(query_tokens: set[str]) -> set[str]:
+    """Return Retail issue synonyms allowed from visible query terms."""
+
+    terms = set(query_tokens)
+    for token in query_tokens:
+        terms.update(RETAIL_ISSUE_SYNONYMS.get(token, set()))
+    return {term for term in tokenize(" ".join(terms))}
+
+
+def retail_intent_flags(query_tokens: set[str], query_normalized: str) -> dict[str, bool]:
+    """Infer Retail retrieval intent from visible query terms."""
+
+    expanded_terms = expanded_retail_query_terms(query_tokens)
+    joined = " ".join(sorted(expanded_terms | query_tokens | set(tokenize(query_normalized))))
+    direct_review_terms = RETAIL_REVIEW_INTENT_TERMS - {
+        "review_summary",
+        "review",
+        "reviews",
+        "rating",
+        "ratings",
+    }
+    direct_review_intent = bool(query_tokens & direct_review_terms)
+    review_intent = (
+        direct_review_intent
+        or bool(expanded_terms & RETAIL_REVIEW_INTENT_TERMS)
+        or any(term in query_normalized for term in RETAIL_REVIEW_INTENT_TERMS)
+    )
+    summary_intent = (
+        "review_summary" in joined
+        or "summary" in expanded_terms
+        or "review summary" in query_normalized
+    )
+    policy_intent = bool(expanded_terms & RETAIL_POLICY_INTENT_TERMS) or any(
+        term in query_normalized for term in RETAIL_POLICY_INTENT_TERMS
+    )
+    multicategory_intent = bool(expanded_terms & RETAIL_MULTICATEGORY_INTENT_TERMS) or any(
+        term in query_normalized for term in RETAIL_MULTICATEGORY_INTENT_TERMS
+    )
+    if review_intent or summary_intent:
+        multicategory_intent = (
+            "product_comparison" in joined
+            or "evidence_lookup" in joined
+            or "issue_identification" in joined
+        )
+    if multicategory_intent and not (direct_review_intent or summary_intent):
+        review_intent = False
+    return {
+        "review": review_intent,
+        "direct_review": direct_review_intent,
+        "policy": policy_intent,
+        "multicategory": multicategory_intent,
+        "summary": summary_intent,
+        "comparison": "product_comparison" in joined or "comparison" in expanded_terms,
+    }
+
+
+def retail_kind_intent_score(
+    *,
+    evidence_kind: str,
+    intent_flags: dict[str, bool],
+) -> float:
+    """Score how well a Retail evidence kind matches visible query intent."""
+
+    if evidence_kind == "summary":
+        if intent_flags["summary"]:
+            return 1.0
+        if intent_flags["review"]:
+            return 0.7
+    if evidence_kind == "review":
+        if intent_flags["review"]:
+            return 1.0
+        if intent_flags["summary"]:
+            return 0.8
+    if evidence_kind == "policy":
+        return 1.0 if intent_flags["policy"] else 0.15
+    if evidence_kind == "multicategory":
+        if intent_flags["direct_review"]:
+            return 0.2
+        if intent_flags["summary"]:
+            return 1.0
+        if intent_flags["multicategory"] or intent_flags["comparison"]:
+            return 1.0
+    if evidence_kind == "metadata":
+        return 0.6 if intent_flags["comparison"] else 0.25
+    return 0.2
+
+
+def retail_metadata_boost_score(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    features: BoostFeatures,
+) -> float:
+    """Return Retail-specific metadata boosts from prompt-visible signals."""
+
+    expanded_terms = expanded_retail_query_terms(query_tokens)
+    intent_flags = retail_intent_flags(query_tokens, query_normalized)
+    product_overlap = lexical_overlap_ratio(query_tokens, features.retail_product_title_tokens)
+    category_overlap = lexical_overlap_ratio(query_tokens, features.retail_category_tokens)
+    issue_overlap = lexical_overlap_ratio(expanded_terms, features.retail_issue_tokens)
+    policy_overlap = lexical_overlap_ratio(expanded_terms, features.retail_policy_tokens)
+    kind_score = retail_kind_intent_score(
+        evidence_kind=features.retail_evidence_kind,
+        intent_flags=intent_flags,
+    )
+
+    boost = 0.0
+    boost += min(1.1, 1.1 * product_overlap)
+    boost += min(0.45, 0.45 * category_overlap)
+    boost += min(0.9, 0.9 * issue_overlap)
+    boost += min(0.75, 0.75 * policy_overlap)
+    boost += 0.65 * kind_score
+    if (
+        features.retail_evidence_kind == "multicategory"
+        and intent_flags["direct_review"]
+        and not intent_flags["multicategory"]
+    ):
+        boost -= 0.45
     return boost
 
 
@@ -802,7 +1087,11 @@ def rerank_boost_score_from_features(
             features=features,
         )
     elif record.vertical == "retail":
-        boost += min(0.5, 0.18 * len(query_tokens & features.title_tokens))
+        boost += retail_rerank_boost_score(
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            features=features,
+        )
     elif record.vertical == "research_ai":
         section_overlap = features.section_tokens & query_tokens
         boost += min(0.45, 0.18 * len(section_overlap))
@@ -837,6 +1126,36 @@ def finance_rerank_boost_score(
         score += 0.5
     if any(len(token) >= 4 and token in query_tokens for token in features.date_tokens):
         score += 0.45
+    return score
+
+
+def retail_rerank_boost_score(
+    *,
+    query_tokens: set[str],
+    query_normalized: str,
+    features: BoostFeatures,
+) -> float:
+    """Return Retail-specific deterministic reranking score."""
+
+    expanded_terms = expanded_retail_query_terms(query_tokens)
+    intent_flags = retail_intent_flags(query_tokens, query_normalized)
+    score = 0.0
+    score += min(
+        1.2, 1.25 * lexical_overlap_ratio(query_tokens, features.retail_product_title_tokens)
+    )
+    score += min(0.5, 0.5 * lexical_overlap_ratio(query_tokens, features.retail_category_tokens))
+    score += min(1.0, 1.1 * lexical_overlap_ratio(expanded_terms, features.retail_issue_tokens))
+    score += min(0.8, 0.9 * lexical_overlap_ratio(expanded_terms, features.retail_policy_tokens))
+    score += 0.9 * retail_kind_intent_score(
+        evidence_kind=features.retail_evidence_kind,
+        intent_flags=intent_flags,
+    )
+    if (
+        features.retail_evidence_kind == "multicategory"
+        and intent_flags["direct_review"]
+        and not intent_flags["multicategory"]
+    ):
+        score -= 0.7
     return score
 
 
@@ -907,7 +1226,44 @@ def rerank_feature_breakdown(
         else 0.0,
         "source_hint_match": source_hint_match,
     }
-    if record.vertical != "finance":
+    if record.vertical == "retail":
+        expanded_terms = expanded_retail_query_terms(query_tokens)
+        intent_flags = retail_intent_flags(query_tokens, query_normalized)
+        breakdown.update(
+            {
+                "retail_product_match": lexical_overlap_ratio(
+                    query_tokens,
+                    features.retail_product_title_tokens,
+                ),
+                "retail_category_match": lexical_overlap_ratio(
+                    query_tokens,
+                    features.retail_category_tokens,
+                ),
+                "retail_issue_match": lexical_overlap_ratio(
+                    expanded_terms,
+                    features.retail_issue_tokens,
+                ),
+                "retail_policy_match": lexical_overlap_ratio(
+                    expanded_terms,
+                    features.retail_policy_tokens,
+                ),
+                "retail_kind_match": retail_kind_intent_score(
+                    evidence_kind=features.retail_evidence_kind,
+                    intent_flags=intent_flags,
+                ),
+            }
+        )
+        breakdown["metric_match"] = min(
+            1.0,
+            (
+                breakdown["retail_product_match"]
+                + breakdown["retail_issue_match"]
+                + breakdown["retail_kind_match"]
+            )
+            / 2.0,
+        )
+        breakdown["section_match"] = breakdown["retail_policy_match"]
+    elif record.vertical != "finance":
         breakdown["metric_match"] = min(
             1.0,
             len(query_tokens & (features.metadata_tokens | features.title_tokens)) / 8,
@@ -953,15 +1309,27 @@ def score_candidate_from_features(
         features=features,
         source_hints_used=source_hints_used,
     )
-    feature_score = (
-        0.45 * breakdown["company_ticker_match"]
-        + 0.55 * breakdown["metric_match"]
-        + 0.35 * breakdown["period_match"]
-        + 0.35 * breakdown["section_match"]
-        + 0.3 * breakdown["title_match"]
-        + 0.2 * breakdown["metadata_match"]
-        + (1.25 * breakdown["source_hint_match"] if source_hints_used else 0.0)
-    )
+    if record.vertical == "retail":
+        feature_score = (
+            0.85 * breakdown.get("retail_product_match", 0.0)
+            + 0.45 * breakdown.get("retail_category_match", 0.0)
+            + 0.75 * breakdown.get("retail_issue_match", 0.0)
+            + 0.6 * breakdown.get("retail_policy_match", 0.0)
+            + 0.95 * breakdown.get("retail_kind_match", 0.0)
+            + 0.25 * breakdown["title_match"]
+            + 0.15 * breakdown["metadata_match"]
+            + (1.25 * breakdown["source_hint_match"] if source_hints_used else 0.0)
+        )
+    else:
+        feature_score = (
+            0.45 * breakdown["company_ticker_match"]
+            + 0.55 * breakdown["metric_match"]
+            + 0.35 * breakdown["period_match"]
+            + 0.35 * breakdown["section_match"]
+            + 0.3 * breakdown["title_match"]
+            + 0.2 * breakdown["metadata_match"]
+            + (1.25 * breakdown["source_hint_match"] if source_hints_used else 0.0)
+        )
     multi_query_boost = min(0.35, 0.04 * max(0, query_hit_count - 1))
     rerank_score = (
         lexical_weight * lexical_norm
@@ -991,6 +1359,8 @@ def evidence_selector_strategy_for_record(record: ContextRecord) -> str:
 
     if record.vertical == "finance":
         return "finance_calibrated_top5"
+    if record.vertical == "retail":
+        return "retail_balanced_top5"
     return "calibrated_top5"
 
 
@@ -1015,13 +1385,123 @@ def selection_reason_from_features(
         reasons.append("title_overlap")
     if feature_breakdown.get("metadata_match", 0.0) > 0:
         reasons.append("metadata_overlap")
+    if record.vertical == "retail":
+        if feature_breakdown.get("retail_product_match", 0.0) > 0:
+            reasons.append("retail_product_title_match")
+        if feature_breakdown.get("retail_category_match", 0.0) > 0:
+            reasons.append("retail_category_match")
+        if feature_breakdown.get("retail_issue_match", 0.0) > 0:
+            reasons.append("retail_review_issue_match")
+        if feature_breakdown.get("retail_policy_match", 0.0) > 0:
+            reasons.append("retail_policy_match")
+        if feature_breakdown.get("retail_kind_match", 0.0) > 0:
+            reasons.append("retail_evidence_kind_match")
     if source_hints_used and feature_breakdown.get("source_hint_match", 0.0) > 0:
         reasons.append("source_hint_match_assisted")
     if not reasons:
         reasons.append("hybrid_score_rank")
     if record.vertical == "finance":
         reasons.append("finance_selector")
+    if record.vertical == "retail":
+        reasons.append("retail_selector")
     return ",".join(dict.fromkeys(reasons))
+
+
+def select_retail_balanced_candidates(
+    *,
+    ranked: list[tuple[str, float, dict[str, float]]],
+    records_by_id: dict[str, ContextRecord],
+    query_tokens: set[str],
+    query_normalized: str,
+    final_top_k: int,
+) -> list[tuple[str, float, dict[str, float]]]:
+    """Select Retail top-k candidates with evidence-kind and parent-child balance."""
+
+    retail_ranked = [
+        item for item in ranked if item[1] > 0 and records_by_id[item[0]].vertical == "retail"
+    ]
+    if not retail_ranked:
+        return ranked
+
+    intent_flags = retail_intent_flags(query_tokens, query_normalized)
+    if intent_flags["direct_review"]:
+        desired_kinds = ["review", "summary", "policy", "multicategory", "metadata"]
+    elif intent_flags["summary"]:
+        desired_kinds = ["multicategory", "summary", "review", "policy", "metadata"]
+    elif intent_flags["multicategory"] or intent_flags["comparison"]:
+        desired_kinds = ["multicategory", "policy", "metadata", "review", "summary"]
+    elif intent_flags["policy"]:
+        desired_kinds = ["policy", "multicategory", "review", "summary", "metadata"]
+    elif intent_flags["review"]:
+        desired_kinds = ["summary", "review", "policy", "multicategory", "metadata"]
+    else:
+        desired_kinds = ["summary", "review", "multicategory", "policy", "metadata"]
+
+    selected: list[tuple[str, float, dict[str, float]]] = []
+    selected_ids: set[str] = set()
+
+    def add_candidate(item: tuple[str, float, dict[str, float]]) -> None:
+        if len(selected) >= final_top_k:
+            return
+        context_id = item[0]
+        if context_id in selected_ids:
+            return
+        selected.append(item)
+        selected_ids.add(context_id)
+
+    def add_first_for_kind(kind: str, parent_key: str | None = None) -> None:
+        for item in retail_ranked:
+            record = records_by_id[item[0]]
+            features = build_boost_features(record)
+            if features.retail_evidence_kind != kind:
+                continue
+            if parent_key is not None and features.retail_parent_key != parent_key:
+                continue
+            add_candidate(item)
+            return
+
+    parent_order: list[str] = []
+    for context_id, _score, _breakdown in retail_ranked:
+        parent_key = build_boost_features(records_by_id[context_id]).retail_parent_key
+        if parent_key and parent_key not in parent_order:
+            parent_order.append(parent_key)
+
+    if intent_flags["comparison"] and len(parent_order) > 1:
+        for parent_key in parent_order[:2]:
+            for kind in ("review", "summary", "multicategory", "metadata"):
+                add_first_for_kind(kind, parent_key=parent_key)
+                if len(selected) >= final_top_k:
+                    break
+            if len(selected) >= final_top_k:
+                break
+
+    if intent_flags["direct_review"]:
+        review_parent_order: list[str | None] = list(parent_order[:2])
+        if not review_parent_order:
+            review_parent_order = [None]
+        for active_parent_key in review_parent_order:
+            for kind in ("review", "summary"):
+                add_first_for_kind(kind, parent_key=active_parent_key)
+
+    for kind in desired_kinds:
+        add_first_for_kind(kind)
+
+    for item in retail_ranked:
+        add_candidate(item)
+        if len(selected) >= final_top_k:
+            break
+
+    if len(selected) < final_top_k:
+        for item in ranked:
+            if item[1] <= 0:
+                continue
+            add_candidate(item)
+            if len(selected) >= final_top_k:
+                break
+
+    ordered_ids = {context_id for context_id, _score, _breakdown in selected}
+    remainder = [item for item in ranked if item[0] not in ordered_ids]
+    return [*selected, *remainder]
 
 
 def rerank_candidate_results(
@@ -1090,12 +1570,22 @@ def rerank_candidate_results(
         ranked_candidates.append((context_id, score, feature_breakdown))
 
     ranked = sorted(ranked_candidates, key=lambda item: (-item[1], item[0]))
+    if any(records_by_id[context_id].vertical == "retail" for context_id, _score, _ in ranked):
+        ranked = select_retail_balanced_candidates(
+            ranked=ranked,
+            records_by_id=records_by_id,
+            query_tokens=query_tokens,
+            query_normalized=query_normalized,
+            final_top_k=final_top_k,
+        )
     results: list[RetrievalResult] = []
     seen_texts: set[str] = set()
     selection_reasons_by_context_id: dict[str, str] = {}
     selector_strategy = "calibrated_top5"
     if any(records_by_id[context_id].vertical == "finance" for context_id, _score, _ in ranked):
         selector_strategy = "finance_calibrated_top5"
+    if any(records_by_id[context_id].vertical == "retail" for context_id, _score, _ in ranked):
+        selector_strategy = "retail_balanced_top5"
     for context_id, score, feature_breakdown in ranked:
         if score <= 0:
             continue
@@ -1130,6 +1620,11 @@ def rerank_candidate_results(
                     "period_match": feature_breakdown["period_match"],
                     "section_match": feature_breakdown["section_match"],
                     "source_hint_match": feature_breakdown["source_hint_match"],
+                    "retail_product_match": feature_breakdown.get("retail_product_match", 0.0),
+                    "retail_category_match": feature_breakdown.get("retail_category_match", 0.0),
+                    "retail_issue_match": feature_breakdown.get("retail_issue_match", 0.0),
+                    "retail_policy_match": feature_breakdown.get("retail_policy_match", 0.0),
+                    "retail_kind_match": feature_breakdown.get("retail_kind_match", 0.0),
                 },
             )
         )
@@ -1174,6 +1669,23 @@ def rerank_candidate_results(
                         "period_match": feature_breakdown["period_match"],
                         "section_match": feature_breakdown["section_match"],
                         "source_hint_match": feature_breakdown["source_hint_match"],
+                        "retail_product_match": feature_breakdown.get(
+                            "retail_product_match",
+                            0.0,
+                        ),
+                        "retail_category_match": feature_breakdown.get(
+                            "retail_category_match",
+                            0.0,
+                        ),
+                        "retail_issue_match": feature_breakdown.get(
+                            "retail_issue_match",
+                            0.0,
+                        ),
+                        "retail_policy_match": feature_breakdown.get(
+                            "retail_policy_match",
+                            0.0,
+                        ),
+                        "retail_kind_match": feature_breakdown.get("retail_kind_match", 0.0),
                     },
                 )
             )

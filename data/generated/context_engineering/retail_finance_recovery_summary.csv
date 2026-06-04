@@ -1,0 +1,9 @@
+vertical,stage_size,measurement,ablation_mode,dense_backend,vector_store,candidate_recall_at_20,candidate_recall_at_50,final_recall_at_5,mrr,record_count,query_rewrite_count,direct_hint_leakage_count
+finance,250,after_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.44,0.82,0.258,0.1548,250,250,0
+finance,250,before_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.44,0.82,0.258,0.1548,250,0,0
+finance,500,after_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.454,0.812,0.266,0.1715,500,500,0
+finance,500,before_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.454,0.812,0.266,0.1715,500,0,0
+retail,250,after_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.982,0.982,0.478,0.3632,250,250,0
+retail,250,before_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.98,0.98,0.484,0.3676,250,0,0
+retail,500,after_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.991,0.991,0.293,0.227933,500,500,0
+retail,500,before_recovery,prompt_plus_metadata,qdrant_vector,qdrant_local,0.99,0.99,0.288,0.222133,500,0,0

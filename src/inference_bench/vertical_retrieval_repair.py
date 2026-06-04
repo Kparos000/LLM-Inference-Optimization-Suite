@@ -519,6 +519,7 @@ def enrich_prompt_metadata(
         }
     elif vertical == "finance":
         concept = detect_metric_family(text)
+        filing_type = normalize_form(str(prompt.get("filing_form") or ""))
         fields = {
             "company": str(prompt.get("company") or ""),
             "ticker": str(prompt.get("ticker") or ""),
@@ -526,7 +527,7 @@ def enrich_prompt_metadata(
             "period": detect_period(text),
             "fiscal_year": first_year(text),
             "fiscal_quarter": first_quarter(text),
-            "filing_type": normalize_form(str(prompt.get("filing_form") or "")),
+            "filing_type": filing_type,
             "section_type": detect_section(text),
             "xbrl_concept": None,
         }
@@ -563,6 +564,8 @@ def enrich_prompt_metadata(
                     terms.extend(synonyms)
     if vertical == "finance" and fields.get("metric_family"):
         terms.extend(profile.synonym_groups.get(str(fields["metric_family"]), ()))
+    if vertical == "finance":
+        terms.extend(finance_materialized_terms(fields, str(metadata.get("evidence_type") or "")))
 
     clean_terms, blocked_count = sanitize_query_terms(terms)
     missing = [field_name for field_name in profile.enrichment_fields if not fields.get(field_name)]
@@ -574,6 +577,53 @@ def enrich_prompt_metadata(
         query_terms=clean_terms,
         blocked_direct_hint_count=blocked_count,
     )
+
+
+def finance_materialized_terms(
+    fields: dict[str, str | bool | list[str] | None],
+    evidence_type: str,
+) -> list[str]:
+    """Return non-ID Finance expansion terms from prompt-visible metadata."""
+
+    terms: list[str] = []
+    company = str(fields.get("company") or "")
+    ticker = str(fields.get("ticker") or "")
+    filing_type = str(fields.get("filing_type") or "")
+    if company:
+        terms.append(company)
+        terms.extend(tokenize(company))
+    if ticker:
+        terms.append(ticker)
+    if filing_type == "10-K":
+        terms.extend(["10-K", "annual report", "annual filing", "fiscal year"])
+    elif filing_type == "10-Q":
+        terms.extend(["10-Q", "quarterly report", "quarterly filing", "fiscal quarter"])
+    elif filing_type == "8-K":
+        terms.extend(["8-K", "current report", "filing event", "material event"])
+    if "xbrl" in evidence_type.lower():
+        terms.extend(
+            [
+                "xbrl",
+                "financial statement facts",
+                "revenue",
+                "net sales",
+                "income",
+                "cash flow",
+                "assets",
+                "liabilities",
+                "fiscal period",
+            ]
+        )
+    if filing_type in {"10-K", "10-Q"}:
+        terms.extend(
+            [
+                "management discussion and analysis",
+                "financial statements",
+                "risk factors",
+                "results of operations",
+            ]
+        )
+    return terms
 
 
 def first_matching_key(text: str, mapping: dict[str, tuple[str, ...]]) -> str | None:

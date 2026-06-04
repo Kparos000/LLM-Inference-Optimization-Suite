@@ -1,0 +1,2 @@
+stage_size,failed_query_count,candidate_failure_count,candidate_failure_pct,reranker_failure_count,reranker_failure_pct,metadata_failure_count,metadata_failure_pct,chunking_failure_count,product_title_mismatch_count,category_mismatch_count,review_issue_mismatch_count,policy_mismatch_count
+500,361,10,0.027701,351,0.972299,72,0.199446,0,0,0,10,62
