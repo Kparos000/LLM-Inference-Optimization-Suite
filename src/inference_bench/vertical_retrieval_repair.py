@@ -17,6 +17,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, TypeAlias, cast
 
+from inference_bench.canonical_queries import build_canonical_query
 from inference_bench.context_schema import ContextRecord
 from inference_bench.finance_retrieval_repair import (
     detect_metric_family,
@@ -1085,6 +1086,29 @@ def repaired_query(
     )
 
 
+def canonical_repaired_query(
+    *,
+    prompt: dict[str, Any],
+    resolver: CompanyTickerResolver | None,
+    concept_map: dict[str, set[str]],
+    ablation_mode: str,
+) -> tuple[str, tuple[str, ...], tuple[str, ...], int]:
+    """Build the canonical key-materialized retrieval query."""
+
+    canonical = build_canonical_query(
+        prompt,
+        ablation_mode=ablation_mode,
+        resolver=resolver,
+        concept_map=concept_map,
+    )
+    return (
+        canonical.query_text,
+        canonical.expanded_queries,
+        canonical.expansion_types,
+        canonical.blocked_direct_hint_count,
+    )
+
+
 def candidate_results_from_ids(
     context_ids: list[str],
     records_by_context_id: dict[str, ContextRecord],
@@ -1337,6 +1361,7 @@ def validate_stages(
     vector_store_key: str,
     allow_dense_fallback: bool,
     ablation_mode: str = DEFAULT_ABLATION_MODE,
+    use_canonical_retrieval_keys: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
     """Run staged retrieval validation with repaired queries."""
 
@@ -1366,13 +1391,21 @@ def validate_stages(
             max_stage_size = max(stage_sizes)
             for prompt in select_stage_prompts(prompts_by_vertical[vertical], max_stage_size):
                 enrichment = enrichments[vertical][str(prompt.get("prompt_id") or "")]
-                query_tuple = repaired_query(
-                    prompt=prompt,
-                    enrichment=enrichment,
-                    resolver=resolver,
-                    concept_map=concept_map,
-                    ablation_mode=ablation_mode,
-                )
+                if use_canonical_retrieval_keys:
+                    query_tuple = canonical_repaired_query(
+                        prompt=prompt,
+                        resolver=resolver,
+                        concept_map=concept_map,
+                        ablation_mode=ablation_mode,
+                    )
+                else:
+                    query_tuple = repaired_query(
+                        prompt=prompt,
+                        enrichment=enrichment,
+                        resolver=resolver,
+                        concept_map=concept_map,
+                        ablation_mode=ablation_mode,
+                    )
                 queries_to_warm[vertical].add(query_tuple[0])
                 prepared.append((vertical, max_stage_size, prompt, query_tuple))
 
@@ -1426,7 +1459,11 @@ def validate_stages(
                         "vertical": vertical,
                         "stage_size": stage_size,
                         "ablation_mode": ablation_mode,
-                        "measurement": "after_repair_staged",
+                        "measurement": (
+                            "canonical_key_repair_staged"
+                            if use_canonical_retrieval_keys
+                            else "after_repair_staged"
+                        ),
                         "prompt_id": prompt_id,
                         "dense_backend": retrieval.backend_label,
                         "vector_store": retrieval.vector_store,
@@ -1474,10 +1511,15 @@ def validate_stages(
         summary_rows = aggregate_rows(rows, slo_config=slo_config)
         report = {
             "generated_at_utc": utc_now(),
-            "scope": "all_vertical_retrieval_repair_no_inference_no_gpu_no_api",
+            "scope": (
+                "canonical_retrieval_key_materialization_no_inference_no_gpu_no_api"
+                if use_canonical_retrieval_keys
+                else "all_vertical_retrieval_repair_no_inference_no_gpu_no_api"
+            ),
             "no_model_inference_triggered": True,
             "no_gpu_work_triggered": True,
             "no_external_api_calls_triggered": True,
+            "use_canonical_retrieval_keys": use_canonical_retrieval_keys,
             "dense_backend_requested": dense_backend,
             "qdrant_warmed_query_counts": warmed,
             "stage_sizes": stage_sizes,
@@ -1538,6 +1580,7 @@ def build_all_vertical_retrieval_repair(
     vector_store_config_path: str | Path = "configs/vector_stores.yaml",
     vector_store_key: str = "qdrant_local",
     allow_dense_fallback: bool = True,
+    use_canonical_retrieval_keys: bool = False,
 ) -> dict[str, Any]:
     """Build all-vertical retrieval repair reports and write them to disk."""
 
@@ -1560,6 +1603,7 @@ def build_all_vertical_retrieval_repair(
         vector_store_config_path=vector_store_config_path,
         vector_store_key=vector_store_key,
         allow_dense_fallback=allow_dense_fallback,
+        use_canonical_retrieval_keys=use_canonical_retrieval_keys,
     )
     output_path = Path(output_root)
     combined_report = {
@@ -1567,11 +1611,26 @@ def build_all_vertical_retrieval_repair(
         "audit_summary": audit_report["audit_summary"],
         "profiles": audit_report["profiles"],
     }
-    write_json(output_path / "all_vertical_retrieval_repair_report.json", combined_report)
+    report_name = (
+        "canonical_retrieval_repair_report.json"
+        if use_canonical_retrieval_keys
+        else "all_vertical_retrieval_repair_report.json"
+    )
+    summary_name = (
+        "canonical_retrieval_repair_summary.csv"
+        if use_canonical_retrieval_keys
+        else "all_vertical_retrieval_repair_summary.csv"
+    )
+    examples_name = (
+        "canonical_retrieval_failure_examples.jsonl"
+        if use_canonical_retrieval_keys
+        else "all_vertical_retrieval_repair_examples.jsonl"
+    )
+    write_json(output_path / report_name, combined_report)
     write_csv(
-        output_path / "all_vertical_retrieval_repair_summary.csv",
+        output_path / summary_name,
         summary_rows,
         VALIDATION_FIELDS,
     )
-    write_jsonl(output_path / "all_vertical_retrieval_repair_examples.jsonl", examples)
+    write_jsonl(output_path / examples_name, examples)
     return combined_report

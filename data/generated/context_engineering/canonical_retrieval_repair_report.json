@@ -1,0 +1,561 @@
+{
+  "ablation_mode": "prompt_plus_metadata",
+  "audit_summary": {
+    "airline": {
+      "chunk_width_counts": {
+        "reasonable": 2000
+      },
+      "customer_scenario_present_count": 2000,
+      "customer_scenario_present_missing_count": 0,
+      "gold_policy_section_recoverable_count": 2000,
+      "gold_policy_section_recoverable_missing_count": 0,
+      "policy_type_present_count": 2000,
+      "policy_type_present_missing_count": 0,
+      "record_count": 2000,
+      "travel_issue_present_count": 604,
+      "travel_issue_present_missing_count": 1396
+    },
+    "finance": {
+      "company_or_ticker_present_count": 2000,
+      "company_or_ticker_present_missing_count": 0,
+      "filing_type_present_count": 1497,
+      "filing_type_present_missing_count": 503,
+      "metric_present_count": 214,
+      "metric_present_missing_count": 1786,
+      "period_present_count": 20,
+      "period_present_missing_count": 1980,
+      "record_count": 2000,
+      "section_or_xbrl_present_count": 0,
+      "section_or_xbrl_present_missing_count": 2000
+    },
+    "healthcare_admin": {
+      "admin_issue_present_count": 721,
+      "admin_issue_present_missing_count": 1279,
+      "admin_task_type_present_count": 2000,
+      "admin_task_type_present_missing_count": 0,
+      "chunk_width_counts": {
+        "reasonable": 2000
+      },
+      "gold_procedure_recoverable_count": 2000,
+      "gold_procedure_recoverable_missing_count": 0,
+      "record_count": 2000,
+      "safety_boundary_present_count": 2000,
+      "safety_boundary_present_missing_count": 0
+    },
+    "research_ai": {
+      "chunk_width_counts": {
+        "not_recoverable": 40,
+        "reasonable": 1960
+      },
+      "gold_paper_section_recoverable_count": 1960,
+      "gold_paper_section_recoverable_missing_count": 40,
+      "method_result_limitation_cue_present_count": 1309,
+      "method_result_limitation_cue_present_missing_count": 691,
+      "paper_title_or_topic_present_count": 2000,
+      "paper_title_or_topic_present_missing_count": 0,
+      "record_count": 2000,
+      "section_type_present_count": 1960,
+      "section_type_present_missing_count": 40
+    },
+    "retail": {
+      "chunk_width_counts": {
+        "reasonable": 2000
+      },
+      "parent_child_link_recoverable_count": 1941,
+      "parent_child_link_recoverable_missing_count": 59,
+      "product_title_or_category_present_count": 2000,
+      "product_title_or_category_present_missing_count": 0,
+      "record_count": 2000,
+      "review_issue_present_count": 2000,
+      "review_issue_present_missing_count": 0,
+      "support_policy_present_count": 613,
+      "support_policy_present_missing_count": 1387
+    }
+  },
+  "dense_backend_requested": "qdrant_vector",
+  "direct_hint_leakage_detected_count": 0,
+  "generated_at_utc": "2026-06-04T08:35:15.576860+00:00",
+  "no_external_api_calls_triggered": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "profiles": {
+    "airline": {
+      "audit_fields": [
+        "policy_type_present",
+        "travel_issue_present",
+        "customer_scenario_present",
+        "gold_policy_section_recoverable",
+        "chunk_width_label"
+      ],
+      "enrichment_fields": [
+        "policy_type",
+        "travel_issue",
+        "route_region",
+        "escalation_type"
+      ],
+      "synonym_groups": {
+        "accessibility": [
+          "accessibility",
+          "assistance",
+          "mobility",
+          "accommodation",
+          "wheelchair"
+        ],
+        "baggage": [
+          "baggage",
+          "bag",
+          "checked bag",
+          "carry on",
+          "claim",
+          "damaged bag",
+          "delayed bag"
+        ],
+        "cancellation": [
+          "cancellation",
+          "cancel",
+          "24 hour",
+          "non refundable",
+          "travel credit"
+        ],
+        "codeshare": [
+          "codeshare",
+          "partner airline",
+          "marketing carrier",
+          "operating carrier",
+          "ticketing carrier",
+          "irregular operations"
+        ],
+        "delay": [
+          "delay",
+          "disruption",
+          "rebooking",
+          "missed connection",
+          "schedule change",
+          "weather disruption",
+          "compensation eligibility"
+        ],
+        "identity": [
+          "identity",
+          "verification",
+          "fraud",
+          "document",
+          "payment dispute",
+          "manual account review"
+        ],
+        "refund": [
+          "refund",
+          "reimbursement",
+          "fare credit",
+          "travel credit",
+          "refund processing",
+          "payment method"
+        ],
+        "visa": [
+          "visa",
+          "passport",
+          "documentation",
+          "international travel",
+          "entry documents"
+        ]
+      },
+      "vertical": "airline"
+    },
+    "finance": {
+      "audit_fields": [
+        "company_or_ticker_present",
+        "metric_present",
+        "period_present",
+        "filing_type_present",
+        "section_or_xbrl_present"
+      ],
+      "enrichment_fields": [
+        "company",
+        "ticker",
+        "metric_family",
+        "period",
+        "fiscal_year",
+        "fiscal_quarter",
+        "filing_type",
+        "section_type",
+        "xbrl_concept"
+      ],
+      "synonym_groups": {
+        "capex": [
+          "capex",
+          "capital expenditures",
+          "property equipment"
+        ],
+        "cash_flow": [
+          "cash flow",
+          "operating cash flow",
+          "free cash flow"
+        ],
+        "income": [
+          "income",
+          "earnings",
+          "profit",
+          "operating income"
+        ],
+        "revenue": [
+          "revenue",
+          "sales",
+          "net sales",
+          "total revenue"
+        ],
+        "risk": [
+          "risk",
+          "risk factors",
+          "uncertainty"
+        ]
+      },
+      "vertical": "finance"
+    },
+    "healthcare_admin": {
+      "audit_fields": [
+        "admin_task_type_present",
+        "admin_issue_present",
+        "safety_boundary_present",
+        "gold_procedure_recoverable",
+        "chunk_width_label"
+      ],
+      "enrichment_fields": [
+        "admin_task_type",
+        "safety_boundary",
+        "privacy_sensitive",
+        "policy_type"
+      ],
+      "synonym_groups": {
+        "appointment": [
+          "appointment",
+          "booking",
+          "scheduling",
+          "visit",
+          "reschedule",
+          "identity verification"
+        ],
+        "billing": [
+          "billing",
+          "invoice",
+          "payment",
+          "claim",
+          "insurance",
+          "account specific"
+        ],
+        "clinical_boundary": [
+          "clinical",
+          "triage",
+          "diagnosis",
+          "treatment",
+          "urgent clinical redirect"
+        ],
+        "identity": [
+          "identity",
+          "verification",
+          "patient matching",
+          "secure workflow",
+          "account activation"
+        ],
+        "privacy": [
+          "privacy",
+          "hipaa",
+          "secure message",
+          "consent",
+          "authorization",
+          "proxy access",
+          "disclosure"
+        ],
+        "referral": [
+          "referral",
+          "authorization",
+          "specialist",
+          "routing",
+          "status"
+        ]
+      },
+      "vertical": "healthcare_admin"
+    },
+    "research_ai": {
+      "audit_fields": [
+        "paper_title_or_topic_present",
+        "section_type_present",
+        "method_result_limitation_cue_present",
+        "gold_paper_section_recoverable",
+        "chunk_width_label"
+      ],
+      "enrichment_fields": [
+        "paper_id_public",
+        "topic",
+        "section_type",
+        "method_signal",
+        "result_signal",
+        "limitation_signal"
+      ],
+      "synonym_groups": {
+        "inference": [
+          "inference",
+          "serving",
+          "decoding",
+          "generation"
+        ],
+        "limitations": [
+          "limitations",
+          "failure cases",
+          "future work"
+        ],
+        "method": [
+          "method",
+          "architecture",
+          "algorithm",
+          "approach"
+        ],
+        "rag": [
+          "rag",
+          "retrieval augmented generation",
+          "retrieval"
+        ],
+        "results": [
+          "results",
+          "experiments",
+          "evaluation",
+          "benchmark"
+        ]
+      },
+      "vertical": "research_ai"
+    },
+    "retail": {
+      "audit_fields": [
+        "product_title_or_category_present",
+        "review_issue_present",
+        "support_policy_present",
+        "parent_child_link_recoverable",
+        "chunk_width_label"
+      ],
+      "enrichment_fields": [
+        "product_category",
+        "product_title_terms",
+        "review_issue_type",
+        "sentiment_signal",
+        "policy_type"
+      ],
+      "synonym_groups": {
+        "authenticity": [
+          "authentic",
+          "counterfeit",
+          "fake"
+        ],
+        "defect": [
+          "defect",
+          "broken",
+          "damaged",
+          "quality issue"
+        ],
+        "return": [
+          "return",
+          "refund",
+          "exchange",
+          "eligibility"
+        ],
+        "sentiment": [
+          "sentiment",
+          "rating",
+          "review",
+          "positive",
+          "negative"
+        ],
+        "shipping": [
+          "shipping",
+          "delivery",
+          "late",
+          "package"
+        ]
+      },
+      "vertical": "retail"
+    }
+  },
+  "qdrant_warmed_query_counts": {
+    "airline": 2000,
+    "finance": 716,
+    "healthcare_admin": 128,
+    "research_ai": 820,
+    "retail": 1150
+  },
+  "scope": "canonical_retrieval_key_materialization_no_inference_no_gpu_no_api",
+  "stage_sizes": [
+    500,
+    2000
+  ],
+  "stage_timed_out": false,
+  "summary_rows": [
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.9325,
+      "candidate_recall_at_50": 0.9625,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.8975,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.9349,
+      "primary_blocker": "final_top5_selection",
+      "query_rewrite_count": 500,
+      "recommended_next_action": "Tune airline final top-5 evidence selection and reranking.",
+      "record_count": 500,
+      "slo_status": "FAILED",
+      "stage_size": 500,
+      "vector_store": "qdrant_local",
+      "vertical": "airline"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.928,
+      "candidate_recall_at_50": 0.964625,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.889375,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.93415,
+      "primary_blocker": "final_top5_selection",
+      "query_rewrite_count": 2000,
+      "recommended_next_action": "Tune airline final top-5 evidence selection and reranking.",
+      "record_count": 2000,
+      "slo_status": "FAILED",
+      "stage_size": 2000,
+      "vector_store": "qdrant_local",
+      "vertical": "airline"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.437,
+      "candidate_recall_at_50": 0.81,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.224,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.125867,
+      "primary_blocker": "candidate_retrieval_top20",
+      "query_rewrite_count": 500,
+      "recommended_next_action": "Materialize non-ID period/metric/filing metadata and rerun Qdrant strict validation.",
+      "record_count": 500,
+      "slo_status": "FAILED",
+      "stage_size": 500,
+      "vector_store": "qdrant_local",
+      "vertical": "finance"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.46125,
+      "candidate_recall_at_50": 0.820625,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.25125,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.142458,
+      "primary_blocker": "candidate_retrieval_top20",
+      "query_rewrite_count": 2000,
+      "recommended_next_action": "Materialize non-ID period/metric/filing metadata and rerun Qdrant strict validation.",
+      "record_count": 2000,
+      "slo_status": "FAILED",
+      "stage_size": 2000,
+      "vector_store": "qdrant_local",
+      "vertical": "finance"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 1.0,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.973,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.785567,
+      "primary_blocker": "rank_ordering",
+      "query_rewrite_count": 500,
+      "recommended_next_action": "Improve healthcare_admin rank ordering and tie-breaking.",
+      "record_count": 500,
+      "slo_status": "FAILED",
+      "stage_size": 500,
+      "vector_store": "qdrant_local",
+      "vertical": "healthcare_admin"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.964,
+      "candidate_recall_at_50": 0.984,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.915,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.745767,
+      "primary_blocker": "rank_ordering",
+      "query_rewrite_count": 2000,
+      "recommended_next_action": "Improve healthcare_admin rank ordering and tie-breaking.",
+      "record_count": 2000,
+      "slo_status": "FAILED",
+      "stage_size": 2000,
+      "vector_store": "qdrant_local",
+      "vertical": "healthcare_admin"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.944,
+      "candidate_recall_at_50": 1.0,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.901333,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 1.0,
+      "primary_blocker": "none",
+      "query_rewrite_count": 500,
+      "recommended_next_action": "Proceed to the next staged validation or inference smoke gate.",
+      "record_count": 500,
+      "slo_status": "PASSED",
+      "stage_size": 500,
+      "vector_store": "qdrant_local",
+      "vertical": "research_ai"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.871318,
+      "candidate_recall_at_50": 0.948397,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.752403,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.7791,
+      "primary_blocker": "candidate_retrieval_top20",
+      "query_rewrite_count": 2000,
+      "recommended_next_action": "Improve research_ai query enrichment, chunk metadata, and candidate recall.",
+      "record_count": 2000,
+      "slo_status": "FAILED",
+      "stage_size": 2000,
+      "vector_store": "qdrant_local",
+      "vertical": "research_ai"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.983,
+      "candidate_recall_at_50": 0.991,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.265,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.164533,
+      "primary_blocker": "final_top5_selection",
+      "query_rewrite_count": 500,
+      "recommended_next_action": "Tune retail final top-5 evidence selection and reranking.",
+      "record_count": 500,
+      "slo_status": "FAILED",
+      "stage_size": 500,
+      "vector_store": "qdrant_local",
+      "vertical": "retail"
+    },
+    {
+      "ablation_mode": "prompt_plus_metadata",
+      "candidate_recall_at_20": 0.913417,
+      "candidate_recall_at_50": 0.927917,
+      "dense_backend": "qdrant_vector",
+      "final_recall_at_5": 0.220167,
+      "measurement": "canonical_key_repair_staged",
+      "mrr": 0.161017,
+      "primary_blocker": "candidate_retrieval_top50",
+      "query_rewrite_count": 2000,
+      "recommended_next_action": "Improve retail query enrichment, chunk metadata, and candidate recall.",
+      "record_count": 2000,
+      "slo_status": "FAILED",
+      "stage_size": 2000,
+      "vector_store": "qdrant_local",
+      "vertical": "retail"
+    }
+  ],
+  "use_canonical_retrieval_keys": true
+}

@@ -15,6 +15,7 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 
 from inference_bench.context_schema import ContextRecord
+from inference_bench.vertical_final_selectors import select_canonical_final_candidates
 
 TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
 DEFAULT_CANDIDATE_TOP_K_DENSE = 50
@@ -2703,6 +2704,13 @@ def rerank_candidate_results(
             query_normalized=query_normalized,
             final_top_k=final_top_k,
         )
+    ranked = select_canonical_final_candidates(
+        ranked=ranked,
+        records_by_id=records_by_id,
+        query_tokens=query_tokens,
+        query_text=query,
+        final_top_k=final_top_k,
+    )
     results: list[RetrievalResult] = []
     seen_texts: set[str] = set()
     selection_reasons_by_context_id: dict[str, str] = {}
@@ -2907,6 +2915,7 @@ def rerank_candidate_results(
         "reranker_backend": "calibrated_linear",
         "calibrated_reranker_enabled": True,
         "evidence_selector_strategy": selector_strategy,
+        "canonical_final_selector_used": True,
         "selection_reasons_by_context_id": selection_reasons_by_context_id,
         "oracle_strategy_available_for_diagnostics_only": True,
     }

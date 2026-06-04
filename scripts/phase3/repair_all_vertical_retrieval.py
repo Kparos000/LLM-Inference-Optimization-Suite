@@ -45,6 +45,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Fail instead of falling back if the requested dense backend cannot be created.",
     )
+    parser.add_argument(
+        "--use-canonical-retrieval-keys",
+        action="store_true",
+        help=(
+            "Use canonical non-leaking retrieval keys and query materialization, "
+            "and write canonical_retrieval_* reports."
+        ),
+    )
     return parser
 
 
@@ -62,22 +70,38 @@ def main(argv: list[str] | None = None) -> int:
         vector_store_config_path=args.vector_store_config,
         vector_store_key=args.vector_store_key,
         allow_dense_fallback=not args.require_dense_backend,
+        use_canonical_retrieval_keys=args.use_canonical_retrieval_keys,
     )
     output_root = Path(args.output_root)
-    print(
-        "All-vertical retrieval repair report: "
-        f"{output_root / 'all_vertical_retrieval_repair_report.json'}"
-    )
-    print(
-        "All-vertical retrieval repair summary: "
-        f"{output_root / 'all_vertical_retrieval_repair_summary.csv'}"
-    )
-    print(
-        "All-vertical retrieval repair examples: "
-        f"{output_root / 'all_vertical_retrieval_repair_examples.jsonl'}"
-    )
+    if args.use_canonical_retrieval_keys:
+        print(
+            "Canonical retrieval repair report: "
+            f"{output_root / 'canonical_retrieval_repair_report.json'}"
+        )
+        print(
+            "Canonical retrieval repair summary: "
+            f"{output_root / 'canonical_retrieval_repair_summary.csv'}"
+        )
+        print(
+            "Canonical retrieval failure examples: "
+            f"{output_root / 'canonical_retrieval_failure_examples.jsonl'}"
+        )
+    else:
+        print(
+            "All-vertical retrieval repair report: "
+            f"{output_root / 'all_vertical_retrieval_repair_report.json'}"
+        )
+        print(
+            "All-vertical retrieval repair summary: "
+            f"{output_root / 'all_vertical_retrieval_repair_summary.csv'}"
+        )
+        print(
+            "All-vertical retrieval repair examples: "
+            f"{output_root / 'all_vertical_retrieval_repair_examples.jsonl'}"
+        )
     print(f"Stage sizes: {report['stage_sizes']}")
     print(f"Requested dense backend: {report['dense_backend_requested']}")
+    print(f"Canonical retrieval keys: {report.get('use_canonical_retrieval_keys', False)}")
     print(f"Direct hint leakage detected: {report['direct_hint_leakage_detected_count']}")
     return 0
 

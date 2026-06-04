@@ -151,7 +151,7 @@
       "vertical": "research_ai"
     }
   ],
-  "generated_at_utc": "2026-06-04T07:13:11.242325+00:00",
+  "generated_at_utc": "2026-06-04T08:35:44.584816+00:00",
   "inference_scaling_blocked_by_retrieval_slos": true,
   "metric_families": [
     "retrieval_slo",
