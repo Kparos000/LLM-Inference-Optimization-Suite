@@ -160,6 +160,21 @@ def _rate(count: int, total: int) -> float:
     return count / total if total else 0.0
 
 
+def _bool_value(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"true", "1", "yes"}
+
+
+def _int_value(value: object) -> int:
+    if isinstance(value, int):
+        return value
+    try:
+        return int(str(value or "0"))
+    except ValueError:
+        return 0
+
+
 def build_summary_rows(
     *,
     results_path: str | Path,
@@ -179,6 +194,14 @@ def build_summary_rows(
     evidence_match_count = sum(1 for row in evaluation_rows if row["evidence_match"])
     grounded_count = sum(1 for row in evaluation_rows if row["groundedness"])
     safety_violation_count = sum(1 for row in evaluation_rows if row["safety_violation"])
+    parse_repair_count = sum(
+        1 for row in result_rows if _bool_value(row.get("parse_repair_applied"))
+    )
+    truncation_count = sum(1 for row in result_rows if _bool_value(row.get("truncation_detected")))
+    retry_row_count = sum(
+        1 for row in result_rows if _int_value(row.get("contract_retry_count")) > 0
+    )
+    contract_retry_count = sum(_int_value(row.get("contract_retry_count")) for row in result_rows)
     memory_modes = sorted(
         {str(row.get("memory_mode")) for row in result_rows if row.get("memory_mode")}
     )
@@ -210,6 +233,13 @@ def build_summary_rows(
             "grounded_rate": _rate(grounded_count, total),
             "safety_violation_count": safety_violation_count,
             "safety_violation_rate": _rate(safety_violation_count, total),
+            "parse_repair_count": parse_repair_count,
+            "parse_repair_rate": _rate(parse_repair_count, total),
+            "truncation_count": truncation_count,
+            "truncation_rate": _rate(truncation_count, total),
+            "retry_row_count": retry_row_count,
+            "retry_rate": _rate(retry_row_count, total),
+            "contract_retry_count": contract_retry_count,
             "memory_modes": ";".join(memory_modes),
             "verticals": ";".join(verticals),
             "expected_status_counts": json.dumps(

@@ -27,6 +27,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from inference_bench.config import load_project_config  # noqa: E402
 from inference_bench.generation_contract import (  # noqa: E402
+    allowed_evidence_ids_from_aliases,
     generation_contract_result_fields,
 )
 from inference_bench.metrics import calculate_tokens_per_second  # noqa: E402
@@ -383,7 +384,14 @@ def dry_run_result(
             "final_status": "answer",
         }
     )
-    row.update(generation_contract_result_fields(generated_text))
+    row.update(
+        generation_contract_result_fields(
+            generated_text,
+            allowed_evidence_ids=(
+                allowed_evidence_ids_from_aliases(row.get("citation_id_aliases")) or None
+            ),
+        )
+    )
     validate_smoke_result_row(row)
     return row
 
@@ -481,7 +489,14 @@ def run_real_openai_compatible(
                     "final_status": "answer",
                 }
             )
-            row.update(generation_contract_result_fields(generated_text))
+            row.update(
+                generation_contract_result_fields(
+                    generated_text,
+                    allowed_evidence_ids=(
+                        allowed_evidence_ids_from_aliases(row.get("citation_id_aliases")) or None
+                    ),
+                )
+            )
         except Exception as exc:  # noqa: BLE001
             elapsed_seconds = time.perf_counter() - started
             row.update(
@@ -500,7 +515,14 @@ def run_real_openai_compatible(
                     "final_status": "failed_validation",
                 }
             )
-            row.update(generation_contract_result_fields(""))
+            row.update(
+                generation_contract_result_fields(
+                    "",
+                    allowed_evidence_ids=(
+                        allowed_evidence_ids_from_aliases(row.get("citation_id_aliases")) or None
+                    ),
+                )
+            )
         validate_smoke_result_row(row)
         rows.append(row)
     return rows

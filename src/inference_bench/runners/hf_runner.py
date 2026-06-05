@@ -11,7 +11,10 @@ from threading import Thread
 from typing import Any
 
 from inference_bench.env import load_local_env
-from inference_bench.generation_contract import parse_generation_contract
+from inference_bench.generation_contract import (
+    allowed_evidence_ids_from_aliases,
+    parse_generation_contract,
+)
 from inference_bench.metrics import (
     calculate_end_to_end_latency_ms,
     calculate_tokens_per_second,
@@ -169,9 +172,14 @@ def _build_generation_record_from_result(
     generated_text: str | None,
     item: WorkloadItem | None = None,
 ) -> GenerationRecord:
-    contract_parse = parse_generation_contract(generated_text or "")
-    contract = contract_parse.contract
     metadata = item.metadata if item is not None else {}
+    contract_parse = parse_generation_contract(
+        generated_text or "",
+        allowed_evidence_ids=(
+            allowed_evidence_ids_from_aliases(metadata.get("citation_id_aliases")) or None
+        ),
+    )
+    contract = contract_parse.contract
     return GenerationRecord(
         run_id=result.run_id,
         timestamp_utc=result.timestamp_utc,
@@ -203,6 +211,9 @@ def _build_generation_record_from_result(
         generation_contract_valid=contract_parse.contract_valid,
         generation_contract_error=contract_parse.error,
         generation_contract_missing_fields=contract_parse.missing_fields,
+        parse_error_type=contract_parse.parse_error_type,
+        parse_repair_applied=contract_parse.parse_repair_applied,
+        truncation_detected=contract_parse.truncation_detected,
         answer=contract.answer if contract else "",
         evidence_ids=contract.evidence_ids if contract else [],
         confidence=contract.confidence if contract else None,

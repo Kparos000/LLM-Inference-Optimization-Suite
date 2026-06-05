@@ -92,10 +92,13 @@ def test_prompt_renders_stable_evidence_labels_and_json_contract() -> None:
     assert "[EVIDENCE 1]" in prompt
     assert "evidence_id: E1" in prompt
     assert "finance_source_001" in prompt
-    assert '"insufficient_evidence": false' in prompt
-    assert "Return exactly one compact, single-line JSON object" in prompt
+    assert "insufficient_evidence boolean" in prompt
+    assert "Return exactly one compact, single-line JSON object." in prompt
+    assert "Do not use markdown" in prompt
+    assert "at least one supporting provided label" in prompt
+    assert "do not default to E1 only" in prompt
     assert "at or below 40 words" in prompt
-    assert "minimum evidence records" in prompt
+    assert "Do not copy wording from these instructions" in prompt
 
 
 def test_evaluator_scores_structured_evidence_and_groundedness() -> None:

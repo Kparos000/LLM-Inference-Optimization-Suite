@@ -14,6 +14,7 @@ from typing import Any
 
 from inference_bench.generation_contract import (
     GENERATION_CONTRACT_FORMAT,
+    allowed_evidence_ids_from_aliases,
     parse_generation_contract,
 )
 from inference_bench.quality import parse_json_object
@@ -31,6 +32,9 @@ SUPPORTED_EVALUATOR_FIELDS = (
     "generation_contract_valid",
     "generation_contract_missing_fields",
     "generation_contract_error",
+    "parse_error_type",
+    "parse_repair_applied",
+    "truncation_detected",
     "markdown_table_validity",
     "must_include_expected",
     "must_include_missing",
@@ -125,14 +129,22 @@ def markdown_table_valid(text: str) -> bool:
     return has_header and has_separator
 
 
-def output_format_valid(text: str, expected_output_format: str) -> tuple[bool, bool, bool]:
+def output_format_valid(
+    text: str,
+    expected_output_format: str,
+    *,
+    allowed_evidence_ids: list[str] | None = None,
+) -> tuple[bool, bool, bool]:
     """Return overall format validity plus JSON/table component signals."""
 
     normalized = expected_output_format.lower().strip()
     json_valid = parse_json_object(text) is not None
     table_valid = markdown_table_valid(text)
     if normalized == GENERATION_CONTRACT_FORMAT:
-        contract_parse = parse_generation_contract(text)
+        contract_parse = parse_generation_contract(
+            text,
+            allowed_evidence_ids=allowed_evidence_ids,
+        )
         return contract_parse.contract_valid, contract_parse.json_valid, table_valid
     if normalized in {"json", "json_object", "structured_json"}:
         return json_valid, json_valid, table_valid
@@ -150,7 +162,13 @@ def evaluate_generated_answer(
     prompt_id = str(generated_record.get("prompt_id") or "")
     generated_text = str(generated_record.get("generated_text") or "")
     observed_status = str(generated_record.get("final_status") or "answer")
-    contract_parse = parse_generation_contract(generated_text)
+    citation_aliases = generated_record.get("citation_id_aliases")
+    alias_map = citation_aliases if isinstance(citation_aliases, dict) else {}
+    allowed_evidence_ids = allowed_evidence_ids_from_aliases(alias_map)
+    contract_parse = parse_generation_contract(
+        generated_text,
+        allowed_evidence_ids=allowed_evidence_ids or None,
+    )
     contract = contract_parse.contract
     if contract is not None:
         observed_status = "insufficient_evidence" if contract.insufficient_evidence else "answer"
@@ -167,6 +185,9 @@ def evaluate_generated_answer(
             "generation_contract_valid": contract_parse.contract_valid,
             "generation_contract_missing_fields": contract_parse.missing_fields,
             "generation_contract_error": contract_parse.error,
+            "parse_error_type": contract_parse.parse_error_type,
+            "parse_repair_applied": contract_parse.parse_repair_applied,
+            "truncation_detected": contract_parse.truncation_detected,
             "markdown_table_validity": False,
             "must_include_expected": [],
             "must_include_missing": [],
@@ -211,8 +232,6 @@ def evaluate_generated_answer(
     else:
         citation_values = generated_record.get("citations") or []
     citations = _unique_strings(citation_values)
-    citation_aliases = generated_record.get("citation_id_aliases")
-    alias_map = citation_aliases if isinstance(citation_aliases, dict) else {}
     expanded_citations = list(citations)
     for citation in citations:
         aliases = alias_map.get(citation)
@@ -225,7 +244,11 @@ def evaluate_generated_answer(
         if evidence_id in expanded_citations
         or (not contract_mode and evidence_id.lower() in lower_text)
     ]
-    format_valid, json_valid, table_valid = output_format_valid(generated_text, expected_format)
+    format_valid, json_valid, table_valid = output_format_valid(
+        generated_text,
+        expected_format,
+        allowed_evidence_ids=allowed_evidence_ids or None,
+    )
     safety_terms = sorted(
         {term for term in (*GENERIC_SAFETY_TERMS, *must_not_include) if term.lower() in lower_text}
     )
@@ -243,6 +266,9 @@ def evaluate_generated_answer(
         "generation_contract_valid": contract_parse.contract_valid,
         "generation_contract_missing_fields": contract_parse.missing_fields,
         "generation_contract_error": contract_parse.error,
+        "parse_error_type": contract_parse.parse_error_type,
+        "parse_repair_applied": contract_parse.parse_repair_applied,
+        "truncation_detected": contract_parse.truncation_detected,
         "markdown_table_validity": table_valid,
         "must_include_expected": must_include,
         "must_include_missing": missing_must_include,

@@ -22,7 +22,10 @@ if str(SRC_ROOT) not in sys.path:
 
 from inference_bench.config import load_project_config  # noqa: E402
 from inference_bench.generation_contract import (  # noqa: E402
+    allowed_evidence_ids_from_aliases,
     generation_contract_result_fields,
+    parse_generation_contract,
+    render_contract_retry_prompt,
 )
 from inference_bench.metrics import calculate_tokens_per_second  # noqa: E402
 from inference_bench.run_manifest import (  # noqa: E402
@@ -43,6 +46,8 @@ from inference_bench.schema import WorkloadItem  # noqa: E402
 from inference_bench.workloads.loader import load_jsonl_workload  # noqa: E402
 
 MAX_SMOKE_PROMPTS = 25
+MAX_SMOKE_NEW_TOKENS = 256
+MAX_CONTRACT_RETRIES = 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -54,6 +59,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model-alias", default="model1_0_5b")
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--max-new-tokens", type=int, default=64)
+    parser.add_argument(
+        "--max-contract-retries",
+        type=int,
+        default=1,
+        help="Maximum contract-correction retries. Use 0 for pure latency measurement.",
+    )
     parser.add_argument(
         "--manifest-path",
         default=None,
@@ -90,8 +101,19 @@ def validate_max_new_tokens(max_new_tokens: int) -> None:
     if max_new_tokens <= 0:
         msg = "max_new_tokens must be > 0"
         raise ValueError(msg)
-    if max_new_tokens > 128:
-        msg = "max_new_tokens must be <= 128 for local HF smoke"
+    if max_new_tokens > MAX_SMOKE_NEW_TOKENS:
+        msg = f"max_new_tokens must be <= {MAX_SMOKE_NEW_TOKENS} for local HF smoke"
+        raise ValueError(msg)
+
+
+def validate_max_contract_retries(max_contract_retries: int) -> None:
+    """Validate bounded local contract retry count."""
+
+    if max_contract_retries < 0:
+        msg = "max_contract_retries must be >= 0"
+        raise ValueError(msg)
+    if max_contract_retries > MAX_CONTRACT_RETRIES:
+        msg = f"max_contract_retries must be <= {MAX_CONTRACT_RETRIES}"
         raise ValueError(msg)
 
 
@@ -208,6 +230,11 @@ def validate_smoke_result_row(row: dict[str, Any]) -> None:
         "confidence",
         "insufficient_evidence",
         "citation_notes",
+        "parse_repair_applied",
+        "parse_error_type",
+        "truncation_detected",
+        "contract_retry_count",
+        "generation_attempt_count",
     }
     missing = sorted(field for field in required_fields if field not in row)
     if missing:
@@ -231,6 +258,7 @@ def dry_run_result(
     model_alias: str,
     model_id: str,
     max_new_tokens: int,
+    max_contract_retries: int,
 ) -> dict[str, Any]:
     """Build one dry-run smoke result without loading a model."""
 
@@ -263,8 +291,65 @@ def dry_run_result(
         }
     )
     row.update(generation_contract_result_fields(generated_text))
+    row.update(
+        {
+            "contract_retry_count": 0,
+            "max_contract_retries": max_contract_retries,
+            "retry_applied": False,
+            "retry_success": False,
+            "generation_attempt_count": 1,
+            "generation_attempts": [],
+            "initial_truncation_detected": False,
+        }
+    )
     validate_smoke_result_row(row)
     return row
+
+
+def _generate_once(
+    *,
+    tokenizer: Any,
+    model: Any,
+    torch: Any,
+    device: str,
+    prompt: str,
+    max_new_tokens: int,
+) -> dict[str, Any]:
+    """Generate one local response and return attempt-level metrics."""
+
+    started = time.perf_counter()
+    model_input_prompt, chat_template_applied = render_model_input_prompt(tokenizer, prompt)
+    inputs = tokenizer(model_input_prompt, return_tensors="pt")
+    input_tokens = _input_token_count(inputs)
+    inputs = _move_inputs_to_device(inputs, device)
+    with torch.no_grad():
+        generated_ids = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            pad_token_id=getattr(tokenizer, "eos_token_id", None),
+        )
+    generated_token_ids = generated_ids[0][input_tokens:]
+    generated_text = str(tokenizer.decode(generated_token_ids, skip_special_tokens=True))
+    output_tokens = max(0, int(generated_ids.shape[-1]) - input_tokens)
+    elapsed_seconds = time.perf_counter() - started
+    return {
+        "generated_text": generated_text,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "latency_ms": round(elapsed_seconds * 1000, 6),
+        "chat_template_applied": chat_template_applied,
+        "max_new_tokens": max_new_tokens,
+    }
+
+
+def _retry_token_budget(initial_max_new_tokens: int, truncation_detected: bool) -> int:
+    if not truncation_detected:
+        return initial_max_new_tokens
+    return min(
+        MAX_SMOKE_NEW_TOKENS,
+        max(initial_max_new_tokens * 2, 192),
+    )
 
 
 def run_real_local_hf(
@@ -274,6 +359,7 @@ def run_real_local_hf(
     model_alias: str,
     model_id: str,
     max_new_tokens: int,
+    max_contract_retries: int,
 ) -> list[dict[str, Any]]:
     """Run real local Hugging Face generation over workload items."""
 
@@ -308,52 +394,111 @@ def run_real_local_hf(
             model_id=model_id,
             dry_run=False,
         )
-        input_tokens = 0
+        total_input_tokens = 0
+        total_output_tokens = 0
+        attempts: list[dict[str, Any]] = []
+        allowed_evidence_ids = allowed_evidence_ids_from_aliases(
+            item.metadata.get("citation_id_aliases")
+        )
+        final_generated_text = ""
+        final_parse = parse_generation_contract(
+            "",
+            allowed_evidence_ids=allowed_evidence_ids or None,
+        )
         try:
-            model_input_prompt, chat_template_applied = render_model_input_prompt(
-                tokenizer,
-                item.prompt,
-            )
-            inputs = tokenizer(model_input_prompt, return_tensors="pt")
-            input_tokens = _input_token_count(inputs)
-            inputs = _move_inputs_to_device(inputs, device)
-            with torch.no_grad():
-                generated_ids = model.generate(
-                    **inputs,
-                    max_new_tokens=max_new_tokens,
-                    do_sample=False,
-                    pad_token_id=getattr(tokenizer, "eos_token_id", None),
+            current_prompt = item.prompt
+            current_max_new_tokens = max_new_tokens
+            for attempt_index in range(max_contract_retries + 1):
+                attempt = _generate_once(
+                    tokenizer=tokenizer,
+                    model=model,
+                    torch=torch,
+                    device=device,
+                    prompt=current_prompt,
+                    max_new_tokens=current_max_new_tokens,
                 )
-            generated_token_ids = generated_ids[0][input_tokens:]
-            generated_text = str(tokenizer.decode(generated_token_ids, skip_special_tokens=True))
-            output_tokens = max(0, int(generated_ids.shape[-1]) - input_tokens)
+                total_input_tokens += int(attempt["input_tokens"])
+                total_output_tokens += int(attempt["output_tokens"])
+                final_generated_text = str(attempt["generated_text"])
+                final_parse = parse_generation_contract(
+                    final_generated_text,
+                    allowed_evidence_ids=allowed_evidence_ids or None,
+                )
+                attempts.append(
+                    {
+                        "attempt": attempt_index + 1,
+                        "attempt_type": "initial" if attempt_index == 0 else "contract_retry",
+                        **attempt,
+                        "contract_valid": final_parse.contract_valid,
+                        "parse_error_type": final_parse.parse_error_type,
+                        "parse_repair_applied": final_parse.parse_repair_applied,
+                        "truncation_detected": final_parse.truncation_detected,
+                    }
+                )
+                if final_parse.contract_valid or attempt_index >= max_contract_retries:
+                    break
+                violation = final_parse.error or "unknown contract violation"
+                current_prompt = render_contract_retry_prompt(
+                    bad_output=final_generated_text,
+                    violation=violation,
+                    allowed_evidence_ids=allowed_evidence_ids,
+                )
+                current_max_new_tokens = _retry_token_budget(
+                    max_new_tokens,
+                    final_parse.truncation_detected,
+                )
+
             elapsed_seconds = time.perf_counter() - started
             row.update(
                 {
-                    "generated_text": generated_text,
-                    "input_tokens": input_tokens,
-                    "output_tokens": output_tokens,
+                    "generated_text": final_generated_text,
+                    "input_tokens": total_input_tokens,
+                    "output_tokens": total_output_tokens,
+                    "final_input_tokens": attempts[-1]["input_tokens"],
+                    "final_output_tokens": attempts[-1]["output_tokens"],
                     "latency_ms": round(elapsed_seconds * 1000, 6),
                     "end_to_end_latency_ms": round(elapsed_seconds * 1000, 6),
                     "throughput_tokens_per_second": calculate_tokens_per_second(
-                        input_tokens + output_tokens,
+                        total_input_tokens + total_output_tokens,
                         elapsed_seconds,
                     ),
                     "success": True,
                     "error_type": None,
                     "error_message": None,
-                    "final_status": "answer",
-                    "chat_template_applied": chat_template_applied,
+                    "final_status": (
+                        "insufficient_evidence"
+                        if final_parse.contract is not None
+                        and final_parse.contract.insufficient_evidence
+                        else "answer"
+                    ),
+                    "chat_template_applied": attempts[-1]["chat_template_applied"],
+                    "contract_retry_count": max(0, len(attempts) - 1),
+                    "max_contract_retries": max_contract_retries,
+                    "retry_applied": len(attempts) > 1,
+                    "retry_success": len(attempts) > 1 and final_parse.contract_valid,
+                    "generation_attempt_count": len(attempts),
+                    "generation_attempts": attempts,
+                    "initial_truncation_detected": bool(
+                        attempts and attempts[0]["truncation_detected"]
+                    ),
                 }
             )
-            row.update(generation_contract_result_fields(generated_text))
+            row.update(
+                generation_contract_result_fields(
+                    final_generated_text,
+                    allowed_evidence_ids=allowed_evidence_ids or None,
+                )
+            )
+            row["truncation_detected"] = any(
+                bool(attempt["truncation_detected"]) for attempt in attempts
+            )
         except Exception as exc:  # noqa: BLE001
             elapsed_seconds = time.perf_counter() - started
             row.update(
                 {
                     "generated_text": "",
-                    "input_tokens": input_tokens,
-                    "output_tokens": 0,
+                    "input_tokens": total_input_tokens,
+                    "output_tokens": total_output_tokens,
                     "latency_ms": round(elapsed_seconds * 1000, 6),
                     "end_to_end_latency_ms": round(elapsed_seconds * 1000, 6),
                     "throughput_tokens_per_second": None,
@@ -361,9 +506,26 @@ def run_real_local_hf(
                     "error_type": type(exc).__name__,
                     "error_message": str(exc),
                     "final_status": "failed_validation",
+                    "contract_retry_count": max(0, len(attempts) - 1),
+                    "max_contract_retries": max_contract_retries,
+                    "retry_applied": len(attempts) > 1,
+                    "retry_success": False,
+                    "generation_attempt_count": len(attempts),
+                    "generation_attempts": attempts,
+                    "initial_truncation_detected": bool(
+                        attempts and attempts[0]["truncation_detected"]
+                    ),
                 }
             )
-            row.update(generation_contract_result_fields(""))
+            row.update(
+                generation_contract_result_fields(
+                    "",
+                    allowed_evidence_ids=allowed_evidence_ids or None,
+                )
+            )
+            row["truncation_detected"] = any(
+                bool(attempt["truncation_detected"]) for attempt in attempts
+            )
         validate_smoke_result_row(row)
         rows.append(row)
     return rows
@@ -434,6 +596,7 @@ def run_smoke(
     model_alias: str,
     limit: int,
     max_new_tokens: int,
+    max_contract_retries: int = 1,
     dry_run: bool = False,
     manifest_path: str | None = None,
     command: str = "run_local_hf_smoke",
@@ -442,6 +605,7 @@ def run_smoke(
 
     validate_limit(limit)
     validate_max_new_tokens(max_new_tokens)
+    validate_max_contract_retries(max_contract_retries)
     model_id = resolve_model_id(model_alias)
     run_id = "phase4-hf-local-smoke-dry-run" if dry_run else "phase4-hf-local-smoke"
     start_time = utc_now()
@@ -454,6 +618,7 @@ def run_smoke(
                 model_alias=model_alias,
                 model_id=model_id,
                 max_new_tokens=max_new_tokens,
+                max_contract_retries=max_contract_retries,
             )
             for item in items
         ]
@@ -464,6 +629,7 @@ def run_smoke(
             model_alias=model_alias,
             model_id=model_id,
             max_new_tokens=max_new_tokens,
+            max_contract_retries=max_contract_retries,
         )
     output = write_jsonl_rows(rows, output_path)
     end_time = utc_now()
@@ -499,6 +665,7 @@ def main(argv: list[str] | None = None) -> int:
             model_alias=args.model_alias,
             limit=args.limit,
             max_new_tokens=args.max_new_tokens,
+            max_contract_retries=args.max_contract_retries,
             dry_run=args.dry_run,
             manifest_path=args.manifest_path,
             command=command,

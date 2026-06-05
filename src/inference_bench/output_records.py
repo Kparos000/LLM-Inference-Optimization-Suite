@@ -58,6 +58,9 @@ class GenerationRecord:
     generation_contract_valid: bool = False
     generation_contract_error: str | None = None
     generation_contract_missing_fields: list[str] = field(default_factory=list)
+    parse_error_type: str | None = None
+    parse_repair_applied: bool = False
+    truncation_detected: bool = False
     answer: str = ""
     evidence_ids: list[str] = field(default_factory=list)
     confidence: float | None = None
