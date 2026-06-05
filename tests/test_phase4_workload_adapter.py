@@ -72,7 +72,11 @@ def test_workload_record_converts_to_runner_input() -> None:
     assert item.prompt_id == "airline_fixture_001"
     assert item.workload_name == "smoke_500_mm2_hybrid_top5"
     assert "SYSTEM:" in item.prompt
-    assert "USER:" in item.prompt
+    assert "USER QUESTION:" in item.prompt
+    assert "[EVIDENCE 1]" in item.prompt
+    assert "evidence_id: E1" in item.prompt
+    assert "Return exactly one compact, single-line JSON object" in item.prompt
+    assert item.expected_output == "generation_contract_json"
     assert item.metadata["workload_id"].endswith("airline_fixture_001")
     assert item.metadata["memory_mode"] == "mm2_hybrid_top5"
     assert item.metadata["ablation_mode"] == "prompt_plus_metadata"
@@ -91,6 +95,11 @@ def test_metadata_is_preserved_as_strings() -> None:
     assert item.metadata["vertical"] == "airline"
     assert item.metadata["context_token_estimate"] == "4"
     assert json.loads(item.metadata["gold_evidence_ids"]) == ["doc-1"]
+    assert item.metadata["source_expected_output_format"] == "text"
+    assert json.loads(item.metadata["citation_id_aliases"])["E1"] == [
+        "doc-1",
+        "airline:doc-1",
+    ]
     assert json.loads(item.metadata["retrieval_metadata"])["retrieval_type"] == "hybrid"
 
 

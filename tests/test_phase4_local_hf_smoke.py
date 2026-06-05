@@ -15,6 +15,7 @@ run_local_hf_smoke = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(run_local_hf_smoke)
 validate_smoke_result_row = run_local_hf_smoke.validate_smoke_result_row
+render_model_input_prompt = run_local_hf_smoke.render_model_input_prompt
 
 
 def runner_item(prompt_id: str = "airline_fixture_001") -> WorkloadItem:
@@ -211,3 +212,22 @@ def test_no_paid_api_call_is_triggered(tmp_path: Path) -> None:
 
     assert row["paid_api_call_triggered"] is False
     assert row["estimated_cost_usd"] == 0.0
+
+
+def test_chat_template_is_applied_when_available() -> None:
+    class FixtureTokenizer:
+        def apply_chat_template(
+            self,
+            messages: list[dict[str, str]],
+            *,
+            tokenize: bool,
+            add_generation_prompt: bool,
+        ) -> str:
+            assert tokenize is False
+            assert add_generation_prompt is True
+            return f"<chat>{messages[0]['content']}</chat>"
+
+    rendered, applied = render_model_input_prompt(FixtureTokenizer(), "Return JSON.")
+
+    assert applied is True
+    assert rendered == "<chat>Return JSON.</chat>"

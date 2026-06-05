@@ -11,6 +11,7 @@ from threading import Thread
 from typing import Any
 
 from inference_bench.env import load_local_env
+from inference_bench.generation_contract import parse_generation_contract
 from inference_bench.metrics import (
     calculate_end_to_end_latency_ms,
     calculate_tokens_per_second,
@@ -166,7 +167,11 @@ def _build_generation_record_from_result(
     result: BenchmarkResult,
     prompt: str,
     generated_text: str | None,
+    item: WorkloadItem | None = None,
 ) -> GenerationRecord:
+    contract_parse = parse_generation_contract(generated_text or "")
+    contract = contract_parse.contract
+    metadata = item.metadata if item is not None else {}
     return GenerationRecord(
         run_id=result.run_id,
         timestamp_utc=result.timestamp_utc,
@@ -187,6 +192,22 @@ def _build_generation_record_from_result(
         estimated_cost_usd=result.estimated_cost_usd,
         success=result.success,
         error_message=result.error_message,
+        workload_id=metadata.get("workload_id"),
+        vertical=metadata.get("vertical"),
+        memory_mode=metadata.get("memory_mode"),
+        ablation_mode=metadata.get("ablation_mode"),
+        expected_output_format=(
+            item.expected_output if item is not None else metadata.get("expected_output_format")
+        ),
+        citation_id_aliases=metadata.get("citation_id_aliases"),
+        generation_contract_valid=contract_parse.contract_valid,
+        generation_contract_error=contract_parse.error,
+        generation_contract_missing_fields=contract_parse.missing_fields,
+        answer=contract.answer if contract else "",
+        evidence_ids=contract.evidence_ids if contract else [],
+        confidence=contract.confidence if contract else None,
+        insufficient_evidence=contract.insufficient_evidence if contract else None,
+        citation_notes=contract.citation_notes if contract else "",
     )
 
 
@@ -218,6 +239,7 @@ def _build_failed_prompt_outputs(
         result=failure_result,
         prompt=prompt,
         generated_text=None,
+        item=item,
     )
     return failure_result, failure_record
 
@@ -384,6 +406,7 @@ def run_hf_benchmark(
                     result=result,
                     prompt=item.prompt,
                     generated_text=generated_text,
+                    item=item,
                 )
             )
         except Exception as exc:  # noqa: BLE001

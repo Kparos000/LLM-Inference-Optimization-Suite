@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 
@@ -49,6 +49,20 @@ class GenerationRecord:
     estimated_cost_usd: float | None
     success: bool
     error_message: str | None = None
+    workload_id: str | None = None
+    vertical: str | None = None
+    memory_mode: str | None = None
+    ablation_mode: str | None = None
+    expected_output_format: str | None = None
+    citation_id_aliases: str | None = None
+    generation_contract_valid: bool = False
+    generation_contract_error: str | None = None
+    generation_contract_missing_fields: list[str] = field(default_factory=list)
+    answer: str = ""
+    evidence_ids: list[str] = field(default_factory=list)
+    confidence: float | None = None
+    insufficient_evidence: bool | None = None
+    citation_notes: str = ""
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -83,6 +97,9 @@ class GenerationRecord:
             raise ValueError(msg)
         if not self.success and self.error_message is None:
             msg = "error_message must not be None when success is False"
+            raise ValueError(msg)
+        if self.confidence is not None and not 0.0 <= self.confidence <= 1.0:
+            msg = "confidence must be between 0 and 1 when provided"
             raise ValueError(msg)
 
     def to_dict(self) -> dict[str, object]:

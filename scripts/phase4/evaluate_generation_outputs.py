@@ -139,8 +139,21 @@ def result_row_to_generated_answer(row: dict[str, Any]) -> dict[str, Any]:
             row.get("final_status") or ("answer" if success else "failed_validation")
         ),
         "citations": _split_json_list(row.get("citations")),
+        "citation_id_aliases": _json_object(row.get("citation_id_aliases")),
         "expected_output_format": row.get("expected_output_format"),
     }
+
+
+def _json_object(value: object) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str) or not value.strip():
+        return {}
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def _rate(count: int, total: int) -> float:
@@ -158,6 +171,12 @@ def build_summary_rows(
     total = len(evaluation_rows)
     joined_count = sum(1 for row in evaluation_rows if row["joined"])
     format_valid_count = sum(1 for row in evaluation_rows if row["format_valid"])
+    json_valid_count = sum(1 for row in evaluation_rows if row["json_validity"])
+    generation_contract_valid_count = sum(
+        1 for row in evaluation_rows if row["generation_contract_valid"]
+    )
+    evidence_id_presence_count = sum(1 for row in evaluation_rows if row["evidence_id_presence"])
+    evidence_match_count = sum(1 for row in evaluation_rows if row["evidence_match"])
     grounded_count = sum(1 for row in evaluation_rows if row["groundedness"])
     safety_violation_count = sum(1 for row in evaluation_rows if row["safety_violation"])
     memory_modes = sorted(
@@ -176,6 +195,17 @@ def build_summary_rows(
             "joined_rate": _rate(joined_count, total),
             "format_valid_count": format_valid_count,
             "format_valid_rate": _rate(format_valid_count, total),
+            "json_valid_count": json_valid_count,
+            "json_valid_rate": _rate(json_valid_count, total),
+            "generation_contract_valid_count": generation_contract_valid_count,
+            "generation_contract_valid_rate": _rate(
+                generation_contract_valid_count,
+                total,
+            ),
+            "evidence_id_presence_count": evidence_id_presence_count,
+            "evidence_id_presence_rate": _rate(evidence_id_presence_count, total),
+            "evidence_match_count": evidence_match_count,
+            "evidence_match_rate": _rate(evidence_match_count, total),
             "grounded_count": grounded_count,
             "grounded_rate": _rate(grounded_count, total),
             "safety_violation_count": safety_violation_count,

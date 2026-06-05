@@ -133,6 +133,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 4 runner adapter and smoke readiness](docs/64_phase4_runner_adapter_and_smoke_readiness.md)
 - [Phase 4 handoff and retrieval promotion](docs/79_phase4_handoff_and_retrieval_promotion.md)
 - [Phase 4 vLLM validation and telemetry](docs/81_phase4_vllm_validation_and_telemetry.md)
+- [Phase 4 grounded generation contract](docs/82_phase4_generation_contract.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

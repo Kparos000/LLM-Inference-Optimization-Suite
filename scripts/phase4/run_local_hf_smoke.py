@@ -21,6 +21,9 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from inference_bench.config import load_project_config  # noqa: E402
+from inference_bench.generation_contract import (  # noqa: E402
+    generation_contract_result_fields,
+)
 from inference_bench.metrics import calculate_tokens_per_second  # noqa: E402
 from inference_bench.run_manifest import (  # noqa: E402
     RunManifest,
@@ -123,6 +126,25 @@ def item_metadata(item: WorkloadItem, key: str, default: str = "") -> str:
     return str(item.metadata.get(key) or default)
 
 
+def render_model_input_prompt(tokenizer: Any, prompt: str) -> tuple[str, bool]:
+    """Apply an instruct-model chat template when the tokenizer supports it."""
+
+    apply_chat_template = getattr(tokenizer, "apply_chat_template", None)
+    if not callable(apply_chat_template):
+        return prompt, False
+    try:
+        rendered = apply_chat_template(
+            [{"role": "user", "content": prompt}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+    except (TypeError, ValueError):
+        return prompt, False
+    if not isinstance(rendered, str) or not rendered.strip():
+        return prompt, False
+    return rendered, True
+
+
 def base_result_row(
     *,
     item: WorkloadItem,
@@ -151,6 +173,7 @@ def base_result_row(
         "context_token_estimate": item_metadata(item, "context_token_estimate", "0"),
         "gold_evidence_ids": item_metadata(item, "gold_evidence_ids", "[]"),
         "selected_context_ids": item_metadata(item, "selected_context_ids", "[]"),
+        "citation_id_aliases": item_metadata(item, "citation_id_aliases", "{}"),
         "prompt": item.prompt,
         "estimated_cost_usd": 0.0,
         "paid_api_call_triggered": False,
@@ -179,6 +202,12 @@ def validate_smoke_result_row(row: dict[str, Any]) -> None:
         "latency_ms",
         "success",
         "paid_api_call_triggered",
+        "generation_contract_valid",
+        "answer",
+        "evidence_ids",
+        "confidence",
+        "insufficient_evidence",
+        "citation_notes",
     }
     missing = sorted(field for field in required_fields if field not in row)
     if missing:
@@ -233,6 +262,7 @@ def dry_run_result(
             "final_status": "answer",
         }
     )
+    row.update(generation_contract_result_fields(generated_text))
     validate_smoke_result_row(row)
     return row
 
@@ -280,7 +310,11 @@ def run_real_local_hf(
         )
         input_tokens = 0
         try:
-            inputs = tokenizer(item.prompt, return_tensors="pt")
+            model_input_prompt, chat_template_applied = render_model_input_prompt(
+                tokenizer,
+                item.prompt,
+            )
+            inputs = tokenizer(model_input_prompt, return_tensors="pt")
             input_tokens = _input_token_count(inputs)
             inputs = _move_inputs_to_device(inputs, device)
             with torch.no_grad():
@@ -309,8 +343,10 @@ def run_real_local_hf(
                     "error_type": None,
                     "error_message": None,
                     "final_status": "answer",
+                    "chat_template_applied": chat_template_applied,
                 }
             )
+            row.update(generation_contract_result_fields(generated_text))
         except Exception as exc:  # noqa: BLE001
             elapsed_seconds = time.perf_counter() - started
             row.update(
@@ -327,6 +363,7 @@ def run_real_local_hf(
                     "final_status": "failed_validation",
                 }
             )
+            row.update(generation_contract_result_fields(""))
         validate_smoke_result_row(row)
         rows.append(row)
     return rows

@@ -314,6 +314,7 @@ async def _run_one_prompt(
             result=result,
             prompt=item.prompt,
             generated_text=generated_text,
+            item=item,
         )
         return result, generation_record
 

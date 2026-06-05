@@ -37,6 +37,8 @@ def test_valid_generation_record() -> None:
 
     assert record.to_dict()["prompt_id"] == "prompt-1"
     assert record.generated_text == "Short response."
+    assert record.generation_contract_valid is False
+    assert record.evidence_ids == []
 
 
 def test_generation_record_rejects_empty_prompt_id_or_prompt() -> None:

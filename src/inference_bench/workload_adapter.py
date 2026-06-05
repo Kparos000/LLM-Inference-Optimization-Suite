@@ -8,7 +8,13 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from inference_bench.context_schema import WorkloadRecord
+from inference_bench.context_schema import ContextRecord, WorkloadRecord
+from inference_bench.generation_contract import (
+    GENERATION_CONTRACT_FORMAT,
+    citation_aliases,
+    citation_label,
+    render_generation_contract_prompt,
+)
 from inference_bench.schema import WorkloadItem
 
 
@@ -95,6 +101,27 @@ def _json_metadata(value: object) -> str:
     return json.dumps(value, ensure_ascii=True, sort_keys=True)
 
 
+def _context_record(value: ContextRecord | dict[str, Any]) -> ContextRecord:
+    if isinstance(value, ContextRecord):
+        return value
+    return ContextRecord(**value)
+
+
+def _source_question(record: WorkloadRecord) -> str:
+    """Return the user-visible question without answer-side evidence IDs."""
+
+    for field_name in ("question", "prompt", "request", "task"):
+        value = record.source_prompt_record.get(field_name)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    for message in reversed(record.messages):
+        if str(message.get("role") or "").lower() == "user":
+            content = str(message.get("content") or "").strip()
+            if content:
+                return content
+    return render_messages_for_runner(record.messages)
+
+
 def workload_record_metadata(record: WorkloadRecord) -> dict[str, str]:
     """Return string metadata preserved in the runner workload item."""
 
@@ -107,6 +134,11 @@ def workload_record_metadata(record: WorkloadRecord) -> dict[str, str]:
     ]
     if not selected_context_ids:
         selected_context_ids = context_ids
+    contexts = [_context_record(context) for context in record.context_records]
+    citation_id_aliases = {
+        citation_label(index): citation_aliases(context)
+        for index, context in enumerate(contexts, start=1)
+    }
 
     return {
         "workload_id": record.workload_id,
@@ -115,11 +147,13 @@ def workload_record_metadata(record: WorkloadRecord) -> dict[str, str]:
         "memory_mode": record.memory_mode,
         "ablation_mode": ablation_mode,
         "dataset_split": record.dataset_split,
-        "expected_output_format": record.expected_output_format,
+        "expected_output_format": GENERATION_CONTRACT_FORMAT,
+        "source_expected_output_format": record.expected_output_format,
         "context_token_estimate": str(record.context_token_estimate),
         "context_record_count": str(len(record.context_records)),
         "gold_evidence_ids": _json_metadata(record.gold_evidence_ids),
         "selected_context_ids": _json_metadata(selected_context_ids),
+        "citation_id_aliases": _json_metadata(citation_id_aliases),
         "retrieval_metadata": _json_metadata(record.retrieval_metadata),
         "source_prompt_record": _json_metadata(record.source_prompt_record),
     }
@@ -128,11 +162,16 @@ def workload_record_metadata(record: WorkloadRecord) -> dict[str, str]:
 def workload_record_to_runner_item(record: WorkloadRecord) -> WorkloadItem:
     """Convert one Phase 3 WorkloadRecord to the existing runner WorkloadItem shape."""
 
+    contexts = [_context_record(context) for context in record.context_records]
     return WorkloadItem(
         prompt_id=record.prompt_id,
         workload_name=f"{record.dataset_split}_{record.memory_mode}",
-        prompt=render_messages_for_runner(record.messages),
-        expected_output=record.expected_output_format,
+        prompt=render_generation_contract_prompt(
+            question=_source_question(record),
+            context_records=contexts,
+            memory_mode=record.memory_mode,
+        ),
+        expected_output=GENERATION_CONTRACT_FORMAT,
         metadata=workload_record_metadata(record),
     )
 
