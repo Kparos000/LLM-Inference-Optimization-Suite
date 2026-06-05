@@ -75,6 +75,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Validate plumbing and write fixture output without loading a model.",
     )
+    parser.add_argument(
+        "--local-files-only",
+        action="store_true",
+        help="Refuse model downloads and load only from the local Hugging Face cache.",
+    )
     return parser
 
 
@@ -360,6 +365,7 @@ def run_real_local_hf(
     model_id: str,
     max_new_tokens: int,
     max_contract_retries: int,
+    local_files_only: bool = False,
 ) -> list[dict[str, Any]]:
     """Run real local Hugging Face generation over workload items."""
 
@@ -374,8 +380,15 @@ def run_real_local_hf(
         model_kwargs["torch_dtype"] = torch_dtype
 
     try:
-        tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
-        model = transformers.AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
+        tokenizer = transformers.AutoTokenizer.from_pretrained(
+            model_id,
+            local_files_only=local_files_only,
+        )
+        model = transformers.AutoModelForCausalLM.from_pretrained(
+            model_id,
+            local_files_only=local_files_only,
+            **model_kwargs,
+        )
     except Exception as exc:  # noqa: BLE001
         msg = f"Failed to load local Hugging Face model {model_id}: {exc}"
         raise RuntimeError(msg) from exc
@@ -598,6 +611,7 @@ def run_smoke(
     max_new_tokens: int,
     max_contract_retries: int = 1,
     dry_run: bool = False,
+    local_files_only: bool = False,
     manifest_path: str | None = None,
     command: str = "run_local_hf_smoke",
 ) -> tuple[list[dict[str, Any]], Path]:
@@ -630,6 +644,7 @@ def run_smoke(
             model_id=model_id,
             max_new_tokens=max_new_tokens,
             max_contract_retries=max_contract_retries,
+            local_files_only=local_files_only,
         )
     output = write_jsonl_rows(rows, output_path)
     end_time = utc_now()
@@ -667,6 +682,7 @@ def main(argv: list[str] | None = None) -> int:
             max_new_tokens=args.max_new_tokens,
             max_contract_retries=args.max_contract_retries,
             dry_run=args.dry_run,
+            local_files_only=args.local_files_only,
             manifest_path=args.manifest_path,
             command=command,
         )

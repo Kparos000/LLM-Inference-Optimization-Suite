@@ -166,7 +166,7 @@ def test_contract_retry_metadata_is_recorded(monkeypatch: pytest.MonkeyPatch) ->
             return None
 
     fake_transformers = SimpleNamespace(
-        AutoTokenizer=SimpleNamespace(from_pretrained=lambda _model_id: object()),
+        AutoTokenizer=SimpleNamespace(from_pretrained=lambda _model_id, **_kwargs: object()),
         AutoModelForCausalLM=SimpleNamespace(
             from_pretrained=lambda _model_id, **_kwargs: FakeModel()
         ),

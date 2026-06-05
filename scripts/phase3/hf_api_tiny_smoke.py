@@ -48,6 +48,7 @@ def request_chat_completion(
     model_id: str,
     prompt: str,
     max_new_tokens: int,
+    api_route: str = HF_ROUTER_CHAT_COMPLETIONS_URL,
 ) -> tuple[dict[str, Any], float]:
     """Call the Hugging Face router chat completion API once."""
 
@@ -59,7 +60,7 @@ def request_chat_completion(
     }
     data = json.dumps(body).encode("utf-8")
     request = Request(
-        HF_ROUTER_CHAT_COMPLETIONS_URL,
+        api_route,
         data=data,
         headers={
             "Authorization": f"Bearer {hf_token}",
