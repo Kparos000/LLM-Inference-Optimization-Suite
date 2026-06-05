@@ -135,6 +135,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 4 vLLM validation and telemetry](docs/81_phase4_vllm_validation_and_telemetry.md)
 - [Phase 4 grounded generation contract](docs/82_phase4_generation_contract.md)
 - [Phase 4 generation contract hardening](docs/83_phase4_generation_contract_hardening.md)
+- [Phase 4 pre-GPU readiness](docs/84_phase4_pre_gpu_readiness.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

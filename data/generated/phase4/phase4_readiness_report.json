@@ -1,0 +1,277 @@
+{
+  "backend_matrix": {
+    "hf_local": {
+      "backend_name": "huggingface_local",
+      "cost_model": "local_compute",
+      "endpoint_type": "in_process",
+      "requires_gpu": false,
+      "requires_server": false,
+      "status": "ready",
+      "supports_batch": false,
+      "supports_concurrency": false,
+      "supports_streaming": false,
+      "supports_tpot": true,
+      "supports_ttft": false
+    },
+    "openai_compatible_vllm": {
+      "backend_name": "vllm",
+      "cost_model": "gpu_infra",
+      "endpoint_type": "openai_compatible_http",
+      "requires_gpu": true,
+      "requires_server": true,
+      "status": "dry_run_ready",
+      "supports_batch": true,
+      "supports_concurrency": true,
+      "supports_streaming": true,
+      "supports_tpot": true,
+      "supports_ttft": true
+    },
+    "sglang_openai_compatible_future": {
+      "backend_name": "sglang",
+      "cost_model": "gpu_infra",
+      "endpoint_type": "openai_compatible_http",
+      "requires_gpu": true,
+      "requires_server": true,
+      "status": "future",
+      "supports_batch": true,
+      "supports_concurrency": true,
+      "supports_streaming": true,
+      "supports_tpot": true,
+      "supports_ttft": true
+    }
+  },
+  "blocking_checks": [],
+  "checks": [
+    {
+      "area": "promoted_retrieval",
+      "artifact": "data\\generated\\context_engineering\\retrieval_source_of_truth_manifest.json",
+      "details": "Canonical retrieval manifest is promoted and ready for Phase 4.",
+      "next_action": "Keep this manifest as the retrieval source of truth.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "generation_contract",
+      "artifact": "src\\inference_bench\\generation_contract.py",
+      "details": "Shared grounded generation contract is present.",
+      "next_action": "Reuse it across HF, vLLM, and SGLang output paths.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "local_hf_smoke",
+      "artifact": "results/processed/phase4_*hf*_eval_report.json or local dry-run",
+      "details": "Local HF evaluation report is available at results\\processed\\phase4_generation_contract_hardened_eval_report.json; dry-run support present=True.",
+      "next_action": "Keep the local dry-run available in clean checkout.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "vllm_openai_wrapper",
+      "artifact": "scripts\\phase4\\run_openai_compatible_smoke.py",
+      "details": "OpenAI-compatible vLLM smoke wrapper is present.",
+      "next_action": "Run live only after provisioning a local or remote GPU server.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "sglang_openai_wrapper",
+      "artifact": "scripts\\phase4\\run_sglang_compatible_smoke.py",
+      "details": "SGLang-compatible scaffold is present and supports dry-run.",
+      "next_action": "Validate against a live SGLang server in a later GPU block.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "telemetry_schema",
+      "artifact": "src/inference_bench/telemetry.py",
+      "details": "Request telemetry and nullable future GPU fields are defined.",
+      "next_action": "Populate GPU fields during the first live GPU smoke.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "retrieval_slo",
+      "artifact": "data\\generated\\context_engineering\\slo_readiness_report.json",
+      "details": "All promoted retrieval SLO rows pass.",
+      "next_action": "Do not use historical pre-repair retrieval reports for promotion decisions.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "latency_cost_resource_metrics",
+      "artifact": "data\\generated\\context_engineering\\slo_readiness_report.json",
+      "details": "Latency, throughput, resource, API cost, and GPU cost metrics are explicitly NOT_AVAILABLE before live serving.",
+      "next_action": "Measure these during live HF/vLLM/SGLang and GPU runs.",
+      "required_before_gpu": false,
+      "status": "NOT_AVAILABLE"
+    },
+    {
+      "area": "backend_matrix",
+      "artifact": "configs\\backend_matrix.yaml",
+      "details": "HF, vLLM, and future SGLang backend capabilities are defined.",
+      "next_action": "Use the matrix to select only backends whose prerequisites are satisfied.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "gpu_cost_config",
+      "artifact": "configs\\gpu_costs.yaml",
+      "details": "RunPod cost inputs and elapsed-hour formula are defined.",
+      "next_action": "Fill provider-specific GPU values immediately before the run.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    },
+    {
+      "area": "gpu_cost_values",
+      "artifact": "configs\\gpu_costs.yaml",
+      "details": "GPU price and run timestamps intentionally remain unset until provisioning.",
+      "next_action": "Record the actual RunPod listing and timestamps for each GPU run.",
+      "required_before_gpu": false,
+      "status": "NOT_AVAILABLE"
+    },
+    {
+      "area": "git_artifacts",
+      "artifact": "git diff --name-only --diff-filter=U",
+      "details": "No unmerged paths or unresolved conflict artifacts were found.",
+      "next_action": "Commit only intended Block 25 artifacts after verification.",
+      "required_before_gpu": true,
+      "status": "PASS"
+    }
+  ],
+  "generated_at_utc": "2026-06-05T16:33:22.256582+00:00",
+  "gpu_cost_configs": {
+    "runpod_default": {
+      "cost_formula": "elapsed_hours * hourly_price_usd",
+      "gpu_type": null,
+      "hourly_price_usd": null,
+      "instance_id_optional": null,
+      "measured_end_time": null,
+      "measured_start_time": null,
+      "provider": "runpod",
+      "region": null
+    }
+  },
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "no_paid_api_call_triggered": true,
+  "overall_status": "PRE_GPU_PLUMBING_READY",
+  "pre_gpu_plumbing_ready": true,
+  "promoted_retrieval": {
+    "active_qdrant_validation_report": "data\\generated\\context_engineering\\qdrant_index_report.json",
+    "active_qdrant_validation_summary": "data\\generated\\context_engineering\\qdrant_index_summary.csv",
+    "active_retrieval_dataset": "data\\generated\\context_engineering\\repaired_retrieval_dataset",
+    "active_retrieval_validation_report": "data\\generated\\context_engineering\\repaired_retrieval_validation_report.json",
+    "active_retrieval_validation_summary": "data\\generated\\context_engineering\\repaired_retrieval_validation_summary.csv",
+    "artifact_type": "retrieval_source_of_truth_manifest",
+    "artifacts": {
+      "active_qdrant_validation_report": "data\\generated\\context_engineering\\qdrant_index_report.json",
+      "active_qdrant_validation_summary": "data\\generated\\context_engineering\\qdrant_index_summary.csv",
+      "active_retrieval_dataset": "data\\generated\\context_engineering\\repaired_retrieval_dataset",
+      "active_retrieval_validation_report": "data\\generated\\context_engineering\\repaired_retrieval_validation_report.json",
+      "active_retrieval_validation_summary": "data\\generated\\context_engineering\\repaired_retrieval_validation_summary.csv",
+      "compression_diagnostic_summary": "data\\generated\\context_engineering\\compression_diagnostic_summary.csv",
+      "promotion_registry": "data\\generated\\context_engineering\\retrieval_promotion_registry.json",
+      "retrieval_quality_gate_report": "data\\generated\\context_engineering\\retrieval_quality_gate_report.json"
+    },
+    "generated_at_utc": "2026-06-04T19:31:02.438629+00:00",
+    "metrics_by_vertical": {
+      "airline": {
+        "candidate_recall_at_20": 1.0,
+        "candidate_recall_at_50": 1.0,
+        "dense_backend": "qdrant_vector",
+        "final_recall_at_5": 1.0,
+        "mrr": 1.0,
+        "query_rewrite_count": 2000,
+        "record_count": 2000,
+        "slo_status": "PASSED",
+        "vector_store": "qdrant_local"
+      },
+      "finance": {
+        "candidate_recall_at_20": 0.948875,
+        "candidate_recall_at_50": 0.95575,
+        "dense_backend": "qdrant_vector",
+        "final_recall_at_5": 0.939,
+        "mrr": 0.941833,
+        "query_rewrite_count": 2000,
+        "record_count": 2000,
+        "slo_status": "PASSED",
+        "vector_store": "qdrant_local"
+      },
+      "healthcare_admin": {
+        "candidate_recall_at_20": 1.0,
+        "candidate_recall_at_50": 1.0,
+        "dense_backend": "qdrant_vector",
+        "final_recall_at_5": 1.0,
+        "mrr": 0.99425,
+        "query_rewrite_count": 2000,
+        "record_count": 2000,
+        "slo_status": "PASSED",
+        "vector_store": "qdrant_local"
+      },
+      "research_ai": {
+        "candidate_recall_at_20": 0.975172,
+        "candidate_recall_at_50": 0.979826,
+        "dense_backend": "qdrant_vector",
+        "final_recall_at_5": 0.91746,
+        "mrr": 0.953233,
+        "query_rewrite_count": 2000,
+        "record_count": 2000,
+        "slo_status": "PASSED",
+        "vector_store": "qdrant_local"
+      },
+      "retail": {
+        "candidate_recall_at_20": 0.974333,
+        "candidate_recall_at_50": 0.982083,
+        "dense_backend": "qdrant_vector",
+        "final_recall_at_5": 0.959917,
+        "mrr": 0.922592,
+        "query_rewrite_count": 2000,
+        "record_count": 2000,
+        "slo_status": "PASSED",
+        "vector_store": "qdrant_local"
+      }
+    },
+    "no_external_api_calls_triggered": true,
+    "no_gpu_work_triggered": true,
+    "no_model_inference_triggered": true,
+    "promotion_timestamp_utc": "2026-06-04T19:31:02.438629+00:00",
+    "retrieval_promotion_status": "PROMOTED",
+    "retrieval_ready_for_phase4": true,
+    "retrieval_slo_status": "PASS",
+    "source_hint_mode_is_not_canonical": true
+  },
+  "ready_for_gpu_provisioning": true,
+  "ready_for_live_gpu_smoke": false,
+  "remaining_before_live_gpu_smoke": [
+    "Choose and provision a GPU with enough memory for the selected model.",
+    "Record the actual RunPod GPU type, region, and hourly price.",
+    "Start vLLM or SGLang and verify its OpenAI-compatible /models endpoint.",
+    "Run a five-request live smoke before any concurrency or scale test.",
+    "Populate TTFT, TPOT, throughput, GPU utilization, memory, and cost telemetry."
+  ],
+  "scope": "phase4_pre_gpu_plumbing_no_inference_no_gpu_no_api",
+  "slo_metric_family_statuses": {
+    "api_cost_slo": [
+      "NOT_AVAILABLE"
+    ],
+    "gpu_cost_slo": [
+      "NOT_AVAILABLE"
+    ],
+    "latency_slo": [
+      "NOT_AVAILABLE"
+    ],
+    "quality_slo": [
+      "NOT_AVAILABLE"
+    ],
+    "resource_slo": [
+      "NOT_AVAILABLE"
+    ],
+    "retrieval_slo": [
+      "PASS"
+    ],
+    "throughput_slo": [
+      "NOT_AVAILABLE"
+    ]
+  }
+}

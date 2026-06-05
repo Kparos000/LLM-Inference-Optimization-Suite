@@ -1,0 +1,38 @@
+hf_local:
+  backend_name: huggingface_local
+  endpoint_type: in_process
+  requires_server: false
+  requires_gpu: false
+  supports_streaming: false
+  supports_ttft: false
+  supports_tpot: true
+  supports_batch: false
+  supports_concurrency: false
+  cost_model: local_compute
+  status: ready
+
+openai_compatible_vllm:
+  backend_name: vllm
+  endpoint_type: openai_compatible_http
+  requires_server: true
+  requires_gpu: true
+  supports_streaming: true
+  supports_ttft: true
+  supports_tpot: true
+  supports_batch: true
+  supports_concurrency: true
+  cost_model: gpu_infra
+  status: dry_run_ready
+
+sglang_openai_compatible_future:
+  backend_name: sglang
+  endpoint_type: openai_compatible_http
+  requires_server: true
+  requires_gpu: true
+  supports_streaming: true
+  supports_ttft: true
+  supports_tpot: true
+  supports_batch: true
+  supports_concurrency: true
+  cost_model: gpu_infra
+  status: future

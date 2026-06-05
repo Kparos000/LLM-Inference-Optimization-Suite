@@ -1,0 +1,9 @@
+runpod_default:
+  provider: runpod
+  gpu_type: null
+  hourly_price_usd: null
+  region: null
+  instance_id_optional: null
+  measured_start_time: null
+  measured_end_time: null
+  cost_formula: elapsed_hours * hourly_price_usd

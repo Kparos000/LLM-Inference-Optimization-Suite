@@ -1,0 +1,13 @@
+area,artifact,status,required_before_gpu,details,next_action
+promoted_retrieval,data\generated\context_engineering\retrieval_source_of_truth_manifest.json,PASS,True,Canonical retrieval manifest is promoted and ready for Phase 4.,Keep this manifest as the retrieval source of truth.
+generation_contract,src\inference_bench\generation_contract.py,PASS,True,Shared grounded generation contract is present.,"Reuse it across HF, vLLM, and SGLang output paths."
+local_hf_smoke,results/processed/phase4_*hf*_eval_report.json or local dry-run,PASS,True,Local HF evaluation report is available at results\processed\phase4_generation_contract_hardened_eval_report.json; dry-run support present=True.,Keep the local dry-run available in clean checkout.
+vllm_openai_wrapper,scripts\phase4\run_openai_compatible_smoke.py,PASS,True,OpenAI-compatible vLLM smoke wrapper is present.,Run live only after provisioning a local or remote GPU server.
+sglang_openai_wrapper,scripts\phase4\run_sglang_compatible_smoke.py,PASS,True,SGLang-compatible scaffold is present and supports dry-run.,Validate against a live SGLang server in a later GPU block.
+telemetry_schema,src/inference_bench/telemetry.py,PASS,True,Request telemetry and nullable future GPU fields are defined.,Populate GPU fields during the first live GPU smoke.
+retrieval_slo,data\generated\context_engineering\slo_readiness_report.json,PASS,True,All promoted retrieval SLO rows pass.,Do not use historical pre-repair retrieval reports for promotion decisions.
+latency_cost_resource_metrics,data\generated\context_engineering\slo_readiness_report.json,NOT_AVAILABLE,False,"Latency, throughput, resource, API cost, and GPU cost metrics are explicitly NOT_AVAILABLE before live serving.",Measure these during live HF/vLLM/SGLang and GPU runs.
+backend_matrix,configs\backend_matrix.yaml,PASS,True,"HF, vLLM, and future SGLang backend capabilities are defined.",Use the matrix to select only backends whose prerequisites are satisfied.
+gpu_cost_config,configs\gpu_costs.yaml,PASS,True,RunPod cost inputs and elapsed-hour formula are defined.,Fill provider-specific GPU values immediately before the run.
+gpu_cost_values,configs\gpu_costs.yaml,NOT_AVAILABLE,False,GPU price and run timestamps intentionally remain unset until provisioning.,Record the actual RunPod listing and timestamps for each GPU run.
+git_artifacts,git diff --name-only --diff-filter=U,PASS,True,No unmerged paths or unresolved conflict artifacts were found.,Commit only intended Block 25 artifacts after verification.
