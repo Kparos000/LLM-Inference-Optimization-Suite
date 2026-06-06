@@ -7,13 +7,9 @@ generation request.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from pathlib import Path
-from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = REPO_ROOT / "src"
@@ -27,31 +23,11 @@ from inference_bench.api_priced_validation import (  # noqa: E402
 from inference_bench.config import load_project_config  # noqa: E402
 from inference_bench.env import load_local_env  # noqa: E402
 from inference_bench.model5_pricing_routing import (  # noqa: E402
+    HF_ROUTER_MODEL_URL,
     audit_model5_route,
+    request_router_metadata,
     write_model5_route_audit,
 )
-
-ROUTER_MODEL_URL = "https://router.huggingface.co/v1/models/{model_id}"
-
-
-def request_router_metadata(model_id: str) -> dict[str, Any]:
-    """Fetch public Hugging Face router metadata for one model."""
-
-    url = ROUTER_MODEL_URL.format(model_id=model_id)
-    request = Request(url, headers={"Accept": "application/json"}, method="GET")
-    try:
-        with urlopen(request, timeout=30) as response:
-            payload = json.load(response)
-    except HTTPError as exc:
-        msg = f"Router metadata request failed with HTTP {exc.code}"
-        raise RuntimeError(msg) from exc
-    except URLError as exc:
-        msg = f"Router metadata request failed: {exc.reason}"
-        raise RuntimeError(msg) from exc
-    if not isinstance(payload, dict):
-        msg = "Router metadata response must be a JSON object"
-        raise RuntimeError(msg)
-    return payload
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -82,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         access_checker=check_model_access,
         metadata_fetcher=request_router_metadata,
     )
-    report["router_metadata_url"] = ROUTER_MODEL_URL.format(model_id=model.model_id)
+    report["router_metadata_url"] = HF_ROUTER_MODEL_URL.format(model_id=model.model_id)
     report_path, summary_path = write_model5_route_audit(report, args.output_root)
     print(
         f"{report['model_alias']}: access={report['model_access_granted']} "

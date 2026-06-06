@@ -9,6 +9,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from inference_bench.api_priced_validation import AccessCheck
 from inference_bench.api_pricing import (
@@ -24,6 +26,7 @@ HF_FEATHERLESS_DOCS_URL = (
 HF_CHAT_COMPLETION_DOCS_URL = (
     "https://huggingface.co/docs/inference-providers/en/tasks/chat-completion"
 )
+HF_ROUTER_MODEL_URL = "https://router.huggingface.co/v1/models/{model_id}"
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,26 @@ class ProviderRoute:
     streaming_supported: bool
     capability_basis: str
     capability_source_urls: tuple[str, ...]
+
+
+def request_router_metadata(model_id: str) -> dict[str, Any]:
+    """Fetch public Hugging Face router metadata for one model."""
+
+    url = HF_ROUTER_MODEL_URL.format(model_id=model_id)
+    request = Request(url, headers={"Accept": "application/json"}, method="GET")
+    try:
+        with urlopen(request, timeout=30) as response:
+            payload = json.load(response)
+    except HTTPError as exc:
+        msg = f"Router metadata request failed with HTTP {exc.code}"
+        raise RuntimeError(msg) from exc
+    except URLError as exc:
+        msg = f"Router metadata request failed: {exc.reason}"
+        raise RuntimeError(msg) from exc
+    if not isinstance(payload, dict):
+        msg = "Router metadata response must be a JSON object"
+        raise RuntimeError(msg)
+    return payload
 
 
 def provider_routes_from_router_payload(payload: dict[str, Any]) -> list[ProviderRoute]:

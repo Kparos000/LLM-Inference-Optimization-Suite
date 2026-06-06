@@ -40,6 +40,26 @@ def build_parser() -> argparse.ArgumentParser:
         default="results/processed/phase4_api_streaming_smoke_eval_report.json",
     )
     parser.add_argument("--output-root", default="results/processed")
+    parser.add_argument(
+        "--cost-report-name",
+        default="phase4_api_streaming_cost_report.json",
+    )
+    parser.add_argument(
+        "--cost-summary-name",
+        default="phase4_api_streaming_cost_summary.csv",
+    )
+    parser.add_argument(
+        "--latency-report-name",
+        default="phase4_api_streaming_latency_report.json",
+    )
+    parser.add_argument(
+        "--grounding-report-name",
+        default="phase4_grounding_failure_report.json",
+    )
+    parser.add_argument(
+        "--grounding-summary-name",
+        default="phase4_grounding_failure_summary.csv",
+    )
     return parser
 
 
@@ -78,8 +98,8 @@ def main(argv: list[str] | None = None) -> int:
             baseline_summary=None,
         )
         write_cost_artifacts(
-            report_path=output / "phase4_api_streaming_cost_report.json",
-            summary_path=output / "phase4_api_streaming_cost_summary.csv",
+            report_path=output / args.cost_report_name,
+            summary_path=output / args.cost_summary_name,
             report=cost_report,
         )
         latency_report = {
@@ -115,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
             ],
             "no_gpu_work_triggered": True,
         }
-        (output / "phase4_api_streaming_latency_report.json").write_text(
+        (output / args.latency_report_name).write_text(
             json.dumps(latency_report, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
@@ -124,16 +144,16 @@ def main(argv: list[str] | None = None) -> int:
             result_rows=result_rows,
         )
         write_grounding_failure_artifacts(
-            report_path=output / "phase4_grounding_failure_report.json",
-            summary_path=output / "phase4_grounding_failure_summary.csv",
+            report_path=output / args.grounding_report_name,
+            summary_path=output / args.grounding_summary_name,
             report=grounding_report,
         )
     except Exception as exc:  # noqa: BLE001
         print(f"Streaming smoke finalization failed: {exc}", file=sys.stderr)
         return 1
-    print(f"Cost report: {output / 'phase4_api_streaming_cost_report.json'}")
-    print(f"Latency report: {output / 'phase4_api_streaming_latency_report.json'}")
-    print(f"Grounding report: {output / 'phase4_grounding_failure_report.json'}")
+    print(f"Cost report: {output / args.cost_report_name}")
+    print(f"Latency report: {output / args.latency_report_name}")
+    print(f"Grounding report: {output / args.grounding_report_name}")
     return 0
 
 
