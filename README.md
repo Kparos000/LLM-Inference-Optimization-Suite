@@ -142,6 +142,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 4 streaming API, pricing, and grounding diagnostics](docs/88_phase4_streaming_api_pricing_and_grounding.md)
 - [Model5 pricing and provider routing](docs/89_model5_pricing_and_provider_routing.md)
 - [Model5 streaming API smoke](docs/90_model5_streaming_api_smoke.md)
+- [Multi-evidence grounding repair](docs/91_multi_evidence_grounding_repair.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

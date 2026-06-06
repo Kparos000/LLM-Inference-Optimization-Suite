@@ -385,12 +385,19 @@ def generation_contract_instruction() -> str:
             f"Required fields: {', '.join(GENERATION_CONTRACT_FIELDS)}.",
             "Use these exact JSON types: answer string, evidence_ids array of strings, "
             "confidence number, insufficient_evidence boolean, citation_notes string.",
-            "Keep answer at or below 40 words and citation_notes at or below 12 words.",
+            "Keep answer at or below 40 words and citation_notes at or below 30 words.",
             "Use only evidence_id labels shown in the retrieved evidence blocks, such as E1.",
             "For an answer, evidence_ids must contain at least one supporting provided label.",
-            "Cite every provided evidence block directly used to support the answer.",
-            "Inspect all evidence blocks before choosing labels; do not default to E1 only.",
-            "If E1 and E2 provide distinct relevant support, include both E1 and E2.",
+            "Some answers require multiple evidence_ids. Cite ALL evidence blocks needed.",
+            "Before writing JSON, silently check every supplied evidence block as relevant or "
+            "not relevant.",
+            (
+                "Include every relevant evidence_id used for any answer claim; "
+                "do not default to E1 only."
+            ),
+            "If E1 and E2 provide distinct required support, include both E1 and E2.",
+            "citation_notes must name each emitted evidence_id and briefly explain its support, "
+            "for example: E1: policy rule; E2: safety boundary.",
             "Do not cite a label whose evidence does not support the answer.",
             "Short evidence labels such as E1 map to canonical evidence IDs in runner metadata.",
             "confidence must be a number from 0 to 1.",
@@ -398,6 +405,52 @@ def generation_contract_instruction() -> str:
             "answer to an empty string, evidence_ids to [], and explain why in citation_notes.",
             "Otherwise set insufficient_evidence to false and provide a non-empty answer.",
             "Do not copy wording from these instructions into answer or citation_notes.",
+        ]
+    )
+
+
+def render_citation_repair_prompt(
+    *,
+    original_prompt: str,
+    previous_output: str,
+    allowed_evidence_ids: Collection[str],
+    missing_evidence_labels: Collection[str] = (),
+) -> str:
+    """Render one citation-only retry without exposing gold evidence identifiers."""
+
+    _validate_non_empty_string(original_prompt, "original_prompt")
+    _validate_non_empty_string(previous_output, "previous_output")
+    allowed_labels = ", ".join(allowed_evidence_ids) or "none"
+    missing_labels = ", ".join(missing_evidence_labels) or "unspecified"
+    return "\n\n".join(
+        [
+            original_prompt,
+            "CITATION REPAIR TASK:",
+            f"Previous valid JSON output:\n{previous_output}",
+            (
+                "Missing evidence requirement: the previous citations did not cover every "
+                "distinct supplied evidence block required to support the answer."
+            ),
+            (
+                "Silently re-check every supplied evidence block as relevant or not relevant. "
+                "Use only relevant supplied labels."
+            ),
+            f"Allowed evidence_id labels remain exactly: {allowed_labels}",
+            (
+                "Evaluator-identified supplied labels whose evidence family remains uncovered: "
+                f"{missing_labels}. Review those supplied blocks before correcting the JSON."
+            ),
+            (
+                "Return the same five-field JSON object. Correct only evidence_ids and "
+                "citation_notes. Keep answer, confidence, and insufficient_evidence unchanged "
+                "unless a minimal answer correction is necessary for citation accuracy."
+            ),
+            (
+                "citation_notes must name every emitted evidence_id and explain briefly why "
+                "that block supports the answer."
+            ),
+            "Do not invent citations, facts, or evidence labels.",
+            "Return exactly one compact JSON object and nothing else.",
         ]
     )
 
