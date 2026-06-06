@@ -124,6 +124,18 @@ class ApiPricingEntry:
         return self.pricing_snapshot_timestamp_utc
 
 
+@dataclass(frozen=True)
+class ManualPricingOverrideState:
+    """Presence and activation state for one audited manual override."""
+
+    model_alias: str
+    present: bool
+    enabled: bool
+    provider: str | None = None
+    pricing_source_url: str | None = None
+    notes: str = ""
+
+
 def _optional_price(value: object) -> float | None:
     if value is None:
         return None
@@ -172,7 +184,10 @@ def _registry_entry(alias: str, raw_entry: dict[str, Any]) -> ApiPricingRegistry
         pricing_last_checked=str(
             raw_entry.get(
                 "pricing_last_checked",
-                raw_entry.get("pricing_snapshot_timestamp_utc") or "",
+                raw_entry.get(
+                    "last_checked",
+                    raw_entry.get("pricing_snapshot_timestamp_utc") or "",
+                ),
             )
         ),
         pricing_status=cast(PricingStatus, status),
@@ -210,6 +225,12 @@ def load_api_pricing_registry(
         if not isinstance(raw_model, dict) or not isinstance(raw_override, dict):
             msg = f"Pricing registry entry '{alias}' must be a mapping"
             raise ValueError(msg)
+        override_enabled = raw_override.get("enabled", True)
+        if not isinstance(override_enabled, bool):
+            msg = f"Pricing registry override '{alias}.enabled' must be boolean"
+            raise ValueError(msg)
+        if not override_enabled:
+            raw_override = {}
         model_entry = _registry_entry(alias, cast(dict[str, Any], raw_model))
         detected_complete = (
             model_entry.pricing_status == "detected"
@@ -225,6 +246,43 @@ def load_api_pricing_registry(
         override_payload["pricing_status"] = "manual_override"
         registry[alias] = _registry_entry(alias, override_payload)
     return registry
+
+
+def load_manual_pricing_override_state(
+    model_alias: str,
+    path: str | Path = DEFAULT_API_PRICING_PATH,
+) -> ManualPricingOverrideState:
+    """Inspect a manual override without treating a disabled template as pricing."""
+
+    raw_config = load_yaml_file(path)
+    raw_overrides = raw_config.get("manual_overrides", {})
+    if raw_overrides is None:
+        raw_overrides = {}
+    if not isinstance(raw_overrides, dict):
+        msg = f"Config entry 'manual_overrides' in {path} must be a mapping"
+        raise ValueError(msg)
+    raw_override = raw_overrides.get(model_alias)
+    if raw_override is None:
+        return ManualPricingOverrideState(
+            model_alias=model_alias,
+            present=False,
+            enabled=False,
+        )
+    if not isinstance(raw_override, dict):
+        msg = f"Pricing registry override '{model_alias}' must be a mapping"
+        raise ValueError(msg)
+    enabled = raw_override.get("enabled", True)
+    if not isinstance(enabled, bool):
+        msg = f"Pricing registry override '{model_alias}.enabled' must be boolean"
+        raise ValueError(msg)
+    return ManualPricingOverrideState(
+        model_alias=model_alias,
+        present=True,
+        enabled=enabled,
+        provider=str(raw_override.get("provider") or "") or None,
+        pricing_source_url=str(raw_override.get("pricing_source_url") or "") or None,
+        notes=str(raw_override.get("notes") or ""),
+    )
 
 
 def load_api_pricing_config(
@@ -267,8 +325,8 @@ def resolve_api_pricing(
     entries = load_api_pricing_config(path)
     if model_alias not in entries:
         msg = (
-            f"Missing API pricing for '{model_alias}' in {path}. Run "
-            "scripts/phase3/snapshot_hf_inference_pricing.py before paid API smoke tests."
+            f"Missing API pricing for '{model_alias}' in {path}. Capture complete live "
+            "pricing or enable a complete audited manual override before paid API smoke tests."
         )
         raise ValueError(msg)
     return entries[model_alias]

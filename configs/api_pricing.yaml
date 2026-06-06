@@ -20,4 +20,18 @@ models:
     pricing_last_checked: "2026-06-06T01:22:14.834095+00:00"
     pricing_status: detected
     notes: Lowest complete live provider price detected during the Block 27 snapshot.
-manual_overrides: {}
+manual_overrides:
+  model5_gated:
+    enabled: false
+    provider: featherless-ai
+    model_id: meta-llama/Llama-3.2-3B-Instruct
+    input_usd_per_1m_tokens: null
+    output_usd_per_1m_tokens: null
+    pricing_source: audited_manual_override
+    pricing_source_url: https://featherless.ai/blog/llm-api-pricing-comparison-2026-complete-guide-inference-costs
+    pricing_status: manual_override
+    last_checked: "2026-06-06"
+    notes: >-
+      Disabled audit template. Featherless documents flat-rate monthly pricing,
+      not separate input/output token rates, so no per-token override can be
+      activated without a more specific authoritative price source.
