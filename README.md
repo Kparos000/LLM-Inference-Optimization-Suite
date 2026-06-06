@@ -138,6 +138,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Phase 4 pre-GPU readiness](docs/84_phase4_pre_gpu_readiness.md)
 - [Phase 4 stronger-model contract validation](docs/85_phase4_stronger_model_contract_validation.md)
 - [Phase 4 API-priced gated-model smoke](docs/86_phase4_api_priced_model_smoke.md)
+- [Phase 4 API-versus-local GPU readiness](docs/87_phase4_api_vs_local_comparison.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables
