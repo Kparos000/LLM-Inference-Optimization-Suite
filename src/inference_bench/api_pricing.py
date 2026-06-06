@@ -9,12 +9,53 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from inference_bench.config import load_yaml_file
 from inference_bench.metrics.cost import estimate_api_token_cost_usd
 
 DEFAULT_API_PRICING_PATH = "configs/api_pricing.yaml"
+PricingStatus = Literal["detected", "manual_override", "unavailable"]
+
+
+@dataclass(frozen=True)
+class ApiPricingRegistryEntry:
+    """Auditable pricing registry row, including unavailable models."""
+
+    model_alias: str
+    model_id: str
+    provider: str | None
+    input_usd_per_1m_tokens: float | None
+    output_usd_per_1m_tokens: float | None
+    pricing_source: str
+    pricing_source_url: str
+    pricing_last_checked: str
+    pricing_status: PricingStatus
+    notes: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.model_alias.strip() or not self.model_id.strip():
+            msg = "model_alias and model_id must be non-empty"
+            raise ValueError(msg)
+        if self.pricing_status not in {"detected", "manual_override", "unavailable"}:
+            msg = "pricing_status must be detected, manual_override, or unavailable"
+            raise ValueError(msg)
+        for field_name in ("input_usd_per_1m_tokens", "output_usd_per_1m_tokens"):
+            value = getattr(self, field_name)
+            if value is not None and (
+                not isinstance(value, int | float) or isinstance(value, bool) or value < 0
+            ):
+                msg = f"{field_name} must be >= 0 when available"
+                raise ValueError(msg)
+        complete = (
+            self.input_usd_per_1m_tokens is not None and self.output_usd_per_1m_tokens is not None
+        )
+        if self.pricing_status in {"detected", "manual_override"} and not complete:
+            msg = f"{self.pricing_status} pricing requires complete input/output rates"
+            raise ValueError(msg)
+        if self.pricing_status != "unavailable" and not (self.provider or "").strip():
+            msg = f"{self.pricing_status} pricing requires provider"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True)
@@ -35,6 +76,9 @@ class ApiPricingEntry:
     throughput_tokens_per_second_if_available: float | None = None
     supports_tools_if_available: bool | None = None
     supports_structured_output_if_available: bool | None = None
+    pricing_source: str = "hugging_face_router_metadata"
+    pricing_status: PricingStatus = "detected"
+    notes: str = ""
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -61,35 +105,156 @@ class ApiPricingEntry:
             msg = "context_length must be > 0 when provided"
             raise ValueError(msg)
 
+    @property
+    def input_usd_per_1m_tokens(self) -> float:
+        """Return the public registry field name for input pricing."""
+
+        return self.input_cost_per_1m_tokens_usd
+
+    @property
+    def output_usd_per_1m_tokens(self) -> float:
+        """Return the public registry field name for output pricing."""
+
+        return self.output_cost_per_1m_tokens_usd
+
+    @property
+    def pricing_last_checked(self) -> str:
+        """Return the public registry timestamp field."""
+
+        return self.pricing_snapshot_timestamp_utc
+
+
+def _optional_price(value: object) -> float | None:
+    if value is None:
+        return None
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        msg = "Pricing values must be numeric or null"
+        raise ValueError(msg)
+    return float(value)
+
+
+def _registry_entry(alias: str, raw_entry: dict[str, Any]) -> ApiPricingRegistryEntry:
+    """Normalize current and legacy pricing schemas."""
+
+    input_price = raw_entry.get(
+        "input_usd_per_1m_tokens",
+        raw_entry.get("input_cost_per_1m_tokens_usd"),
+    )
+    output_price = raw_entry.get(
+        "output_usd_per_1m_tokens",
+        raw_entry.get("output_cost_per_1m_tokens_usd"),
+    )
+    provider_status = str(raw_entry.get("provider_status") or "")
+    default_status = (
+        "detected"
+        if input_price is not None and output_price is not None and provider_status != "unavailable"
+        else "unavailable"
+    )
+    status = str(raw_entry.get("pricing_status") or default_status)
+    if status not in {"detected", "manual_override", "unavailable"}:
+        msg = f"Invalid pricing_status '{status}' for {alias}"
+        raise ValueError(msg)
+    return ApiPricingRegistryEntry(
+        model_alias=str(raw_entry.get("model_alias") or alias),
+        model_id=str(raw_entry.get("model_id") or ""),
+        provider=str(raw_entry.get("provider") or "") or None,
+        input_usd_per_1m_tokens=_optional_price(input_price),
+        output_usd_per_1m_tokens=_optional_price(output_price),
+        pricing_source=str(
+            raw_entry.get("pricing_source")
+            or (
+                "manual_registry_override"
+                if status == "manual_override"
+                else "hugging_face_router_metadata"
+            )
+        ),
+        pricing_source_url=str(raw_entry.get("pricing_source_url") or ""),
+        pricing_last_checked=str(
+            raw_entry.get(
+                "pricing_last_checked",
+                raw_entry.get("pricing_snapshot_timestamp_utc") or "",
+            )
+        ),
+        pricing_status=cast(PricingStatus, status),
+        notes=str(raw_entry.get("notes") or ""),
+    )
+
+
+def load_api_pricing_registry(
+    path: str | Path = DEFAULT_API_PRICING_PATH,
+) -> dict[str, ApiPricingRegistryEntry]:
+    """Load all detected, overridden, and unavailable registry rows."""
+
+    raw_config = load_yaml_file(path)
+    raw_models = raw_config.get("models", {})
+    if raw_models is None:
+        raw_models = {}
+    if not isinstance(raw_models, dict):
+        msg = f"Config entry 'models' in {path} must be a mapping"
+        raise ValueError(msg)
+    raw_overrides = raw_config.get("manual_overrides", {})
+    if raw_overrides is None:
+        raw_overrides = {}
+    if not isinstance(raw_overrides, dict):
+        msg = f"Config entry 'manual_overrides' in {path} must be a mapping"
+        raise ValueError(msg)
+
+    registry: dict[str, ApiPricingRegistryEntry] = {}
+    aliases = set(raw_models) | set(raw_overrides)
+    for alias in aliases:
+        if not isinstance(alias, str):
+            msg = "Pricing registry aliases must be strings"
+            raise ValueError(msg)
+        raw_model = raw_models.get(alias, {})
+        raw_override = raw_overrides.get(alias, {})
+        if not isinstance(raw_model, dict) or not isinstance(raw_override, dict):
+            msg = f"Pricing registry entry '{alias}' must be a mapping"
+            raise ValueError(msg)
+        model_entry = _registry_entry(alias, cast(dict[str, Any], raw_model))
+        detected_complete = (
+            model_entry.pricing_status == "detected"
+            and model_entry.input_usd_per_1m_tokens is not None
+            and model_entry.output_usd_per_1m_tokens is not None
+        )
+        if detected_complete or not raw_override:
+            registry[alias] = model_entry
+            continue
+        override_payload = dict(cast(dict[str, Any], raw_override))
+        override_payload.setdefault("model_alias", alias)
+        override_payload.setdefault("model_id", model_entry.model_id)
+        override_payload["pricing_status"] = "manual_override"
+        registry[alias] = _registry_entry(alias, override_payload)
+    return registry
+
 
 def load_api_pricing_config(
     path: str | Path = DEFAULT_API_PRICING_PATH,
 ) -> dict[str, ApiPricingEntry]:
     """Load API pricing entries keyed by model alias."""
 
-    raw_config = load_yaml_file(path)
-    raw_models = raw_config.get("models", {})
-    if raw_models is None:
-        return {}
-    if not isinstance(raw_models, dict):
-        msg = f"Config entry 'models' in {path} must be a mapping"
-        raise ValueError(msg)
-
     entries: dict[str, ApiPricingEntry] = {}
-    for alias, raw_entry in raw_models.items():
-        if not isinstance(alias, str) or not isinstance(raw_entry, dict):
-            msg = f"Pricing entries in {path} must be mappings keyed by model alias"
-            raise ValueError(msg)
-        payload = dict(cast(dict[str, Any], raw_entry))
-        payload.setdefault("model_alias", alias)
-        try:
-            entries[alias] = ApiPricingEntry(**payload)
-        except TypeError as exc:
-            msg = f"Invalid API pricing entry '{alias}' in {path}: {exc}"
-            raise ValueError(msg) from exc
-        except ValueError as exc:
-            msg = f"Invalid API pricing entry '{alias}' in {path}: {exc}"
-            raise ValueError(msg) from exc
+    for alias, registry_entry in load_api_pricing_registry(path).items():
+        if registry_entry.pricing_status == "unavailable":
+            continue
+        if (
+            registry_entry.input_usd_per_1m_tokens is None
+            or registry_entry.output_usd_per_1m_tokens is None
+            or registry_entry.provider is None
+        ):
+            continue
+        entries[alias] = ApiPricingEntry(
+            model_alias=alias,
+            model_id=registry_entry.model_id,
+            provider=registry_entry.provider,
+            provider_status="live",
+            input_cost_per_1m_tokens_usd=registry_entry.input_usd_per_1m_tokens,
+            output_cost_per_1m_tokens_usd=registry_entry.output_usd_per_1m_tokens,
+            pricing_snapshot_timestamp_utc=registry_entry.pricing_last_checked,
+            pricing_source_url=registry_entry.pricing_source_url,
+            pricing_source=registry_entry.pricing_source,
+            pricing_status=registry_entry.pricing_status,
+            notes=registry_entry.notes,
+        )
     return entries
 
 

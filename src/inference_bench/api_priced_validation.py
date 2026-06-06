@@ -274,9 +274,17 @@ def build_cost_report(
         "model_id": first.get("model_id"),
         "provider": first.get("provider"),
         "pricing_source_url": first.get("pricing_source_url"),
-        "pricing_snapshot_timestamp_utc": first.get("pricing_snapshot_timestamp_utc"),
-        "input_cost_per_1m_tokens_usd": first.get("input_cost_per_1m_tokens_usd"),
-        "output_cost_per_1m_tokens_usd": first.get("output_cost_per_1m_tokens_usd"),
+        "pricing_source": first.get("pricing_source"),
+        "pricing_status": first.get("pricing_status"),
+        "pricing_snapshot_timestamp_utc": (
+            first.get("pricing_last_checked") or first.get("pricing_snapshot_timestamp_utc")
+        ),
+        "input_cost_per_1m_tokens_usd": (
+            first.get("input_usd_per_1m_tokens") or first.get("input_cost_per_1m_tokens_usd")
+        ),
+        "output_cost_per_1m_tokens_usd": (
+            first.get("output_usd_per_1m_tokens") or first.get("output_cost_per_1m_tokens_usd")
+        ),
         "request_count": request_count,
         "success_count": success_count,
         "error_count": request_count - success_count,

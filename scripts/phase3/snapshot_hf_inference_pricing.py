@@ -127,12 +127,15 @@ def entry_from_provider(
     )
     throughput = provider.get("throughput")
     return {
-        "model_alias": model_alias,
         "model_id": model_id,
         "provider": str(provider.get("provider") or ""),
-        "provider_status": str(provider.get("status") or "unknown"),
-        "input_cost_per_1m_tokens_usd": input_price,
-        "output_cost_per_1m_tokens_usd": output_price,
+        "input_usd_per_1m_tokens": input_price,
+        "output_usd_per_1m_tokens": output_price,
+        "pricing_source": "hugging_face_router_metadata",
+        "pricing_source_url": model_metadata_url(model_id),
+        "pricing_last_checked": timestamp,
+        "pricing_status": "detected",
+        "notes": "Complete live input/output pricing detected from Hugging Face router metadata.",
         "context_length": provider.get("context_length"),
         "latency_seconds_if_available": latency_seconds,
         "throughput_tokens_per_second_if_available": float(throughput)
@@ -140,8 +143,6 @@ def entry_from_provider(
         else None,
         "supports_tools_if_available": provider.get("supports_tools"),
         "supports_structured_output_if_available": provider.get("supports_structured_output"),
-        "pricing_snapshot_timestamp_utc": timestamp,
-        "pricing_source_url": model_metadata_url(model_id),
         "selected_for_experiment": True,
     }
 
@@ -214,9 +215,11 @@ def write_pricing_yaml(
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
+        "registry_version": 1,
         "pricing_source_url": ROUTER_MODELS_URL,
         "snapshot_timestamp_utc": timestamp,
         "models": entries,
+        "manual_overrides": {},
     }
     output_path.write_text(yaml.safe_dump(payload, sort_keys=True), encoding="utf-8")
     return output_path
@@ -335,8 +338,8 @@ def main(argv: list[str] | None = None) -> int:
         for alias, entry in report["entries"].items():
             print(
                 f"{alias}: provider={entry['provider']} "
-                f"input=${entry['input_cost_per_1m_tokens_usd']}/1M "
-                f"output=${entry['output_cost_per_1m_tokens_usd']}/1M"
+                f"input=${entry['input_usd_per_1m_tokens']}/1M "
+                f"output=${entry['output_usd_per_1m_tokens']}/1M"
             )
         print(f"Pricing snapshot written: {args.output}")
         print(f"Report written: {args.report}")
