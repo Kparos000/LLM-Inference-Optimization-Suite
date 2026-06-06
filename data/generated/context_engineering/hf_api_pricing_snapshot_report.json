@@ -1,0 +1,45 @@
+{
+  "candidate_alternative_gated_or_api_priced_models_1b_to_8b": [],
+  "entries": {
+    "model6_gated": {
+      "context_length": 16384,
+      "input_cost_per_1m_tokens_usd": 0.02,
+      "latency_seconds_if_available": 0.7524,
+      "model_alias": "model6_gated",
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "output_cost_per_1m_tokens_usd": 0.05,
+      "pricing_snapshot_timestamp_utc": "2026-06-06T01:22:14.834095+00:00",
+      "pricing_source_url": "https://router.huggingface.co/v1/models/meta-llama/Llama-3.1-8B-Instruct",
+      "provider": "novita",
+      "provider_status": "live",
+      "selected_for_experiment": true,
+      "supports_structured_output_if_available": false,
+      "supports_tools_if_available": false,
+      "throughput_tokens_per_second_if_available": 173.9928274406794
+    }
+  },
+  "failures": [],
+  "generated_at_utc": "2026-06-06T01:22:14.834095+00:00",
+  "inspected_models": [
+    {
+      "model_alias": "model6_gated",
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "priced_provider_count": 2,
+      "providers_found": [
+        "novita",
+        "nscale",
+        "featherless-ai",
+        "scaleway"
+      ]
+    }
+  ],
+  "model_aliases_requested": [
+    "model6_gated"
+  ],
+  "no_external_llm_api_generation_triggered": true,
+  "no_gpu_work_triggered": true,
+  "no_model_inference_triggered": true,
+  "output_path": "configs/api_pricing.yaml",
+  "pricing_snapshot_written": true,
+  "pricing_source_url": "https://router.huggingface.co/v1/models"
+}

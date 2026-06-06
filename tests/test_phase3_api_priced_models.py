@@ -104,7 +104,10 @@ def test_model7_large_placeholder_is_last_public_alias() -> None:
 def test_pricing_config_loads() -> None:
     entries = load_api_pricing_config("configs/api_pricing.yaml")
 
-    assert entries == {}
+    assert set(entries) == {"model6_gated"}
+    assert entries["model6_gated"].provider == "novita"
+    assert entries["model6_gated"].input_cost_per_1m_tokens_usd == pytest.approx(0.02)
+    assert entries["model6_gated"].output_cost_per_1m_tokens_usd == pytest.approx(0.05)
 
 
 def test_cost_calculation_works_with_fixture_pricing() -> None:

@@ -1,4 +1,18 @@
-pricing_source_url: "https://router.huggingface.co/v1/models"
-snapshot_timestamp_utc: null
-notes: "Run scripts/phase3/snapshot_hf_inference_pricing.py to populate live Hugging Face Inference Provider pricing. Do not hard-code fake prices."
-models: {}
+models:
+  model6_gated:
+    context_length: 16384
+    input_cost_per_1m_tokens_usd: 0.02
+    latency_seconds_if_available: 0.7524
+    model_alias: model6_gated
+    model_id: meta-llama/Llama-3.1-8B-Instruct
+    output_cost_per_1m_tokens_usd: 0.05
+    pricing_snapshot_timestamp_utc: '2026-06-06T01:22:14.834095+00:00'
+    pricing_source_url: https://router.huggingface.co/v1/models/meta-llama/Llama-3.1-8B-Instruct
+    provider: novita
+    provider_status: live
+    selected_for_experiment: true
+    supports_structured_output_if_available: false
+    supports_tools_if_available: false
+    throughput_tokens_per_second_if_available: 173.9928274406794
+pricing_source_url: https://router.huggingface.co/v1/models
+snapshot_timestamp_utc: '2026-06-06T01:22:14.834095+00:00'
