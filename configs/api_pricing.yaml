@@ -1,15 +1,15 @@
 registry_version: 1
 models:
   model5_gated:
-    model_id: meta-llama/Llama-3.2-3B-Instruct
-    provider: featherless-ai
-    input_usd_per_1m_tokens: null
-    output_usd_per_1m_tokens: null
-    pricing_source: hugging_face_router_metadata
-    pricing_source_url: https://router.huggingface.co/v1/models/meta-llama/Llama-3.2-3B-Instruct
-    pricing_last_checked: "2026-06-06T02:30:53.8899968Z"
-    pricing_status: unavailable
-    notes: Complete input and output token pricing was not exposed by the live provider.
+    model_id: mistralai/ministral-3b-2512
+    provider: openrouter
+    input_usd_per_1m_tokens: 0.10
+    output_usd_per_1m_tokens: 0.10
+    pricing_source: openrouter_models_api_and_model_page
+    pricing_source_url: https://openrouter.ai/mistralai/ministral-3b-2512
+    pricing_last_checked: "2026-06-07"
+    pricing_status: detected_or_manual_verified
+    notes: OpenRouter listed per-token pricing for costed API smoke.
   model6_gated:
     model_id: meta-llama/Llama-3.1-8B-Instruct
     provider: novita
@@ -20,8 +20,18 @@ models:
     pricing_last_checked: "2026-06-06T01:22:14.834095+00:00"
     pricing_status: detected
     notes: Lowest complete live provider price detected during the Block 27 snapshot.
+  old_model5_llama_3_2_3b:
+    model_id: meta-llama/Llama-3.2-3B-Instruct
+    provider: featherless-ai
+    input_usd_per_1m_tokens: null
+    output_usd_per_1m_tokens: null
+    pricing_source: hugging_face_router_metadata
+    pricing_source_url: https://router.huggingface.co/v1/models/meta-llama/Llama-3.2-3B-Instruct
+    pricing_last_checked: "2026-06-06T02:30:53.8899968Z"
+    pricing_status: unavailable
+    notes: Historical model5 route; complete per-token pricing was unavailable.
 manual_overrides:
-  model5_gated:
+  old_model5_llama_3_2_3b:
     enabled: false
     provider: featherless-ai
     model_id: meta-llama/Llama-3.2-3B-Instruct

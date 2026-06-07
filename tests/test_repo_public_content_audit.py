@@ -7,6 +7,7 @@ from types import ModuleType
 
 TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{20,}\b")
 OPENAI_TOKEN_RE = re.compile(r"\bsk-[A-Za-z0-9]{20,}\b")
+OPENROUTER_TOKEN_RE = re.compile(r"\bsk-or-v1-[A-Za-z0-9]{20,}\b")
 TUTORIAL_PHRASES = (
     "explain to a 6th" + " grader",
     "explain like I am in 6th" + " grade",
@@ -90,6 +91,7 @@ def test_env_example_contains_blank_placeholders_only() -> None:
     assert env_example.read_text(encoding="utf-8").splitlines() == [
         "HF_TOKEN=",
         "HUGGINGFACE_HUB_TOKEN=",
+        "OPENROUTER_API_KEY=",
     ]
 
 
@@ -98,6 +100,7 @@ def test_committed_text_files_do_not_contain_obvious_token_values() -> None:
         content = path.read_text(encoding="utf-8")
         assert TOKEN_RE.search(content) is None
         assert OPENAI_TOKEN_RE.search(content) is None
+        assert OPENROUTER_TOKEN_RE.search(content) is None
 
 
 def test_committed_docs_do_not_contain_tutorial_style_phrases() -> None:
@@ -127,5 +130,7 @@ def test_curated_samples_do_not_contain_token_references_or_values() -> None:
         content = path.read_text(encoding="utf-8", errors="ignore")
         assert "HF_TOKEN" not in content
         assert "HUGGINGFACE_HUB_TOKEN" not in content
+        assert "OPENROUTER_API_KEY" not in content
         assert TOKEN_RE.search(content) is None
         assert OPENAI_TOKEN_RE.search(content) is None
+        assert OPENROUTER_TOKEN_RE.search(content) is None

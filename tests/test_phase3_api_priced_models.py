@@ -56,9 +56,7 @@ def test_old_qwen_aliases_still_resolve() -> None:
 def test_new_gated_and_large_aliases_resolve() -> None:
     config = load_project_config()
 
-    assert (
-        config.resolve_model_config("model5_gated").model_id == "meta-llama/Llama-3.2-3B-Instruct"
-    )
+    assert config.resolve_model_config("model5_gated").model_id == "mistralai/ministral-3b-2512"
     assert (
         config.resolve_model_config("model6_gated").model_id == "meta-llama/Llama-3.1-8B-Instruct"
     )
@@ -70,16 +68,22 @@ def test_new_gated_and_large_aliases_resolve() -> None:
     )
 
 
-def test_api_model_metadata_indicates_gated_access_and_hf_token_requirement() -> None:
+def test_api_model_metadata_indicates_provider_specific_credentials() -> None:
     config = load_project_config()
 
-    for alias in ("model5_gated", "model6_gated"):
-        model_config = config.resolve_model_config(alias)
-        assert model_config.access_type == "gated"
-        assert model_config.requires_hf_token is True
-        assert model_config.requires_license_acceptance is True
-        assert model_config.execution_target == "hf_inference_provider_api"
-        assert "hf_inference_provider" in model_config.allowed_backends
+    model5 = config.resolve_model_config("model5_gated")
+    assert model5.access_type == "api_priced"
+    assert model5.requires_hf_token is False
+    assert model5.requires_openrouter_api_key is True
+    assert model5.execution_target == "openrouter_api"
+    assert "openrouter" in model5.allowed_backends
+
+    model6 = config.resolve_model_config("model6_gated")
+    assert model6.access_type == "gated"
+    assert model6.requires_hf_token is True
+    assert model6.requires_license_acceptance is True
+    assert model6.execution_target == "hf_inference_provider_api"
+    assert "hf_inference_provider" in model6.allowed_backends
 
 
 def test_model7_large_placeholder_is_last_public_alias() -> None:
@@ -104,7 +108,10 @@ def test_model7_large_placeholder_is_last_public_alias() -> None:
 def test_pricing_config_loads() -> None:
     entries = load_api_pricing_config("configs/api_pricing.yaml")
 
-    assert set(entries) == {"model6_gated"}
+    assert set(entries) == {"model5_gated", "model6_gated"}
+    assert entries["model5_gated"].provider == "openrouter"
+    assert entries["model5_gated"].input_cost_per_1m_tokens_usd == pytest.approx(0.10)
+    assert entries["model5_gated"].output_cost_per_1m_tokens_usd == pytest.approx(0.10)
     assert entries["model6_gated"].provider == "novita"
     assert entries["model6_gated"].input_cost_per_1m_tokens_usd == pytest.approx(0.02)
     assert entries["model6_gated"].output_cost_per_1m_tokens_usd == pytest.approx(0.05)

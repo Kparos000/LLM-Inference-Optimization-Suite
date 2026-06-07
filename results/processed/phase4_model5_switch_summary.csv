@@ -1,0 +1,2 @@
+switch_status,model_alias,canonical_key,model_id,provider,pricing_status,input_usd_per_1m_tokens,output_usd_per_1m_tokens,api_key_env,paid_api_call_triggered
+READY_FOR_EXPLICIT_TINY_OPENROUTER_SMOKE,model5_gated,ministral_3b_2512_api,mistralai/ministral-3b-2512,openrouter,detected_or_manual_verified,0.1,0.1,OPENROUTER_API_KEY,False

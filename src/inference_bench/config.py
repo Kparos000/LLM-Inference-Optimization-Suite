@@ -47,6 +47,7 @@ class ModelConfig:
     allowed_backends: list[str] = field(default_factory=list)
     access_type: str | None = None
     requires_hf_token: bool = False
+    requires_openrouter_api_key: bool = False
     requires_license_acceptance: bool = False
     intended_role: str | None = None
 
@@ -68,6 +69,9 @@ class ModelConfig:
             _validate_non_empty_string(backend, "allowed_backends entry")
         if not isinstance(self.requires_hf_token, bool):
             msg = "requires_hf_token must be boolean"
+            raise ValueError(msg)
+        if not isinstance(self.requires_openrouter_api_key, bool):
+            msg = "requires_openrouter_api_key must be boolean"
             raise ValueError(msg)
         if not isinstance(self.requires_license_acceptance, bool):
             msg = "requires_license_acceptance must be boolean"

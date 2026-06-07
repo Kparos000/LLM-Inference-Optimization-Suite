@@ -15,7 +15,12 @@ from inference_bench.config import load_yaml_file
 from inference_bench.metrics.cost import estimate_api_token_cost_usd
 
 DEFAULT_API_PRICING_PATH = "configs/api_pricing.yaml"
-PricingStatus = Literal["detected", "manual_override", "unavailable"]
+PricingStatus = Literal[
+    "detected",
+    "detected_or_manual_verified",
+    "manual_override",
+    "unavailable",
+]
 
 
 @dataclass(frozen=True)
@@ -37,8 +42,17 @@ class ApiPricingRegistryEntry:
         if not self.model_alias.strip() or not self.model_id.strip():
             msg = "model_alias and model_id must be non-empty"
             raise ValueError(msg)
-        if self.pricing_status not in {"detected", "manual_override", "unavailable"}:
-            msg = "pricing_status must be detected, manual_override, or unavailable"
+        valid_statuses = {
+            "detected",
+            "detected_or_manual_verified",
+            "manual_override",
+            "unavailable",
+        }
+        if self.pricing_status not in valid_statuses:
+            msg = (
+                "pricing_status must be detected, detected_or_manual_verified, "
+                "manual_override, or unavailable"
+            )
             raise ValueError(msg)
         for field_name in ("input_usd_per_1m_tokens", "output_usd_per_1m_tokens"):
             value = getattr(self, field_name)
@@ -50,7 +64,15 @@ class ApiPricingRegistryEntry:
         complete = (
             self.input_usd_per_1m_tokens is not None and self.output_usd_per_1m_tokens is not None
         )
-        if self.pricing_status in {"detected", "manual_override"} and not complete:
+        if (
+            self.pricing_status
+            in {
+                "detected",
+                "detected_or_manual_verified",
+                "manual_override",
+            }
+            and not complete
+        ):
             msg = f"{self.pricing_status} pricing requires complete input/output rates"
             raise ValueError(msg)
         if self.pricing_status != "unavailable" and not (self.provider or "").strip():
@@ -163,7 +185,12 @@ def _registry_entry(alias: str, raw_entry: dict[str, Any]) -> ApiPricingRegistry
         else "unavailable"
     )
     status = str(raw_entry.get("pricing_status") or default_status)
-    if status not in {"detected", "manual_override", "unavailable"}:
+    if status not in {
+        "detected",
+        "detected_or_manual_verified",
+        "manual_override",
+        "unavailable",
+    }:
         msg = f"Invalid pricing_status '{status}' for {alias}"
         raise ValueError(msg)
     return ApiPricingRegistryEntry(
@@ -233,7 +260,7 @@ def load_api_pricing_registry(
             raw_override = {}
         model_entry = _registry_entry(alias, cast(dict[str, Any], raw_model))
         detected_complete = (
-            model_entry.pricing_status == "detected"
+            model_entry.pricing_status in {"detected", "detected_or_manual_verified"}
             and model_entry.input_usd_per_1m_tokens is not None
             and model_entry.output_usd_per_1m_tokens is not None
         )

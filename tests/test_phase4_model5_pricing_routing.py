@@ -151,16 +151,21 @@ def test_live_pricing_beats_manual_override(tmp_path: Path) -> None:
     assert resolved.input_usd_per_1m_tokens == pytest.approx(0.03)
 
 
-def test_checked_in_disabled_override_does_not_enable_costed_run() -> None:
+def test_historical_model5_override_remains_disabled() -> None:
     override = load_manual_pricing_override_state(
-        "model5_gated",
+        "old_model5_llama_3_2_3b",
         "configs/api_pricing.yaml",
     )
 
     assert override.present is True
     assert override.enabled is False
-    with pytest.raises(ValueError, match="Missing API pricing"):
-        resolve_api_pricing("model5_gated", "configs/api_pricing.yaml")
+
+
+def test_checked_in_active_model5_has_verified_openrouter_pricing() -> None:
+    pricing = resolve_api_pricing("model5_gated", "configs/api_pricing.yaml")
+
+    assert pricing.provider == "openrouter"
+    assert pricing.pricing_status == "detected_or_manual_verified"
 
 
 def test_route_report_is_json_serializable(tmp_path: Path) -> None:

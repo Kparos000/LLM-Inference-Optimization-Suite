@@ -6,6 +6,7 @@ import argparse
 import csv
 import importlib.util
 import json
+import math
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,8 @@ from inference_bench.api_pricing import (  # noqa: E402
     resolve_api_pricing,
 )
 from inference_bench.config import load_project_config  # noqa: E402
+from inference_bench.model_registry import write_model_registry_artifacts  # noqa: E402
+from inference_bench.openrouter_api import fetch_openrouter_model_metadata  # noqa: E402
 
 
 def _load_snapshot_module() -> ModuleType:
@@ -55,36 +58,50 @@ def audit_pricing(
 ) -> dict[str, Any]:
     """Compare live router metadata with the local pricing registry."""
 
-    snapshot = _load_snapshot_module()
+    snapshot: ModuleType | None = None
     config = load_project_config()
     registry = load_api_pricing_registry(pricing_config)
     rows: list[dict[str, Any]] = []
     for alias in model_aliases:
         model = config.resolve_model_config(alias)
-        metadata_url = snapshot.model_metadata_url(model.model_id)
+        metadata_url = ""
         providers_found: list[str] = []
         detected_provider: str | None = None
         detected_input: float | None = None
         detected_output: float | None = None
         live_error: str | None = None
-        try:
-            payload = snapshot.request_json(metadata_url)
-            model_payload = payload.get("data")
-            if not isinstance(model_payload, dict):
-                raise RuntimeError("Router metadata missing data object")
-            providers = model_payload.get("providers", [])
-            providers_found = [
-                str(provider.get("provider") or "")
-                for provider in providers
-                if isinstance(provider, dict)
-            ]
-            priced = snapshot.live_priced_providers(model_payload)
-            if priced:
-                selected = snapshot.select_provider(priced)
-                detected_provider = str(selected.get("provider") or "")
-                detected_input, detected_output = snapshot.provider_pricing_fields(selected)
-        except RuntimeError as exc:
-            live_error = str(exc)
+        if model.provider == "openrouter":
+            metadata_url = "https://openrouter.ai/api/v1/models"
+            try:
+                metadata = fetch_openrouter_model_metadata(model.model_id)
+                providers_found = ["openrouter"]
+                detected_provider = "openrouter"
+                detected_input = metadata.input_usd_per_1m_tokens
+                detected_output = metadata.output_usd_per_1m_tokens
+            except (RuntimeError, ValueError) as exc:
+                live_error = str(exc)
+        else:
+            if snapshot is None:
+                snapshot = _load_snapshot_module()
+            metadata_url = snapshot.model_metadata_url(model.model_id)
+            try:
+                payload = snapshot.request_json(metadata_url)
+                model_payload = payload.get("data")
+                if not isinstance(model_payload, dict):
+                    raise RuntimeError("Router metadata missing data object")
+                providers = model_payload.get("providers", [])
+                providers_found = [
+                    str(provider.get("provider") or "")
+                    for provider in providers
+                    if isinstance(provider, dict)
+                ]
+                priced = snapshot.live_priced_providers(model_payload)
+                if priced:
+                    selected = snapshot.select_provider(priced)
+                    detected_provider = str(selected.get("provider") or "")
+                    detected_input, detected_output = snapshot.provider_pricing_fields(selected)
+            except RuntimeError as exc:
+                live_error = str(exc)
         registered = registry.get(alias)
         resolution_reason: str | None
         try:
@@ -121,6 +138,23 @@ def audit_pricing(
                 "resolution_reason": resolution_reason,
                 "live_query_error": live_error,
                 "pricing_source_url": metadata_url,
+                "live_pricing_matches_registry": (
+                    registered is not None
+                    and detected_input is not None
+                    and detected_output is not None
+                    and registered.input_usd_per_1m_tokens is not None
+                    and registered.output_usd_per_1m_tokens is not None
+                    and math.isclose(
+                        detected_input,
+                        registered.input_usd_per_1m_tokens,
+                        rel_tol=1e-9,
+                    )
+                    and math.isclose(
+                        detected_output,
+                        registered.output_usd_per_1m_tokens,
+                        rel_tol=1e-9,
+                    )
+                ),
             }
         )
     return {
@@ -166,6 +200,10 @@ def main(argv: list[str] | None = None) -> int:
             pricing_config=args.pricing_config,
         )
         report_path, summary_path = write_audit(report, args.output_root)
+        registry_outputs = write_model_registry_artifacts(
+            output_root=args.output_root,
+            pricing_path=args.pricing_config,
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"Pricing audit failed: {exc}", file=sys.stderr)
         return 1
@@ -177,6 +215,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     print(f"Pricing audit report: {report_path}")
     print(f"Pricing audit summary: {summary_path}")
+    for label, path in registry_outputs.items():
+        print(f"{label}: {path}")
     return 0
 
 

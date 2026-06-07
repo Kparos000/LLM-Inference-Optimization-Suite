@@ -143,11 +143,15 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Model5 pricing and provider routing](docs/89_model5_pricing_and_provider_routing.md)
 - [Model5 streaming API smoke](docs/90_model5_streaming_api_smoke.md)
 - [Multi-evidence grounding repair](docs/91_multi_evidence_grounding_repair.md)
+- [Model registry and Ministral model5 switch](docs/92_model_registry_and_model5_switch.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` for local secrets. Never commit `.env`. `HF_TOKEN` and `HUGGINGFACE_HUB_TOKEN` may be used for Hugging Face model access. Real Hugging Face execution requires installing the `hf` extra.
+Copy `.env.example` to `.env` for local secrets. Never commit `.env`. `HF_TOKEN`
+and `HUGGINGFACE_HUB_TOKEN` may be used for Hugging Face model access.
+`OPENROUTER_API_KEY` is required only for an explicitly authorized OpenRouter
+smoke. Real Hugging Face execution requires installing the `hf` extra.
 
 ## Quality Checks
 

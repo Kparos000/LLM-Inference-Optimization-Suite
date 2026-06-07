@@ -8,11 +8,11 @@ from inference_bench.api_pricing import (
 )
 
 
-def test_pricing_registry_loads_detected_and_unavailable_entries() -> None:
+def test_pricing_registry_loads_openrouter_and_hf_entries() -> None:
     registry = load_api_pricing_registry("configs/api_pricing.yaml")
 
-    assert registry["model5_gated"].pricing_status == "unavailable"
-    assert registry["model5_gated"].input_usd_per_1m_tokens is None
+    assert registry["model5_gated"].pricing_status == "detected_or_manual_verified"
+    assert registry["model5_gated"].input_usd_per_1m_tokens == pytest.approx(0.10)
     assert registry["model6_gated"].pricing_status == "detected"
     assert registry["model6_gated"].input_usd_per_1m_tokens == pytest.approx(0.02)
 
@@ -89,6 +89,15 @@ manual_overrides:
     assert pricing.pricing_status == "detected"
 
 
-def test_missing_pricing_blocks_costed_run() -> None:
+def test_checked_in_model5_pricing_enables_costed_route() -> None:
+    pricing = resolve_api_pricing("model5_gated", "configs/api_pricing.yaml")
+
+    assert pricing.provider == "openrouter"
+    assert pricing.input_usd_per_1m_tokens == pytest.approx(0.10)
+
+
+def test_missing_pricing_blocks_costed_run(tmp_path: Path) -> None:
+    empty = tmp_path / "pricing.yaml"
+    empty.write_text("models: {}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Missing API pricing"):
-        resolve_api_pricing("model5_gated", "configs/api_pricing.yaml")
+        resolve_api_pricing("model5_gated", empty)

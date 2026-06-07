@@ -1,0 +1,11 @@
+model_alias,canonical_key,name,model_id,provider,execution_target,intended_role,active_public_alias,deprecated_alias,pricing_status,input_usd_per_1m_tokens,output_usd_per_1m_tokens,api_key_env
+model1_0_5b,qwen2_5_0_5b_instruct,Qwen2.5 0.5B Instruct,Qwen/Qwen2.5-0.5B-Instruct,huggingface,local_or_self_hosted,local_smoke_model,True,False,not_applicable,,,
+model2_1_5b,qwen2_5_1_5b_instruct,Qwen2.5 1.5B Instruct,Qwen/Qwen2.5-1.5B-Instruct,huggingface,local_or_self_hosted,small_baseline_model,True,False,not_applicable,,,
+model3_7b,qwen2_5_7b_instruct,Qwen2.5 7B Instruct,Qwen/Qwen2.5-7B-Instruct,huggingface,self_hosted_gpu,first_serious_gpu_model,True,False,not_applicable,,,
+model4_32b,qwen2_5_32b_instruct,Qwen2.5 32B Instruct,Qwen/Qwen2.5-32B-Instruct,huggingface,self_hosted_gpu_later,scale_comparison_model,True,False,not_applicable,,,
+model5_gated,ministral_3b_2512_api,Ministral 3B 2512 API,mistralai/ministral-3b-2512,openrouter,openrouter_api,api_priced_small_model,True,False,detected_or_manual_verified,0.1,0.1,OPENROUTER_API_KEY
+model6_gated,llama_3_1_8b_instruct_api,Llama 3.1 8B Instruct API,meta-llama/Llama-3.1-8B-Instruct,huggingface,hf_inference_provider_api,api_priced_8b_model,True,False,detected,0.02,0.05,HF_TOKEN
+model7_large_placeholder,future_large_model_placeholder,Large Model Placeholder,placeholder/large-model,placeholder,future_large_model,future_large_model_placeholder,True,False,not_applicable,,,
+large_model_placeholder,future_large_model_placeholder,Large Model Placeholder,placeholder/large-model,placeholder,future_large_model,future_large_model_placeholder,False,True,not_applicable,,,
+model5_large_placeholder,future_large_model_placeholder,Large Model Placeholder,placeholder/large-model,placeholder,future_large_model,future_large_model_placeholder,False,True,not_applicable,,,
+old_model5_llama_3_2_3b,llama_3_2_3b_instruct_api,Llama 3.2 3B Instruct API,meta-llama/Llama-3.2-3B-Instruct,huggingface,hf_inference_provider_api,deprecated_api_priced_small_model,False,True,unavailable,,,

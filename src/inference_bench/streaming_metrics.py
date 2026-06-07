@@ -128,7 +128,7 @@ def calculate_streaming_metrics(
 
 def request_streaming_chat_completion(
     *,
-    hf_token: str,
+    api_key: str,
     model_id: str,
     prompt: str,
     max_new_tokens: int,
@@ -149,7 +149,7 @@ def request_streaming_chat_completion(
         api_route,
         data=json.dumps(body).encode("utf-8"),
         headers={
-            "Authorization": f"Bearer {hf_token}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "Accept": "text/event-stream",
         },

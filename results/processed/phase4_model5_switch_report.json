@@ -1,0 +1,53 @@
+{
+  "generated_at_utc": "2026-06-07T02:44:19.628782+00:00",
+  "live_smoke_requires": "OPENROUTER_API_KEY",
+  "model6_gated": {
+    "active_public_alias": true,
+    "api_key_env": "HF_TOKEN",
+    "canonical_key": "llama_3_1_8b_instruct_api",
+    "deprecated_alias": false,
+    "execution_target": "hf_inference_provider_api",
+    "input_usd_per_1m_tokens": 0.02,
+    "intended_role": "api_priced_8b_model",
+    "model_alias": "model6_gated",
+    "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+    "name": "Llama 3.1 8B Instruct API",
+    "output_usd_per_1m_tokens": 0.05,
+    "pricing_status": "detected",
+    "provider": "huggingface"
+  },
+  "new_active_model": {
+    "active_public_alias": true,
+    "api_key_env": "OPENROUTER_API_KEY",
+    "canonical_key": "ministral_3b_2512_api",
+    "deprecated_alias": false,
+    "execution_target": "openrouter_api",
+    "input_usd_per_1m_tokens": 0.1,
+    "intended_role": "api_priced_small_model",
+    "model_alias": "model5_gated",
+    "model_id": "mistralai/ministral-3b-2512",
+    "name": "Ministral 3B 2512 API",
+    "output_usd_per_1m_tokens": 0.1,
+    "pricing_status": "detected_or_manual_verified",
+    "provider": "openrouter"
+  },
+  "old_active_model": {
+    "active_public_alias": false,
+    "api_key_env": null,
+    "canonical_key": "llama_3_2_3b_instruct_api",
+    "deprecated_alias": true,
+    "execution_target": "hf_inference_provider_api",
+    "input_usd_per_1m_tokens": null,
+    "intended_role": "deprecated_api_priced_small_model",
+    "model_alias": "old_model5_llama_3_2_3b",
+    "model_id": "meta-llama/Llama-3.2-3B-Instruct",
+    "name": "Llama 3.2 3B Instruct API",
+    "output_usd_per_1m_tokens": null,
+    "pricing_status": "unavailable",
+    "provider": "huggingface"
+  },
+  "paid_api_call_triggered": false,
+  "raw_paid_output_generated": false,
+  "switch_reason": "The previous Featherless route exposed no complete per-token price. Ministral 3B has auditable OpenRouter input and output token rates.",
+  "switch_status": "READY_FOR_EXPLICIT_TINY_OPENROUTER_SMOKE"
+}

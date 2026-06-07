@@ -32,4 +32,5 @@ def test_env_example_exists_and_does_not_contain_token_values() -> None:
     assert env_example.read_text(encoding="utf-8").splitlines() == [
         "HF_TOKEN=",
         "HUGGINGFACE_HUB_TOKEN=",
+        "OPENROUTER_API_KEY=",
     ]

@@ -17,11 +17,12 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from inference_bench.api_priced_validation import (  # noqa: E402
-    check_hf_token,
     select_api_model,
 )
 from inference_bench.api_pricing import estimate_api_cost_from_pricing  # noqa: E402
+from inference_bench.api_routes import api_key_for_route  # noqa: E402
 from inference_bench.config import load_project_config  # noqa: E402
+from inference_bench.env import load_local_env  # noqa: E402
 from inference_bench.generation_contract import (  # noqa: E402
     allowed_evidence_ids_from_aliases,
     generation_contract_result_fields,
@@ -37,7 +38,6 @@ from inference_bench.workloads.loader import load_jsonl_workload  # noqa: E402
 
 DEFAULT_INPUT = "data/generated/phase4/api_priced_contract_runner_input.jsonl"
 DEFAULT_OUTPUT = "results/raw/phase4_api_streaming_smoke_results.jsonl"
-DEFAULT_API_ROUTE = "https://router.huggingface.co/v1/chat/completions"
 
 
 def _load_non_streaming_client() -> ModuleType:
@@ -65,7 +65,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--pricing-config", default="configs/api_pricing.yaml")
-    parser.add_argument("--api-route", default=DEFAULT_API_ROUTE)
+    parser.add_argument(
+        "--api-route",
+        default=None,
+        help="Optional route override. By default the selected provider route is used.",
+    )
     parser.add_argument("--timeout-seconds", type=float, default=120.0)
     stream_group = parser.add_mutually_exclusive_group()
     stream_group.add_argument("--stream", dest="stream", action="store_true")
@@ -84,15 +88,18 @@ def _base_row(
     provider: str,
     pricing: Any,
     stream: bool,
+    backend: str,
+    api_route: str,
 ) -> dict[str, Any]:
     metadata = item.metadata
     return {
         "run_id": "phase4-api-streaming-smoke",
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "backend": "hf_inference_provider",
+        "backend": backend,
         "model_alias": model_alias,
         "model_id": model_id,
         "provider": provider,
+        "api_route": api_route,
         "workload_name": item.workload_name,
         "prompt_id": item.prompt_id,
         "workload_id": str(metadata.get("workload_id") or ""),
@@ -136,16 +143,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     load_and_validate_runner_input(args.input_path)
     items = load_jsonl_workload(args.input_path)[: args.limit]
-    hf_token = os.environ.get("HF_TOKEN", "")
-    token_check = check_hf_token(hf_token)
-    if not token_check.available:
-        print("HF_TOKEN is missing or invalid.", file=sys.stderr)
-        return 1
+    load_local_env()
     selected, attempts = select_api_model(
         config=load_project_config(),
         model_aliases=[args.model_alias, args.fallback_model_alias],
         pricing_config=args.pricing_config,
-        hf_token=hf_token,
+        credentials=os.environ,
     )
     if selected is None:
         print(
@@ -158,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
         return 1
+    api_key = api_key_for_route(selected.route, os.environ)
+    api_route = args.api_route or selected.route.chat_completions_url
     max_cost = estimate_api_cost_from_pricing(
         input_tokens=sum(len(item.prompt.split()) for item in items),
         output_tokens=args.max_new_tokens * len(items),
@@ -176,16 +181,18 @@ def main(argv: list[str] | None = None) -> int:
             provider=selected.pricing.provider,
             pricing=selected.pricing,
             stream=args.stream,
+            backend=selected.route.backend,
+            api_route=api_route,
         )
         started = time.perf_counter()
         try:
             if args.stream:
                 metrics = request_streaming_chat_completion(
-                    hf_token=hf_token,
+                    api_key=api_key,
                     model_id=selected.provider_model_id,
                     prompt=item.prompt,
                     max_new_tokens=args.max_new_tokens,
-                    api_route=args.api_route,
+                    api_route=api_route,
                     timeout_seconds=args.timeout_seconds,
                 )
                 if args.require_streaming and not metrics.streaming_available:
@@ -210,11 +217,11 @@ def main(argv: list[str] | None = None) -> int:
                 if non_streaming is None:
                     raise RuntimeError("Non-streaming client was not loaded")
                 payload, latency_ms = non_streaming.request_chat_completion(
-                    hf_token=hf_token,
+                    hf_token=api_key,
                     model_id=selected.provider_model_id,
                     prompt=item.prompt,
                     max_new_tokens=args.max_new_tokens,
-                    api_route=args.api_route,
+                    api_route=api_route,
                 )
                 generated_text = str(non_streaming.extract_generated_text(payload))
                 input_tokens, output_tokens = non_streaming.usage_tokens(

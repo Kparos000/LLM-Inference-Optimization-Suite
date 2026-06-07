@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import statistics
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -14,6 +14,11 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from inference_bench.api_pricing import ApiPricingEntry, resolve_api_pricing
+from inference_bench.api_routes import (
+    ApiProviderRoute,
+    api_key_for_route,
+    resolve_api_provider_route,
+)
 from inference_bench.config import ProjectConfig
 
 HF_WHOAMI_URL = "https://huggingface.co/api/whoami-v2"
@@ -38,6 +43,7 @@ class SelectedApiModel:
     model_id: str
     provider_model_id: str
     pricing: ApiPricingEntry
+    route: ApiProviderRoute
 
 
 def _authorized_get(url: str, hf_token: str, *, timeout: int = 30) -> AccessCheck:
@@ -97,11 +103,15 @@ def select_api_model(
     config: ProjectConfig,
     model_aliases: list[str],
     pricing_config: str | Path,
-    hf_token: str,
+    hf_token: str = "",
+    credentials: Mapping[str, str] | None = None,
     access_checker: Callable[[str, str], AccessCheck] = check_model_access,
 ) -> tuple[SelectedApiModel | None, list[dict[str, Any]]]:
-    """Select the first model with captured pricing and gated-model access."""
+    """Select the first model with pricing, credentials, and required access."""
 
+    available_credentials = dict(credentials or {})
+    if hf_token:
+        available_credentials.setdefault("HF_TOKEN", hf_token)
     attempts: list[dict[str, Any]] = []
     for alias in model_aliases:
         model = config.resolve_model_config(alias)
@@ -127,7 +137,27 @@ def select_api_model(
                 "pricing_source_url": pricing.pricing_source_url,
             }
         )
-        access = access_checker(model.model_id, hf_token)
+        try:
+            route = resolve_api_provider_route(model=model, pricing=pricing)
+            api_key_for_route(route, available_credentials)
+        except ValueError as exc:
+            attempt["failure_stage"] = "credential_or_route"
+            attempt["failure_reason"] = str(exc)
+            attempts.append(attempt)
+            continue
+        attempt.update(
+            {
+                "backend": route.backend,
+                "api_key_env": route.api_key_env,
+                "api_route": route.chat_completions_url,
+                "streaming_supported": route.supports_streaming,
+            }
+        )
+        access = (
+            access_checker(model.model_id, available_credentials.get("HF_TOKEN", ""))
+            if model.requires_hf_token
+            else AccessCheck(available=True, status_code=None)
+        )
         attempt["model_access"] = access.available
         attempt["model_access_status_code"] = access.status_code
         if not access.available:
@@ -135,14 +165,14 @@ def select_api_model(
             attempt["failure_reason"] = access.error_message
             attempts.append(attempt)
             continue
-        provider_model_id = f"{model.model_id}:{pricing.provider}"
         attempts.append(attempt)
         return (
             SelectedApiModel(
                 model_alias=alias,
                 model_id=model.model_id,
-                provider_model_id=provider_model_id,
+                provider_model_id=route.provider_model_id,
                 pricing=pricing,
+                route=route,
             ),
             attempts,
         )

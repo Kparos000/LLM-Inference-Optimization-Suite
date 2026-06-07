@@ -18,6 +18,11 @@ from inference_bench.api_pricing import (  # noqa: E402
     estimate_api_cost_from_pricing,
     resolve_api_pricing,
 )
+from inference_bench.api_routes import (  # noqa: E402
+    api_key_for_route,
+    resolve_api_provider_route,
+)
+from inference_bench.config import load_project_config  # noqa: E402
 from inference_bench.context_corpora import VERTICALS, benchmark_paths, read_jsonl  # noqa: E402
 from inference_bench.env import load_local_env  # noqa: E402
 from inference_bench.generation_contract import (  # noqa: E402
@@ -45,7 +50,6 @@ DEFAULT_WORKLOAD = "data/workloads/smoke_500/prompt_plus_metadata/mm2_hybrid_top
 DEFAULT_INPUT = "data/generated/phase4/grounding_repair_runner_input.jsonl"
 DEFAULT_INITIAL_OUTPUT = "results/raw/phase4_grounding_repair_initial_results.jsonl"
 DEFAULT_OUTPUT = "results/raw/phase4_grounding_repair_smoke_results.jsonl"
-DEFAULT_API_ROUTE = "https://router.huggingface.co/v1/chat/completions"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -60,7 +64,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-path", default=DEFAULT_OUTPUT)
     parser.add_argument("--dataset-root", default="data/scaleup_2000_full")
     parser.add_argument("--pricing-config", default="configs/api_pricing.yaml")
-    parser.add_argument("--api-route", default=DEFAULT_API_ROUTE)
+    parser.add_argument("--api-route", default=None)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--allow-paid-api-call", action="store_true")
     return parser
@@ -101,10 +105,10 @@ def run_initial_smoke(args: argparse.Namespace) -> int:
         "--require-streaming",
         "--pricing-config",
         args.pricing_config,
-        "--api-route",
-        args.api_route,
         "--allow-paid-api-call",
     ]
+    if args.api_route:
+        command.extend(["--api-route", args.api_route])
     return subprocess.run(command, check=False).returncode
 
 
@@ -113,21 +117,22 @@ def _repair_row(
     row: dict[str, Any],
     repair_prompt: str,
     pricing_config: str,
-    api_route: str,
-    hf_token: str,
+    api_route: str | None,
     max_new_tokens: int,
 ) -> dict[str, Any]:
     """Run one streaming citation repair and return the merged final row."""
 
     result = dict(row)
     pricing = resolve_api_pricing(str(row["model_alias"]), pricing_config)
-    provider_model_id = f"{row['model_id']}:{row['provider']}"
+    model = load_project_config().resolve_model_config(str(row["model_alias"]))
+    route = resolve_api_provider_route(model=model, pricing=pricing)
+    api_key = api_key_for_route(route, os.environ)
     metrics = request_streaming_chat_completion(
-        hf_token=hf_token,
-        model_id=provider_model_id,
+        api_key=api_key,
+        model_id=route.provider_model_id,
         prompt=repair_prompt,
         max_new_tokens=max_new_tokens,
-        api_route=api_route,
+        api_route=api_route or route.chat_completions_url,
     )
     if not metrics.streaming_available:
         msg = "Citation repair streaming unavailable"
@@ -225,10 +230,6 @@ def main(argv: list[str] | None = None) -> int:
         output_path=args.input_path,
     )
     load_local_env()
-    hf_token = os.environ.get("HF_TOKEN", "")
-    if not hf_token:
-        print("HF_TOKEN is missing.", file=sys.stderr)
-        return 1
     initial_status = run_initial_smoke(args)
     if initial_status:
         print("Initial API streaming smoke failed.", file=sys.stderr)
@@ -278,7 +279,6 @@ def main(argv: list[str] | None = None) -> int:
                     repair_prompt=repair_prompt,
                     pricing_config=args.pricing_config,
                     api_route=args.api_route,
-                    hf_token=hf_token,
                     max_new_tokens=args.max_new_tokens,
                 )
                 row["citation_repair_reason"] = decision.reason

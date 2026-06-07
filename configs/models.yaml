@@ -65,6 +65,23 @@ qwen2_5_32b_instruct:
   intended_role: "scale_comparison_model"
   notes: "Inactive placeholder for future model-scale benchmark comparison."
 
+ministral_3b_2512_api:
+  name: "Ministral 3B 2512 API"
+  provider: "openrouter"
+  model_id: "mistralai/ministral-3b-2512"
+  parameter_count: 3000000000
+  default_dtype: "provider_default"
+  execution_target: "openrouter_api"
+  allowed_backends:
+    - "openrouter"
+    - "openai_compatible_api"
+  access_type: "api_priced"
+  requires_hf_token: false
+  requires_openrouter_api_key: true
+  requires_license_acceptance: false
+  intended_role: "api_priced_small_model"
+  notes: "API-priced 3B SLM candidate for costed small-model benchmark comparison."
+
 llama_3_2_3b_instruct_api:
   name: "Llama 3.2 3B Instruct API"
   provider: "huggingface"
@@ -79,8 +96,8 @@ llama_3_2_3b_instruct_api:
   access_type: "gated"
   requires_hf_token: true
   requires_license_acceptance: true
-  intended_role: "api_priced_small_model"
-  notes: "Gated API-priced model for Hugging Face Inference Provider cost tracking."
+  intended_role: "deprecated_api_priced_small_model"
+  notes: "Inactive former model5 route retained for historical reports and compatibility."
 
 llama_3_1_8b_instruct_api:
   name: "Llama 3.1 8B Instruct API"
@@ -119,10 +136,11 @@ model_aliases:
   model2_1_5b: qwen2_5_1_5b_instruct
   model3_7b: qwen2_5_7b_instruct
   model4_32b: qwen2_5_32b_instruct
-  model5_gated: llama_3_2_3b_instruct_api
+  model5_gated: ministral_3b_2512_api
   model6_gated: llama_3_1_8b_instruct_api
   model7_large_placeholder: future_large_model_placeholder
 
 deprecated_model_aliases:
   large_model_placeholder: future_large_model_placeholder
   model5_large_placeholder: future_large_model_placeholder
+  old_model5_llama_3_2_3b: llama_3_2_3b_instruct_api

@@ -71,10 +71,12 @@ PROHIBITED_PHRASES = {
 }
 
 TOKEN_ASSIGNMENT_RE = re.compile(
-    r"^\s*(HF_TOKEN|HUGGINGFACE_HUB_TOKEN)\s*[:=]\s*(?P<value>.+\S)\s*$",
+    r"^\s*(HF_TOKEN|HUGGINGFACE_HUB_TOKEN|OPENROUTER_API_KEY)"
+    r"\s*[:=]\s*(?P<value>.+\S)\s*$",
 )
 HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{20,}\b")
 OPENAI_TOKEN_RE = re.compile(r"\bsk-[A-Za-z0-9]{20,}\b")
+OPENROUTER_TOKEN_RE = re.compile(r"\bsk-or-v1-[A-Za-z0-9]{20,}\b")
 WINDOWS_USER_PATH_RE = re.compile(r"[A-Za-z]:\\Users\\")
 
 
@@ -133,6 +135,9 @@ def _scan_line(path: Path, line_number: int, line: str) -> list[AuditFinding]:
 
     if OPENAI_TOKEN_RE.search(line):
         findings.append(AuditFinding(path, line_number, "OpenAI token-looking string"))
+
+    if OPENROUTER_TOKEN_RE.search(line):
+        findings.append(AuditFinding(path, line_number, "OpenRouter token-looking string"))
 
     if WINDOWS_USER_PATH_RE.search(line):
         findings.append(AuditFinding(path, line_number, "Windows local absolute path"))

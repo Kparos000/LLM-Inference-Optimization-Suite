@@ -16,7 +16,7 @@ MODEL_ALIAS_PAIRS = {
     "model2_1_5b": "qwen2_5_1_5b_instruct",
     "model3_7b": "qwen2_5_7b_instruct",
     "model4_32b": "qwen2_5_32b_instruct",
-    "model5_gated": "llama_3_2_3b_instruct_api",
+    "model5_gated": "ministral_3b_2512_api",
     "model6_gated": "llama_3_1_8b_instruct_api",
     "model7_large_placeholder": "future_large_model_placeholder",
 }
@@ -29,6 +29,7 @@ OLD_MODEL_KEYS = {
 DEPRECATED_MODEL_ALIASES = {
     "large_model_placeholder": "future_large_model_placeholder",
     "model5_large_placeholder": "future_large_model_placeholder",
+    "old_model5_llama_3_2_3b": "llama_3_2_3b_instruct_api",
 }
 
 
@@ -109,7 +110,7 @@ def test_model_aliases_do_not_duplicate_canonical_model_records() -> None:
 
     assert set(MODEL_ALIAS_PAIRS).isdisjoint(models)
     assert set(DEPRECATED_MODEL_ALIASES).isdisjoint(models)
-    assert len(models) == 7
+    assert len(models) == 8
 
 
 def test_memory_modes_yaml_loads() -> None:
