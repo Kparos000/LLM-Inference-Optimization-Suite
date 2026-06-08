@@ -1,0 +1,11 @@
+category,status,evidence,details,remaining_gap
+dataset_readiness,PASS,data\generated\context_engineering\retrieval_source_of_truth_manifest.json,"Promoted retrieval manifest, repaired validation, and retrieval SLO report exist.",
+workload_control,PASS,"data/workloads/{smoke_500,controlled_2000,final_10000}",smoke_500=materialized_valid; controlled_2000=materialized_valid; final_10000=materialized_valid; split_builder_ready=True; prompt_id_gold_join_materialized=True; prompt_id_join_contract=True.,
+memory_modes,PASS,configs/memory_modes.yaml,mm0-mm3 are benchmark modes; mm4 is explicitly contract-only.,
+context_engineering,PASS,data/generated/context_engineering,"Vertical corpora, canonical keys, Qdrant, and compression reports are present.",
+run_safety,PASS,src\inference_bench\runners\openai_load_runner.py,"OpenAI load-run controls: {'checkpoint': True, 'resume': True, 'chunked': True, 'timeout': True, 'failure_rows': True}.",
+logging_observability,PASS,"src/inference_bench/{run_manifest.py,telemetry.py}",Run manifests and per-request backend/model/memory/error telemetry are defined.,
+cost_controls,FAIL,"configs/{api_pricing.yaml,gpu_costs.yaml}",Cost schema and API budget guard ready=True; live RunPod values ready=False.,"Fill the selected RunPod GPU type, region, and hourly price."
+serving_backends,PASS,"HF local, OpenRouter, HF/Novita, vLLM dry-run, SGLang dry-run","Serving adapters are present; measured local artifacts are optional in clean checkout. Measurement status: {'local_hf_measured': True, 'model5_openrouter_measured': True, 'model6_hf_novita_measured': True}.",
+slo_definitions,PASS,configs\slo_targets.yaml,"Retrieval, quality, latency, resource, throughput, API cost, and GPU cost SLOs exist.",
+gpu_execution_inputs,FAIL,configs/gpu_costs.yaml and reviewed GPU smoke plan,gpu_model_confirmed=False; smoke_matrix_frozen=False; vllm_command_documented=True.,"Confirm the GPU/model, fill price inputs, and freeze the five-prompt smoke matrix."

@@ -144,6 +144,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Model5 streaming API smoke](docs/90_model5_streaming_api_smoke.md)
 - [Multi-evidence grounding repair](docs/91_multi_evidence_grounding_repair.md)
 - [Model registry and Ministral model5 switch](docs/92_model_registry_and_model5_switch.md)
+- [Model5 OpenRouter streaming smoke](docs/93_model5_openrouter_streaming_smoke.md)
+- [Controlled inference readiness audit](docs/94_controlled_inference_readiness_audit.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

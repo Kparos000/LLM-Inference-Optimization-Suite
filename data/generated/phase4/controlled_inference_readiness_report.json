@@ -1,0 +1,100 @@
+{
+  "checks": [
+    {
+      "category": "dataset_readiness",
+      "details": "Promoted retrieval manifest, repaired validation, and retrieval SLO report exist.",
+      "evidence": "data\\generated\\context_engineering\\retrieval_source_of_truth_manifest.json",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "workload_control",
+      "details": "smoke_500=materialized_valid; controlled_2000=materialized_valid; final_10000=materialized_valid; split_builder_ready=True; prompt_id_gold_join_materialized=True; prompt_id_join_contract=True.",
+      "evidence": "data/workloads/{smoke_500,controlled_2000,final_10000}",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "memory_modes",
+      "details": "mm0-mm3 are benchmark modes; mm4 is explicitly contract-only.",
+      "evidence": "configs/memory_modes.yaml",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "context_engineering",
+      "details": "Vertical corpora, canonical keys, Qdrant, and compression reports are present.",
+      "evidence": "data/generated/context_engineering",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "run_safety",
+      "details": "OpenAI load-run controls: {'checkpoint': True, 'resume': True, 'chunked': True, 'timeout': True, 'failure_rows': True}.",
+      "evidence": "src\\inference_bench\\runners\\openai_load_runner.py",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "logging_observability",
+      "details": "Run manifests and per-request backend/model/memory/error telemetry are defined.",
+      "evidence": "src/inference_bench/{run_manifest.py,telemetry.py}",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "cost_controls",
+      "details": "Cost schema and API budget guard ready=True; live RunPod values ready=False.",
+      "evidence": "configs/{api_pricing.yaml,gpu_costs.yaml}",
+      "remaining_gap": "Fill the selected RunPod GPU type, region, and hourly price.",
+      "status": "FAIL"
+    },
+    {
+      "category": "serving_backends",
+      "details": "Serving adapters are present; measured local artifacts are optional in clean checkout. Measurement status: {'local_hf_measured': True, 'model5_openrouter_measured': True, 'model6_hf_novita_measured': True}.",
+      "evidence": "HF local, OpenRouter, HF/Novita, vLLM dry-run, SGLang dry-run",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "slo_definitions",
+      "details": "Retrieval, quality, latency, resource, throughput, API cost, and GPU cost SLOs exist.",
+      "evidence": "configs\\slo_targets.yaml",
+      "remaining_gap": "",
+      "status": "PASS"
+    },
+    {
+      "category": "gpu_execution_inputs",
+      "details": "gpu_model_confirmed=False; smoke_matrix_frozen=False; vllm_command_documented=True.",
+      "evidence": "configs/gpu_costs.yaml and reviewed GPU smoke plan",
+      "remaining_gap": "Confirm the GPU/model, fill price inputs, and freeze the five-prompt smoke matrix.",
+      "status": "FAIL"
+    }
+  ],
+  "cost_schema_ready": true,
+  "exact_reason_if_not_ready": "Live RunPod cost inputs and the reviewed GPU smoke matrix are not yet frozen.",
+  "generated_at_utc": "2026-06-07T23:53:05.913894+00:00",
+  "live_gpu_cost_ready": false,
+  "mm4_benchmark_ready": false,
+  "mm4_status": "contract_only",
+  "no_gpu_call_triggered": true,
+  "no_model_inference_triggered": true,
+  "no_sglang_call_triggered": true,
+  "no_vllm_call_triggered": true,
+  "readiness_status": "NOT_READY",
+  "recommended_next_block": "Block 32A: freeze the five-prompt vLLM GPU smoke matrix, select the RunPod GPU/model, record hourly pricing, and execute one guarded live vLLM smoke.",
+  "remaining_gaps": [
+    "cost_controls: Fill the selected RunPod GPU type, region, and hourly price.",
+    "gpu_execution_inputs: Confirm the GPU/model, fill price inputs, and freeze the five-prompt smoke matrix."
+  ],
+  "serving_measurements": {
+    "local_hf_measured": true,
+    "model5_openrouter_measured": true,
+    "model6_hf_novita_measured": true
+  },
+  "workload_materialization": {
+    "controlled_2000": true,
+    "final_10000": true,
+    "smoke_500": true
+  }
+}
