@@ -1,6 +1,6 @@
 # Definitive Technical Briefing
 
-Status: authoritative repository reference as of June 12, 2026
+Status: authoritative repository reference as of June 14, 2026
 
 Repository: `LLM-Inference-Optimization-Suite`
 
@@ -144,7 +144,7 @@ decode, streaming, failure recovery, telemetry, and deployment cost.
 - Does hybrid retrieval outperform a dense-only or no-context baseline?
 - Does deterministic context compression reduce input work without reducing
   evidence recall?
-- Do vLLM and future SGLang serving paths outperform direct Transformers under
+- Do vLLM and SGLang serving paths outperform direct Transformers under
   controlled conditions?
 - What quality is lost or gained when changing model size, memory mode, or
   optimization?
@@ -190,7 +190,7 @@ flowchart TD
     M --> N3[OpenAI-compatible runner]
     M --> N4[Concurrent resumable load runner]
     N3 --> O1[vLLM server]
-    N3 --> O2[Future SGLang server]
+    N3 --> O2[SGLang server]
     M --> O3[HF router / Novita API]
     M --> O4[OpenRouter API]
     N1 --> P[BenchmarkResult and GenerationRecord]
@@ -327,7 +327,7 @@ The project writes:
 - Local Windows development and CPU Transformers validation.
 - External API validation through OpenRouter and the Hugging Face router.
 - Historical Linux/RunPod L40S vLLM calibration.
-- Future guarded live vLLM and SGLang GPU experiments.
+- Validated live vLLM and SGLang execution on the remote RTX 3070.
 
 A checked-in remote RTX 3070 development profile and frozen A1 vLLM smoke
 matrix now exist. The 50-prompt A1 run validated the current live remote GPU
@@ -1550,8 +1550,8 @@ Status:
 
 - OpenAI-compatible runner and load runner implemented;
 - historical RunPod L40S calibration validated;
-- current Phase 4 wrapper is dry-run ready;
-- new controlled live GPU smoke not yet executed.
+- current Phase 4 wrapper is live-run validated;
+- controlled 50-prompt RTX 3070 smoke completed.
 
 Purpose:
 
@@ -1566,17 +1566,22 @@ separate custom client.
 
 ## SGLang
 
-Status: **dry-run scaffold/future live backend**.
+Status: **implemented and validated live on the remote RTX 3070**.
 
-The script reuses the OpenAI-compatible request and result schema and defaults
-to `http://localhost:30000/v1`. It performs readiness checks and fails clearly
-when no server exists.
+The live wrapper reuses the OpenAI-compatible request and result schema,
+defaults to `http://localhost:30000/v1`, performs readiness checks, and attaches
+nvidia-smi telemetry to the run manifest.
 
-Future role:
+Current role:
 
 - backend comparison under the same model, workload, generation contract, and
   hardware;
 - scheduler, prefix-cache, and structured-generation behavior.
+
+The matched 50-prompt run completed without request failures. SGLang improved
+mean TTFT and evidence match relative to vLLM, but regressed E2E latency, TPOT,
+throughput, peak memory, contract validity, and groundedness. It remains a
+secondary controlled backend rather than the RTX 3070 default.
 
 ## Hugging Face Provider API
 
@@ -2277,15 +2282,21 @@ The current validated development GPU backend is:
 - Docker 29.5.3 with the NVIDIA runtime;
 - vLLM 0.23.0 through image digest
   `sha256:6d8429e38e3747723ca07ee1b17972e09bb9c51c4032b266f24fb1cc3b22ed8f`.
+- SGLang 0.5.13 through image digest
+  `sha256:952ebb195c41b10dc01fa63c41c9bfc14f2ee02ffe8da71e11aeab5f3f7c7772`.
 
 The frozen A1 matrix is
 `configs/experiments/a1_remote_rtx3070_vllm_smoke.yaml`. It ran 50
 `mm2_hybrid_top5` records, 10 per vertical, with Qwen2.5-0.5B, streaming,
 temperature zero, 128 maximum new tokens, and concurrency one.
 
+The frozen matched A2 matrix is
+`configs/experiments/a2_remote_rtx3070_sglang_smoke.yaml`. It uses the same 50
+prompt IDs and generation settings with SGLang.
+
 `configs/gpu_costs.yaml` remains an unfilled RunPod template. The remote
-development server has no registered hourly price, so A1 makes no GPU cost
-claim.
+development server has no registered hourly price, so A1 and A2 make no GPU
+cost claim.
 
 ## Historical RunPod Infrastructure
 
@@ -2321,9 +2332,10 @@ should pin:
 - cache and results volumes;
 - health check.
 
-The exact A1 Docker command is recorded in
-`docs/96_remote_rtx3070_vllm_smoke.md`. A canonical pinned Dockerfile is still
-not the source of truth.
+The exact A1 and A2 Docker commands are recorded in
+`docs/96_remote_rtx3070_vllm_smoke.md` and
+`docs/96_remote_rtx3070_sglang_smoke.md`. A canonical pinned Dockerfile is
+still not the source of truth.
 
 ## Realistic Model Support
 
@@ -2364,6 +2376,33 @@ The 0.5B model is suitable for serving-plumbing experiments but not final
 quality claims. The next recommended GPU block is a controlled concurrency 2/4
 study with the same model and input, followed by a reviewed stronger-model
 feasibility decision constrained by 8 GB VRAM.
+
+## A2 SGLang Result
+
+The matched A2 path passed operationally:
+
+- model load and `/v1/models`: PASS;
+- 50 of 50 requests completed;
+- mean TTFT: 135.971 ms;
+- mean TPOT: 24.202 ms;
+- mean E2E latency: 1,066.357 ms;
+- mean throughput: 673.905 tokens/s;
+- mean/peak GPU utilization: 33.38% / 64%;
+- mean/peak GPU memory: 6,548.65 / 6,551 MB;
+- mean power: 68.35 W;
+- peak temperature: 47 C.
+
+Quality remained below target:
+
+- JSON validity: 100%;
+- contract validity: 58%;
+- evidence match: 36%;
+- deterministic groundedness: 24%;
+- safety violations: 2 of 50.
+
+SGLang stays in the comparison matrix, but vLLM remains the default RTX 3070
+engine because it produced better E2E latency, TPOT, throughput, peak memory,
+contract validity, and groundedness on the matched workload.
 
 # 18. Telemetry
 
@@ -2740,7 +2779,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 
 ## Current Block State
 
-Block A1 completed the first current live remote GPU smoke.
+Blocks A1 through A3 completed matched vLLM and SGLang live smokes plus the
+production-oriented nvidia-smi telemetry sampler.
 
 Current decision:
 
@@ -2760,15 +2800,15 @@ work.
 - mm0-mm3 workloads;
 - local HF generation;
 - API generation through two routes;
-- OpenAI-compatible vLLM and SGLang adapters;
+- OpenAI-compatible vLLM and SGLang live serving;
 - generation/evaluation contract;
 - streaming API timing;
 - API cost accounting;
 - checkpoint/resume load-run controls;
 - SLO definitions;
-- remote RTX 3070 vLLM serving;
+- remote RTX 3070 vLLM and SGLang serving;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
-  telemetry.
+  telemetry with interval, duration, start/end timestamps, and manifest links.
 
 ## Remaining Blockers
 
@@ -2810,7 +2850,7 @@ work.
 
 ## Next Engineering Milestone
 
-Run a controlled A2 concurrency 2/4 experiment with the same 50 A1 prompts,
+Run a controlled concurrency 2/4 experiment with the same 50 A1 prompts,
 model, generation settings, and evaluator. Compare aggregate throughput,
 TTFT/p95/p99, TPOT, GPU utilization, memory, power, and quality against the A1
 concurrency-one baseline. Do not scale prompt count until that comparison
@@ -2988,7 +3028,7 @@ spend.
 - **RPS**: Requests per second.
 - **Run manifest**: Record of execution identity, inputs, model, backend,
   command, timestamps, and status.
-- **SGLang**: Planned serving backend with an OpenAI-compatible interface.
+- **SGLang**: Validated serving backend with an OpenAI-compatible interface.
 - **SLM**: Small language model.
 - **SLO**: Service-level objective.
 - **Source hints**: Direct prompt-side source/evidence identifiers; allowed only
@@ -3046,12 +3086,11 @@ gold leakage.
 
 The immediate work is operational:
 
-- freeze the first current GPU/model/cost matrix;
-- add live GPU and backend telemetry;
-- run a guarded five-prompt vLLM smoke;
-- evaluate and cost it;
-- then scale through 500, 2,000, and 10,000 records;
-- add SGLang and controlled optimization experiments;
+- run a matched vLLM concurrency 2/4 study on the frozen 50 prompts;
+- decide stronger-model feasibility under the 8 GB VRAM constraint;
+- register an infrastructure price before making GPU cost claims;
+- add backend-native queue, batch, and cache telemetry;
+- then scale through 500, 2,000, and 10,000 records only after guards pass;
 - implement semantic groundedness and eventually bounded mm4 execution.
 
 Planned optimization studies include continuous batching, KV-cache pressure,
@@ -3068,7 +3107,8 @@ assumptions:
 - weak Finance/Retail retrieval was diagnosed rather than hidden;
 - unavailable pricing blocked execution instead of being fabricated;
 - small-model contract failures are recorded;
-- current GPU readiness remains blocked until reproducible inputs exist.
+- matched vLLM and SGLang GPU results are retained even though neither meets
+  final generation quality targets.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

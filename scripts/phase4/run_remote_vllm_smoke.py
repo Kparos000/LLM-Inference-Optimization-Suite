@@ -231,8 +231,10 @@ def evaluate_result_rows(
     output_path: str | Path,
     eval_report_path: str | Path,
     eval_summary_path: str | Path,
+    block: str = "A1",
+    experiment: str = "remote_rtx3070_vllm_smoke",
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Run the unchanged evaluator contract and write A1 reports."""
+    """Run the unchanged evaluator contract and write smoke reports."""
 
     generated_answers = [result_row_to_generated_answer(row) for row in result_rows]
     evaluation_rows = evaluate_generated_answers(
@@ -245,8 +247,8 @@ def evaluate_result_rows(
         evaluation_rows=evaluation_rows,
     )[0]
     report = {
-        "block": "A1",
-        "experiment": "remote_rtx3070_vllm_smoke",
+        "block": block,
+        "experiment": experiment,
         "model_inference_triggered": True,
         "evaluator_modified": False,
         "row_count": len(evaluation_rows),

@@ -38,8 +38,9 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The grounded generation contract, short evidence labels, deterministic evaluator, streaming metrics, API cost accounting, run manifests, checkpointing, and resume controls are implemented.
 - Historical curated Phase 1 samples document RunPod L40S vLLM calibration and concurrency behavior. They are not a hardware-equal comparison with local CPU results.
 - Current local and API smoke tests have produced real model output. Model6 currently leads the API smoke on quality and cost; Model5 remains a provider/model-size comparison.
-- The remote RTX 3070 is now a validated development GPU backend. A 50-prompt vLLM/Qwen 0.5B smoke completed with full request success and live GPU telemetry.
+- The remote RTX 3070 is now a validated development GPU backend. Matched 50-prompt vLLM and SGLang Qwen 0.5B smokes completed with full request success and live GPU telemetry.
 - The A1 serving path passed, but quality did not: JSON validity was 98%, contract validity 72%, evidence match 30%, and deterministic groundedness 28%.
+- The matched SGLang smoke reached 100% JSON validity, 58% contract validity, 36% evidence match, and 24% groundedness. It remains a secondary engine; vLLM remains the default RTX 3070 backend.
 - The next safe GPU step is a controlled small-model concurrency 2/4 study. Stronger-model and full-scale quality claims remain blocked by 8 GB VRAM and the 0.5B model's grounding performance.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
@@ -136,6 +137,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Controlled inference readiness audit](docs/94_controlled_inference_readiness_audit.md)
 - [Definitive technical briefing](docs/95_definitive_technical_briefing.md)
 - [Remote RTX 3070 vLLM smoke](docs/96_remote_rtx3070_vllm_smoke.md)
+- [Remote RTX 3070 SGLang smoke](docs/96_remote_rtx3070_sglang_smoke.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

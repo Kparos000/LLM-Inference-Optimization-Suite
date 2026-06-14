@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 
 def test_scaled_benchmark_plan_files_exist() -> None:

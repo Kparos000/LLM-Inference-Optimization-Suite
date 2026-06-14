@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, cast
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 VERTICALS = ("airline", "healthcare_admin", "retail", "finance", "research_ai")
 STRICT_ABLATION_MODES = ("prompt_text_only", "prompt_plus_metadata")

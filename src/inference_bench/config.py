@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, cast
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 MODEL_ALIASES_KEY = "model_aliases"
 DEPRECATED_MODEL_ALIASES_KEY = "deprecated_model_aliases"

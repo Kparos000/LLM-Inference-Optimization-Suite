@@ -43,7 +43,12 @@ def main(argv: list[str] | None = None) -> int:
         ssh_host=args.ssh_host,
     )
     csv_path = write_gpu_telemetry_csv(args.output_csv, samples)
-    summary_path = write_gpu_telemetry_summary(args.summary_json, samples)
+    summary_path = write_gpu_telemetry_summary(
+        args.summary_json,
+        samples,
+        interval_seconds=args.interval_seconds,
+        requested_duration_seconds=args.duration_seconds,
+    )
     print(f"GPU telemetry samples: {len(samples)}")
     print(f"GPU telemetry CSV: {csv_path}")
     print(f"GPU telemetry summary: {summary_path}")

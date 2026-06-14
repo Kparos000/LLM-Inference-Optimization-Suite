@@ -206,20 +206,57 @@ def _metric_summary(values: list[float]) -> dict[str, float | None]:
     }
 
 
-def summarize_gpu_telemetry(samples: list[GpuTelemetrySample]) -> dict[str, object]:
+def _process_names(samples: list[GpuTelemetrySample]) -> list[str]:
+    names: set[str] = set()
+    for sample in samples:
+        for process_row in sample.process_info.split(" | "):
+            parsed = next(csv.reader([process_row]), [])
+            if len(parsed) >= 2 and parsed[1].strip():
+                names.add(parsed[1].strip())
+    return sorted(names)
+
+
+def summarize_gpu_telemetry(
+    samples: list[GpuTelemetrySample],
+    *,
+    interval_seconds: float | None = None,
+    requested_duration_seconds: float | None = None,
+) -> dict[str, object]:
     """Build aggregate GPU telemetry statistics."""
 
+    if interval_seconds is not None and interval_seconds <= 0:
+        msg = "interval_seconds must be > 0 when provided"
+        raise ValueError(msg)
+    if requested_duration_seconds is not None and requested_duration_seconds <= 0:
+        msg = "requested_duration_seconds must be > 0 when provided"
+        raise ValueError(msg)
+    sample_start_timestamp = samples[0].timestamp if samples else None
+    sample_end_timestamp = samples[-1].timestamp if samples else None
+    memory_values = [sample.memory_used_mb for sample in samples]
+    utilization_values = [sample.utilization_gpu_percent for sample in samples]
+    power_values = [sample.power_draw_w for sample in samples]
+    temperature_values = [sample.temperature_c for sample in samples]
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "sample_count": len(samples),
+        "sampling_interval_seconds": interval_seconds,
+        "requested_duration_seconds": requested_duration_seconds,
+        "sample_start_timestamp": sample_start_timestamp,
+        "sample_end_timestamp": sample_end_timestamp,
         "gpu_names": sorted({sample.gpu_name for sample in samples}),
-        "utilization_gpu_percent": _metric_summary(
-            [sample.utilization_gpu_percent for sample in samples]
-        ),
-        "memory_used_mb": _metric_summary([sample.memory_used_mb for sample in samples]),
+        "process_names": _process_names(samples),
+        "utilization_gpu_percent": _metric_summary(utilization_values),
+        "memory_used_mb": _metric_summary(memory_values),
         "memory_total_mb": _metric_summary([sample.memory_total_mb for sample in samples]),
-        "power_draw_w": _metric_summary([sample.power_draw_w for sample in samples]),
-        "temperature_c": _metric_summary([sample.temperature_c for sample in samples]),
+        "power_draw_w": _metric_summary(power_values),
+        "temperature_c": _metric_summary(temperature_values),
+        "max_memory_used_mb": max(memory_values) if memory_values else None,
+        "mean_utilization_gpu_percent": (
+            statistics.fmean(utilization_values) if utilization_values else None
+        ),
+        "max_utilization_gpu_percent": max(utilization_values) if utilization_values else None,
+        "mean_power_draw_w": statistics.fmean(power_values) if power_values else None,
+        "max_temperature_c": max(temperature_values) if temperature_values else None,
         "process_info_observed": sorted(
             {sample.process_info for sample in samples if sample.process_info}
         ),
@@ -229,6 +266,9 @@ def summarize_gpu_telemetry(samples: list[GpuTelemetrySample]) -> dict[str, obje
 def write_gpu_telemetry_summary(
     path: str | Path,
     samples: list[GpuTelemetrySample],
+    *,
+    interval_seconds: float | None = None,
+    requested_duration_seconds: float | None = None,
 ) -> Path:
     """Write aggregate GPU telemetry statistics as JSON."""
 
@@ -236,7 +276,11 @@ def write_gpu_telemetry_summary(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
         json.dumps(
-            summarize_gpu_telemetry(samples),
+            summarize_gpu_telemetry(
+                samples,
+                interval_seconds=interval_seconds,
+                requested_duration_seconds=requested_duration_seconds,
+            ),
             ensure_ascii=True,
             indent=2,
             sort_keys=True,

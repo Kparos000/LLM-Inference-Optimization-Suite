@@ -63,6 +63,8 @@ class RunManifest:
     start_time: str
     end_time: str | None
     error_count: int
+    telemetry_path: str | None = None
+    telemetry_summary_path: str | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -85,6 +87,10 @@ class RunManifest:
         if self.max_records is not None:
             _validate_non_negative_int(self.max_records, "max_records")
         _validate_non_negative_int(self.error_count, "error_count")
+        for field_name in ("telemetry_path", "telemetry_summary_path"):
+            value = getattr(self, field_name)
+            if value is not None:
+                _validate_non_empty_string(value, field_name)
         if self.status not in {"planned", "running", "completed", "failed"}:
             msg = "status must be one of: planned, running, completed, failed"
             raise ValueError(msg)
