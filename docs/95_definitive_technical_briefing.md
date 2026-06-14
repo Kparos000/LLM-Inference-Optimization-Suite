@@ -1,0 +1,3076 @@
+# Definitive Technical Briefing
+
+Status: authoritative repository reference as of June 12, 2026
+
+Repository: `LLM-Inference-Optimization-Suite`
+
+This document explains the current system, the historical systems retained for
+auditability, and the planned work that has not yet been implemented. It is
+intended to be permanent project context for engineers and AI assistants that
+have not previously seen the repository.
+
+## How To Read This Document
+
+The repository contains several generations of architecture and experiment
+documentation. This briefing uses the following evidence order:
+
+1. Current source code and checked-in configuration.
+2. Current promoted manifests and generated source-of-truth reports.
+3. Current tests.
+4. Curated result samples tied to documented commands.
+5. Historical plans and reports.
+
+Labels used throughout:
+
+- **Implemented**: present in executable source and covered by tests.
+- **Validated**: implemented and exercised by a recorded local, API, or curated
+  benchmark run.
+- **Historical**: preserved to explain an earlier architecture or result, but
+  not the current source of truth.
+- **Planned**: described in configuration or documentation but not yet
+  implemented or measured.
+
+There is no checked-in `AGENTS.md`. Repository-specific operating rules are
+therefore derived from the README, project configuration, tests, and docs.
+
+# 1. Project Overview
+
+## What The Project Is
+
+The LLM Inference Optimization Suite is a reproducible engineering system for
+measuring and improving the path from a workload record to a grounded model
+response. It combines:
+
+- versioned model and backend configuration;
+- real and synthetic benchmark data;
+- vertical-specific knowledge corpora;
+- Qdrant-backed hybrid retrieval;
+- deterministic context compression;
+- grounded structured generation contracts;
+- local, API, and OpenAI-compatible inference runners;
+- request-level latency, throughput, quality, and cost metrics;
+- resumable execution and artifact promotion;
+- production-style service-level objectives.
+
+It is not primarily a model-comparison project. Models and backends are
+experimental variables inside a larger inference system. The central question
+is how serving architecture, retrieval, context, memory mode, scheduling,
+hardware, and optimization choices affect useful work per unit time and cost
+without sacrificing correctness, groundedness, safety, or reliability.
+
+## Why It Exists
+
+An LLM that produces a correct answer in isolation can still be unsuitable for
+production because it may:
+
+- take too long to produce the first token;
+- decode too slowly;
+- collapse under concurrent requests;
+- use too much VRAM;
+- retrieve the wrong evidence;
+- exceed the context budget;
+- return invalid structured output;
+- omit required citations;
+- cost too much per successful grounded answer;
+- lose progress during a long run.
+
+The suite turns those concerns into repeatable experiments with explicit
+schemas, workload splits, metrics, SLOs, and reports.
+
+## Engineering Problem
+
+The engineering problem is to identify the actual bottleneck in an end-to-end
+LLM system and change the appropriate layer:
+
+- retrieval quality and final evidence selection;
+- context length and ordering;
+- model execution;
+- prefill or decode;
+- queueing and batching;
+- KV-cache pressure;
+- backend scheduling;
+- concurrency;
+- hardware utilization;
+- output-contract adherence;
+- evaluation and cost accounting.
+
+Optimizing only one layer can move the bottleneck elsewhere. For example,
+compression can improve prefill latency but damage evidence recall. Higher
+concurrency can raise aggregate throughput while worsening TTFT and p99
+latency. A faster API model can still be inferior if it under-cites required
+evidence.
+
+## Business Problem
+
+The project supports decisions such as:
+
+- What deployment can satisfy latency and quality SLOs?
+- What does a grounded successful answer cost?
+- Is self-hosting economically justified compared with an API?
+- Which requests are context-heavy enough to require separate routing?
+- What concurrency gives the best capacity without unacceptable tail latency?
+- Which optimization reduces cost without reducing answer quality?
+- When should the system answer, retry, or escalate?
+
+The useful business unit is not simply tokens per second. It is a successful,
+safe, grounded answer delivered within an acceptable latency and cost envelope.
+
+## Meaning Of "Inference Optimization Suite"
+
+The name refers to a suite because the project optimizes and measures multiple
+coupled subsystems:
+
+- data and workload control;
+- retrieval and context construction;
+- generation;
+- serving runtime;
+- batching and concurrency;
+- hardware and memory;
+- evaluation;
+- cost;
+- reporting and operational safety.
+
+## Why Inference Engineering Matters
+
+Training determines model capability. Inference engineering determines whether
+that capability can be delivered predictably and economically. It covers model
+loading, request scheduling, tokenization, prefill, KV-cache allocation,
+decode, streaming, failure recovery, telemetry, and deployment cost.
+
+## Questions The Project Is Designed To Answer
+
+- How do TTFT, TPOT, end-to-end latency, and throughput change with workload
+  length and concurrency?
+- Does hybrid retrieval outperform a dense-only or no-context baseline?
+- Does deterministic context compression reduce input work without reducing
+  evidence recall?
+- Do vLLM and future SGLang serving paths outperform direct Transformers under
+  controlled conditions?
+- What quality is lost or gained when changing model size, memory mode, or
+  optimization?
+- Where does GPU memory go, and how much headroom remains?
+- What are the API-token and self-hosted infrastructure costs?
+- Does the system satisfy per-vertical SLOs?
+
+## Definition Of Success
+
+Success is a reproducible before-and-after optimization result where:
+
+- the workload, model, backend, memory mode, and hardware are recorded;
+- retrieval and generation quality remain at or above target;
+- latency, throughput, resource, or cost metrics improve;
+- tail latency and failures are reported rather than hidden;
+- raw results can be resumed, evaluated, and traced to source records;
+- claims are limited to measured evidence.
+
+# 2. Current Project Architecture
+
+## System Diagram
+
+```mermaid
+flowchart TD
+    A[Promoted 10,000-record dataset] --> B[Vertical corpus builders]
+    B --> C[Normalized ContextRecord corpora]
+    C --> D[Local Qdrant collections]
+    A --> E[Prompt and gold loader]
+    E --> F[Canonical non-leaking query materialization]
+    D --> G[Qdrant dense retrieval]
+    C --> H[BM25 lexical retrieval]
+    F --> G
+    F --> H
+    G --> I[Hybrid fusion and vertical reranking]
+    H --> I
+    I --> J[Optional deterministic compression]
+    J --> K[WorkloadRecord mm0-mm3]
+    E --> K
+    K --> L[Workload adapter]
+    L --> M[Grounded generation prompt with E1-E5 labels]
+    M --> N1[Mock runner]
+    M --> N2[Transformers local HF runner]
+    M --> N3[OpenAI-compatible runner]
+    M --> N4[Concurrent resumable load runner]
+    N3 --> O1[vLLM server]
+    N3 --> O2[Future SGLang server]
+    M --> O3[HF router / Novita API]
+    M --> O4[OpenRouter API]
+    N1 --> P[BenchmarkResult and GenerationRecord]
+    N2 --> P
+    N3 --> P
+    N4 --> P
+    O3 --> P
+    O4 --> P
+    P --> Q[Generation contract parser]
+    Q --> R[Gold join by prompt_id]
+    R --> S[Quality, grounding, safety, latency, cost]
+    S --> T[JSON, CSV, plots, summaries, SLO decisions]
+    U[Run manifest, checkpoints, logs, telemetry] --> N2
+    U --> N3
+    U --> N4
+```
+
+## Major Subsystems
+
+### CLI
+
+`src/inference_bench/cli.py` exposes the `inference-bench` command. Current
+commands cover:
+
+- version and environment checks;
+- system metadata capture;
+- config validation;
+- deterministic scaled workload generation;
+- mock, local HF, OpenAI-compatible, and concurrent OpenAI-compatible runs;
+- summary reporting;
+- structured-output scoring;
+- result comparison;
+- plotting and Phase 1 plot generation.
+
+Phase-specific scripts under `scripts/phase2`, `scripts/phase3`, and
+`scripts/phase4` orchestrate data curation, retrieval, readiness checks, and
+smoke validations without duplicating the core runners.
+
+### Benchmark Runner
+
+The runner layer accepts `WorkloadItem` records and produces:
+
+- `BenchmarkResult` rows for metrics;
+- `GenerationRecord` rows for prompt/output traces and parsed contract fields.
+
+Current runner families:
+
+- deterministic mock;
+- in-process Hugging Face Transformers;
+- synchronous OpenAI-compatible;
+- asynchronous concurrent OpenAI-compatible load runner.
+
+### Model Registry
+
+`configs/models.yaml` stores canonical model records and stable aliases.
+`src/inference_bench/model_registry.py` and `config.py` resolve both canonical
+keys and aliases. Deprecated aliases remain supported to avoid breaking older
+configs and reports.
+
+### Prompt System
+
+The Phase 3 `WorkloadRecord` preserves source prompt data, selected context,
+retrieval metadata, and gold evidence identifiers for offline evaluation. The
+Phase 4 adapter renders a runner prompt using:
+
+- the user-visible question;
+- memory mode;
+- ranked evidence blocks labeled `E1`, `E2`, and so on;
+- a strict five-field JSON generation contract.
+
+### Retrieval
+
+The current promoted retrieval architecture is:
+
+- canonical query materialization from prompt-visible fields and allowed
+  metadata;
+- direct evidence-identifier scrubbing for strict modes;
+- BM25 lexical retrieval;
+- local embedded Qdrant vector retrieval;
+- weighted hybrid fusion;
+- vertical-specific metadata boosts and deterministic reranking;
+- final evidence selection;
+- optional deterministic compression.
+
+### Context Engineering
+
+Each vertical has a dedicated chunk builder. Context is normalized into the
+typed `ContextRecord` schema, ranked, optionally compressed, and rendered with
+stable provenance and short citation labels.
+
+### Memory Layer
+
+Five modes are registered:
+
+- `mm0_no_context`;
+- `mm1_dense_top5`;
+- `mm2_hybrid_top5`;
+- `mm3_compressed_hybrid_top5`;
+- `mm4_bounded_agentic`.
+
+Only mm0 through mm3 produce normal benchmark workloads today. mm4 is a strict
+contract and trace schema, not an active autonomous agent.
+
+### Evaluation
+
+Evaluation joins generated output to gold by `prompt_id`. It computes format,
+contract, required phrase, prohibited phrase, evidence, groundedness,
+insufficient-evidence, escalation, and safety signals. Current groundedness is
+deterministic evidence coverage, not semantic entailment.
+
+### Telemetry
+
+The request telemetry schema includes timestamp, backend, model, memory mode,
+latency, TTFT, TPOT, token throughput, request throughput, success, and error
+type. GPU utilization, GPU memory, GPU cost, and RunPod cost are nullable future
+fields.
+
+### Reporting
+
+The project writes:
+
+- raw request CSV/JSONL;
+- generation traces;
+- run manifests;
+- checkpoints and logs;
+- processed evaluation and cost reports;
+- comparison CSVs;
+- static and interactive figures;
+- data EDA dashboards;
+- engineering decision docs and block summaries.
+
+### Execution Targets
+
+- Local Windows development and CPU Transformers validation.
+- External API validation through OpenRouter and the Hugging Face router.
+- Historical Linux/RunPod L40S vLLM calibration.
+- Future guarded live vLLM and SGLang GPU experiments.
+
+A checked-in remote RTX 3070 development profile and frozen A1 vLLM smoke
+matrix now exist. The 50-prompt A1 run validated the current live remote GPU
+path; it is a small-model serving result, not a full-scale benchmark.
+
+# 3. Inference Pipeline
+
+## Stage 1: Dataset Selection
+
+Purpose: choose a deterministic split and preserve traceability.
+
+Inputs:
+
+- promoted prompt JSONL;
+- matching gold JSONL;
+- selected split: `smoke_500`, `controlled_2000`, or `final_10000`;
+- selected memory mode and ablation mode.
+
+Outputs:
+
+- selected prompt records;
+- deterministic prompt IDs and vertical distribution.
+
+Metrics:
+
+- record counts;
+- per-vertical counts;
+- prompt/gold alignment.
+
+Current implementation:
+
+- `memory_workloads.select_prompts_for_split`;
+- 100 prompts per vertical for `smoke_500`;
+- 400 per vertical for `controlled_2000`;
+- all 2,000 per vertical for `final_10000`.
+
+Future improvement: explicit train/development/test isolation if model or
+reranker learning is introduced. The current project is inference evaluation,
+not model training.
+
+## Stage 2: Prompt And Query Construction
+
+Purpose: separate the user-visible generation question from the retrieval query.
+
+Inputs:
+
+- source prompt record;
+- vertical;
+- ablation mode;
+- allowed prompt metadata.
+
+Outputs:
+
+- normalized prompt;
+- canonical retrieval keys;
+- enriched query;
+- expansion types;
+- leakage diagnostics.
+
+Metrics:
+
+- rewrite count;
+- blocked direct-hint count;
+- whether metadata or source hints were used.
+
+Current implementation:
+
+- `retrieval_keys.py`;
+- `canonical_queries.py`;
+- `memory_workloads.prompt_query_text`;
+- three ablations: `prompt_text_only`, `prompt_plus_metadata`, and
+  `prompt_plus_source_hints`.
+
+The promoted source of truth uses `prompt_plus_metadata`. Source-hint mode is
+retained as an assisted upper bound and is not canonical.
+
+## Stage 3: Retrieval
+
+Purpose: select evidence likely to answer the prompt.
+
+Inputs:
+
+- canonical query;
+- vertical context corpus;
+- memory mode;
+- Qdrant and lexical indexes.
+
+Outputs:
+
+- candidate contexts;
+- component scores;
+- final ranked top five;
+- retrieval latency and diagnostics.
+
+Metrics:
+
+- candidate recall@20 and @50;
+- final recall@5;
+- MRR;
+- retrieval latency;
+- backend and vector-store labels.
+
+Current implementation:
+
+- BM25;
+- Qdrant vector retrieval;
+- hybrid score fusion;
+- vertical-specific boosts and selectors.
+
+Future improvement:
+
+- replace hashing embeddings with a controlled semantic embedding model;
+- compare rerankers without changing the promoted evaluation contract;
+- record backend-native queue and cache telemetry.
+
+## Stage 4: Context Compression And Ordering
+
+Purpose: reduce prompt tokens while preserving useful evidence.
+
+Inputs:
+
+- ranked retrieval results;
+- memory-mode token budget.
+
+Outputs:
+
+- deduplicated, compressed, score-ordered context records;
+- compression metadata.
+
+Metrics:
+
+- original and compressed context tokens;
+- token-reduction percentage;
+- recall before and after compression;
+- gold evidence retained.
+
+Current implementation:
+
+- exact normalized-text deduplication;
+- score thresholding;
+- deterministic head/tail extractive truncation;
+- hard token budget;
+- at least one retained context when retrieval succeeded.
+
+## Stage 5: Runner Prompt Rendering
+
+Purpose: produce one backend-neutral prompt.
+
+Inputs:
+
+- user-visible question;
+- memory mode;
+- selected `ContextRecord` objects.
+
+Outputs:
+
+- `WorkloadItem`;
+- evidence labels and alias map;
+- strict output instructions.
+
+Metrics:
+
+- context count and token estimate;
+- prompt input-token count once tokenized.
+
+Current implementation:
+
+- `workload_adapter.py`;
+- `generation_contract.py`.
+
+## Stage 6: Tokenization
+
+Purpose: map prompt text to model tokens.
+
+Inputs: rendered prompt and backend tokenizer.
+
+Outputs: token IDs and input-token count.
+
+Metrics: input tokens, output tokens, total tokens.
+
+Current implementation:
+
+- local HF uses the model tokenizer;
+- OpenAI-compatible/API routes use provider usage when available;
+- fallbacks are clearly distinguished from provider counts.
+
+Future improvement: standardize tokenizer provenance in every run manifest and
+record context-window utilization.
+
+## Stage 7: Prefill
+
+Purpose: process the input sequence and initialize attention/KV state.
+
+Inputs: input token IDs.
+
+Outputs: first-token logits and KV-cache state.
+
+Metrics:
+
+- TTFT, which includes client/server overhead, queueing, tokenization where
+  applicable, and prefill;
+- future backend-native prefill time;
+- future prefill tokens per second.
+
+Current implementation: TTFT is available for streaming HF/API/OpenAI-compatible
+paths. The project does not yet disaggregate queue time, network time, and GPU
+prefill kernels.
+
+## Stage 8: Decode
+
+Purpose: generate output tokens autoregressively.
+
+Inputs: KV state, sampling/generation settings.
+
+Outputs: output tokens and final text.
+
+Metrics:
+
+- TPOT;
+- ITL distribution for streaming APIs;
+- output tokens per second;
+- end-to-end latency.
+
+Current implementation: HF and OpenAI-compatible runners capture TPOT and token
+throughput where timing data permits. Streaming API validation captures ITL
+p50/p95/p99.
+
+## Stage 9: Streaming
+
+Purpose: expose first-token and inter-token behavior rather than only total
+latency.
+
+Inputs: streaming response chunks.
+
+Outputs: assembled text and timing samples.
+
+Metrics: TTFT, per-token arrival intervals, ITL percentiles, TPOT, E2E.
+
+Current implementation:
+
+- local HF has an optional `TextIteratorStreamer` path;
+- OpenAI-compatible runners support streaming;
+- OpenRouter and HF router smoke paths have recorded streaming measurements.
+
+Configuration debt: `configs/backend_matrix.yaml` currently says local HF does
+not support streaming or TTFT, while the runner implementation does. The code
+is more capable than the matrix and the matrix should be corrected before the
+next formal readiness report.
+
+## Stage 10: Contract Parsing
+
+Purpose: convert model text into evaluator-friendly structured output.
+
+Inputs: generated text and allowed `E1`-style labels.
+
+Outputs:
+
+- parsed answer;
+- evidence IDs;
+- confidence;
+- insufficient-evidence flag;
+- citation notes;
+- validity and parse diagnostics.
+
+Metrics: JSON validity, contract validity, truncation, repair applied, invalid
+evidence labels.
+
+## Stage 11: Evaluation
+
+Purpose: score output against the benchmark contract.
+
+Inputs:
+
+- generation row;
+- gold record joined by `prompt_id`;
+- citation alias mapping.
+
+Outputs:
+
+- status and format correctness;
+- evidence presence and full match;
+- deterministic groundedness;
+- safety and prohibited-term findings.
+
+Metrics are aggregated by model, backend, memory mode, vertical, and run.
+
+## Stage 12: Reporting And Promotion
+
+Purpose: preserve measured evidence without treating every local artifact as a
+final public result.
+
+Inputs: raw result rows, generations, manifests, checkpoints, evaluations.
+
+Outputs:
+
+- raw and processed artifacts;
+- curated samples;
+- plots;
+- comparison reports;
+- SLO decisions.
+
+Current policy: full raw outputs remain ignored. Only reviewed, non-sensitive,
+small artifacts are promoted to `results/samples`.
+
+# 4. Retrieval Engineering
+
+## Current Architecture
+
+The promoted retrieval path is a vertical-isolated hybrid system:
+
+1. Build normalized context corpora.
+2. Build one Qdrant collection per vertical.
+3. Materialize a canonical, non-leaking query.
+4. Retrieve lexical and vector candidates.
+5. Deduplicate and normalize scores.
+6. Apply metadata and vertical-specific boosts.
+7. Rerank expanded candidates.
+8. Select final top five.
+9. Optionally compress selected context.
+
+## Sparse Retrieval
+
+`BM25Retriever` is a dependency-light BM25 implementation with:
+
+- token postings;
+- document lengths;
+- BM25 `k1=1.5` and `b=0.75`;
+- deterministic score and context-ID tie breaking;
+- per-query caching.
+
+It searches title, text, source type, identifiers, and flattened metadata.
+
+## Dense Retrieval
+
+Two dense interfaces exist:
+
+- `LocalFallbackDenseRetriever`: deterministic token and bigram cosine scoring.
+- `QdrantDenseRetriever`: queries local embedded Qdrant collections.
+
+The current promoted Qdrant report labels the effective embedding backend
+`local_hashing_fallback` with 384 dimensions and cosine distance. This is a
+real vector database path, but not a learned semantic embedding model. The
+optional `sentence-transformers` provider can be used when its model is locally
+available; it is not the current promoted embedding source.
+
+## Hybrid Retrieval
+
+`HybridRetriever` combines lexical and vector candidates with default weights:
+
+- lexical: 0.55;
+- dense: 0.45.
+
+The final score also includes normalized component scores, metadata overlap,
+entity and metric matches, and vertical-specific reranking signals.
+
+## Retrieval Ablations
+
+- `prompt_text_only`: visible question/issue only, with direct identifiers
+  scrubbed.
+- `prompt_plus_metadata`: visible prompt plus realistic metadata such as
+  vertical, task type, category, ticker, company, form, topic, or support type.
+  It excludes direct gold/source IDs.
+- `prompt_plus_source_hints`: allows prompt-side source and evidence hints.
+  This is explicitly an assisted upper bound.
+
+Runtime and tests enforce that strict modes do not use gold IDs, source IDs,
+parent IDs, document IDs, filing IDs, or answer-side identifiers.
+
+## Query Enrichment
+
+The retrieval layer implements:
+
+- lowercasing and normalization;
+- direct-ID scrubbing;
+- company/ticker resolution;
+- period extraction;
+- finance metric and XBRL concept aliases;
+- airline policy and disruption synonyms;
+- healthcare administrative and privacy synonyms;
+- retail product, category, issue, review, and policy signals;
+- research paper title, section, topic, method, and result signals.
+
+## Ranking And Reranking
+
+Candidate pools are expanded beyond the final top five. The code records
+candidate limits, pre-rerank IDs, post-deduplication counts, component scores,
+and selection reasons.
+
+Vertical logic includes:
+
+- Airline: policy family, route, baggage, booking/refund, disruption, and
+  escalation signals.
+- Healthcare Admin: procedure family, identity, privacy, safety, and document
+  kind.
+- Retail: product-title, category, issue, policy/review balance, and
+  parent-child linkage.
+- Finance: company/ticker, metric/concept, form, period, section, and filing
+  metadata.
+- Research AI: paper title, section type, topic, method/results/limitations
+  intent.
+
+## Evidence IDs And Citations
+
+Retrieval records preserve:
+
+- `context_id`;
+- `chunk_id`;
+- `source_id`;
+- `parent_id`;
+- provenance;
+- original document metadata.
+
+Generation does not ask small models to reproduce long canonical IDs. The
+adapter labels ranked evidence as `E1`, `E2`, and so on and stores an alias map
+back to canonical IDs. Evaluation expands the labels before comparing them with
+gold evidence.
+
+## Why Retrieval Matters To Inference Optimization
+
+Retrieval changes:
+
+- prompt token count and prefill work;
+- TTFT;
+- context-window pressure;
+- KV-cache size;
+- answer quality and groundedness;
+- cost per request;
+- cache reuse potential.
+
+Poor retrieval wastes compute on irrelevant tokens. Overly aggressive
+compression may reduce latency but remove required evidence. The project
+therefore treats retrieval and compression metrics as prerequisites for
+serving optimization.
+
+## Promoted Retrieval Results
+
+The source of truth is
+`data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.
+
+| Vertical | Candidate R@20 | Candidate R@50 | Final R@5 | MRR |
+| --- | ---: | ---: | ---: | ---: |
+| Airline | 1.000000 | 1.000000 | 1.000000 | 1.000000 |
+| Healthcare Admin | 1.000000 | 1.000000 | 1.000000 | 0.994250 |
+| Retail | 0.974333 | 0.982083 | 0.959917 | 0.922592 |
+| Finance | 0.948875 | 0.955750 | 0.939000 | 0.941833 |
+| Research AI | 0.975172 | 0.979826 | 0.917460 | 0.953233 |
+
+All five pass the configured retrieval SLOs on the repaired 2,000-record
+validation. These values must not be confused with older pre-repair reports or
+source-hint-assisted upper bounds.
+
+## What Was Replaced
+
+Historical retrieval evolved through:
+
+1. direct local corpus scans;
+2. deterministic local fallback dense retrieval;
+3. Qdrant plus strict ablations;
+4. metadata enrichment and vertical reranking;
+5. canonical key materialization;
+6. repaired retrieval-dataset and gold alignment;
+7. promoted source-of-truth manifest.
+
+Earlier reports showed much lower Finance and Retail strict recall. Diagnosis
+found that metadata flow, evidence-family alignment, and final evidence
+selection were often more important than raw candidate retrieval. The current
+promoted metrics use the repaired generated retrieval dataset; the original
+promoted benchmark data under `data/scaleup_2000_full` was not overwritten.
+
+## Remaining Retrieval Work
+
+- Validate a learned embedding backend under the same strict ablations.
+- Re-run all retrieval metrics when corpora or embedding models change.
+- Resolve the difference between current promoted retrieval validation and
+  older workload-level compression reports that still reflect pre-promotion
+  paths.
+- Add semantic answer support checks without leaking gold evidence into
+  retrieval.
+
+# 5. Context Engineering
+
+## ContextRecord
+
+Every normalized chunk contains:
+
+- context, source, parent, and chunk IDs;
+- vertical and chunk strategy;
+- source type and title;
+- text and arbitrary metadata;
+- token estimate and provenance;
+- gold-linked indicator.
+
+Validation requires a supported vertical, non-empty text, non-negative token
+estimate, dictionary metadata, and a boolean gold-link flag.
+
+## Chunking
+
+The corpus builders use sentence-aware windows with a word-window fallback.
+Current maximum estimates:
+
+- Airline: 180 tokens.
+- Healthcare Admin: 180 tokens.
+- Retail: 180 tokens.
+- Finance narrative sections: 220 tokens.
+- Research AI sections: 220 tokens.
+
+The splitting helper uses an overlap target of 24 tokens. Atomic Finance XBRL
+facts and filing events are not split.
+
+## Context Assembly
+
+The memory workload builder first creates messages with context IDs and
+provenance. The Phase 4 adapter replaces that generic rendering with the shared
+grounded generation prompt and stable `E1`-style labels.
+
+## Compression
+
+`mm3` compresses hybrid top-five context deterministically:
+
+- normalize and remove duplicate text;
+- drop chunks below a relative score threshold;
+- preserve score order;
+- truncate text extractively to approximately 72% using head and tail tokens;
+- enforce the 2,048-token mode budget;
+- preserve metadata and provenance;
+- retain at least one chunk if retrieval returned evidence.
+
+Promoted final-split diagnostics report approximately:
+
+- Airline: 23.76% token reduction;
+- Healthcare Admin: 21.39%;
+- Retail: 28.62%;
+- Finance: 28.96%;
+- Research AI: 28.60%;
+
+The recorded recall loss is zero for those diagnostics.
+
+## Evidence Formatting
+
+Each evidence block contains:
+
+- rank;
+- short evidence label;
+- title;
+- source type;
+- canonical alias list;
+- text.
+
+The short label reduces output truncation and exact-ID reproduction failures.
+
+## Structured Output
+
+Every grounded runner prompt requests exactly one JSON object:
+
+```json
+{
+  "answer": "string",
+  "evidence_ids": ["E1"],
+  "confidence": 0.8,
+  "insufficient_evidence": false,
+  "citation_notes": "E1 supports the stated claim."
+}
+```
+
+The parser:
+
+- extracts the first balanced JSON object;
+- detects truncation;
+- permits only a narrow trailing-comma repair;
+- validates field presence and types;
+- checks confidence range;
+- enforces empty answer/citations for insufficient evidence;
+- rejects evidence labels not supplied in the prompt.
+
+## Citation Repair
+
+A bounded one-time citation repair path exists. It:
+
+- keeps the strict evaluator unchanged;
+- supplies only allowed short labels;
+- asks the model to correct evidence IDs and notes;
+- does not expose canonical gold IDs;
+- does not invent missing context.
+
+The five-prompt Model6 run improved evidence match and groundedness from 60% to
+80% after one repair request. The 80% is evaluator-assisted; unassisted quality
+remained 60%.
+
+## Context Window Management
+
+Current controls are estimated token budgets rather than tokenizer-exact
+packing:
+
+- no context for mm0;
+- 4,096 estimated context tokens for mm1/mm2;
+- 2,048 for mm3;
+- 4,096 for the future mm4 contract.
+
+Future improvements:
+
+- tokenizer-exact packing per model;
+- reserve explicit output-token headroom;
+- model-specific context limits;
+- source-family diversity constraints;
+- prefix-cache-aware ordering;
+- context-window utilization telemetry.
+
+# 6. Prompt Engineering
+
+## Prompt Categories In The Repository
+
+### Generic Synthetic Workload Prompts
+
+Stored under `data/prompts` and configured by `configs/workloads.yaml`:
+
+- `smoke`;
+- `structured_output_smoke`;
+- `short_chat`;
+- `code_helpdesk`;
+- `long_context`;
+- `shared_prefix`.
+
+These are Phase 1 serving-mechanics workloads, not the current vertical
+benchmark source.
+
+### Vertical Benchmark Prompts
+
+Stored under `data/scaleup_2000_full/<vertical>`. They include:
+
+- a stable `prompt_id`;
+- visible question/issue;
+- task type;
+- expected status and output format;
+- domain metadata;
+- evidence requirements used for offline evaluation.
+
+### Retrieval Queries
+
+Retrieval queries are not identical to generation prompts. They are normalized
+and enriched under an explicit ablation policy.
+
+### Grounded Generation Prompt
+
+The shared renderer contains:
+
+- system instruction to answer only from supplied evidence;
+- memory mode;
+- ranked evidence blocks;
+- original user question;
+- strict JSON output contract.
+
+### Correction Prompts
+
+Two bounded correction prompts exist:
+
+- contract-structure retry;
+- citation-only repair.
+
+Neither may add arbitrary evidence or facts.
+
+## System, Developer, And Evaluation Prompts
+
+The executable runner prompt uses a system-style text section but does not
+currently send separate OpenAI `system`, `developer`, and `user` message roles
+through every backend. The adapter flattens the contract into one prompt for
+cross-backend consistency.
+
+Evaluation is deterministic Python logic. There is no LLM-judge evaluation
+prompt in the current source of truth.
+
+## Vertical Prompt Fields
+
+- Airline: route, travel type, partner-airline involvement, support type,
+  expected action.
+- Healthcare Admin: department, queue, channel, privacy sensitivity, safety
+  boundary, patient type.
+- Retail: product ID/title, category, issue type, source product identifiers.
+- Finance: ticker, company, filing form, task type, SEC/XBRL evidence metadata.
+- Research AI: topic, source papers, paper/section metadata, evidence type.
+
+## Prompt IDs And Traceability
+
+`prompt_id` is the primary join key across:
+
+- source prompts;
+- gold records;
+- workloads;
+- runner inputs;
+- raw generations;
+- evaluation outputs.
+
+`workload_id` adds split and memory-mode identity. Run IDs and manifests add
+execution identity.
+
+## Prompt Versioning
+
+There is no central semantic prompt-version field yet. Traceability currently
+comes from:
+
+- Git commit;
+- source prompt record;
+- workload path;
+- run command;
+- model/backend/memory metadata;
+- generated prompt captured in `GenerationRecord`.
+
+Future work should add explicit renderer and generation-contract versions so
+prompt changes can be compared without relying only on Git history.
+
+## Prompt Validation
+
+Validation occurs at several layers:
+
+- dataset alignment and safety reports;
+- `WorkloadRecord` schema;
+- runner `WorkloadItem` schema;
+- direct-ID leakage guards;
+- generation-contract parser;
+- gold/evaluator join.
+
+# 7. Knowledge Bases
+
+The current benchmark has five verticals, not three. Retail and Research AI are
+active current verticals and must not be described as future work.
+
+## Airline
+
+Knowledge source:
+
+- 300 deterministic synthetic public-inspired Canada Air policy records.
+- The airline is fictional, which avoids representing generated policy as a
+  real carrier commitment.
+
+Folder:
+
+```text
+data/scaleup_2000_full/airline/
+  airline_prompts_2000.jsonl
+  airline_gold_2000.jsonl
+  airline_kb_2000.jsonl
+```
+
+KB fields include `doc_id`, `document_type`, `title`, `body`, `tags`,
+`source_type`, `version`, metadata, and commitability.
+
+Chunk strategy:
+
+- policy-section chunking;
+- 180-token sentence windows;
+- 24-token fallback overlap;
+- policy family parent IDs and policy tags.
+
+Evaluation:
+
+- required policy/evidence IDs;
+- expected action/status;
+- must-include policy identity;
+- prohibited unsupported compensation, refund, or verification bypass claims.
+
+Coverage includes accessibility, baggage, cancellations/refunds, codeshare,
+disruption, fraud/chargeback, loyalty, ticket changes, and travel-document
+questions.
+
+## Healthcare Admin
+
+Knowledge source:
+
+- 300 deterministic synthetic public-inspired MapleCare Health administrative
+  policy records.
+- The provider is fictional.
+
+Folder:
+
+```text
+data/scaleup_2000_full/healthcare_admin/
+```
+
+Chunk strategy:
+
+- administrative procedure chunks;
+- 180-token sentence windows;
+- explicit privacy, identity, clinical, and escalation-boundary metadata.
+
+Evaluation:
+
+- administrative action and queue;
+- policy/evidence IDs;
+- privacy sensitivity;
+- prohibited diagnosis, treatment, dosage, clinical reassurance, medical
+  advice, and identity-verification bypass.
+
+The benchmark intentionally tests the boundary between administrative help and
+clinical advice.
+
+## Retail
+
+Knowledge source:
+
+- 1,000 promoted KB records;
+- curated and sanitized product metadata/review evidence;
+- synthetic benchmark support policies clearly marked as not Amazon policy.
+
+Folder:
+
+```text
+data/scaleup_2000_full/retail/
+```
+
+Chunk strategy:
+
+- parent-child linkage;
+- product/category as parent context;
+- review, metadata, summary, and policy evidence as children;
+- 180-token windows where needed.
+
+Metadata includes category, parent ASIN, product title, rating, average rating,
+evidence type, and issue terms.
+
+Evaluation:
+
+- required summary/review/policy evidence families;
+- issue identification, review summary, policy reasoning, comparison, returns,
+  suspicious review, quality, and packaging tasks;
+- prohibited raw user IDs, unsupported claims, and false Amazon guarantees.
+
+The promoted prompt set is heavily weighted toward `All_Beauty`, with smaller
+Electronics and Home and Kitchen coverage. That imbalance is a current dataset
+limitation.
+
+## Finance
+
+Knowledge source:
+
+- 1,540 SEC/XBRL-derived KB records;
+- public filing sections, filing events, XBRL concept inventories, fact tables,
+  and atomic fact evidence.
+
+Folder:
+
+```text
+data/scaleup_2000_full/finance/
+```
+
+Current ticker coverage includes AAPL, AMD, AMZN, GOOGL, META, MSFT, NVDA, and
+TSLA, plus multi-company tasks.
+
+Chunk strategy:
+
+- atomic XBRL fact chunks;
+- atomic filing-event chunks;
+- 220-token filing-section sentence windows;
+- SEC/XBRL parent and provenance metadata.
+
+Metadata includes ticker, company, form, filing/report date, period, fiscal
+year, concepts, section type/title, accession number, source, and parent IDs
+when available.
+
+Evaluation:
+
+- answer-grounded, calculation, compare-filings, structured extraction,
+  evidence lookup, and escalation tasks;
+- exact evidence/citation families;
+- prohibited investment recommendations, price targets, fabricated citations,
+  unsupported projections, and guaranteed outcomes.
+
+Finance retrieval does not default to generic semantic chunking because exact
+filing, period, concept, and numeric provenance matter.
+
+## Research AI
+
+Knowledge source:
+
+- 1,600 promoted benchmark KB records;
+- approximately 60 papers represented in the promoted KB;
+- optional broader 1,941-section full retrieval corpus under the historical
+  Phase 2A generated path.
+
+Folder:
+
+```text
+data/scaleup_2000_full/research_ai/
+```
+
+Chunk strategy:
+
+- preserve paper sections;
+- 220-token sentence-window fallback for long sections;
+- retain paper ID/title, section ID/title/type, topic, venue, and year.
+
+Evaluation:
+
+- paper and section evidence families;
+- citation lookup, comparison, method, results, limitations, and evidence
+  boundary questions;
+- no claim beyond the cited paper sections.
+
+The promoted 1,600-row KB is the benchmark evidence source. The optional
+full-section corpus is broader retrieval material and should not be counted as
+additional promoted benchmark KB rows.
+
+## Future Knowledge Bases
+
+Earlier Phase 1/2 plans mention developer helpdesk, enterprise IT, insurance,
+and other verticals. They are planning history, not current benchmark
+verticals. Adding a vertical now requires:
+
+- source and license review;
+- prompt, gold, and KB schemas;
+- vertical chunking;
+- leakage-safe retrieval keys;
+- safety boundaries;
+- retrieval SLO validation;
+- generation evaluation.
+
+# 8. Datasets
+
+## Promoted Dataset
+
+Root:
+
+```text
+data/scaleup_2000_full/
+```
+
+Manifest totals:
+
+- 10,000 prompts;
+- 10,000 gold/eval records;
+- 4,740 KB records;
+- five verticals;
+- 2,000 prompts and gold records per vertical.
+
+KB distribution:
+
+| Vertical | Prompt | Gold | KB |
+| --- | ---: | ---: | ---: |
+| Airline | 2,000 | 2,000 | 300 |
+| Healthcare Admin | 2,000 | 2,000 | 300 |
+| Retail | 2,000 | 2,000 | 1,000 |
+| Finance | 2,000 | 2,000 | 1,540 |
+| Research AI | 2,000 | 2,000 | 1,600 |
+
+## Prompt Schema
+
+Common fields:
+
+- `prompt_id`;
+- `vertical`;
+- `question`;
+- `task_type`;
+- `expected_status`;
+- `expected_output_format`;
+- domain-specific metadata;
+- evidence requirement fields.
+
+Domain-specific fields are intentionally retained rather than flattened away
+because they drive strict retrieval and evaluation.
+
+## Gold Schema
+
+Common fields:
+
+- `prompt_id`;
+- `vertical`;
+- expected status/action;
+- `reference_answer`;
+- `must_include`;
+- `must_not_include`;
+- required document/chunk/citation IDs;
+- metadata describing the task and evidence family.
+
+Gold records are evaluation contracts, not ideal natural-language answers from
+an LLM judge.
+
+## KB Schema
+
+Common fields:
+
+- document ID;
+- title and body;
+- document/source type;
+- metadata;
+- tags;
+- version;
+- provenance/source identifier where available;
+- `allowed_to_commit`.
+
+## Synthetic Versus Real Data
+
+- Airline and Healthcare Admin are deterministic synthetic public-inspired
+  policies for fictional organizations.
+- Retail combines sanitized public review/product evidence with explicit
+  synthetic benchmark policies.
+- Finance uses public SEC/XBRL-derived evidence.
+- Research AI uses public research paper metadata and section text.
+- Prompt and gold scale-up records were generated deterministically from the
+  curated vertical foundations.
+
+The dataset is therefore mixed-source. It is neither entirely synthetic nor a
+raw copy of external corpora.
+
+## Dataset Generation And Promotion
+
+The Phase 2 scripts implement staged growth:
+
+- seed curation;
+- 250-record candidates;
+- 1,000 partial and full checkpoints;
+- 2,000-per-vertical promotion;
+- QA and manifest generation.
+
+The promoted dataset is immutable for later retrieval and inference work.
+Retrieval repairs are written to generated alignment datasets rather than
+overwriting it.
+
+## Validation
+
+Validation covers:
+
+- counts and manifest alignment;
+- duplicate IDs;
+- prompt/gold alignment;
+- missing evidence;
+- orphan records;
+- safety terms and local paths;
+- evidence reuse;
+- output formats;
+- workload shape;
+- domain metadata coverage.
+
+The public EDA root is:
+
+```text
+data/generated/dataset_10000/
+```
+
+It contains 74 files, including dashboards, interactive/static plots, term
+visuals, word clouds, vertical pages, and JSON/CSV profiles.
+
+Finance also has a public convenience mirror:
+
+```text
+data/generated/finance/
+```
+
+This is not a second Finance dataset. It exposes the Finance-specific EDA page
+and term assets more directly.
+
+## Generated Workload Datasets
+
+Local ignored workloads live under:
+
+```text
+data/workloads/
+  smoke_500/
+  controlled_2000/
+  final_10000/
+```
+
+Each split may contain mm0-mm3 files and ablation subdirectories. These files
+are deterministic but large. The local tree is currently several gigabytes and
+is intentionally not committed.
+
+# 9. Model Registry
+
+## Current Canonical Models And Aliases
+
+| Public alias | Canonical key | Model ID | Role | Current execution target |
+| --- | --- | --- | --- | --- |
+| `model1_0_5b` | `qwen2_5_0_5b_instruct` | `Qwen/Qwen2.5-0.5B-Instruct` | local smoke | local HF or optional self-host |
+| `model2_1_5b` | `qwen2_5_1_5b_instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | stronger local baseline | local HF or optional self-host |
+| `model3_7b` | `qwen2_5_7b_instruct` | `Qwen/Qwen2.5-7B-Instruct` | first serious GPU model | vLLM target |
+| `model4_32b` | `qwen2_5_32b_instruct` | `Qwen/Qwen2.5-32B-Instruct` | later scale study | larger self-hosted GPU |
+| `model5_gated` | `ministral_3b_2512_api` | `mistralai/ministral-3b-2512` | API-priced small model | OpenRouter |
+| `model6_gated` | `llama_3_1_8b_instruct_api` | `meta-llama/Llama-3.1-8B-Instruct` | preferred API quality/cost baseline | HF router / Novita |
+| `model7_large_placeholder` | `future_large_model_placeholder` | placeholder | future model | none |
+
+The alias names are stable experiment roles. Canonical keys preserve descriptive
+model identity.
+
+## Deprecated Aliases
+
+- `large_model_placeholder`;
+- `model5_large_placeholder`;
+- `old_model5_llama_3_2_3b`.
+
+They remain resolvable for historical configs and reports.
+
+## Why Model5 Changed
+
+Model5 originally pointed to gated Llama 3.2 3B through the Hugging Face router
+and Featherless. The project could confirm access and provider support but
+could not obtain complete authoritative per-token input/output pricing. Because
+the cost framework forbids fabricated pricing, that route was blocked before
+execution.
+
+Model5 was changed to `mistralai/ministral-3b-2512` through OpenRouter, where
+complete per-token pricing was available. The previous route remains as a
+deprecated alias for audit history.
+
+## Why Model6 Is The Preferred API Benchmark
+
+Measured five-prompt streaming results:
+
+- Model6: 100% contract validity, 60% evidence match, 60% first-pass
+  groundedness, approximately `$0.000028632` per request.
+- Model5: 80% contract validity, 40% evidence match, 40% groundedness,
+  approximately `$0.00014972` per request.
+
+Model5 was slightly faster in the recorded smoke, but Model6 was more accurate
+under the contract and about 5.23 times cheaper per request. Model5 remains a
+useful provider/model-size comparison, not the current quality or cost leader.
+
+## Pricing
+
+Current registered rates:
+
+- Model5/OpenRouter: `$0.10` per 1M input tokens and `$0.10` per 1M output
+  tokens.
+- Model6/Novita: `$0.02` per 1M input tokens and `$0.05` per 1M output tokens.
+
+Prices are snapshots, not permanent guarantees. They must be revalidated before
+a new cost claim.
+
+# 10. API Providers
+
+## Hugging Face
+
+Roles:
+
+- model registry and downloads for local Transformers;
+- router/provider metadata;
+- gated-model authentication;
+- API route for Model6.
+
+Authentication: `HF_TOKEN`.
+
+The token must never be printed, logged, or committed. A token is only needed
+for gated/rate-limited downloads or provider calls.
+
+## Novita
+
+Novita is the effective provider selected through Hugging Face router metadata
+for Model6 in the recorded API smoke.
+
+Capabilities validated:
+
+- chat generation;
+- streaming;
+- provider token usage;
+- cost accounting.
+
+Registered snapshot price:
+
+- input `$0.02` per 1M;
+- output `$0.05` per 1M.
+
+## OpenRouter
+
+OpenRouter is the current Model5 route.
+
+Authentication: `OPENROUTER_API_KEY`.
+
+Capabilities validated:
+
+- OpenAI-compatible chat completions;
+- streaming;
+- token usage;
+- costed five-prompt smoke.
+
+Registered snapshot price:
+
+- input and output `$0.10` per 1M.
+
+## Provider Safety Controls
+
+Paid scripts require:
+
+- the required credential;
+- an explicit paid-call flag;
+- a pricing decision with complete rates;
+- a small request limit;
+- no secret output.
+
+Live pricing wins over a manual override. An audited enabled manual override is
+allowed only when live pricing is absent. If neither exists, execution is
+blocked.
+
+## Limitations
+
+- Provider availability, routing, latency, and prices can change.
+- Five prompts are plumbing evidence, not statistically robust provider
+  benchmarking.
+- API measurements include network and provider queueing.
+- Provider internals such as GPU type, batching, and cache state are not known.
+
+# 11. Inference Engines
+
+## Hugging Face Transformers
+
+Status: **implemented and validated locally**.
+
+Purpose:
+
+- direct in-process baseline;
+- model/tokenizer integration;
+- prompt and output-contract validation;
+- small CPU or local-GPU smoke tests.
+
+Tradeoffs:
+
+- simple and transparent;
+- not a production serving scheduler;
+- current local measurements are CPU-heavy and not comparable with remote API
+  or GPU serving without qualification.
+
+## vLLM
+
+Status:
+
+- OpenAI-compatible runner and load runner implemented;
+- historical RunPod L40S calibration validated;
+- current Phase 4 wrapper is dry-run ready;
+- new controlled live GPU smoke not yet executed.
+
+Purpose:
+
+- continuous batching;
+- PagedAttention/KV-cache management;
+- serving-oriented throughput;
+- concurrency experiments;
+- prefix caching and future optimization tests.
+
+The project reaches vLLM through an OpenAI-compatible HTTP server rather than a
+separate custom client.
+
+## SGLang
+
+Status: **dry-run scaffold/future live backend**.
+
+The script reuses the OpenAI-compatible request and result schema and defaults
+to `http://localhost:30000/v1`. It performs readiness checks and fails clearly
+when no server exists.
+
+Future role:
+
+- backend comparison under the same model, workload, generation contract, and
+  hardware;
+- scheduler, prefix-cache, and structured-generation behavior.
+
+## Hugging Face Provider API
+
+Status: **implemented and validated for Model6**.
+
+It is a remote inference service, not the same as local Transformers.
+
+## OpenRouter
+
+Status: **implemented and validated for Model5**.
+
+It provides an OpenAI-compatible API and transparent model/provider routing.
+
+## Novita
+
+Status: **validated as Model6's selected provider through the HF route**.
+
+## Ollama
+
+Status: **not implemented**.
+
+There is no current Ollama runner, configuration, or benchmark. It should not
+be listed as an active inference engine. It could be added later for convenient
+local model serving, but it is not part of the current controlled benchmark
+matrix.
+
+## Engine Comparison Rules
+
+An honest engine comparison must hold constant:
+
+- model weights and precision;
+- workload records;
+- prompt renderer;
+- memory mode;
+- generation settings;
+- hardware where possible;
+- warm-up policy;
+- concurrency;
+- evaluation.
+
+Historical HF versus vLLM results used different hardware and are explicitly
+architecture/integration calibration, not a controlled engine-only comparison.
+
+# 12. Memory Modes
+
+## mm0_no_context
+
+Purpose: raw model baseline.
+
+Retrieval: none.
+
+Context budget: zero.
+
+Inference: prompt only.
+
+Evaluation: measures model behavior without benchmark evidence.
+
+Status: implemented.
+
+## mm1_dense_top5
+
+Purpose: isolate dense/vector retrieval.
+
+Retrieval: top five through the configured dense backend and deterministic
+reranking.
+
+Context budget: 4,096 estimated tokens.
+
+Status: implemented.
+
+Caveat: the promoted Qdrant embeddings currently use deterministic hashing, so
+this mode is vector retrieval but not a learned semantic-embedding baseline.
+
+## mm2_hybrid_top5
+
+Purpose: production-oriented retrieval baseline.
+
+Retrieval:
+
+- Qdrant vector candidates;
+- BM25 candidates;
+- score fusion;
+- vertical metadata boosts;
+- final top-five selection.
+
+Context budget: 4,096 estimated tokens.
+
+Status: implemented, promoted, and used by Phase 4 smoke tests.
+
+## mm3_compressed_hybrid_top5
+
+Purpose: reduce prefill/context cost while preserving evidence.
+
+Retrieval: same hybrid base as mm2.
+
+Compression: deterministic deduplication, filtering, extractive truncation, and
+2,048-token cap.
+
+Status: implemented and diagnostically validated.
+
+## mm4_bounded_agentic
+
+Purpose: future bounded multi-step answer workflow.
+
+Status: contract only. It is not part of current inference benchmarks.
+
+Workflow:
+
+1. classify task/risk;
+2. select retrieval strategy;
+3. retrieve;
+4. assemble context;
+5. generate;
+6. validate citations/format/safety;
+7. repair once;
+8. escalate if evidence is insufficient.
+
+Hard limits:
+
+- maximum three tool calls;
+- maximum two retrieval rounds;
+- maximum two generation attempts;
+- maximum one repair attempt;
+- no internet;
+- no arbitrary tools;
+- project corpus only.
+
+Approved tools:
+
+- retrieve context;
+- assemble context;
+- validate citations;
+- validate format;
+- validate safety;
+- repair once;
+- escalate.
+
+# 13. Benchmark Design
+
+## Philosophy
+
+The benchmark follows staged validation:
+
+1. prove schemas and outputs with mock execution;
+2. prove local real-model generation;
+3. prove retrieval before inference;
+4. prove output evaluation;
+5. prove API and streaming telemetry;
+6. freeze GPU inputs and cost;
+7. run a tiny live GPU gate;
+8. scale only after quality and operational controls pass.
+
+This avoids spending GPU or API budget on an invalid harness.
+
+## Workload Families
+
+### Phase 1 Synthetic Serving Workloads
+
+- short chat;
+- code helpdesk;
+- long context;
+- shared prefix;
+- structured output.
+
+They isolate serving behavior and concurrency.
+
+### Current Vertical Workloads
+
+- Airline;
+- Healthcare Admin;
+- Retail;
+- Finance;
+- Research AI.
+
+They test retrieval, grounded generation, formats, safety boundaries, and
+domain-specific evidence.
+
+## Current Matrix
+
+Implemented dimensions:
+
+- split: 500, 2,000, 10,000;
+- vertical: five;
+- memory mode: mm0-mm3;
+- retrieval ablation: text-only, metadata, assisted source hints;
+- runner: mock, HF, OpenAI-compatible, concurrent load;
+- model aliases: seven active roles plus deprecated aliases;
+- concurrency plan: 1, 4, 8, 16, 32.
+
+Most current checked-in active experiment configs still use concurrency 1.
+Historical curated Phase 1 samples cover 1, 4, 8, 16, and 32.
+
+## Why Compare HF, API, And GPU
+
+- HF local validates transparent in-process behavior and contracts.
+- APIs provide real hosted latency, streaming, quality, and token cost without
+  owning hardware.
+- GPU serving exposes scheduler, batching, KV-cache, VRAM, and infrastructure
+  economics.
+
+The objective is not to declare a universally best model. It is to understand
+which system configuration satisfies a workload's quality, latency, capacity,
+and cost requirements.
+
+## Future Controlled Matrix
+
+First GPU gate:
+
+- five reviewed prompts;
+- `model1_0_5b` initially;
+- mm2;
+- concurrency 1;
+- vLLM;
+- complete GPU/cost telemetry.
+
+Then:
+
+- 500 prompts;
+- concurrency 1 and 4;
+- 7B serious model;
+- mm0-mm3;
+- vLLM, then SGLang;
+- 2,000 controlled subset at 1/4/8/16;
+- 10,000 final run after passing SLOs;
+- concurrency 32 only as a stress tier.
+
+# 14. Optimization Techniques
+
+## Implemented Or Partially Implemented
+
+### Hybrid Retrieval
+
+Goal: improve evidence recall and reduce irrelevant context.
+
+Expected effect: higher groundedness and fewer wasted input tokens.
+
+### Deterministic Context Compression
+
+Goal: reduce prompt length.
+
+Expected effect: lower TTFT, input tokens, KV-cache usage, and cost while
+preserving retrieval recall.
+
+### Concurrency Sweeps
+
+Goal: measure capacity versus latency.
+
+Historical validation exists at 1/4/8/16/32. The current vertical benchmark has
+not yet run its live GPU sweep.
+
+### Chunked Persistence And Resume
+
+Goal: avoid losing long-run progress.
+
+Implemented in the OpenAI-compatible load runner with checkpointed completed
+prompt IDs, append-mode outputs, resume skipping, and progress logging.
+
+### Citation And Contract Repair
+
+Goal: increase useful grounded answers without weakening evaluation.
+
+Implemented as bounded retries, not free-form agents.
+
+## Planned Serving Optimizations
+
+### Continuous Batching
+
+Provided by serving engines such as vLLM/SGLang. It dynamically forms batches
+from active requests rather than waiting for fixed synchronized batches.
+
+Expected improvement: aggregate requests/sec and tokens/sec.
+
+Risk: queueing and p99 TTFT can worsen at high load.
+
+Status: historical vLLM behavior measured indirectly; no current controlled
+configuration experiment.
+
+### KV Cache
+
+Stores attention key/value states for prior tokens.
+
+Expected improvement: avoids recomputing prior tokens during decode.
+
+Metrics needed: used/free bytes, block usage, eviction, headroom, tokens in
+cache.
+
+Status: engine capability, not yet instrumented in the suite.
+
+### PagedAttention
+
+vLLM's paged KV-cache memory-management approach.
+
+Expected improvement: lower fragmentation and higher concurrent capacity.
+
+Status: available through vLLM, not isolated in a before/after experiment.
+
+### FlashAttention
+
+Fused memory-efficient attention kernels.
+
+Expected improvement: faster prefill/decode and lower memory traffic.
+
+Status: planned/backend-dependent. No dedicated experiment.
+
+### Prefix Caching
+
+Reuses KV state for repeated prompt prefixes.
+
+Expected improvement: lower TTFT and prefill compute for shared instructions or
+evidence.
+
+The `shared_prefix` workload exists specifically to test this.
+
+Status: planned.
+
+### Prefix-Aware Routing
+
+Routes requests with common prefixes to a worker that already has cached state.
+
+Expected improvement: cache hit rate and TTFT in multi-replica deployments.
+
+Status: planned architecture only.
+
+### Speculative Decoding
+
+Uses a draft model to propose tokens accepted by a target model.
+
+Expected improvement: lower TPOT and higher output throughput.
+
+Status: planned.
+
+### Quantization
+
+Reduces weight and possibly KV precision.
+
+Expected improvement: lower VRAM, potentially higher throughput and ability to
+run larger models.
+
+Risks: quality loss, kernel/backend compatibility, possible latency regression.
+
+Status: planned.
+
+### Tensor Parallelism
+
+Shards tensor operations across GPUs.
+
+Use case: models too large or slow for one GPU, especially 32B and above.
+
+Status: planned.
+
+### Pipeline Parallelism
+
+Places sequential model layers on different devices.
+
+Use case: very large models or constrained device memory.
+
+Tradeoff: pipeline bubbles and more operational complexity.
+
+Status: future.
+
+### Data Parallelism
+
+Replicates the model and routes independent requests to replicas.
+
+Use case: throughput scaling when one model copy fits on a GPU.
+
+Status: future.
+
+### Expert Parallelism
+
+Distributes mixture-of-experts components.
+
+Use case: future MoE models.
+
+Status: not currently required by registered models.
+
+### CUDA Graphs
+
+Captures repeated GPU execution graphs to reduce launch overhead.
+
+Expected improvement: decode latency for stable shapes.
+
+Status: backend-dependent future experiment.
+
+### Scheduler And Admission Control
+
+Controls request ordering, maximum in-flight work, long/short request mixing,
+and overload.
+
+Expected improvement: predictable tail latency and reduced OOM risk.
+
+Status: concurrency controls exist; explicit scheduling policy experiments are
+planned.
+
+### Prefill/Decode Disaggregation
+
+Separates prefill workers from decode workers.
+
+Expected improvement: independent scaling and isolation for long-prompt versus
+decode-heavy traffic.
+
+Status: readiness concept only. No implementation.
+
+### Context-Aware Routing
+
+Routes requests by expected context/output length, memory mode, or SLO.
+
+Expected improvement: reduced head-of-line blocking and better hardware use.
+
+Status: future.
+
+# 15. Metrics
+
+## TTFT
+
+Time to first token.
+
+Measured from request start to the first streamed token. It combines client,
+network, queue, tokenization, prefill, and server overhead unless backend-native
+breakdowns are also collected.
+
+Use: diagnose prompt length, queueing, prefix-cache, and prefill pressure.
+
+## TPOT
+
+Time per output token after the first token.
+
+Computed from decode duration and output-token count where enough tokens exist.
+
+Use: diagnose decode speed and memory-bandwidth/kernel limits.
+
+## ITL
+
+Inter-token latency, measured between streamed token/chunk arrivals.
+
+The API streaming reports aggregate p50/p95/p99 ITL.
+
+Use: detect decode jitter and provider scheduling variability.
+
+## End-To-End Latency
+
+Total request duration from dispatch to completion or failure.
+
+Reported per request and as mean/median/p50/p90/p95/p99 summaries.
+
+## Throughput
+
+Two distinct forms:
+
+- per-request output tokens/sec;
+- aggregate requests/sec and output tokens/sec over wall-clock run time.
+
+They must not be conflated. A request can have moderate individual throughput
+while concurrency produces high aggregate throughput.
+
+## Token Counts
+
+- input tokens;
+- output tokens;
+- total tokens;
+- estimated context tokens.
+
+Provider counts are preferred for API cost. Local runs use the model tokenizer.
+
+## GPU Utilization
+
+Percentage of time the GPU is busy.
+
+Status: target schema and SLO exist; live time-series collection is not yet
+implemented in the current Phase 4 path.
+
+## VRAM
+
+Planned measurements:
+
+- used memory;
+- peak memory;
+- free/headroom;
+- utilization percentage;
+- KV-cache share where available.
+
+`BenchmarkResult` has `peak_memory_mb`, but current serious live GPU profiling
+is not integrated.
+
+## CPU And RAM
+
+System metadata can capture counts and total RAM when `psutil` is available.
+Resource SLOs exist. Continuous host-resource telemetry is not implemented.
+
+## Cost
+
+### API
+
+```text
+input_cost = input_tokens / 1,000,000 * input_price
+output_cost = output_tokens / 1,000,000 * output_price
+total_cost = input_cost + output_cost
+```
+
+Derived metrics:
+
+- cost/request;
+- cost/1,000 requests;
+- cost/1M total tokens;
+- cost/successful answer;
+- cost/grounded answer.
+
+### Self-Hosted GPU
+
+```text
+gpu_cost = elapsed_hours * hourly_price_usd
+```
+
+Derived metrics mirror the API metrics and add tokens per GPU dollar.
+
+Current RunPod price inputs are unset, so no new GPU cost claim is allowed.
+
+## JSON And Contract Validity
+
+- JSON validity: a parseable object exists.
+- Contract validity: all five fields and semantic rules pass.
+
+## Evidence Presence And Match
+
+- presence: at least one allowed evidence label is cited.
+- match: every gold-required evidence family is covered after alias expansion.
+
+## Groundedness
+
+Current deterministic groundedness requires:
+
+- answer status;
+- full evidence match;
+- valid generation contract in contract mode.
+
+It does not prove every natural-language claim is entailed by the cited text.
+A semantic claim verifier remains future work.
+
+## Safety
+
+Checks generated text against:
+
+- gold `must_not_include`;
+- domain safety terms such as diagnosis, treatment advice, investment
+  recommendation, price target, verification bypass, and fabricated citation.
+
+## Retrieval Metrics
+
+- candidate recall@20;
+- candidate recall@50;
+- final recall@5;
+- MRR;
+- retrieval latency;
+- compression recall loss.
+
+## SLO Compliance
+
+`slo.py` compares observed metrics with vertical targets, classifies pass/warn/
+blocked states, and recommends the relevant optimization area.
+
+# 16. Service Level Objectives
+
+## SLO Families
+
+`configs/slo_targets.yaml` defines per-vertical targets for:
+
+- retrieval;
+- generation quality;
+- latency;
+- throughput;
+- resource utilization;
+- API cost;
+- GPU cost;
+- context compression.
+
+## Retrieval Targets
+
+All verticals require:
+
+- candidate recall@20 at least 0.90;
+- candidate recall@50 at least 0.95;
+- final recall@5 at least 0.90.
+
+MRR targets are:
+
+- 0.85 for Airline, Healthcare Admin, and Retail;
+- 0.90 for Finance and Research AI.
+
+The promoted retrieval source of truth passes these targets for all verticals.
+
+## Quality Targets
+
+Targets vary by vertical, but generally require:
+
+- groundedness around 0.95 or higher;
+- evidence/citation match around 0.90 or higher;
+- task success around 0.90 or higher;
+- format validity around 0.95 or higher;
+- zero safety violations.
+
+Current five-prompt generation smoke results do not satisfy final quality SLOs.
+They validate plumbing and expose grounding weaknesses.
+
+## Latency Targets
+
+Targets include:
+
+- TTFT;
+- TPOT;
+- p50/p95/p99 end-to-end latency.
+
+Thresholds differ by vertical to reflect workload shape. They are not yet
+formally evaluated on a controlled current GPU run.
+
+## Throughput Targets
+
+Typical minimums:
+
+- 0.5 requests/sec;
+- 20 output tokens/sec.
+
+These are low readiness floors, not final capacity goals.
+
+## Resource Targets
+
+Configured targets include:
+
+- GPU utilization at least 50%;
+- GPU memory utilization no more than 95%;
+- peak GPU memory no more than 80 GB;
+- CPU no more than 90%;
+- RAM no more than 64 GB.
+
+The 80 GB limit is a broad portability ceiling, not evidence of current
+hardware.
+
+## API Cost Targets
+
+The config defines limits for:
+
+- cost/request;
+- cost/1,000 requests;
+- cost/successful answer;
+- cost/grounded successful answer;
+- tokens per dollar.
+
+## GPU Cost Targets
+
+GPU cost evaluation requires an actual hourly price. The configured limits
+include:
+
+- GPU cost/request no more than `$0.02`;
+- GPU cost/1,000 requests no more than `$20`;
+- GPU cost/successful answer no more than `$0.04`;
+- GPU cost/grounded successful answer no more than `$0.06`;
+- at least 100,000 tokens per GPU dollar.
+
+## Compression Targets
+
+- at least 20% token reduction;
+- no more than five percentage points of recall loss.
+
+Current compression diagnostics pass these targets.
+
+## Failure Detection And Optimization Loop
+
+The intended loop is:
+
+1. run a frozen baseline;
+2. aggregate metrics by vertical/model/backend/memory mode;
+3. compare with SLOs;
+4. classify the failing metric family;
+5. change one controlled factor;
+6. rerun the identical workload;
+7. compare before and after;
+8. reject changes that improve speed by violating quality or safety.
+
+Examples:
+
+- high TTFT with stable TPOT suggests prefill, queueing, or context pressure;
+- high TPOT suggests decode/runtime/hardware pressure;
+- good candidates but low final recall suggests reranking/selection;
+- high throughput with bad p99 suggests overload or scheduling pressure;
+- low groundedness with high retrieval recall suggests prompt/model/evaluator
+  interaction rather than retrieval.
+
+# 17. GPU Infrastructure
+
+## Current Truth
+
+The current validated development GPU backend is:
+
+- SSH alias: `zeever-gpu`, reached over Tailscale;
+- Ubuntu 22.04.5 LTS;
+- NVIDIA GeForce RTX 3070 with 8 GB VRAM;
+- driver 580.159.03 and CUDA 13.0 reported by nvidia-smi;
+- Intel i5-11400, approximately 38 GB usable RAM, and 409 GB free disk;
+- Docker 29.5.3 with the NVIDIA runtime;
+- vLLM 0.23.0 through image digest
+  `sha256:6d8429e38e3747723ca07ee1b17972e09bb9c51c4032b266f24fb1cc3b22ed8f`.
+
+The frozen A1 matrix is
+`configs/experiments/a1_remote_rtx3070_vllm_smoke.yaml`. It ran 50
+`mm2_hybrid_top5` records, 10 per vertical, with Qwen2.5-0.5B, streaming,
+temperature zero, 128 maximum new tokens, and concurrency one.
+
+`configs/gpu_costs.yaml` remains an unfilled RunPod template. The remote
+development server has no registered hourly price, so A1 makes no GPU cost
+claim.
+
+## Historical RunPod Infrastructure
+
+Phase 1 documents a Linux RunPod pod with an NVIDIA L40S used for:
+
+- vLLM OpenAI-compatible smoke;
+- expanded workload calibration;
+- 1,000-prompt concurrency sweeps;
+- a curated 5,000-prompt-per-configuration synthetic benchmark.
+
+Those artifacts are historical curated evidence. The pod is not a current
+deployment, and its measurements are tied to that model, workload, and
+environment.
+
+## Remote GPU And Historical RunPod
+
+The RTX 3070 is now a validated current development backend. It does not
+replace the historical RunPod L40S result as a hardware-equivalent benchmark,
+and it does not supply a current infrastructure cost because no hourly price
+is registered.
+
+## Container Strategy
+
+Historical GPU work used Linux shell workflows. A reproducible future container
+should pin:
+
+- CUDA-compatible base image;
+- PyTorch;
+- vLLM or SGLang;
+- model revision;
+- tokenizer revision;
+- exposed OpenAI-compatible port;
+- cache and results volumes;
+- health check.
+
+The exact A1 Docker command is recorded in
+`docs/96_remote_rtx3070_vllm_smoke.md`. A canonical pinned Dockerfile is still
+not the source of truth.
+
+## Realistic Model Support
+
+Without selected hardware, only conditional estimates are appropriate:
+
+- 0.5B and 1.5B models fit on modest modern GPUs and can also run slowly on CPU.
+- 7B is the intended first serious single-GPU model and typically requires
+  enough VRAM for weights, KV cache, and concurrency.
+- 32B may require quantization, a high-memory GPU, or tensor parallelism.
+- the large placeholder has no executable requirements yet.
+
+Actual capacity must be measured with the selected precision, context length,
+batch/concurrency, and KV-cache allocation.
+
+## A1 GPU Gate Result
+
+The A1 server and execution path passed:
+
+- model load and `/v1/models`: PASS;
+- 50 of 50 requests completed;
+- mean TTFT: 147.859 ms;
+- mean TPOT: 22.002 ms;
+- mean E2E latency: 880.496 ms;
+- mean/peak GPU utilization: 37.15% / 74%;
+- mean/peak GPU memory: 6,303 / 6,372 MB;
+- mean/peak power: 68.31 / 81.39 W;
+- mean/peak temperature: 47.81 / 51 C.
+
+The generation-quality gate failed:
+
+- JSON validity: 98%;
+- contract validity: 72%;
+- evidence match: 30%;
+- deterministic groundedness: 28%;
+- safety violations: 2 of 50.
+
+The 0.5B model is suitable for serving-plumbing experiments but not final
+quality claims. The next recommended GPU block is a controlled concurrency 2/4
+study with the same model and input, followed by a reviewed stronger-model
+feasibility decision constrained by 8 GB VRAM.
+
+# 18. Telemetry
+
+## Request Telemetry Schema
+
+`TelemetryRecord` contains:
+
+- timestamp;
+- backend;
+- model;
+- memory mode;
+- end-to-end latency;
+- TTFT;
+- TPOT;
+- output-token throughput;
+- request throughput;
+- success;
+- error type;
+- nullable GPU utilization;
+- nullable GPU memory;
+- nullable GPU and RunPod cost.
+
+## Benchmark Result Telemetry
+
+`BenchmarkResult` additionally preserves:
+
+- run ID;
+- optimization label;
+- workload and prompt IDs;
+- vertical, memory mode, and ablation;
+- context token estimate and gold evidence IDs;
+- input/output tokens;
+- peak memory placeholder;
+- estimated cost;
+- error message.
+
+## Generation Trace
+
+`GenerationRecord` preserves:
+
+- full prompt;
+- generated text;
+- token/timing metrics;
+- workload metadata;
+- citation alias map;
+- parsed generation-contract fields;
+- truncation and parse repair diagnostics.
+
+## Run Manifest
+
+`RunManifest` records:
+
+- run ID and timestamps;
+- backend, model alias, and model ID;
+- memory mode, split, and ablation;
+- input/output paths;
+- max records;
+- Git commit;
+- command;
+- status and error count.
+
+## Long-Run Safety
+
+The asynchronous OpenAI-compatible load runner supports:
+
+- configurable concurrency;
+- chunked processing;
+- periodic result persistence;
+- checkpoint JSON with completed prompt IDs;
+- resume without duplicate processing;
+- request timeouts;
+- failure rows;
+- progress logs;
+- run metadata.
+
+Gaps before a main GPU sweep:
+
+- live hardware telemetry sampler;
+- structured power and temperature collection;
+- backend-native queue, batch, KV-cache, and prefix-cache metrics;
+- OOM and retry classification across all runners;
+- checkpoint/resume parity for every backend.
+
+## System Metadata
+
+`inference-bench system-info` captures:
+
+- OS and release;
+- Python version;
+- processor;
+- logical CPU count;
+- optional physical CPU and RAM through `psutil`;
+- optional Torch version;
+- CUDA availability, device count, and names;
+- Transformers version.
+
+## Future Telemetry Sources
+
+Recommended:
+
+- NVML/pynvml or `nvidia-smi` sampling for utilization, memory, power, and
+  temperature;
+- vLLM/SGLang metrics endpoints for queue, batch, cache, prefill, and decode;
+- optional DCGM or Prometheus for serious multi-GPU runs;
+- run-aligned timestamps for cost and hardware samples.
+
+# 19. Reporting
+
+## Data EDA
+
+`data/generated/dataset_10000/` contains:
+
+- overview HTML/Markdown dashboard;
+- interactive Plotly charts;
+- static PNGs;
+- term bars and treemaps;
+- word clouds and term views;
+- five vertical HTML pages;
+- inventory, prompt, gold, KB, alignment, evidence, safety, workload, and
+  summary reports.
+
+## Context And Retrieval Reports
+
+`data/generated/context_engineering/` contains:
+
+- corpus registry and build reports;
+- Qdrant index reports;
+- retrieval evaluation and diagnostics;
+- compression diagnostics;
+- vertical repair and failure reports;
+- canonical-key and alignment reports;
+- SLO readiness;
+- promoted retrieval source-of-truth manifest;
+- run-safety audit.
+
+Large local corpora, repaired datasets, vector storage, and workloads may be
+ignored even when their small reports are tracked.
+
+## Phase 4 Reports
+
+`data/generated/phase4/` contains:
+
+- runner input exports;
+- export reports;
+- readiness reports;
+- controlled inference readiness.
+
+`results/raw/` is for generated per-request metrics and traces.
+
+`results/processed/` is for evaluations, comparisons, cost, and latency
+summaries.
+
+Both are generally ignored. Their README files explicitly distinguish smoke
+artifacts from final benchmark results.
+
+## Curated Samples
+
+`results/samples/` contains reviewed Phase 1 samples:
+
+- HF and vLLM raw metrics and generation traces;
+- processed concurrency comparisons;
+- checkpoint and progress-log examples;
+- Phase 1 plots;
+- system and run metadata.
+
+Curated samples are evidence and reproducibility examples, not a substitute for
+full raw runs.
+
+## Formats
+
+- JSON: nested reports, manifests, readiness decisions, diagnostics.
+- JSONL: prompts, KB, context corpora, workloads, generation traces, failure
+  examples.
+- CSV: flat summaries and comparison matrices.
+- HTML: EDA dashboards, Plotly charts, vertical pages.
+- PNG: static plots and word clouds.
+- Markdown: methodology, decisions, handoffs, and block summaries.
+
+## Historical Smoke Figures
+
+`results/figures` may contain cost/latency/throughput smoke artifacts whose
+source only uses optimization `none`. They must not be presented as final
+optimization results. The stronger public Phase 1 plots are curated under
+`results/samples/figures/phase1`.
+
+# 20. Agent Roadmap
+
+## Bounded Agent Architecture
+
+The planned agent is intentionally not a free-form autonomous system. It is a
+bounded inference workflow over the project corpus.
+
+Components:
+
+- task/risk classifier;
+- retrieval-strategy selector;
+- project-corpus retriever;
+- context assembler;
+- answer generator;
+- citation, format, and safety validators;
+- one repair opportunity;
+- escalation.
+
+## Memory
+
+The agent would use mm4:
+
+- adaptive retrieval up to two rounds;
+- context compression;
+- project corpus only;
+- explicit token estimates;
+- traceable selected strategy and steps.
+
+## Planning
+
+Planning is limited to selecting an approved workflow path. It does not permit
+arbitrary tools, internet browsing, or unbounded loops.
+
+## Execution And Evaluation
+
+Every trace records:
+
+- workload and prompt identity;
+- vertical;
+- steps and approved tools;
+- retrieval/generation/repair counts;
+- validation results;
+- escalation reason and final status;
+- token and latency fields;
+- backend/model placeholders.
+
+The same generation contract and evaluator can be reused.
+
+## Why Benchmarking Comes First
+
+An agent adds retrieval rounds, generation attempts, validation, repair, and
+latency/cost variance. Without stable baseline metrics, it would be impossible
+to determine whether the agent improves useful outcomes or merely consumes
+more tokens and time.
+
+Before mm4 execution, the project must establish:
+
+- normal mm0-mm3 quality and cost;
+- live GPU telemetry;
+- retry accounting;
+- per-step budgets;
+- escalation SLOs;
+- agent trace persistence.
+
+# 21. Project Evolution
+
+## Phase 1: Benchmark Harness And Synthetic Serving
+
+1. Created schemas, CLI, mock runner, config validation, results, and plots.
+2. Added local HF execution with Qwen 0.5B.
+3. Added OpenAI-compatible vLLM execution.
+4. Ran historical RunPod L40S calibration.
+5. Added synthetic workload families and concurrency levels 1/4/8/16/32.
+6. Added asynchronous load runs, checkpoints, resume, logs, and curated sample
+   promotion.
+7. Recorded that concurrency raises throughput but also TTFT and p99 latency.
+
+Important limitation: Phase 1 used synthetic serving workloads and lacked the
+current vertical correctness framework.
+
+## Phase 2: Data Foundation
+
+1. Defined vertical data contracts and source validation.
+2. Curated Airline, Healthcare Admin, Retail, Finance, and Research AI data.
+3. Generated deterministic scale-up checkpoints.
+4. Promoted the 2,000-per-vertical dataset.
+5. Built public 10,000-record EDA and a Finance-specific public entry point.
+6. Kept promoted benchmark KB separate from broader Research AI retrieval
+   corpus material.
+
+## Phase 3 Block 1: Contracts
+
+- model aliases;
+- memory-mode config;
+- `ContextRecord`;
+- `WorkloadRecord`.
+
+## Phase 3 Block 2: Corpora
+
+- corpus registry;
+- vertical chunk builders;
+- normalized corpora and build reports.
+
+## Phase 3 Block 3: Retrieval And Workloads
+
+- local fallback dense interface;
+- BM25 and hybrid retrieval;
+- compression;
+- mm0-mm3 workload generation;
+- retrieval evaluation.
+
+## Phase 3 Block 4: Agent And Evaluator Contracts
+
+- bounded mm4 workflow schema;
+- deterministic evaluator contract;
+- Phase 3 readiness handoff.
+
+## Phase 3 Blocks 4.5 Through 20: Retrieval Hardening
+
+The system progressed through:
+
+- Finance metadata/query repair;
+- stronger hybrid diagnostics;
+- meaningful compression;
+- Qdrant integration and ablations;
+- strict no-hint query enrichment;
+- Retail/Finance reranking;
+- Airline/Healthcare enrichment;
+- Research AI scale validation;
+- canonical retrieval keys;
+- retrieval dataset/gold alignment repair;
+- promoted retrieval source of truth.
+
+Architecture change: high source-hint-assisted metrics were rejected as the
+only final claim. Strict and metadata ablations were introduced to expose
+leakage and ambiguity. The final promoted validation uses non-leaking
+`prompt_plus_metadata`.
+
+## Phase 4 Blocks 7 Through 25: Runner And Contract Plumbing
+
+- WorkloadRecord adapter;
+- mock smoke and evaluator CLI;
+- run manifests;
+- local HF real inference;
+- vLLM/SGLang OpenAI-compatible dry-run wrappers;
+- telemetry schema;
+- strict generation contract;
+- short evidence labels;
+- parser hardening;
+- pre-GPU readiness.
+
+## Phase 4 Blocks 26 Through 31: Stronger/API Models
+
+- stronger local model validation path;
+- Model6 gated API smoke;
+- API versus local comparison;
+- streaming TTFT/ITL/TPOT;
+- groundedness diagnostics;
+- Model5 pricing-route repair;
+- bounded multi-evidence citation repair;
+- Model5 changed from unpriced Llama 3.2 3B to priced Ministral 3B/OpenRouter;
+- controlled inference readiness audit.
+
+## Current Architecture Replacements
+
+- Old raw internal EDA paths were replaced by public
+  `data/generated/dataset_10000`.
+- Local fallback-only retrieval was replaced by Qdrant plus BM25 hybrid.
+- Source-hint-only quality claims were replaced by explicit ablations and a
+  non-leaking promoted source.
+- Long canonical citations in model output were replaced by short labels with
+  deterministic alias expansion.
+- Model5's unavailable-price provider route was replaced by OpenRouter
+  Ministral 3B.
+- Ad hoc smoke outputs were replaced by typed manifests, evaluation reports,
+  cost reports, and summaries.
+
+# 22. Current Status
+
+## Completed
+
+- Phase 1 benchmark and historical GPU-serving foundation.
+- Phase 2 promoted 10,000-record dataset and EDA.
+- Phase 3 context, Qdrant hybrid retrieval, compression, workload, evaluator,
+  and bounded-agent contracts.
+- Retrieval promotion with all five vertical SLOs passing.
+- Phase 4 runner adapter, mock/local/API smoke paths, generation contract,
+  streaming metrics, API pricing, and controlled readiness audit.
+
+## Current Block State
+
+Block A1 completed the first current live remote GPU smoke.
+
+Current decision:
+
+```text
+READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
+NOT_READY_FOR_QUALITY_SCALE_OR_FULL_BENCHMARK
+```
+
+The remote serving path is operational. The 0.5B generation quality is below
+the configured grounded-output targets, and 8 GB VRAM constrains stronger-model
+work.
+
+## What Is Ready
+
+- dataset and prompt/gold joins;
+- promoted retrieval;
+- mm0-mm3 workloads;
+- local HF generation;
+- API generation through two routes;
+- OpenAI-compatible vLLM and SGLang adapters;
+- generation/evaluation contract;
+- streaming API timing;
+- API cost accounting;
+- checkpoint/resume load-run controls;
+- SLO definitions;
+- remote RTX 3070 vLLM serving;
+- nvidia-smi GPU utilization, memory, power, temperature, and process
+  telemetry.
+
+## Remaining Blockers
+
+- Qwen2.5-0.5B contract, evidence-match, groundedness, and safety quality;
+- stronger-model feasibility within 8 GB VRAM;
+- registered infrastructure cost if GPU cost comparisons are required;
+- backend-native queue, batch, prefix-cache, and KV-cache time series;
+- a controlled concurrency sweep before scaling request count.
+
+## Known Limitations
+
+- Current Qdrant vectors use deterministic hashing rather than a promoted
+  learned semantic embedding model.
+- Promoted retrieval validation uses a repaired generated alignment dataset;
+  original and repaired metrics must not be mixed.
+- Current groundedness is evidence-coverage based, not semantic entailment.
+- API smoke samples contain only five prompts.
+- Model5 had one output truncation at 128 tokens.
+- Model6 first-pass multi-evidence groundedness was 60%; bounded repair reached
+  80%.
+- Local HF timings are CPU-oriented and not hardware-equal with API/GPU paths.
+- Current backend matrix understates local HF streaming capability.
+- GPU board telemetry is sampled through nvidia-smi, but KV-cache, queue, batch,
+  and prefix-cache time series remain absent.
+- mm4 is contract-only.
+- Retail category distribution is imbalanced.
+
+## Technical Debt
+
+- Correct `configs/backend_matrix.yaml` to match the HF streaming
+  implementation.
+- Add explicit prompt/renderer/contract version fields.
+- Add model/tokenizer revision and generation settings to every manifest.
+- Reconcile older workload-level retrieval/compression reports with the final
+  promoted retrieval source.
+- Standardize one authoritative command for SLO evaluation inputs.
+- Add learned embedding evaluation without weakening strict ablations.
+- Add semantic groundedness or claim-level entailment scoring.
+
+## Next Engineering Milestone
+
+Run a controlled A2 concurrency 2/4 experiment with the same 50 A1 prompts,
+model, generation settings, and evaluator. Compare aggregate throughput,
+TTFT/p95/p99, TPOT, GPU utilization, memory, power, and quality against the A1
+concurrency-one baseline. Do not scale prompt count until that comparison
+passes operational and quality guards.
+
+# 23. What An AI Inference Engineer Should Understand
+
+## Separate Prefill From Decode
+
+TTFT and TPOT represent different computational phases. Long prompts often
+stress prefill; long outputs stress decode. Optimizations should target the
+measured phase.
+
+## Distinguish Per-Request And Aggregate Throughput
+
+Per-request tokens/sec describes one request. Aggregate requests/sec or
+tokens/sec describes service capacity. Concurrency can improve aggregate
+throughput while worsening individual and tail latency.
+
+## Tail Latency Matters
+
+Means hide queueing and overload. p95/p99 TTFT and E2E latency are essential for
+serving decisions.
+
+## Continuous Batching Is A Scheduler
+
+It increases accelerator utilization by dynamically admitting work, but it can
+create contention and tail-latency tradeoffs.
+
+## KV Cache Is A Capacity Constraint
+
+Weights are not the only memory use. KV cache grows with active tokens,
+concurrency, layers, heads, and precision. It often determines serving capacity.
+
+## PagedAttention Addresses Fragmentation
+
+Paged KV allocation helps engines use memory efficiently across variable-length
+requests. It is a serving-memory optimization, not an answer-quality feature.
+
+## Retrieval Is Part Of Inference
+
+Retrieved context changes tokens, TTFT, cache pressure, cost, and groundedness.
+It must be benchmarked with the model path rather than treated as free
+preprocessing.
+
+## Leakage-Free Evaluation
+
+Gold evidence can be used to score retrieval, but not to form strict retrieval
+queries. Ablations expose whether a high score comes from semantics, realistic
+metadata, or direct source hints.
+
+## Candidate Recall Versus Final Selection
+
+High recall@50 with low recall@5 means the evidence exists in the candidate
+pool but reranking/selection is wrong. Low recall@50 indicates query, index,
+chunk, or corpus problems.
+
+## Compression Requires A Quality Guard
+
+Token reduction alone is not success. Measure evidence recall before and after
+compression.
+
+## Structured Output Is A System Contract
+
+JSON validity, field semantics, allowed citation IDs, truncation, and retry
+rules must be enforced outside the model.
+
+## Groundedness Needs A Definition
+
+This project currently uses full required-evidence coverage. That is auditable
+but narrower than semantic entailment. Engineers must state which definition
+they use.
+
+## API And Self-Hosted Cost Are Different
+
+API cost uses token rates. Self-hosted cost uses elapsed infrastructure price.
+Both should be normalized per request, token, success, and grounded success.
+
+## Hardware-Equal Comparisons
+
+A CPU Transformers run and an L40S vLLM run show architecture direction, not a
+clean backend comparison. Control model, precision, hardware, workload, and
+settings before claiming engine superiority.
+
+## Variable-Length Requests
+
+Prompt and output distributions affect batching, queueing, KV cache, and
+tail latency. Averages alone do not represent mixed traffic.
+
+## Prefix Caching Requires Reuse
+
+It helps only when requests share reusable prefixes and route to cache-compatible
+workers. The workload must measure actual hit rate.
+
+## Checkpointing Is Part Of Benchmark Correctness
+
+Long runs can fail. Resume logic must avoid duplicates, preserve failures, and
+record the exact configuration.
+
+## Optimization Is Multi-Objective
+
+The best configuration lies on a quality-latency-throughput-memory-cost
+frontier. A single highest-throughput result is not automatically optimal.
+
+## Honest Readiness Gates
+
+`NOT_READY` can be the correct engineering decision when prices, hardware,
+inputs, or telemetry are not frozen. It prevents invalid or unreproducible
+spend.
+
+# 24. Glossary
+
+- **Ablation**: An experiment that removes or restricts one information source
+  to identify what causes a result.
+- **Admission control**: Rules limiting or scheduling requests entering a
+  server.
+- **API token cost**: Price charged from input and output token usage.
+- **Backend**: The execution system that runs or serves a model.
+- **Batch**: Requests or tokens processed together.
+- **BM25**: A term-frequency/inverse-document-frequency lexical ranking method.
+- **Candidate recall@k**: Fraction of required evidence found in the top-k
+  candidate pool.
+- **Canonical query**: The normalized, enriched, leakage-safe retrieval query.
+- **Chunk**: A bounded context unit produced from a larger source record.
+- **Chunk overlap**: Repeated boundary text between adjacent chunks.
+- **Citation alias**: Mapping from short model-facing labels such as `E1` to
+  canonical evidence IDs.
+- **Concurrency**: Maximum number of requests in flight.
+- **Context engineering**: Selecting, ordering, compressing, and formatting
+  information supplied to a model.
+- **Context window**: Maximum token sequence a model can process.
+- **Continuous batching**: Dynamic batching of active inference requests.
+- **CUDA Graph**: Captured GPU execution graph reused to reduce launch overhead.
+- **Decode**: Autoregressive output-token generation after prefill.
+- **Dense retrieval**: Vector-similarity retrieval.
+- **Deterministic hashing embedding**: Fixed vectorization that hashes tokens
+  into dimensions; reproducible but not learned semantic representation.
+- **EDA**: Exploratory data analysis.
+- **E2E latency**: End-to-end request time.
+- **Embedding**: Numeric vector representation used for similarity search.
+- **Evidence match**: Whether all required evidence IDs are covered after alias
+  expansion.
+- **Expert parallelism**: Distribution of mixture-of-experts components across
+  devices.
+- **FlashAttention**: Memory-efficient fused attention implementation.
+- **Gold record**: Expected evaluation contract linked to a prompt.
+- **Groundedness**: In this project, a valid answer covering all required
+  evidence; not yet semantic entailment.
+- **HF**: Hugging Face.
+- **Hybrid retrieval**: Combined lexical and vector retrieval with fusion and
+  reranking.
+- **Inference**: Running a trained model to generate outputs.
+- **ITL**: Inter-token latency.
+- **KV cache**: Attention key/value states cached for prior tokens.
+- **Leakage**: Use of gold or answer-side information unavailable in a real
+  request.
+- **Memory mode**: A configured policy for retrieval, context, compression, and
+  future agent behavior.
+- **MFU**: Model FLOPs utilization, estimated useful model FLOPs divided by
+  hardware peak FLOPs over time. Not currently measured.
+- **MRR**: Mean reciprocal rank of the first relevant result.
+- **OpenAI-compatible API**: HTTP interface matching common OpenAI chat
+  completion shapes.
+- **PagedAttention**: Paged KV-cache allocation used by vLLM.
+- **Pipeline parallelism**: Sequential layer stages distributed across devices.
+- **Prefill**: Processing input tokens before the first output token.
+- **Prefix caching**: Reuse of KV state for repeated prompt prefixes.
+- **Prompt plus metadata**: Retrieval ablation that uses visible text and
+  realistic metadata but no direct evidence IDs.
+- **Prompt text only**: Strict retrieval ablation using visible text only.
+- **Qdrant**: Vector database used locally by the retrieval layer.
+- **Quantization**: Reduced-precision representation of weights or activations.
+- **Recall@5**: Fraction of required evidence present in final top five.
+- **Reranker**: Logic that reorders retrieved candidates.
+- **RPS**: Requests per second.
+- **Run manifest**: Record of execution identity, inputs, model, backend,
+  command, timestamps, and status.
+- **SGLang**: Planned serving backend with an OpenAI-compatible interface.
+- **SLM**: Small language model.
+- **SLO**: Service-level objective.
+- **Source hints**: Direct prompt-side source/evidence identifiers; allowed only
+  in the assisted upper-bound ablation.
+- **Sparse retrieval**: Token/term-based retrieval such as BM25.
+- **Speculative decoding**: Draft-model token proposals verified by a target
+  model.
+- **Streaming**: Returning generated tokens/chunks before completion.
+- **Tensor parallelism**: Splitting tensor operations across devices.
+- **Throughput**: Work completed per unit time.
+- **Token**: Model tokenizer unit.
+- **TPOT**: Time per output token.
+- **TTFT**: Time to first token.
+- **Vector store**: Database storing embeddings and metadata for similarity
+  search.
+- **Vertical**: Domain-specific benchmark area with its own prompts, KB, gold,
+  safety rules, and SLOs.
+- **vLLM**: GPU-oriented LLM serving engine with continuous batching and paged
+  KV-cache management.
+- **VRAM**: GPU memory.
+- **WorkloadRecord**: Typed Phase 3 record combining prompt, memory mode,
+  context, retrieval metadata, and gold IDs.
+
+# 25. Executive Summary
+
+## What Has Been Built
+
+The repository now contains a complete pre-scale inference engineering stack:
+
+- a promoted 10,000-prompt, five-vertical benchmark;
+- public EDA and vertical-specific analytics;
+- normalized context corpora and vertical chunking;
+- Qdrant plus BM25 hybrid retrieval;
+- strict non-leaking retrieval ablations;
+- repaired and promoted retrieval validation with all vertical SLOs passing;
+- deterministic context compression;
+- mm0-mm3 workload generation and an mm4 bounded-agent contract;
+- mock, local HF, OpenAI-compatible, and concurrent resumable runners;
+- real local and API model smoke tests;
+- strict grounded JSON generation contract and evidence aliasing;
+- deterministic quality, grounding, safety, latency, streaming, and cost
+  evaluation;
+- run manifests, checkpoint/resume, logs, reports, and curated artifacts;
+- production-style SLO and readiness gates.
+
+## Why It Matters
+
+The project demonstrates that inference optimization is an end-to-end systems
+discipline. It connects retrieval quality, context tokens, model behavior,
+serving runtime, concurrency, hardware, reliability, and economics. It refuses
+to accept speed claims that ignore quality or retrieval claims that rely on
+gold leakage.
+
+## What Remains
+
+The immediate work is operational:
+
+- freeze the first current GPU/model/cost matrix;
+- add live GPU and backend telemetry;
+- run a guarded five-prompt vLLM smoke;
+- evaluate and cost it;
+- then scale through 500, 2,000, and 10,000 records;
+- add SGLang and controlled optimization experiments;
+- implement semantic groundedness and eventually bounded mm4 execution.
+
+Planned optimization studies include continuous batching, KV-cache pressure,
+PagedAttention behavior, prefix caching/routing, quantization, speculative
+decoding, CUDA Graphs, scheduling, and model sharding.
+
+## Community Value
+
+The repository is valuable because it preserves both successes and failed
+assumptions:
+
+- historical CPU/GPU calibration is labeled honestly;
+- retrieval leakage is measured through ablations;
+- weak Finance/Retail retrieval was diagnosed rather than hidden;
+- unavailable pricing blocked execution instead of being fabricated;
+- small-model contract failures are recorded;
+- current GPU readiness remains blocked until reproducible inputs exist.
+
+That combination of measurement discipline, typed contracts, vertical data,
+operational safety, and explicit limitations makes the suite a practical
+reference for serious AI inference engineering rather than a collection of
+isolated model demos.

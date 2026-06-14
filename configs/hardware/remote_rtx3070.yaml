@@ -1,0 +1,14 @@
+hardware_alias: remote_rtx3070
+gpu_name: NVIDIA GeForce RTX 3070
+vram_gb: 8
+driver_version: 580.159.03
+cuda_version_reported: 13.0
+cpu: Intel i5-11400
+ram_gb: 38
+disk_free_gb_observed: 409
+access_method: ssh_over_tailscale
+docker_gpu_runtime_verified: true
+intended_role: dev_gpu_smoke_and_small_model_validation
+limitations:
+  - 8GB VRAM
+  - not for 32B/full-scale benchmark

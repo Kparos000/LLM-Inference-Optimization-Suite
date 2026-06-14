@@ -2,6 +2,13 @@
 
 A reproducible AI inference engineering project for learning, measuring, and explaining LLM inference optimization techniques.
 
+## Authoritative Technical Reference
+
+For the current end-to-end architecture, implemented versus planned
+capabilities, dataset and retrieval details, model/provider registry, metrics,
+SLOs, infrastructure status, project history, and glossary, see the
+[Definitive Technical Briefing](docs/95_definitive_technical_briefing.md).
+
 ## Project Goal
 
 This project benchmarks and explains how modern LLM inference optimizations affect:
@@ -22,38 +29,19 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 
 ## Current Status
 
-- Project scaffold and CI are complete.
-- Benchmark foundation schemas and workload/result utilities are being added.
-- Metric utilities for latency, throughput, cost, and memory are part of the benchmark foundation.
-- A deterministic mock benchmark runner is available for validating the benchmark pipeline without model downloads or GPU.
-- Reporting utilities can summarize benchmark CSVs and generate basic plots.
-- YAML configuration files define models, workloads, and experiments.
-- The Hugging Face runner foundation is available; real model execution is optional and requires installing the `hf` extra.
-- Hugging Face runs can preserve generated text in JSONL artifacts for later quality analysis.
-- The Hugging Face runner supports optional streaming TTFT measurement.
-- Generation JSONL artifacts provide full prompt-level traces for later analysis.
-- Structured-output smoke workloads and JSON validation utilities are available for future quality checks.
-- Hardware and system metadata capture is available as a generated reproducibility artifact.
-- A controlled local Hugging Face baseline script is available for smoke runs with metrics, traces, system info, and plots.
-- Curated sample artifact promotion rules are available for selected reviewed outputs.
-- Expanded workload categories are available for short chat, code/helpdesk, long context, and shared-prefix inference testing.
-- vLLM baseline planning has started, with execution intentionally deferred until readiness checks are complete.
-- Multiple benchmark CSV files can be compared in one summary table.
-- Initial Hugging Face baseline findings have been documented across expanded workloads.
-- Benchmark methodology and experimental design are documented.
-- Scaled workload and concurrency stress-test planning is documented before vLLM execution.
-- An OpenAI-compatible runner foundation is available for future vLLM server benchmarking; vLLM execution is still intentionally deferred.
-- The vLLM execution environment decision is documented.
-- The vLLM smoke-test procedure is documented but not executed.
-- vLLM client workflow scripts are available for smoke and expanded workload baselines, with execution deferred until the environment/server is ready.
-- Linux/RunPod workflow scripts are available for vLLM smoke, expanded baseline, and curated sample promotion workflows.
-- The first vLLM baseline experiment log is documented for the RunPod L40S calibration run.
-- An early HF-vs-vLLM calibration comparison is documented with scope and limitations.
-- An OpenAI-compatible concurrency load runner foundation is available for future vLLM load testing.
-- Scaled synthetic workloads can be generated with `inference-bench generate-workloads --count 100`.
-- Reporting includes latency percentiles and aggregate throughput metadata for concurrency runs.
-- `openai-load-run` supports chunking, checkpointing, resume mode, and progress logs for long-running benchmarks.
-- The promoted 10,000-record benchmark dataset has a public-facing EDA layer under `data/generated/dataset_10000/` with interactive dashboard, term visuals, static figures, word clouds, and vertical pages. Finance-specific EDA is also mirrored under `data/generated/finance/`.
+- The promoted benchmark contains 10,000 prompts, 10,000 gold/eval rows, and 4,740 KB records across Airline, Healthcare Admin, Retail, Finance, and Research AI.
+- Public dataset EDA is available under `data/generated/dataset_10000/`; Finance-specific assets are mirrored under `data/generated/finance/`.
+- Vertical context builders, normalized corpora, canonical retrieval keys, local Qdrant collections, BM25, hybrid reranking, and deterministic compression are implemented.
+- All five verticals pass the promoted retrieval SLOs in `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.
+- Memory modes mm0 through mm3 generate benchmark workloads; mm4 is a bounded agent contract and is not yet an active benchmark mode.
+- Mock, local Hugging Face, OpenAI-compatible, concurrent load, Hugging Face provider, and OpenRouter execution paths are implemented.
+- The grounded generation contract, short evidence labels, deterministic evaluator, streaming metrics, API cost accounting, run manifests, checkpointing, and resume controls are implemented.
+- Historical curated Phase 1 samples document RunPod L40S vLLM calibration and concurrency behavior. They are not a hardware-equal comparison with local CPU results.
+- Current local and API smoke tests have produced real model output. Model6 currently leads the API smoke on quality and cost; Model5 remains a provider/model-size comparison.
+- The remote RTX 3070 is now a validated development GPU backend. A 50-prompt vLLM/Qwen 0.5B smoke completed with full request success and live GPU telemetry.
+- The A1 serving path passed, but quality did not: JSON validity was 98%, contract validity 72%, evidence match 30%, and deterministic groundedness 28%.
+- The next safe GPU step is a controlled small-model concurrency 2/4 study. Stronger-model and full-scale quality claims remain blocked by 8 GB VRAM and the 0.5B model's grounding performance.
+- The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
 
@@ -146,6 +134,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Model registry and Ministral model5 switch](docs/92_model_registry_and_model5_switch.md)
 - [Model5 OpenRouter streaming smoke](docs/93_model5_openrouter_streaming_smoke.md)
 - [Controlled inference readiness audit](docs/94_controlled_inference_readiness_audit.md)
+- [Definitive technical briefing](docs/95_definitive_technical_briefing.md)
+- [Remote RTX 3070 vLLM smoke](docs/96_remote_rtx3070_vllm_smoke.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables
