@@ -46,4 +46,4 @@ mm4_bounded_agentic:
   requires_compression: true
   requires_agentic_workflow: true
   max_context_tokens: 4096
-  expected_stage: "phase3_contract_only"
+  expected_stage: "phase4_active"

@@ -291,8 +291,9 @@ Five modes are registered:
 - `mm3_compressed_hybrid_top5`;
 - `mm4_bounded_agentic`.
 
-Only mm0 through mm3 produce normal benchmark workloads today. mm4 is a strict
-contract and trace schema, not an active autonomous agent.
+mm0 through mm3 produce normal single-pass benchmark workloads. mm4 is now an
+executable bounded LangGraph workflow over frozen promoted-context snapshots.
+It is an experimental inference mode, not an autonomous chatbot.
 
 ### Evaluation
 
@@ -328,6 +329,7 @@ The project writes:
 - External API validation through OpenRouter and the Hugging Face router.
 - Historical Linux/RunPod L40S vLLM calibration.
 - Validated live vLLM and SGLang execution on the remote RTX 3070.
+- Validated bounded LangGraph mm4 execution through the same vLLM endpoint.
 
 A checked-in remote RTX 3070 development profile and frozen A1 vLLM smoke
 matrix now exist. The 50-prompt A1 run validated the current live remote GPU
@@ -924,7 +926,7 @@ packing:
 - no context for mm0;
 - 4,096 estimated context tokens for mm1/mm2;
 - 2,048 for mm3;
-- 4,096 for the future mm4 contract.
+- 4,096 for the bounded mm4 workflow.
 
 Future improvements:
 
@@ -1684,20 +1686,22 @@ Status: implemented and diagnostically validated.
 
 ## mm4_bounded_agentic
 
-Purpose: future bounded multi-step answer workflow.
+Purpose: measure the quality, latency, token, repair, and escalation tradeoff of
+a bounded multi-step inference workflow.
 
-Status: contract only. It is not part of current inference benchmarks.
+Status: implemented and validated on the matched 50-prompt RTX 3070 smoke. It
+remains an opt-in experiment rather than the default serving mode.
 
 Workflow:
 
-1. classify task/risk;
-2. select retrieval strategy;
-3. retrieve;
-4. assemble context;
-5. generate;
-6. validate citations/format/safety;
-7. repair once;
-8. escalate if evidence is insufficient.
+1. `classify_task`;
+2. `plan_retrieval`;
+3. `retrieve_context`;
+4. `assemble_context`;
+5. `generate_answer`;
+6. `validate_output`;
+7. `repair_once`;
+8. `finalize_or_escalate`.
 
 Hard limits:
 
@@ -1711,13 +1715,18 @@ Hard limits:
 
 Approved tools:
 
-- retrieve context;
-- assemble context;
-- validate citations;
-- validate format;
-- validate safety;
-- repair once;
-- escalate.
+- `retrieve_context`;
+- `assemble_context`;
+- `validate_generation_contract`;
+- `validate_evidence`;
+- `validate_safety`;
+- `repair_generation_once`;
+- `escalate`.
+
+The A6 smoke used one retrieval round per prompt, repaired and escalated 3 of
+50 rows, reached 94% contract validity, 44% evidence match, and 42%
+deterministic groundedness. It improved quality over mm2/mm3 but increased mean
+E2E latency and normalized token use.
 
 # 13. Benchmark Design
 
@@ -2404,6 +2413,30 @@ SGLang stays in the comparison matrix, but vLLM remains the default RTX 3070
 engine because it produced better E2E latency, TPOT, throughput, peak memory,
 contract validity, and groundedness on the matched workload.
 
+## A5/A6 LangGraph mm4 Result
+
+The matched bounded-agent path completed operationally:
+
+- 50 of 50 requests completed;
+- 47 answers and 3 escalations;
+- one retrieval round per prompt;
+- 6% repair rate;
+- mean TTFT: 181.903 ms;
+- mean TPOT: 9.065 ms;
+- mean E2E latency: 1,022.239 ms.
+
+Quality improved relative to the same-model mm2/mm3 baselines:
+
+- JSON validity: 98%;
+- contract validity: 94%;
+- evidence match: 44%;
+- deterministic groundedness: 42%;
+- safety violations: 2 of 50.
+
+mm4 remains in the controlled matrix because it improved contract validity and
+groundedness. It is not the default mode because it increased mean E2E latency
+and normalized token use, and it still failed the final groundedness SLO.
+
 # 18. Telemetry
 
 ## Request Telemetry Schema
@@ -2480,11 +2513,14 @@ The asynchronous OpenAI-compatible load runner supports:
 
 Gaps before a main GPU sweep:
 
-- live hardware telemetry sampler;
-- structured power and temperature collection;
 - backend-native queue, batch, KV-cache, and prefix-cache metrics;
 - OOM and retry classification across all runners;
 - checkpoint/resume parity for every backend.
+
+The nvidia-smi sampler now captures utilization, memory, power, temperature,
+process name, interval/duration, and start/end timestamps. A5/A6 adds
+per-node agent latency and tool/generation counters; its final run did not
+claim a new board-level telemetry comparison.
 
 ## System Metadata
 
@@ -2588,12 +2624,12 @@ source only uses optimization `none`. They must not be presented as final
 optimization results. The stronger public Phase 1 plots are curated under
 `results/samples/figures/phase1`.
 
-# 20. Agent Roadmap
+# 20. Bounded Agent Implementation
 
 ## Bounded Agent Architecture
 
-The planned agent is intentionally not a free-form autonomous system. It is a
-bounded inference workflow over the project corpus.
+The implemented agent is intentionally not a free-form autonomous system. It
+is a bounded LangGraph inference workflow over the project corpus.
 
 Components:
 
@@ -2608,10 +2644,10 @@ Components:
 
 ## Memory
 
-The agent would use mm4:
+The agent uses mm4:
 
-- adaptive retrieval up to two rounds;
-- context compression;
+- retrieval capped at two rounds;
+- frozen promoted-context input for the A6 smoke;
 - project corpus only;
 - explicit token estimates;
 - traceable selected strategy and steps.
@@ -2623,7 +2659,7 @@ arbitrary tools, internet browsing, or unbounded loops.
 
 ## Execution And Evaluation
 
-Every trace records:
+Every executable trace records:
 
 - workload and prompt identity;
 - vertical;
@@ -2632,7 +2668,7 @@ Every trace records:
 - validation results;
 - escalation reason and final status;
 - token and latency fields;
-- backend/model placeholders.
+- backend/model identity.
 
 The same generation contract and evaluator can be reused.
 
@@ -2643,14 +2679,9 @@ latency/cost variance. Without stable baseline metrics, it would be impossible
 to determine whether the agent improves useful outcomes or merely consumes
 more tokens and time.
 
-Before mm4 execution, the project must establish:
-
-- normal mm0-mm3 quality and cost;
-- live GPU telemetry;
-- retry accounting;
-- per-step budgets;
-- escalation SLOs;
-- agent trace persistence.
+The 50-prompt A6 smoke established retry accounting, per-step budgets, trace
+persistence, and a matched mm2/mm3 comparison. Remaining work is stronger-model
+quality, explicit escalation SLOs, and a registered infrastructure price.
 
 # 21. Project Evolution
 
@@ -2751,6 +2782,13 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - Model5 changed from unpriced Llama 3.2 3B to priced Ministral 3B/OpenRouter;
 - controlled inference readiness audit.
 
+## Blocks A1 Through A6: Current GPU And Agent Validation
+
+- matched vLLM and SGLang 50-prompt RTX 3070 smokes;
+- production-oriented nvidia-smi telemetry sampler;
+- bounded LangGraph mm4 state, graph, tools, prompts, and trace schema;
+- matched mm2/mm3/mm4 quality, latency, token, repair, and escalation report.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -2776,11 +2814,14 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - Retrieval promotion with all five vertical SLOs passing.
 - Phase 4 runner adapter, mock/local/API smoke paths, generation contract,
   streaming metrics, API pricing, and controlled readiness audit.
+- Blocks A1 through A6 live GPU, telemetry, engine, and bounded-agent
+  validation.
 
 ## Current Block State
 
 Blocks A1 through A3 completed matched vLLM and SGLang live smokes plus the
-production-oriented nvidia-smi telemetry sampler.
+production-oriented nvidia-smi telemetry sampler. Blocks A5/A6 completed the
+bounded LangGraph mm4 implementation and matched 50-prompt agentic smoke.
 
 Current decision:
 
@@ -2807,6 +2848,8 @@ work.
 - checkpoint/resume load-run controls;
 - SLO definitions;
 - remote RTX 3070 vLLM and SGLang serving;
+- executable bounded LangGraph mm4 inference with one optional repair;
+- benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
   telemetry with interval, duration, start/end timestamps, and manifest links.
 
@@ -2833,7 +2876,10 @@ work.
 - Current backend matrix understates local HF streaming capability.
 - GPU board telemetry is sampled through nvidia-smi, but KV-cache, queue, batch,
   and prefix-cache time series remain absent.
-- mm4 is contract-only.
+- mm4 reached 42% groundedness and still fails the configured final quality
+  target.
+- mm4 provider token counts and legacy baseline whitespace estimates require
+  an explicit normalized source for cross-mode token comparisons.
 - Retail category distribution is imbalanced.
 
 ## Technical Debt
@@ -3065,7 +3111,7 @@ The repository now contains a complete pre-scale inference engineering stack:
 - strict non-leaking retrieval ablations;
 - repaired and promoted retrieval validation with all vertical SLOs passing;
 - deterministic context compression;
-- mm0-mm3 workload generation and an mm4 bounded-agent contract;
+- mm0-mm3 workload generation and an executable bounded LangGraph mm4 mode;
 - mock, local HF, OpenAI-compatible, and concurrent resumable runners;
 - real local and API model smoke tests;
 - strict grounded JSON generation contract and evidence aliasing;
@@ -3091,7 +3137,8 @@ The immediate work is operational:
 - register an infrastructure price before making GPU cost claims;
 - add backend-native queue, batch, and cache telemetry;
 - then scale through 500, 2,000, and 10,000 records only after guards pass;
-- implement semantic groundedness and eventually bounded mm4 execution.
+- implement semantic groundedness and evaluate mm4 with a stronger feasible
+  model.
 
 Planned optimization studies include continuous batching, KV-cache pressure,
 PagedAttention behavior, prefix caching/routing, quantization, speculative
@@ -3109,6 +3156,8 @@ assumptions:
 - small-model contract failures are recorded;
 - matched vLLM and SGLang GPU results are retained even though neither meets
   final generation quality targets.
+- the mm4 quality uplift is retained alongside its latency, token, repair, and
+  escalation costs.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

@@ -1,8 +1,7 @@
 """Bounded agentic memory-mode contract for Phase 3.
 
-This module defines validation-only schemas for the future
-``mm4_bounded_agentic`` mode. It does not call models, tools, APIs, or
-retrievers.
+This module defines the stable limits and compatibility trace schema for the
+executable ``mm4_bounded_agentic`` mode.
 """
 
 from __future__ import annotations
@@ -15,23 +14,23 @@ from inference_bench.context_schema import VALID_VERTICALS
 MM4_MEMORY_MODE = "mm4_bounded_agentic"
 
 AGENTIC_WORKFLOW_STEPS = (
-    "classify_task_risk",
-    "select_retrieval_strategy",
-    "retrieve_evidence",
+    "classify_task",
+    "plan_retrieval",
+    "retrieve_context",
     "assemble_context",
     "generate_answer",
-    "validate_citations_format_safety",
-    "repair_once_if_needed",
-    "escalate_if_evidence_insufficient",
+    "validate_output",
+    "repair_once",
+    "finalize_or_escalate",
 )
 
 APPROVED_AGENTIC_TOOLS = (
     "retrieve_context",
     "assemble_context",
-    "validate_citations",
-    "validate_format",
+    "validate_generation_contract",
+    "validate_evidence",
     "validate_safety",
-    "repair_once",
+    "repair_generation_once",
     "escalate",
 )
 
@@ -69,8 +68,8 @@ class BoundedAgenticContract:
     workflow_steps: tuple[str, ...]
     approved_tools: tuple[str, ...]
     hard_limits: AgenticHardLimits
-    contract_stage: str = "phase3_contract_only"
-    no_model_inference_triggered: bool = True
+    contract_stage: str = "phase4_active"
+    no_model_inference_triggered: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-safe contract payload."""
@@ -130,7 +129,7 @@ def _validate_agentic_step(step: dict[str, Any], index: int) -> None:
 
 @dataclass(frozen=True)
 class AgenticTrace:
-    """Future trace schema for bounded agentic memory-mode runs."""
+    """Compatibility trace schema retained for bounded agentic runs."""
 
     trace_id: str
     workload_id: str
@@ -242,7 +241,7 @@ def agentic_trace_format() -> dict[str, Any]:
 
 
 def valid_agentic_trace_fixture() -> AgenticTrace:
-    """Return a contract-only valid trace fixture."""
+    """Return a valid compatibility trace fixture."""
 
     return AgenticTrace(
         trace_id="trace_fixture_001",
@@ -251,14 +250,14 @@ def valid_agentic_trace_fixture() -> AgenticTrace:
         memory_mode=MM4_MEMORY_MODE,
         vertical="finance",
         steps=[
-            {"step_name": "classify_task_risk", "tool_name": None, "uses_internet": False},
+            {"step_name": "classify_task", "tool_name": None, "uses_internet": False},
             {
-                "step_name": "select_retrieval_strategy",
+                "step_name": "plan_retrieval",
                 "tool_name": None,
                 "uses_internet": False,
             },
             {
-                "step_name": "retrieve_evidence",
+                "step_name": "retrieve_context",
                 "tool_name": "retrieve_context",
                 "uses_internet": False,
             },
@@ -268,8 +267,8 @@ def valid_agentic_trace_fixture() -> AgenticTrace:
                 "uses_internet": False,
             },
             {
-                "step_name": "validate_citations_format_safety",
-                "tool_name": "validate_citations",
+                "step_name": "validate_output",
+                "tool_name": "validate_generation_contract",
                 "uses_internet": False,
             },
         ],
@@ -295,6 +294,6 @@ def valid_agentic_trace_fixture() -> AgenticTrace:
             "generation_latency_ms": None,
             "validation_latency_ms": None,
         },
-        backend_placeholder="not_run_contract_only",
-        model_placeholder="not_run_contract_only",
+        backend_placeholder="fixture_backend",
+        model_placeholder="fixture_model",
     )

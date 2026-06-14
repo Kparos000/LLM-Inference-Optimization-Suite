@@ -31,14 +31,14 @@ def test_audit_detects_retrieval_promotion_and_workload_splits() -> None:
     }
 
 
-def test_audit_detects_telemetry_cost_and_mm4_contract_only() -> None:
+def test_audit_detects_telemetry_cost_and_active_bounded_mm4() -> None:
     report, checks = _checks_by_category()
 
     assert checks["logging_observability"].status == "PASS"
     assert report["cost_schema_ready"] is True
     assert report["live_gpu_cost_ready"] is False
-    assert report["mm4_status"] == "contract_only"
-    assert report["mm4_benchmark_ready"] is False
+    assert report["mm4_status"] == "active_bounded"
+    assert report["mm4_benchmark_ready"] is True
 
 
 def test_audit_is_not_ready_until_gpu_inputs_are_frozen() -> None:

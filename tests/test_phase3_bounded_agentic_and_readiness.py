@@ -83,10 +83,10 @@ def test_mm4_hard_limits_are_present() -> None:
     assert set(APPROVED_AGENTIC_TOOLS) == {
         "retrieve_context",
         "assemble_context",
-        "validate_citations",
-        "validate_format",
+        "validate_generation_contract",
+        "validate_evidence",
         "validate_safety",
-        "repair_once",
+        "repair_generation_once",
         "escalate",
     }
 
@@ -220,5 +220,5 @@ def test_no_model_inference_is_triggered(tmp_path: Path) -> None:
     )
 
     assert report["no_model_inference_triggered"] is True
-    assert report["mm4_bounded_agentic_contract"]["no_model_inference_triggered"] is True
+    assert report["mm4_bounded_agentic_contract"]["no_model_inference_triggered"] is False
     assert report["evaluator_contract"]["no_model_inference_triggered"] is True

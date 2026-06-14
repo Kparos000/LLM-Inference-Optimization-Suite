@@ -297,8 +297,8 @@ def build_readiness_rows(
             "configs/memory_modes.yaml",
             bool(memory_modes["ready"]),
             "ready" if memory_modes["ready"] else "blocked",
-            "mm0-mm4 are defined; mm4 remains contract-only.",
-            "Use mm0-mm3 for first harness validation; keep mm4 out of main run.",
+            "mm0-mm4 are defined; mm4 is now an executable bounded LangGraph mode.",
+            "Use the frozen A5/A6 config for bounded mm4 validation.",
         ),
         ReadinessRow(
             "schemas",
@@ -327,10 +327,10 @@ def build_readiness_rows(
         ReadinessRow(
             "mm4_contract",
             "MM4_BOUNDED_AGENTIC_CONTRACT",
-            bool(agentic_contract["no_model_inference_triggered"]),
-            "contract_only",
-            "Bounded workflow, hard limits, approved tools, and trace format are defined.",
-            "Do not execute mm4 until Phase 4 validates normal workload plumbing.",
+            agentic_contract["contract_stage"] == "phase4_active",
+            "active_bounded",
+            "Bounded workflow, hard limits, approved tools, graph, and trace format are defined.",
+            "Keep mm4 runs at or below the frozen smoke limit until quality gates pass.",
         ),
         ReadinessRow(
             "evaluator_contract",
@@ -378,7 +378,7 @@ def build_phase3_readiness_report(
         "batch evaluator CLI over generation JSONL outputs",
         "hardware telemetry capture for later GPU runs",
         "SGLang runnable backend integration",
-        "bounded agentic execution implementation; current mm4 is contract-only",
+        "bounded agentic execution has moved to the Phase 4 A5/A6 implementation",
     ]
     phase4_first_commands = [
         "pytest tests/test_phase3_context_memory_modes.py "

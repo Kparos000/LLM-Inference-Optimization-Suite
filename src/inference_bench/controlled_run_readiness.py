@@ -137,9 +137,9 @@ def inspect_controlled_inference_readiness(
         "mm3_compressed_hybrid_top5",
         "mm4_bounded_agentic",
     }
-    mm4_contract_only = (
+    mm4_active = (
         memory_modes.get("mm4_bounded_agentic") is not None
-        and memory_modes["mm4_bounded_agentic"].expected_stage == "phase3_contract_only"
+        and memory_modes["mm4_bounded_agentic"].expected_stage == "phase4_active"
     )
 
     chunking_paths = (
@@ -236,10 +236,10 @@ def inspect_controlled_inference_readiness(
         ),
         ControlledReadinessCheck(
             "memory_modes",
-            "PASS" if memory_ready and mm4_contract_only else "FAIL",
+            "PASS" if memory_ready and mm4_active else "FAIL",
             "configs/memory_modes.yaml",
-            "mm0-mm3 are benchmark modes; mm4 is explicitly contract-only.",
-            "" if memory_ready and mm4_contract_only else "Correct memory-mode configuration.",
+            "mm0-mm3 and the bounded LangGraph mm4 benchmark mode are configured.",
+            "" if memory_ready and mm4_active else "Correct memory-mode configuration.",
         ),
         ControlledReadinessCheck(
             "context_engineering",
@@ -326,8 +326,8 @@ def inspect_controlled_inference_readiness(
             if blockers
             else None
         ),
-        "mm4_benchmark_ready": False,
-        "mm4_status": "contract_only",
+        "mm4_benchmark_ready": True,
+        "mm4_status": "active_bounded",
         "no_gpu_call_triggered": True,
         "no_vllm_call_triggered": True,
         "no_sglang_call_triggered": True,

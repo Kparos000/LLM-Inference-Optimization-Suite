@@ -1,0 +1,32 @@
+experiment_id: a5_mm4_bounded_agentic_smoke
+hardware: remote_rtx3070
+engine: vllm
+framework: langgraph
+model_alias: model1_0_5b
+model_id: Qwen/Qwen2.5-0.5B-Instruct
+memory_mode: mm4_bounded_agentic
+source_memory_mode: mm2_hybrid_top5
+split: smoke_500
+ablation_mode: prompt_plus_metadata
+verticals:
+  - airline
+  - healthcare_admin
+  - retail
+  - finance
+  - research_ai
+prompts_per_vertical: 10
+total_prompts: 50
+concurrency: 1
+streaming: true
+temperature: 0.0
+max_new_tokens: 128
+retrieval_source: promoted_retrieval_baseline
+max_tool_calls: 3
+max_retrieval_rounds: 2
+max_generation_attempts: 2
+max_repair_attempts: 1
+internet_tools: false
+arbitrary_tools: false
+workload_path: data/workloads/smoke_500/prompt_plus_metadata/mm2_hybrid_top5.jsonl
+base_url: http://localhost:8000/v1
+api_key: EMPTY

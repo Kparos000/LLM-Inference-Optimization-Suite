@@ -33,7 +33,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Public dataset EDA is available under `data/generated/dataset_10000/`; Finance-specific assets are mirrored under `data/generated/finance/`.
 - Vertical context builders, normalized corpora, canonical retrieval keys, local Qdrant collections, BM25, hybrid reranking, and deterministic compression are implemented.
 - All five verticals pass the promoted retrieval SLOs in `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.
-- Memory modes mm0 through mm3 generate benchmark workloads; mm4 is a bounded agent contract and is not yet an active benchmark mode.
+- Memory modes mm0 through mm3 provide single-pass workloads; mm4 is an executable bounded LangGraph inference mode with one optional repair.
 - Mock, local Hugging Face, OpenAI-compatible, concurrent load, Hugging Face provider, and OpenRouter execution paths are implemented.
 - The grounded generation contract, short evidence labels, deterministic evaluator, streaming metrics, API cost accounting, run manifests, checkpointing, and resume controls are implemented.
 - Historical curated Phase 1 samples document RunPod L40S vLLM calibration and concurrency behavior. They are not a hardware-equal comparison with local CPU results.
@@ -41,6 +41,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The remote RTX 3070 is now a validated development GPU backend. Matched 50-prompt vLLM and SGLang Qwen 0.5B smokes completed with full request success and live GPU telemetry.
 - The A1 serving path passed, but quality did not: JSON validity was 98%, contract validity 72%, evidence match 30%, and deterministic groundedness 28%.
 - The matched SGLang smoke reached 100% JSON validity, 58% contract validity, 36% evidence match, and 24% groundedness. It remains a secondary engine; vLLM remains the default RTX 3070 backend.
+- The matched mm4 smoke reached 94% contract validity, 44% evidence match, and 42% groundedness with a 6% repair/escalation rate. It remains opt-in because mean E2E latency and normalized token use exceeded mm2/mm3.
 - The next safe GPU step is a controlled small-model concurrency 2/4 study. Stronger-model and full-scale quality claims remain blocked by 8 GB VRAM and the 0.5B model's grounding performance.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
@@ -138,6 +139,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Definitive technical briefing](docs/95_definitive_technical_briefing.md)
 - [Remote RTX 3070 vLLM smoke](docs/96_remote_rtx3070_vllm_smoke.md)
 - [Remote RTX 3070 SGLang smoke](docs/96_remote_rtx3070_sglang_smoke.md)
+- [LangGraph mm4 bounded agent](docs/97_langgraph_mm4_bounded_agent.md)
+- [mm4 agentic smoke](docs/98_mm4_agentic_smoke.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables
