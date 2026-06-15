@@ -6,7 +6,8 @@ Status as of June 15, 2026.
 
 ```text
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
-QUALITY_BLOCKED_FOR_SCALE
+QUALITY_READY_FOR_FROZEN_100
+CONTROLLED_SCALE_GATE_PENDING
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -30,6 +31,12 @@ Phase B4 executed the frozen context-alignment repair and reran the exact
 100-prompt Qwen2.5-1.5B vLLM matrix. All required gold evidence now maps to
 E1-E5, including Finance 20/20, but the quality gate remains blocked because
 the two Airline safety violations persisted.
+
+Phase B5 repaired the safety wording and multi-evidence citation-selection
+path on the same frozen matrix. The targeted 25 failed-row replay passed the
+B5 gate and triggered a full frozen 100 rerun. The full rerun reached 99% JSON
+and contract validity, 96% evidence match and groundedness, and zero safety
+violations.
 
 ## B1 Quality Gate
 
@@ -99,17 +106,45 @@ all 25 failed rows were classified as model instruction-following failures.
 Finance is now primarily a model citation-selection problem, not a
 retrieval/context availability problem or safety problem.
 
+## B5 Final Generation Quality Hardening
+
+- Targeted B4 failed rows replayed: 25
+- Targeted JSON validity: 100%
+- Targeted contract validity: 100%
+- Targeted evidence match: 92%
+- Targeted groundedness: 92%
+- Targeted safety violations: 0
+- Targeted truncation: 0%
+- Lexical-guard repairs: 2
+- Missing-label retry triggers: 4
+- Full frozen 100 rerun triggered: yes
+- Full JSON validity: 99%
+- Full contract validity: 99%
+- Full evidence match: 96%
+- Full groundedness: 96%
+- Full safety violations: 0
+- Full truncation: 1%
+- Mean full-run TTFT: 142.102 ms
+- Mean full-run TPOT: 10.718 ms
+- Mean full-run E2E latency: 1,473.156 ms
+
+Result: `QUALITY_READY_FOR_FROZEN_100`.
+
+Residual full-run failures remain: one Airline citation miss, two Finance
+citation misses, and one Research AI truncated JSON output. The B5 result is a
+frozen 100-prompt gate, not a final scale benchmark or concurrency claim.
+
 ## Next Step
 
-Run `B4R1_SAFETY_AND_CITATION_SELECTION_REPAIR`: keep the same 100 prompt IDs,
-gold data, evaluator, promoted retrieval source, model, engine, hardware,
-memory mode, concurrency, and temperature. First repair the safety retry prompt
-so it does not repeat prohibited wording, then improve multi-evidence citation
-selection over already-present E labels. Do not run a larger benchmark,
-concurrency sweep, SGLang, mm4, or RunPod from the B4 decision.
+Run `B6_CONTROLLED_SCALE_AND_CONCURRENCY_GATE`: first run a controlled
+500-prompt quality gate at concurrency one. Only run concurrency 2/4 if the
+500-prompt gate maintains evidence and groundedness above target and safety
+violations remain zero. Do not run a larger 2,000 or 10,000 record benchmark
+until that gate passes.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
 `docs/99_modular_slo_diagnosis_and_optimization_catalog.md` for the B2 decision
-architecture, `docs/100_generation_quality_root_cause_audit.md` for B3, and
-`docs/101_context_alignment_and_generation_quality_repair.md` for B4.
+architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
+`docs/101_context_alignment_and_generation_quality_repair.md` for B4, and
+`docs/102_final_generation_quality_hardening.md` for B5.

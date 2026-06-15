@@ -45,8 +45,9 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Phase B1 loaded Qwen2.5-1.5B on the RTX 3070 and completed 100/100 requests without OOM. It reached 92% contract validity but only 35% evidence match and groundedness, 93% JSON validity, and two safety violations, so the result is `QUALITY_BLOCKED`.
 - Phase B2 adds modular SLO profiles, 51 structured bottlenecks, 57 structured optimizations, failed-SLO-only diagnosis, deterministic compatibility filtering, and one-factor next-experiment recommendations. No LLM is used as a decision source.
 - Phase B3 audited all 65 failed B1 rows without new inference. At least one required gold ID was absent from the frozen E1-E5 context in 52 failures; Finance accounted for 18 of those 52. Evidence was available but not cited in 18 failures.
-- Phase B4 executed the context-alignment repair on the exact 100 B1 prompt IDs. All required gold evidence now maps to E1-E5, including Finance 20/20. The rerun improved evidence match and groundedness from 35% to 76%, but safety violations remained 2, so the result is still `QUALITY_BLOCKED`.
-- The next step is `B4R1_SAFETY_AND_CITATION_SELECTION_REPAIR`: keep the 100-prompt B4 matrix frozen, fix prohibited-phrase repair behavior, and improve citation selection before any concurrency increase or workload scaling.
+- Phase B4 executed the context-alignment repair on the exact 100 B1 prompt IDs. All required gold evidence now maps to E1-E5, including Finance 20/20. The rerun improved evidence match and groundedness from 35% to 76%, but safety violations remained 2.
+- Phase B5 repaired safety wording and multi-evidence citation selection on the frozen B4 matrix. The targeted 25 failed-row replay reached 100% JSON and contract validity, 92% evidence match and groundedness, and zero safety violations. The triggered full frozen 100 rerun reached 99% JSON and contract validity, 96% evidence match and groundedness, and zero safety violations.
+- The next step is `B6_CONTROLLED_SCALE_AND_CONCURRENCY_GATE`: run a controlled 500-prompt quality gate at concurrency one before any concurrency 2/4 sweep or larger benchmark.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -152,6 +153,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Block B3 summary](docs/summaries/blockB3_generation_quality_root_cause_summary.md)
 - [Context alignment and generation quality repair](docs/101_context_alignment_and_generation_quality_repair.md)
 - [Block B4 summary](docs/summaries/blockB4_context_alignment_quality_repair_summary.md)
+- [Final generation quality hardening](docs/102_final_generation_quality_hardening.md)
+- [Block B5 summary](docs/summaries/blockB5_final_generation_quality_hardening_summary.md)
 - [Current project state](PROJECT_STATE.md)
 - [Data directory policy](data/README.md)
 

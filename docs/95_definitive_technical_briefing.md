@@ -2559,6 +2559,64 @@ had required evidence present in E1-E5, with no Finance safety/advice/projection
 wording; Finance is now primarily a model citation-selection and
 instruction-following problem.
 
+## B5 Final Generation Quality Hardening Gate
+
+B5 executed the safety and citation-selection repair block over the frozen B4
+matrix. It kept the same model, vLLM engine, remote RTX 3070, memory mode,
+prompt IDs, context snapshot, gold records, evaluator semantics, concurrency,
+temperature, and 160-token output cap.
+
+The implementation added:
+
+- rule-ID-based safety repair prompts that do not repeat prohibited wording;
+- a lexical guard that repairs only JSON answer and citation-note text while
+  preserving citations, confidence, and insufficiency state;
+- a deterministic internal E-label evidence plan and lightweight answer
+  outline;
+- targeted retry logic for missing evidence labels, invalid JSON, invalid
+  contract, or safety violation only, capped at two attempts.
+
+B5 first replayed only the 25 failed B4 prompt IDs:
+
+- 25 of 25 requests completed;
+- JSON validity: 100%;
+- contract validity: 100%;
+- evidence match: 92%;
+- deterministic groundedness: 92%;
+- safety violations: zero;
+- truncation rate: zero;
+- mean TTFT: 182.373 ms;
+- mean TPOT: 11.259 ms;
+- mean E2E latency: 1,678.475 ms;
+- lexical-guard repairs: two;
+- missing-label retry triggers: four.
+
+The targeted gate passed, so B5 reran the full frozen 100-prompt matrix:
+
+- 100 of 100 requests completed;
+- JSON validity: 99%;
+- contract validity: 99%;
+- evidence match: 96%;
+- deterministic groundedness: 96%;
+- safety violations: zero;
+- truncation rate: 1%;
+- mean TTFT: 142.102 ms;
+- mean TPOT: 10.718 ms;
+- mean ITL p50/p95/p99: 10.705 / 14.367 / 19.420 ms;
+- mean E2E latency: 1,473.156 ms.
+
+Full-run evidence match and groundedness by vertical:
+
+- Airline: 95%;
+- Healthcare Admin: 100%;
+- Retail: 100%;
+- Finance: 90%;
+- Research AI: 95%.
+
+The B5 decision is `QUALITY_READY_FOR_FROZEN_100`. It is not a final scale
+benchmark. Four residual full-run failures remain: one Airline citation miss,
+two Finance citation misses, and one Research AI truncated JSON output.
+
 # 18. Telemetry
 
 ## Request Telemetry Schema
@@ -2962,6 +3020,18 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - kept the result `QUALITY_BLOCKED` because two Airline safety violations
   persisted.
 
+## Phase B5: Final Generation Quality Hardening
+
+- added rule-ID safety repair prompts that do not echo prohibited wording;
+- added deterministic lexical repair for JSON answer and citation-note fields;
+- added multi-evidence E-label planning and lightweight answer outlines;
+- replayed only the 25 failed B4 rows first;
+- triggered the full frozen 100 rerun only after the targeted gate passed;
+- improved the full frozen 100 to 99% JSON validity, 99% contract validity,
+  96% evidence match, 96% groundedness, and zero safety violations;
+- marked the result `QUALITY_READY_FOR_FROZEN_100`, with controlled scale and
+  concurrency gates still pending.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -2997,6 +3067,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   B1 artifacts.
 - Phase B4 frozen context-alignment repair, 100-prompt vLLM rerun, post-run
   quality audit, and B2 SLO diagnosis over B4 artifacts.
+- Phase B5 targeted failed-row safety/citation repair, full frozen 100 rerun,
+  and frozen-matrix quality gate pass.
 
 ## Current Block State
 
@@ -3008,22 +3080,23 @@ the required grounded-output thresholds. Phase B2 now turns measured failures
 into deterministic, compatibility-filtered experiment recommendations. Phase
 B3 established that frozen workload/context alignment is a prerequisite to a
 clean model-capability conclusion. Phase B4 repaired that alignment for the
-same 100 prompts and showed a large quality gain, but safety still blocks
-scale.
+same 100 prompts and showed a large quality gain. Phase B5 repaired the
+remaining safety and citation-selection behavior enough for the full frozen
+100-prompt quality gate to pass.
 
 Current decision:
 
 ```text
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
-QUALITY_BLOCKED_FOR_SCALE
+QUALITY_READY_FOR_FROZEN_100
+CONTROLLED_SCALE_GATE_PENDING
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
-VRAM. The current blocker is generation quality after B4: JSON validity and
-contract validity reached 97%, evidence match and groundedness reached 76%,
-and all failed rows had required evidence present in E1-E5. The remaining hard
-blocker is safety, with two Airline prohibited-phrase violations, plus residual
-model citation-selection failures over available evidence.
+VRAM. B5 cleared the frozen 100-prompt generation quality gate with 99% JSON
+validity, 99% contract validity, 96% evidence match, 96% groundedness, and
+zero safety violations. This is a frozen-smoke gate, not a final scale or
+concurrency benchmark.
 
 ## What Is Ready
 
@@ -3045,6 +3118,8 @@ model citation-selection failures over available evidence.
 - Qwen2.5-1.5B vLLM loading and 100-prompt concurrency-one execution;
 - deterministic B4 context-aligned runner export for the frozen 100-prompt B1
   set;
+- B5 safety lexical guard, multi-evidence E-label planning, targeted replay,
+  and full frozen 100 quality-gate pass;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3052,12 +3127,13 @@ model citation-selection failures over available evidence.
 
 ## Remaining Blockers
 
-- Qwen2.5-1.5B safety quality and residual evidence-match/groundedness misses
-  over available E1-E5 evidence;
+- controlled 500-prompt quality gate after the B5 frozen 100 pass;
+- bounded concurrency 2/4 sweep after the 500-prompt gate, if quality remains
+  above target and safety remains zero;
 - stronger-than-1.5B model feasibility within 8 GB VRAM;
 - registered infrastructure cost if GPU cost comparisons are required;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
-- a controlled concurrency sweep before scaling request count.
+- larger 2,000 and 10,000 record runs.
 
 ## Known Limitations
 
@@ -3090,6 +3166,10 @@ model citation-selection failures over available evidence.
   for a full final workload benchmark.
 - B4 still produced two Airline safety violations and 24 failed rows where
   available evidence was not cited.
+- B5 passed the frozen 100-prompt quality gate, but it is not a final scale
+  benchmark and still left four residual full-run failures: one Airline
+  citation miss, two Finance citation misses, and one Research AI truncated
+  JSON output.
 - B2 recommendations do not apply changes automatically and do not estimate
   gains before measurement.
 - B2 local reports are ignored benchmark artifacts and must be regenerated
@@ -3110,14 +3190,12 @@ model citation-selection failures over available evidence.
 
 ## Next Engineering Milestone
 
-Run `B4R1_SAFETY_AND_CITATION_SELECTION_REPAIR` without changing gold data,
-evaluator semantics, the promoted retrieval source, model, engine, hardware,
-memory mode, concurrency, or temperature. First repair the safety retry path so
-prohibited wording is not repeated back to the model, then improve
-multi-evidence citation selection over already-present E labels. Do not
-increase prompt count or run concurrency 2/4 until safety is zero and the
-quality gate passes, or a controlled stronger-model comparison documents the
-model-capability limit.
+Run `B6_CONTROLLED_SCALE_AND_CONCURRENCY_GATE`. First run a controlled
+500-prompt quality gate at concurrency one. If that gate preserves the B5
+quality thresholds and safety remains zero, run a bounded concurrency 2/4 sweep
+before any 2,000 or 10,000 record benchmark. Keep gold data, evaluator
+semantics, promoted retrieval, model, engine, memory mode, and temperature
+fixed for the next gate.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3351,15 +3429,17 @@ gold leakage.
 
 The immediate work is operational:
 
-- repair B4 safety retry behavior and multi-evidence citation selection on the
-  frozen 100-prompt B4 matrix;
-- document whether the remaining 1.5B failures are prompt/context presentation
+- run a controlled 500-prompt quality gate at concurrency one after the B5
+  frozen 100-prompt pass;
+- run a bounded concurrency 2/4 sweep only if the 500-prompt gate preserves
+  quality and zero safety violations;
+- document whether residual 1.5B failures are prompt/context presentation
   problems or a model-capability limit;
 - decide whether a model stronger than 1.5B is feasible under the 8 GB VRAM
   constraint or requires a controlled external GPU;
 - register an infrastructure price before making GPU cost claims;
 - add backend-native queue, batch, and cache telemetry;
-- then scale through 500, 2,000, and 10,000 records only after guards pass;
+- then scale through 2,000 and 10,000 records only after guards pass;
 - implement semantic groundedness and evaluate mm4 with a stronger feasible
   model.
 
@@ -3385,6 +3465,8 @@ assumptions:
   grounding, safety, and latency gates.
 - the B4 context-alignment repair is retained alongside its quality uplift,
   added latency/token cost, and persistent safety blocker.
+- the B5 final quality hardening result is retained alongside its successful
+  frozen 100-prompt quality gate and remaining four residual failures.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical
