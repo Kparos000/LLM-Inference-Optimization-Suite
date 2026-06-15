@@ -42,7 +42,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The A1 serving path passed, but quality did not: JSON validity was 98%, contract validity 72%, evidence match 30%, and deterministic groundedness 28%.
 - The matched SGLang smoke reached 100% JSON validity, 58% contract validity, 36% evidence match, and 24% groundedness. It remains a secondary engine; vLLM remains the default RTX 3070 backend.
 - The matched mm4 smoke reached 94% contract validity, 44% evidence match, and 42% groundedness with a 6% repair/escalation rate. It remains opt-in because mean E2E latency and normalized token use exceeded mm2/mm3.
-- The next safe GPU step is a controlled small-model concurrency 2/4 study. Stronger-model and full-scale quality claims remain blocked by 8 GB VRAM and the 0.5B model's grounding performance.
+- Phase B1 loaded Qwen2.5-1.5B on the RTX 3070 and completed 100/100 requests without OOM. It reached 92% contract validity but only 35% evidence match and groundedness, 93% JSON validity, and two safety violations, so the result is `QUALITY_BLOCKED`.
+- The next step is to isolate citation-selection, Finance grounding, truncation, and prohibited-phrase failures before increasing concurrency or workload size. The 1.5B model fits in 8 GB VRAM; quality, not memory, is the current blocker.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -141,6 +142,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Remote RTX 3070 SGLang smoke](docs/96_remote_rtx3070_sglang_smoke.md)
 - [LangGraph mm4 bounded agent](docs/97_langgraph_mm4_bounded_agent.md)
 - [mm4 agentic smoke](docs/98_mm4_agentic_smoke.md)
+- [Qwen2.5-1.5B vLLM quality smoke](docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md)
+- [Current project state](PROJECT_STATE.md)
 - [Data directory policy](data/README.md)
 
 ## Environment Variables

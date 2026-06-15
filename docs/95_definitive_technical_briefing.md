@@ -1,6 +1,6 @@
 # Definitive Technical Briefing
 
-Status: authoritative repository reference as of June 14, 2026
+Status: authoritative repository reference as of June 15, 2026
 
 Repository: `LLM-Inference-Optimization-Suite`
 
@@ -330,6 +330,8 @@ The project writes:
 - Historical Linux/RunPod L40S vLLM calibration.
 - Validated live vLLM and SGLang execution on the remote RTX 3070.
 - Validated bounded LangGraph mm4 execution through the same vLLM endpoint.
+- Validated Qwen2.5-1.5B vLLM loading and 100-prompt quality-gated execution on
+  the remote RTX 3070.
 
 A checked-in remote RTX 3070 development profile and frozen A1 vLLM smoke
 matrix now exist. The 50-prompt A1 run validated the current live remote GPU
@@ -1400,7 +1402,7 @@ is intentionally not committed.
 | Public alias | Canonical key | Model ID | Role | Current execution target |
 | --- | --- | --- | --- | --- |
 | `model1_0_5b` | `qwen2_5_0_5b_instruct` | `Qwen/Qwen2.5-0.5B-Instruct` | local smoke | local HF or optional self-host |
-| `model2_1_5b` | `qwen2_5_1_5b_instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | stronger local baseline | local HF or optional self-host |
+| `model2_1_5b` | `qwen2_5_1_5b_instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | stronger local baseline | validated RTX 3070 vLLM |
 | `model3_7b` | `qwen2_5_7b_instruct` | `Qwen/Qwen2.5-7B-Instruct` | first serious GPU model | vLLM target |
 | `model4_32b` | `qwen2_5_32b_instruct` | `Qwen/Qwen2.5-32B-Instruct` | later scale study | larger self-hosted GPU |
 | `model5_gated` | `ministral_3b_2512_api` | `mistralai/ministral-3b-2512` | API-priced small model | OpenRouter |
@@ -1553,7 +1555,8 @@ Status:
 - OpenAI-compatible runner and load runner implemented;
 - historical RunPod L40S calibration validated;
 - current Phase 4 wrapper is live-run validated;
-- controlled 50-prompt RTX 3070 smoke completed.
+- controlled 50-prompt RTX 3070 0.5B smoke completed;
+- controlled 100-prompt RTX 3070 1.5B quality smoke completed.
 
 Purpose:
 
@@ -2303,9 +2306,16 @@ The frozen matched A2 matrix is
 `configs/experiments/a2_remote_rtx3070_sglang_smoke.yaml`. It uses the same 50
 prompt IDs and generation settings with SGLang.
 
+The frozen B1 matrix is
+`configs/experiments/b1_remote_rtx3070_vllm_1_5b_quality_smoke.yaml`. It ran
+100 `mm2_hybrid_top5` records, 20 per vertical, with Qwen2.5-1.5B, streaming,
+temperature zero, 128 maximum new tokens, and concurrency one.
+
 `configs/gpu_costs.yaml` remains an unfilled RunPod template. The remote
-development server has no registered hourly price, so A1 and A2 make no GPU
-cost claim.
+development server has no registered hourly price, so A1, A2, and B1 make no
+GPU cost claim. `configs/runpod_projection_prices.yaml` also keeps RTX 4090,
+L40S, A100, and H100 projection prices and measured throughput multipliers
+null until reviewed inputs exist.
 
 ## Historical RunPod Infrastructure
 
@@ -2382,9 +2392,8 @@ The generation-quality gate failed:
 - safety violations: 2 of 50.
 
 The 0.5B model is suitable for serving-plumbing experiments but not final
-quality claims. The next recommended GPU block is a controlled concurrency 2/4
-study with the same model and input, followed by a reviewed stronger-model
-feasibility decision constrained by 8 GB VRAM.
+quality claims. B1 therefore tested the registered 1.5B role before increasing
+concurrency or workload size.
 
 ## A2 SGLang Result
 
@@ -2436,6 +2445,44 @@ Quality improved relative to the same-model mm2/mm3 baselines:
 mm4 remains in the controlled matrix because it improved contract validity and
 groundedness. It is not the default mode because it increased mean E2E latency
 and normalized token use, and it still failed the final groundedness SLO.
+
+## B1 Qwen2.5-1.5B Quality Gate
+
+The 1.5B model loaded in the pinned vLLM image and fit within the RTX 3070:
+
+- model load and `/v1/models`: PASS;
+- 100 of 100 requests completed;
+- mean TTFT: 185.529 ms;
+- mean TPOT: 11.341 ms;
+- mean ITL p50/p95/p99: 10.722 / 18.625 / 30.253 ms;
+- mean E2E latency: 1,269.874 ms;
+- mean/peak GPU utilization: 77.87% / 100%;
+- mean/peak GPU memory: 6,419.23 / 6,534 MB;
+- mean/peak power: 125.37 / 145.66 W;
+- mean/peak temperature: 63.36 / 69 C.
+
+The frozen quality gate failed:
+
+- JSON validity: 93%, target at least 95%;
+- contract validity: 92%, target at least 85%;
+- evidence match: 35%, target at least 60%;
+- deterministic groundedness: 35%, target at least 60%;
+- safety violations: 2, target zero.
+
+On the exact 50-prompt A1 overlap, the 1.5B model improved contract validity
+from 72% to 94%, evidence match from 30% to 44%, and groundedness from 28% to
+44%. JSON validity fell from 98% to 94%, one safety violation remained, and
+mean E2E latency increased by 47.1%.
+
+Finance remained the main quality blocker at 5% evidence match and
+groundedness. Six of 100 outputs were truncated at 128 tokens. Both safety
+failures emitted the prohibited phrase `verification bypass` in cautionary
+answers; the unchanged evaluator still marks the literal prohibited phrase.
+
+The B1 decision is `QUALITY_BLOCKED`. The 1.5B model is operationally feasible
+on 8 GB VRAM, but workload scaling and the optional concurrency 2/4 sweep are
+deferred until citation selection, truncation, and prohibited-phrase behavior
+are isolated.
 
 # 18. Telemetry
 
@@ -2789,6 +2836,15 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - bounded LangGraph mm4 state, graph, tools, prompts, and trace schema;
 - matched mm2/mm3/mm4 quality, latency, token, repair, and escalation report.
 
+## Phase B1: Stronger Local Quality Gate
+
+- loaded Qwen2.5-1.5B in the pinned vLLM image on the RTX 3070;
+- ran 100 balanced mm2 prompts with provider token usage and streaming ITL;
+- compared the full run and exact 50-prompt overlap against A1;
+- confirmed the model fits in 8 GB VRAM;
+- marked the result `QUALITY_BLOCKED` because JSON, evidence, groundedness, and
+  safety targets did not all pass.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -2816,23 +2872,28 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   streaming metrics, API pricing, and controlled readiness audit.
 - Blocks A1 through A6 live GPU, telemetry, engine, and bounded-agent
   validation.
+- Phase B1 Qwen2.5-1.5B vLLM loading, 100-prompt execution, quality gate, and
+  A1 comparison.
 
 ## Current Block State
 
 Blocks A1 through A3 completed matched vLLM and SGLang live smokes plus the
 production-oriented nvidia-smi telemetry sampler. Blocks A5/A6 completed the
 bounded LangGraph mm4 implementation and matched 50-prompt agentic smoke.
+Phase B1 completed the stronger 1.5B local-model gate without OOM, but failed
+the required grounded-output thresholds.
 
 Current decision:
 
 ```text
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
-NOT_READY_FOR_QUALITY_SCALE_OR_FULL_BENCHMARK
+QUALITY_BLOCKED_FOR_SCALE
 ```
 
-The remote serving path is operational. The 0.5B generation quality is below
-the configured grounded-output targets, and 8 GB VRAM constrains stronger-model
-work.
+The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
+VRAM. The current blocker is generation quality: B1 reached 92% contract
+validity but only 35% evidence match and groundedness, with 93% JSON validity
+and two safety violations.
 
 ## What Is Ready
 
@@ -2848,6 +2909,7 @@ work.
 - checkpoint/resume load-run controls;
 - SLO definitions;
 - remote RTX 3070 vLLM and SGLang serving;
+- Qwen2.5-1.5B vLLM loading and 100-prompt concurrency-one execution;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -2855,8 +2917,9 @@ work.
 
 ## Remaining Blockers
 
-- Qwen2.5-0.5B contract, evidence-match, groundedness, and safety quality;
-- stronger-model feasibility within 8 GB VRAM;
+- Qwen2.5-1.5B evidence-match, groundedness, JSON, truncation, and safety
+  quality;
+- stronger-than-1.5B model feasibility within 8 GB VRAM;
 - registered infrastructure cost if GPU cost comparisons are required;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
 - a controlled concurrency sweep before scaling request count.
@@ -2880,6 +2943,10 @@ work.
   target.
 - mm4 provider token counts and legacy baseline whitespace estimates require
   an explicit normalized source for cross-mode token comparisons.
+- B1 provider token counts and A1 whitespace estimates also prevent a fully
+  tokenizer-matched throughput claim.
+- B1 Finance evidence match and groundedness were 5%, and six outputs were
+  truncated at the frozen 128-token maximum.
 - Retail category distribution is imbalanced.
 
 ## Technical Debt
@@ -2896,11 +2963,12 @@ work.
 
 ## Next Engineering Milestone
 
-Run a controlled concurrency 2/4 experiment with the same 50 A1 prompts,
-model, generation settings, and evaluator. Compare aggregate throughput,
-TTFT/p95/p99, TPOT, GPU utilization, memory, power, and quality against the A1
-concurrency-one baseline. Do not scale prompt count until that comparison
-passes operational and quality guards.
+Isolate the B1 quality failures on the frozen prompt set without modifying
+retrieval, gold data, or evaluator semantics. Prioritize Finance multi-evidence
+selection, the six 128-token truncations, and literal prohibited-phrase
+emission. Do not increase prompt count or run concurrency 2/4 until the quality
+gate passes or the model-capability limit is documented through a controlled
+stronger-model comparison.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3132,8 +3200,10 @@ gold leakage.
 
 The immediate work is operational:
 
-- run a matched vLLM concurrency 2/4 study on the frozen 50 prompts;
-- decide stronger-model feasibility under the 8 GB VRAM constraint;
+- isolate Finance citation selection and 128-token truncation on the frozen B1
+  prompt set;
+- decide whether a model stronger than 1.5B is feasible under the 8 GB VRAM
+  constraint or requires a controlled external GPU;
 - register an infrastructure price before making GPU cost claims;
 - add backend-native queue, batch, and cache telemetry;
 - then scale through 500, 2,000, and 10,000 records only after guards pass;
@@ -3158,6 +3228,8 @@ assumptions:
   final generation quality targets.
 - the mm4 quality uplift is retained alongside its latency, token, repair, and
   escalation costs.
+- the 1.5B model's contract improvement is retained alongside its failed JSON,
+  grounding, safety, and latency gates.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

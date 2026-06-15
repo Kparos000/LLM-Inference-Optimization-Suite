@@ -1,0 +1,12 @@
+rtx4090:
+  hourly_price_usd: null
+  throughput_multiplier_vs_rtx3070: null
+l40s:
+  hourly_price_usd: null
+  throughput_multiplier_vs_rtx3070: null
+a100:
+  hourly_price_usd: null
+  throughput_multiplier_vs_rtx3070: null
+h100:
+  hourly_price_usd: null
+  throughput_multiplier_vs_rtx3070: null

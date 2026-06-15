@@ -1,0 +1,41 @@
+experiment_id: b1_remote_rtx3070_vllm_1_5b_quality_smoke
+hardware: remote_rtx3070
+engine: vllm
+model_alias: model2_1_5b
+model_id: Qwen/Qwen2.5-1.5B-Instruct
+memory_mode: mm2_hybrid_top5
+split: smoke_500
+ablation_mode: prompt_plus_metadata
+verticals:
+  - airline
+  - healthcare_admin
+  - retail
+  - finance
+  - research_ai
+prompts_per_vertical: 20
+total_prompts: 100
+concurrency: 1
+optional_concurrency_sweep:
+  - 2
+  - 4
+streaming: true
+temperature: 0.0
+max_new_tokens: 128
+retrieval_source: promoted_retrieval_baseline
+output_contract: enabled
+workload_path: data/workloads/smoke_500/prompt_plus_metadata/mm2_hybrid_top5.jsonl
+runner_input_path: data/generated/phase4/b1_remote_rtx3070_runner_input.jsonl
+base_url: http://localhost:8000/v1
+api_key: EMPTY
+vllm:
+  dtype: half
+  max_model_len: 4096
+  gpu_memory_utilization: 0.75
+  max_num_seqs: 4
+  enforce_eager: true
+quality_gate:
+  json_valid_rate_min: 0.95
+  generation_contract_valid_rate_min: 0.85
+  evidence_match_rate_min: 0.60
+  grounded_rate_min: 0.60
+  safety_violation_count_max: 0

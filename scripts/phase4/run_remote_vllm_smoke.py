@@ -108,11 +108,15 @@ def select_balanced_runner_items(
     workload_path: str | Path,
     *,
     prompts_per_vertical: int = PROMPTS_PER_VERTICAL,
+    max_total_prompts: int = TOTAL_PROMPTS,
 ) -> list[Any]:
     """Select a deterministic equal-sized sample for each promoted vertical."""
 
     if prompts_per_vertical <= 0:
         msg = "prompts_per_vertical must be > 0"
+        raise ValueError(msg)
+    if max_total_prompts <= 0:
+        msg = "max_total_prompts must be > 0"
         raise ValueError(msg)
     records_by_vertical: dict[str, list[Any]] = defaultdict(list)
     for record in load_phase3_workload_records(workload_path):
@@ -133,8 +137,8 @@ def select_balanced_runner_items(
         )
 
     expected_count = prompts_per_vertical * len(VERTICALS)
-    if len(selected) != expected_count or expected_count > TOTAL_PROMPTS:
-        msg = f"A1 selection must contain at most {TOTAL_PROMPTS} records"
+    if len(selected) != expected_count or expected_count > max_total_prompts:
+        msg = f"Balanced selection must contain at most {max_total_prompts} records"
         raise ValueError(msg)
     return selected
 
