@@ -351,7 +351,40 @@ def citation_label(index: int) -> str:
     return f"E{index}"
 
 
-def render_evidence_blocks(context_records: list[ContextRecord]) -> str:
+def _finance_metadata_lines(context: ContextRecord) -> list[str]:
+    metadata = context.metadata
+    fields = (
+        ("ticker", metadata.get("ticker")),
+        ("company", metadata.get("company_name")),
+        ("filing_form", metadata.get("form")),
+        (
+            "period",
+            metadata.get("period")
+            or metadata.get("fiscal_year")
+            or metadata.get("report_date")
+            or metadata.get("filing_date"),
+        ),
+        ("metric", metadata.get("concept") or metadata.get("concepts")),
+        ("section_title", metadata.get("section_title")),
+        ("section_type", metadata.get("section_type")),
+    )
+    lines: list[str] = []
+    for name, value in fields:
+        if isinstance(value, list):
+            rendered = ", ".join(str(item) for item in value if item)
+        else:
+            rendered = str(value or "").strip()
+        if rendered:
+            lines.append(f"{name}: {rendered}")
+    return lines
+
+
+def render_evidence_blocks(
+    context_records: list[ContextRecord],
+    *,
+    expose_citation_aliases: bool = True,
+    include_finance_metadata: bool = False,
+) -> str:
     """Render context records with stable machine-readable citation labels."""
 
     if not context_records:
@@ -359,54 +392,67 @@ def render_evidence_blocks(context_records: list[ContextRecord]) -> str:
     blocks: list[str] = []
     for index, context in enumerate(context_records, start=1):
         citation_id = citation_label(index)
-        aliases = citation_aliases(context)
-        blocks.append(
-            "\n".join(
-                [
-                    f"[EVIDENCE {index}]",
-                    f"evidence_id: {citation_id}",
-                    f"title: {context.title}",
-                    f"source_type: {context.source_type}",
-                    f"citation_aliases: {json.dumps(aliases, ensure_ascii=True)}",
-                    f"text: {context.text}",
-                ]
-            )
-        )
+        lines = [
+            f"[EVIDENCE {index}]",
+            f"evidence_id: {citation_id}",
+            f"title: {context.title}",
+            f"source_type: {context.source_type}",
+        ]
+        if include_finance_metadata and context.vertical == "finance":
+            lines.extend(_finance_metadata_lines(context))
+        if expose_citation_aliases:
+            aliases = citation_aliases(context)
+            lines.append(f"citation_aliases: {json.dumps(aliases, ensure_ascii=True)}")
+        lines.append(f"text: {context.text}")
+        blocks.append("\n".join(lines))
     return "\n\n".join(blocks)
 
 
-def generation_contract_instruction() -> str:
+def generation_contract_instruction(*, include_citation_checklist: bool = False) -> str:
     """Return the exact output instruction shared by all runners."""
 
-    return "\n".join(
-        [
-            "Return exactly one compact, single-line JSON object.",
-            "Do not use markdown, code fences, headings, or prose outside the JSON object.",
-            f"Required fields: {', '.join(GENERATION_CONTRACT_FIELDS)}.",
-            "Use these exact JSON types: answer string, evidence_ids array of strings, "
-            "confidence number, insufficient_evidence boolean, citation_notes string.",
-            "Keep answer at or below 40 words and citation_notes at or below 30 words.",
-            "Use only evidence_id labels shown in the retrieved evidence blocks, such as E1.",
-            "For an answer, evidence_ids must contain at least one supporting provided label.",
-            "Some answers require multiple evidence_ids. Cite ALL evidence blocks needed.",
-            "Before writing JSON, silently check every supplied evidence block as relevant or "
-            "not relevant.",
-            (
-                "Include every relevant evidence_id used for any answer claim; "
-                "do not default to E1 only."
-            ),
-            "If E1 and E2 provide distinct required support, include both E1 and E2.",
-            "citation_notes must name each emitted evidence_id and briefly explain its support, "
-            "for example: E1: policy rule; E2: safety boundary.",
-            "Do not cite a label whose evidence does not support the answer.",
-            "Short evidence labels such as E1 map to canonical evidence IDs in runner metadata.",
-            "confidence must be a number from 0 to 1.",
-            "If the evidence is insufficient, set insufficient_evidence to true, "
-            "answer to an empty string, evidence_ids to [], and explain why in citation_notes.",
-            "Otherwise set insufficient_evidence to false and provide a non-empty answer.",
-            "Do not copy wording from these instructions into answer or citation_notes.",
-        ]
-    )
+    lines = [
+        "Return exactly one compact, single-line JSON object.",
+        "Do not use markdown, code fences, headings, or prose outside the JSON object.",
+        f"Required fields: {', '.join(GENERATION_CONTRACT_FIELDS)}.",
+        "Use these exact JSON types: answer string, evidence_ids array of strings, "
+        "confidence number, insufficient_evidence boolean, citation_notes string.",
+        "Keep answer at or below 40 words and citation_notes at or below 30 words.",
+        "Use only evidence_id labels shown in the retrieved evidence blocks, such as E1.",
+        "For an answer, evidence_ids must contain at least one supporting provided label.",
+        "Some answers require multiple evidence_ids. Cite ALL evidence blocks needed.",
+        "Before writing JSON, silently check every supplied evidence block as relevant or "
+        "not relevant.",
+        (
+            "Include every relevant evidence_id used for any answer claim; "
+            "do not default to E1 only."
+        ),
+        "If E1 and E2 provide distinct required support, include both E1 and E2.",
+        "citation_notes must name each emitted evidence_id and briefly explain its support, "
+        "for example: E1: policy rule; E2: safety boundary.",
+        "Do not cite a label whose evidence does not support the answer.",
+        "Short evidence labels such as E1 map to canonical evidence IDs in runner metadata.",
+        "confidence must be a number from 0 to 1.",
+        "If the evidence is insufficient, set insufficient_evidence to true, "
+        "answer to an empty string, evidence_ids to [], and explain why in citation_notes.",
+        "Otherwise set insufficient_evidence to false and provide a non-empty answer.",
+        "Do not copy wording from these instructions into answer or citation_notes.",
+    ]
+    if include_citation_checklist:
+        lines.extend(
+            [
+                "Do not answer from memory; use only the supplied evidence blocks.",
+                (
+                    "For comparisons, cite at least one supporting evidence label for "
+                    "every entity discussed."
+                ),
+                "Before returning JSON, silently verify this checklist:",
+                "- Did I cite every relevant E label used to support the answer?",
+                "- Did I avoid unsupported claims and answer only from evidence?",
+                "- Is the response exactly one valid JSON object with all five fields?",
+            ]
+        )
+    return "\n".join(lines)
 
 
 def render_citation_repair_prompt(
@@ -487,6 +533,9 @@ def render_generation_contract_prompt(
     question: str,
     context_records: list[ContextRecord],
     memory_mode: str,
+    expose_citation_aliases: bool = True,
+    include_finance_metadata: bool = False,
+    include_citation_checklist: bool = False,
 ) -> str:
     """Render a model prompt with labeled evidence and the shared contract."""
 
@@ -495,8 +544,20 @@ def render_generation_contract_prompt(
         [
             "SYSTEM:\nAnswer only from supplied evidence. Do not invent citations.",
             f"MEMORY MODE:\n{memory_mode}",
-            f"RETRIEVED EVIDENCE:\n{render_evidence_blocks(context_records)}",
+            (
+                "RETRIEVED EVIDENCE:\n"
+                + render_evidence_blocks(
+                    context_records,
+                    expose_citation_aliases=expose_citation_aliases,
+                    include_finance_metadata=include_finance_metadata,
+                )
+            ),
             f"USER QUESTION:\n{question.strip()}",
-            f"OUTPUT CONTRACT:\n{generation_contract_instruction()}",
+            (
+                "OUTPUT CONTRACT:\n"
+                + generation_contract_instruction(
+                    include_citation_checklist=include_citation_checklist
+                )
+            ),
         ]
     )

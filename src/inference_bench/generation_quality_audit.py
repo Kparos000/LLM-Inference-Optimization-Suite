@@ -364,7 +364,11 @@ def _aggregate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _finance_assessment(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _finance_assessment(
+    rows: list[dict[str, Any]],
+    *,
+    interpretation: str | None = None,
+) -> dict[str, Any]:
     if not rows:
         return {}
     aggregate = _aggregate_rows(rows)
@@ -392,7 +396,8 @@ def _finance_assessment(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "finance_advice_projection_wording_count": sum(
             bool(row["finance_safety_term_matches"]) for row in rows
         ),
-        "interpretation": (
+        "interpretation": interpretation
+        or (
             "The frozen B1 Finance failures are primarily a rendered-context/workload "
             "alignment problem when required gold evidence is absent from E1-E5. Model "
             "citation selection remains a secondary issue for rows where evidence was "
@@ -406,8 +411,13 @@ def build_generation_quality_audit(
     evaluation_rows: list[dict[str, Any]],
     result_rows: list[dict[str, Any]],
     runner_inputs: list[dict[str, Any]] | None = None,
+    block: str = "B3",
+    status: str = "AUDIT_COMPLETE_QUALITY_REMAINS_BLOCKED",
+    source_block: str = "B1",
+    model_inference_triggered: bool = False,
+    finance_interpretation: str | None = None,
 ) -> dict[str, Any]:
-    """Build the complete B3 audit without re-running inference or evaluation."""
+    """Build a deterministic generation-quality audit from frozen artifacts."""
 
     results_by_prompt = {str(row.get("prompt_id") or ""): row for row in result_rows}
     inputs_by_prompt = {str(row.get("prompt_id") or ""): row for row in runner_inputs or []}
@@ -431,15 +441,18 @@ def build_generation_quality_audit(
         vertical: _aggregate_rows(rows_by_vertical.get(vertical, [])) for vertical in VERTICALS
     }
     return {
-        "block": "B3",
-        "status": "AUDIT_COMPLETE_QUALITY_REMAINS_BLOCKED",
-        "source_block": "B1",
+        "block": block,
+        "status": status,
+        "source_block": source_block,
         "row_count": len(evaluation_rows),
         "failed_row_count": len(failures),
         "passed_grounded_row_count": sum(bool(row.get("groundedness")) for row in evaluation_rows),
         "overall": _aggregate_rows(failures),
         "per_vertical": per_vertical,
-        "finance_assessment": _finance_assessment(rows_by_vertical.get("finance", [])),
+        "finance_assessment": _finance_assessment(
+            rows_by_vertical.get("finance", []),
+            interpretation=finance_interpretation,
+        ),
         "failure_rows": failures,
         "classification_method": (
             "Deterministic joins over unchanged B1 evaluator rows, raw generations, "
@@ -448,7 +461,7 @@ def build_generation_quality_audit(
         "evaluator_modified": False,
         "gold_data_modified": False,
         "promoted_retrieval_modified": False,
-        "model_inference_triggered": False,
+        "model_inference_triggered": model_inference_triggered,
         "recommended_repair_block": {
             "id": "B3R1_FROZEN_WORKLOAD_CONTEXT_ALIGNMENT_REPAIR",
             "objective": (
