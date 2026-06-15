@@ -1,0 +1,253 @@
+version: 1
+
+templates:
+  quality: &quality
+    category: quality
+    description: Generation quality is below its selected SLO.
+    required_metrics: []
+    trigger_conditions: [{operator: failed_slo}]
+    possible_causes: [model capability, prompt contract, context presentation]
+    compatible_optimizations: [use_stronger_model, improve_evidence_formatting, prompt_contract_repair, use_mm4_agentic_repair]
+    severity_logic: {basis: normalized_slo_gap}
+    confidence_logic: {basis: required_metric_coverage}
+    evidence_fields: [metric_name, target, observed, gap]
+  retrieval: &retrieval
+    category: retrieval_context
+    description: Retrieval or context preparation is below its selected SLO.
+    required_metrics: []
+    trigger_conditions: [{operator: failed_slo}]
+    possible_causes: [query construction, corpus alignment, ranking, context budget]
+    compatible_optimizations: [repair_retrieval, improve_reranking, improve_chunking, tune_retrieval_top_k]
+    severity_logic: {basis: normalized_slo_gap}
+    confidence_logic: {basis: required_metric_coverage}
+    evidence_fields: [metric_name, target, observed, gap]
+  latency: &latency
+    category: latency
+    description: Request latency is above its selected SLO.
+    required_metrics: []
+    trigger_conditions: [{operator: failed_slo}]
+    possible_causes: [prefill work, decode speed, queueing, backend scheduling]
+    compatible_optimizations: [reduce_context_tokens, enable_context_compression, tune_scheduler, concurrency_sweep]
+    severity_logic: {basis: normalized_slo_gap}
+    confidence_logic: {basis: required_metric_coverage}
+    evidence_fields: [metric_name, target, observed, gap]
+  throughput: &throughput
+    category: throughput
+    description: Serving throughput is below its selected SLO.
+    required_metrics: []
+    trigger_conditions: [{operator: failed_slo}]
+    possible_causes: [low concurrency, scheduler configuration, decode speed]
+    compatible_optimizations: [concurrency_sweep, increase_concurrency, enable_continuous_batching, tune_max_num_seqs]
+    severity_logic: {basis: normalized_slo_gap}
+    confidence_logic: {basis: required_metric_coverage}
+    evidence_fields: [metric_name, target, observed, gap]
+  resource: &resource
+    category: resource_gpu
+    description: Hardware resource behavior is outside its selected SLO.
+    required_metrics: []
+    trigger_conditions: [{operator: failed_slo}]
+    possible_causes: [serving configuration, workload shape, hardware capacity]
+    compatible_optimizations: [concurrency_sweep, tune_gpu_memory_utilization, tune_kv_cache, increase_gpu_size]
+    severity_logic: {basis: normalized_slo_gap}
+    confidence_logic: {basis: telemetry_sample_coverage}
+    evidence_fields: [metric_name, target, observed, gap, telemetry_available]
+  cost: &cost
+    category: cost
+    description: Measured serving cost is outside its selected SLO.
+    required_metrics: []
+    trigger_conditions: [{operator: failed_slo}]
+    possible_causes: [token volume, provider price, low utilization, low success rate]
+    compatible_optimizations: [reduce_context_tokens, reduce_max_new_tokens, use_smaller_model, use_quantized_model]
+    severity_logic: {basis: normalized_slo_gap}
+    confidence_logic: {basis: measured_cost_inputs}
+    evidence_fields: [metric_name, target, observed, gap, pricing_source]
+  runtime: &runtime
+    category: serving_runtime
+    description: A serving runtime capability required for diagnosis or resilience is missing.
+    required_metrics: []
+    trigger_conditions: [{operator: capability_missing}]
+    possible_causes: [backend capability, missing instrumentation, missing configuration]
+    compatible_optimizations: [switch_engine_to_vllm, enable_continuous_batching, concurrency_sweep]
+    severity_logic: {basis: capability_impact}
+    confidence_logic: {basis: configuration_evidence}
+    evidence_fields: [engine, backend, experiment_config]
+
+bottlenecks:
+  - <<: *quality
+    id: low_groundedness
+    required_metrics: [groundedness_min]
+  - <<: *quality
+    id: low_evidence_match
+    required_metrics: [evidence_match_min]
+  - <<: *quality
+    id: low_citation_accuracy
+    required_metrics: [citation_accuracy_min]
+  - <<: *quality
+    id: low_contract_validity
+    required_metrics: [format_validity_min]
+    compatible_optimizations: [prompt_contract_repair, improve_evidence_formatting, use_stronger_model, use_mm4_agentic_repair]
+  - <<: *quality
+    id: low_json_validity
+    required_metrics: [json_validity_min]
+    compatible_optimizations: [prompt_contract_repair, reduce_max_new_tokens, use_stronger_model]
+  - <<: *quality
+    id: safety_violations
+    required_metrics: [safety_violations_max]
+    compatible_optimizations: [prompt_contract_repair, enable_escalation_path, use_stronger_model]
+  - <<: *quality
+    id: high_truncation_rate
+    required_metrics: [truncation_rate_max]
+    compatible_optimizations: [reduce_context_tokens, reduce_max_new_tokens, prompt_contract_repair]
+  - <<: *quality
+    id: insufficient_evidence_misuse
+    required_metrics: [insufficient_evidence_accuracy_min]
+    compatible_optimizations: [enable_escalation_path, prompt_contract_repair, use_mm4_agentic_repair]
+
+  - <<: *retrieval
+    id: low_candidate_recall
+    required_metrics: [candidate_recall_at_20_min, candidate_recall_at_50_min]
+  - <<: *retrieval
+    id: low_final_recall
+    required_metrics: [final_recall_at_5_min]
+  - <<: *retrieval
+    id: low_mrr
+    required_metrics: [mrr_min]
+  - <<: *retrieval
+    id: high_retrieval_latency
+    required_metrics: [retrieval_latency_ms_max]
+    compatible_optimizations: [tune_retrieval_top_k, use_qdrant_vector_retrieval, improve_embedding_model]
+  - <<: *retrieval
+    id: high_input_tokens
+    required_metrics: [input_tokens_per_request_max]
+    compatible_optimizations: [reduce_context_tokens, enable_context_compression, reduce_top_k, tune_max_model_len]
+  - <<: *retrieval
+    id: excessive_context_tokens
+    required_metrics: [context_tokens_max]
+    compatible_optimizations: [reduce_context_tokens, enable_context_compression, reduce_top_k]
+  - <<: *retrieval
+    id: compression_recall_loss
+    required_metrics: [compression_recall_loss_max]
+    compatible_optimizations: [improve_context_ordering, tune_retrieval_top_k, improve_chunking]
+  - <<: *retrieval
+    id: poor_context_ordering
+    required_metrics: [context_ordering_quality_min]
+    compatible_optimizations: [improve_context_ordering, improve_reranking]
+  - <<: *retrieval
+    id: weak_context_formatting
+    required_metrics: [format_validity_min]
+    compatible_optimizations: [improve_evidence_formatting, prompt_contract_repair]
+
+  - <<: *latency
+    id: high_ttft_p50
+    required_metrics: [ttft_p50_ms_max]
+  - <<: *latency
+    id: high_ttft_p95
+    required_metrics: [ttft_p95_ms_max]
+  - <<: *latency
+    id: high_ttft_p99
+    required_metrics: [ttft_p99_ms_max]
+  - <<: *latency
+    id: high_tpot
+    required_metrics: [tpot_p50_ms_max, tpot_p95_ms_max, tpot_p99_ms_max]
+    compatible_optimizations: [use_smaller_model, use_quantized_model, enable_speculative_decoding, use_flashattention_where_available]
+  - <<: *latency
+    id: high_itl_p95
+    required_metrics: [itl_p95_ms_max]
+  - <<: *latency
+    id: high_itl_p99
+    required_metrics: [itl_p99_ms_max]
+  - <<: *latency
+    id: high_e2e_p95
+    required_metrics: [e2e_p95_ms_max]
+  - <<: *latency
+    id: high_e2e_p99
+    required_metrics: [e2e_p99_ms_max]
+  - <<: *latency
+    id: high_queue_delay
+    required_metrics: [queue_delay_ms_max]
+    compatible_optimizations: [decrease_concurrency, admission_control, request_queue_tuning, tune_scheduler]
+  - <<: *latency
+    id: high_prefill_time
+    required_metrics: [prefill_time_ms_max]
+    compatible_optimizations: [reduce_context_tokens, enable_context_compression, enable_prefix_cache, use_flashattention_where_available]
+  - <<: *latency
+    id: high_decode_time
+    required_metrics: [decode_time_ms_max]
+    compatible_optimizations: [use_smaller_model, use_quantized_model, enable_speculative_decoding]
+
+  - <<: *throughput
+    id: low_requests_per_second
+    required_metrics: [requests_per_second_min]
+  - <<: *throughput
+    id: low_tokens_per_second
+    required_metrics: [tokens_per_second_min]
+  - <<: *throughput
+    id: low_successful_requests_per_second
+    required_metrics: [successful_requests_per_second_min]
+
+  - <<: *resource
+    id: low_gpu_utilization
+    required_metrics: [gpu_utilization_min_pct]
+  - <<: *resource
+    id: high_gpu_utilization_with_bad_latency
+    required_metrics: [gpu_utilization_max_pct, e2e_p95_ms_max]
+    compatible_optimizations: [decrease_concurrency, admission_control, tune_scheduler]
+  - <<: *resource
+    id: high_gpu_memory_utilization
+    required_metrics: [gpu_memory_utilization_max_pct]
+  - <<: *resource
+    id: oom
+    required_metrics: [oom_count_max]
+    compatible_optimizations: [reduce_context_tokens, tune_gpu_memory_utilization, use_quantized_model, increase_gpu_size]
+  - <<: *resource
+    id: low_vram_headroom
+    required_metrics: [vram_headroom_min_pct]
+    compatible_optimizations: [reduce_context_tokens, tune_kv_cache, use_quantized_model, increase_gpu_size]
+  - <<: *resource
+    id: high_cpu_utilization
+    required_metrics: [cpu_utilization_max_pct]
+  - <<: *resource
+    id: high_ram_usage
+    required_metrics: [ram_usage_gb_max]
+  - <<: *resource
+    id: high_power_draw
+    required_metrics: [power_draw_w_max]
+  - <<: *resource
+    id: thermal_pressure
+    required_metrics: [temperature_c_max]
+
+  - <<: *cost
+    id: high_api_cost_per_request
+    required_metrics: [api_cost_per_request_usd_max]
+  - <<: *cost
+    id: high_gpu_cost_per_request
+    required_metrics: [gpu_cost_per_request_usd_max]
+  - <<: *cost
+    id: high_cost_per_successful_answer
+    required_metrics: [api_cost_per_successful_answer_usd_max, gpu_cost_per_successful_answer_usd_max]
+  - <<: *cost
+    id: high_cost_per_grounded_answer
+    required_metrics: [api_cost_per_grounded_successful_answer_usd_max, gpu_cost_per_grounded_successful_answer_usd_max]
+  - <<: *cost
+    id: low_tokens_per_gpu_dollar
+    required_metrics: [tokens_per_gpu_dollar_min]
+
+  - <<: *runtime
+    id: engine_not_serving_optimized
+    required_metrics: [serving_optimized_engine]
+    compatible_optimizations: [switch_engine_to_vllm, switch_engine_to_sglang, switch_engine_to_tensorrt_llm]
+  - <<: *runtime
+    id: no_streaming_metrics
+    required_metrics: [streaming_metrics_available]
+  - <<: *runtime
+    id: no_gpu_telemetry
+    required_metrics: [gpu_telemetry_available]
+  - <<: *runtime
+    id: no_checkpoint_resume
+    required_metrics: [checkpoint_resume_available]
+  - <<: *runtime
+    id: backend_unavailable
+    required_metrics: [backend_available]
+  - <<: *runtime
+    id: provider_pricing_unavailable
+    required_metrics: [provider_pricing_available]

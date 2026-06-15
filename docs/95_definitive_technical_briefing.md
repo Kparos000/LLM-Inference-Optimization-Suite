@@ -203,6 +203,9 @@ flowchart TD
     Q --> R[Gold join by prompt_id]
     R --> S[Quality, grounding, safety, latency, cost]
     S --> T[JSON, CSV, plots, summaries, SLO decisions]
+    S --> V[Modular SLO profile and failed-SLO diagnosis]
+    V --> W[Bottleneck and optimization catalogs]
+    W --> X[Compatible one-factor experiment recommendation]
     U[Run manifest, checkpoints, logs, telemetry] --> N2
     U --> N3
     U --> N4
@@ -302,6 +305,11 @@ contract, required phrase, prohibited phrase, evidence, groundedness,
 insufficient-evidence, escalation, and safety signals. Current groundedness is
 deterministic evidence coverage, not semantic entailment.
 
+The Phase B2 intelligence layer resolves modular SLO profiles, separates
+passed, failed, not-applicable, and unavailable metrics, and diagnoses
+bottlenecks only from failed targets. Recommendations come from deterministic
+rules and structured catalogs rather than an LLM.
+
 ### Telemetry
 
 The request telemetry schema includes timestamp, backend, model, memory mode,
@@ -319,6 +327,7 @@ The project writes:
 - checkpoints and logs;
 - processed evaluation and cost reports;
 - comparison CSVs;
+- local SLO diagnosis and optimization recommendation reports;
 - static and interactive figures;
 - data EDA dashboards;
 - engineering decision docs and block summaries.
@@ -2169,6 +2178,26 @@ blocked states, and recommends the relevant optimization area.
 - GPU cost;
 - context compression.
 
+`configs/slo_profiles.yaml` selects these targets through modular groups and
+adds bounded agent-trace limits. The default `default_enterprise` profile uses
+the authoritative target file without duplicating or weakening its values.
+Users can enable/disable groups, apply vertical overrides, and choose
+`quality_first`, `latency_first`, `throughput_first`, `cost_first`, or
+`balanced` priority.
+
+Applicability is configuration-aware:
+
+- mm0 retrieval targets are not applicable;
+- mm1/mm2/mm3 apply retrieval targets;
+- mm3 applies compression targets;
+- mm4 applies retrieval, quality, latency, throughput, cost when priced, and
+  agent-trace targets;
+- API cost requires an API/provider backend;
+- GPU cost requires a registered hourly price;
+- resource targets require hardware telemetry.
+
+Missing observations remain unavailable rather than becoming failures.
+
 ## Retrieval Targets
 
 All verticals require:
@@ -2845,6 +2874,18 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - marked the result `QUALITY_BLOCKED` because JSON, evidence, groundedness, and
   safety targets did not all pass.
 
+## Phase B2: Deterministic Platform Intelligence
+
+- added modular SLO profiles backed by the production target file;
+- cataloged 51 bottlenecks and 57 optimization actions;
+- implemented failed-SLO-only diagnosis and compatibility filtering;
+- represented PagedAttention as an active vLLM engine capability rather than a
+  toggle;
+- generated ignored local A1, A2/A3, and A5/A6 diagnosis reports without new
+  inference;
+- reserved Model6 only as a future natural-language explainer candidate, never
+  as the diagnosis source of truth.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -2874,6 +2915,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   validation.
 - Phase B1 Qwen2.5-1.5B vLLM loading, 100-prompt execution, quality gate, and
   A1 comparison.
+- Phase B2 modular SLO profiles, bottleneck/optimization catalogs,
+  deterministic diagnosis, and next-experiment recommendations.
 
 ## Current Block State
 
@@ -2881,7 +2924,8 @@ Blocks A1 through A3 completed matched vLLM and SGLang live smokes plus the
 production-oriented nvidia-smi telemetry sampler. Blocks A5/A6 completed the
 bounded LangGraph mm4 implementation and matched 50-prompt agentic smoke.
 Phase B1 completed the stronger 1.5B local-model gate without OOM, but failed
-the required grounded-output thresholds.
+the required grounded-output thresholds. Phase B2 now turns measured failures
+into deterministic, compatibility-filtered experiment recommendations.
 
 Current decision:
 
@@ -2908,6 +2952,9 @@ and two safety violations.
 - API cost accounting;
 - checkpoint/resume load-run controls;
 - SLO definitions;
+- modular SLO profile selection and applicability;
+- failed-SLO-only bottleneck diagnosis;
+- catalog-backed compatible optimization recommendations;
 - remote RTX 3070 vLLM and SGLang serving;
 - Qwen2.5-1.5B vLLM loading and 100-prompt concurrency-one execution;
 - executable bounded LangGraph mm4 inference with one optional repair;
@@ -2947,6 +2994,10 @@ and two safety violations.
   tokenizer-matched throughput claim.
 - B1 Finance evidence match and groundedness were 5%, and six outputs were
   truncated at the frozen 128-token maximum.
+- B2 recommendations do not apply changes automatically and do not estimate
+  gains before measurement.
+- B2 local reports are ignored benchmark artifacts and must be regenerated
+  from their documented script.
 - Retail category distribution is imbalanced.
 
 ## Technical Debt
@@ -2966,9 +3017,10 @@ and two safety violations.
 Isolate the B1 quality failures on the frozen prompt set without modifying
 retrieval, gold data, or evaluator semantics. Prioritize Finance multi-evidence
 selection, the six 128-token truncations, and literal prohibited-phrase
-emission. Do not increase prompt count or run concurrency 2/4 until the quality
-gate passes or the model-capability limit is documented through a controlled
-stronger-model comparison.
+emission. Use the B2 catalog to change one factor at a time. Do not increase
+prompt count or run concurrency 2/4 until the quality gate passes or the
+model-capability limit is documented through a controlled stronger-model
+comparison.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3186,7 +3238,9 @@ The repository now contains a complete pre-scale inference engineering stack:
 - deterministic quality, grounding, safety, latency, streaming, and cost
   evaluation;
 - run manifests, checkpoint/resume, logs, reports, and curated artifacts;
-- production-style SLO and readiness gates.
+- production-style SLO and readiness gates;
+- modular SLO profiles, 51 bottlenecks, 57 optimization actions, and
+  deterministic one-factor experiment recommendations.
 
 ## Why It Matters
 

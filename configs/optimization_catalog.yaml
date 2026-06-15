@@ -1,0 +1,347 @@
+version: 1
+
+templates:
+  workload: &workload
+    category: workload_context
+    description: Change workload or context construction under a controlled rerun.
+    improves: [quality, latency, cost]
+    may_hurt: [quality]
+    required_engines: []
+    required_hardware: []
+    compatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    incompatible_memory_modes: []
+    compatible_bottlenecks: []
+    required_metrics: []
+    implementation_status: config_only
+    application_method: workload_change
+    current_project_support: supported_by_existing_configuration
+    experiment_safety_notes: [Change one workload factor and rerun the frozen prompt set.]
+    expected_gain_range: {min_pct: null, max_pct: null, basis: must_measure}
+    quality_risk: medium
+    cost_risk: low
+  retrieval: &retrieval
+    category: retrieval
+    description: Change retrieval or ranking under strict leakage-safe evaluation.
+    improves: [retrieval, quality]
+    may_hurt: [latency, cost]
+    required_engines: []
+    required_hardware: []
+    compatible_memory_modes: [mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    incompatible_memory_modes: [mm0_no_context]
+    compatible_bottlenecks: [low_candidate_recall, low_final_recall, low_mrr]
+    required_metrics: [candidate_recall_at_20_min, final_recall_at_5_min]
+    implementation_status: planned
+    application_method: code_change
+    current_project_support: controlled_retrieval_harness_available
+    experiment_safety_notes: [Do not modify gold data or weaken strict ablations.]
+    expected_gain_range: {min_pct: null, max_pct: null, basis: must_measure}
+    quality_risk: medium
+    cost_risk: low
+  model: &model
+    category: model
+    description: Change model identity or precision in a matched experiment.
+    improves: [quality, latency, memory, cost]
+    may_hurt: [quality, latency, memory, cost]
+    required_engines: []
+    required_hardware: []
+    compatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    incompatible_memory_modes: []
+    compatible_bottlenecks: [low_groundedness, low_evidence_match, high_tpot, high_gpu_memory_utilization]
+    required_metrics: [quality, latency, memory]
+    implementation_status: config_only
+    application_method: model_switch
+    current_project_support: model_registry_and_runner_support
+    experiment_safety_notes: [Freeze prompts, engine, memory mode, and generation settings.]
+    expected_gain_range: {min_pct: null, max_pct: null, basis: must_measure}
+    quality_risk: medium
+    cost_risk: medium
+  engine: &engine
+    category: serving_engine
+    description: Change or tune the serving runtime in a matched experiment.
+    improves: [latency, throughput, memory]
+    may_hurt: [latency, quality, compatibility]
+    required_engines: []
+    required_hardware: [gpu]
+    compatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    incompatible_memory_modes: []
+    compatible_bottlenecks: [engine_not_serving_optimized, high_ttft_p95, high_tpot, low_requests_per_second]
+    required_metrics: [latency, throughput]
+    implementation_status: config_only
+    application_method: config_toggle
+    current_project_support: varies_by_engine
+    experiment_safety_notes: [Use the same model, prompts, hardware, and generation settings.]
+    expected_gain_range: {min_pct: null, max_pct: null, basis: must_measure}
+    quality_risk: low
+    cost_risk: medium
+  capacity: &capacity
+    category: concurrency_capacity
+    description: Tune admission, concurrency, or request scheduling.
+    improves: [throughput, gpu_utilization]
+    may_hurt: [ttft, tail_latency, memory]
+    required_engines: []
+    required_hardware: []
+    compatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    incompatible_memory_modes: []
+    compatible_bottlenecks: [low_gpu_utilization, low_requests_per_second, high_queue_delay]
+    required_metrics: [requests_per_second, ttft_p95_ms, e2e_p99_ms]
+    implementation_status: config_only
+    application_method: config_toggle
+    current_project_support: concurrent_runner_available
+    experiment_safety_notes: [Start with a small frozen prompt set and stop on OOM or tail-latency regression.]
+    expected_gain_range: {min_pct: null, max_pct: null, basis: must_measure}
+    quality_risk: low
+    cost_risk: low
+  hardware: &hardware
+    category: hardware
+    description: Change accelerator capacity or topology.
+    improves: [latency, throughput, memory]
+    may_hurt: [cost, reproducibility]
+    required_engines: []
+    required_hardware: []
+    compatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    incompatible_memory_modes: []
+    compatible_bottlenecks: [oom, low_vram_headroom, high_gpu_memory_utilization]
+    required_metrics: [gpu_memory_utilization, throughput, latency]
+    implementation_status: planned
+    application_method: hardware_change
+    current_project_support: requires_reviewed_external_hardware_and_price
+    experiment_safety_notes: [Register hourly price and pin the runtime before making cost claims.]
+    expected_gain_range: {min_pct: null, max_pct: null, basis: must_measure}
+    quality_risk: low
+    cost_risk: high
+  agent: &agent
+    category: agentic
+    description: Change bounded mm4 repair, escalation, or tool budgets.
+    improves: [quality, safety]
+    may_hurt: [latency, tokens, cost]
+    required_engines: []
+    required_hardware: []
+    compatible_memory_modes: [mm4_bounded_agentic]
+    incompatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5]
+    compatible_bottlenecks: [low_groundedness, low_evidence_match, low_contract_validity, safety_violations]
+    required_metrics: [groundedness, repair_rate, escalation_rate]
+    implementation_status: implemented
+    application_method: agent_mode_change
+    current_project_support: bounded_langgraph_mm4_available
+    experiment_safety_notes: [Keep hard tool, retrieval, generation, and repair limits.]
+    expected_gain_range: {min_pct: null, max_pct: null, basis: must_measure}
+    quality_risk: low
+    cost_risk: medium
+
+optimizations:
+  - <<: *workload
+    id: reduce_context_tokens
+    compatible_bottlenecks: [high_input_tokens, excessive_context_tokens, high_ttft_p50, high_ttft_p95, high_prefill_time, high_api_cost_per_request]
+  - <<: *workload
+    id: enable_context_compression
+    compatible_memory_modes: [mm2_hybrid_top5]
+    incompatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    compatible_bottlenecks: [high_input_tokens, excessive_context_tokens, high_ttft_p95]
+  - <<: *workload
+    id: reduce_top_k
+    compatible_memory_modes: [mm1_dense_top5, mm2_hybrid_top5, mm3_compressed_hybrid_top5]
+    incompatible_memory_modes: [mm0_no_context, mm4_bounded_agentic]
+    compatible_bottlenecks: [high_input_tokens, excessive_context_tokens, high_ttft_p95]
+  - <<: *workload
+    id: improve_context_ordering
+    compatible_bottlenecks: [poor_context_ordering, compression_recall_loss, low_groundedness]
+    implementation_status: planned
+    application_method: code_change
+  - <<: *workload
+    id: improve_evidence_formatting
+    compatible_bottlenecks: [weak_context_formatting, low_evidence_match, low_contract_validity, low_groundedness]
+    implementation_status: planned
+    application_method: code_change
+  - <<: *workload
+    id: reduce_max_new_tokens
+    compatible_bottlenecks: [high_decode_time, high_e2e_p95, high_api_cost_per_request]
+  - <<: *workload
+    id: prompt_contract_repair
+    compatible_bottlenecks: [low_contract_validity, low_json_validity, low_evidence_match, safety_violations]
+    implementation_status: implemented
+    application_method: code_change
+
+  - <<: *retrieval
+    id: repair_retrieval
+    implementation_status: implemented
+  - <<: *retrieval
+    id: switch_to_hybrid_retrieval
+    compatible_memory_modes: [mm1_dense_top5]
+    incompatible_memory_modes: [mm0_no_context, mm2_hybrid_top5, mm3_compressed_hybrid_top5, mm4_bounded_agentic]
+    implementation_status: implemented
+    application_method: workload_change
+  - <<: *retrieval
+    id: improve_reranking
+  - <<: *retrieval
+    id: improve_chunking
+  - <<: *retrieval
+    id: improve_embedding_model
+  - <<: *retrieval
+    id: use_qdrant_vector_retrieval
+    implementation_status: implemented
+    application_method: config_toggle
+  - <<: *retrieval
+    id: tune_retrieval_top_k
+    implementation_status: config_only
+    application_method: workload_change
+
+  - <<: *model
+    id: use_stronger_model
+    compatible_bottlenecks: [low_groundedness, low_evidence_match, low_citation_accuracy, low_contract_validity, safety_violations]
+  - <<: *model
+    id: use_smaller_model
+    compatible_bottlenecks: [high_tpot, high_decode_time, high_gpu_memory_utilization, low_vram_headroom, high_cost_per_successful_answer]
+  - <<: *model
+    id: use_distilled_model
+    implementation_status: planned
+  - <<: *model
+    id: use_quantized_model
+    implementation_status: planned
+  - <<: *model
+    id: enable_int8_quantization
+    implementation_status: planned
+    application_method: config_toggle
+  - <<: *model
+    id: enable_awq_int4
+    required_engines: [vllm, sglang]
+    implementation_status: planned
+    application_method: config_toggle
+  - <<: *model
+    id: enable_gptq_int4
+    required_engines: [vllm, sglang]
+    implementation_status: planned
+    application_method: config_toggle
+  - <<: *model
+    id: enable_fp8_where_supported
+    required_engines: [vllm, tensorrt_llm]
+    required_hardware: [fp8_gpu]
+    implementation_status: planned
+    application_method: config_toggle
+
+  - <<: *engine
+    id: switch_engine_to_vllm
+    required_engines: [huggingface, sglang, openai_compatible]
+    implementation_status: implemented
+    application_method: engine_switch
+    current_project_support: validated_on_remote_rtx3070
+  - <<: *engine
+    id: switch_engine_to_sglang
+    required_engines: [huggingface, vllm, openai_compatible]
+    implementation_status: implemented
+    application_method: engine_switch
+    current_project_support: validated_on_remote_rtx3070
+  - <<: *engine
+    id: switch_engine_to_tensorrt_llm
+    required_engines: [huggingface, vllm, sglang]
+    implementation_status: planned
+    application_method: engine_switch
+  - <<: *engine
+    id: use_pagedattention_capable_engine
+    required_engines: [vllm]
+    implementation_status: engine_builtin
+    application_method: engine_switch
+    current_project_support: active_when_vllm_is_selected
+    compatible_bottlenecks: [engine_not_serving_optimized, high_gpu_memory_utilization, low_vram_headroom]
+  - <<: *engine
+    id: enable_continuous_batching
+    required_engines: [vllm, sglang]
+    implementation_status: engine_builtin
+    current_project_support: active_when_supported_engine_is_selected
+  - <<: *engine
+    id: tune_scheduler
+    required_engines: [vllm, sglang]
+  - <<: *engine
+    id: tune_max_num_seqs
+    required_engines: [vllm]
+  - <<: *engine
+    id: tune_max_model_len
+    required_engines: [vllm, sglang]
+  - <<: *engine
+    id: tune_gpu_memory_utilization
+    required_engines: [vllm]
+  - <<: *engine
+    id: enable_prefix_cache
+    required_engines: [vllm, sglang]
+  - <<: *engine
+    id: tune_kv_cache
+    required_engines: [vllm, sglang]
+  - <<: *engine
+    id: enable_cuda_graphs
+    required_engines: [vllm, sglang]
+    implementation_status: engine_builtin
+  - <<: *engine
+    id: enable_speculative_decoding
+    required_engines: [vllm, sglang]
+    implementation_status: planned
+  - <<: *engine
+    id: use_flashattention_where_available
+    required_engines: [huggingface, vllm, sglang]
+    implementation_status: engine_builtin
+  - <<: *engine
+    id: use_flashinfer_where_available
+    required_engines: [vllm, sglang]
+    implementation_status: planned
+
+  - <<: *capacity
+    id: increase_concurrency
+  - <<: *capacity
+    id: decrease_concurrency
+  - <<: *capacity
+    id: concurrency_sweep
+    implementation_status: implemented
+  - <<: *capacity
+    id: admission_control
+    implementation_status: planned
+  - <<: *capacity
+    id: request_queue_tuning
+    implementation_status: planned
+  - <<: *capacity
+    id: route_long_and_short_requests_separately
+    implementation_status: planned
+    application_method: code_change
+
+  - <<: *hardware
+    id: increase_gpu_size
+  - <<: *hardware
+    id: move_to_runpod_rtx4090
+    required_hardware: [runpod]
+  - <<: *hardware
+    id: move_to_runpod_l40s
+    required_hardware: [runpod]
+  - <<: *hardware
+    id: move_to_runpod_a100
+    required_hardware: [runpod]
+  - <<: *hardware
+    id: move_to_runpod_h100
+    required_hardware: [runpod]
+  - <<: *hardware
+    id: use_tensor_parallelism
+    required_hardware: [multi_gpu]
+    application_method: config_toggle
+  - <<: *hardware
+    id: use_pipeline_parallelism
+    required_hardware: [multi_gpu]
+    application_method: config_toggle
+  - <<: *hardware
+    id: use_data_parallelism
+    required_hardware: [multi_gpu]
+    application_method: config_toggle
+  - <<: *hardware
+    id: prefill_decode_disaggregation
+    required_hardware: [multi_gpu]
+    application_method: code_change
+
+  - <<: *agent
+    id: use_mm4_agentic_repair
+    compatible_memory_modes: [mm2_hybrid_top5, mm3_compressed_hybrid_top5]
+    incompatible_memory_modes: [mm0_no_context, mm1_dense_top5, mm4_bounded_agentic]
+  - <<: *agent
+    id: enable_bounded_citation_repair
+  - <<: *agent
+    id: enable_escalation_path
+  - <<: *agent
+    id: reduce_agent_retrieval_rounds
+    compatible_bottlenecks: [high_e2e_p95, high_api_cost_per_request, high_gpu_cost_per_request]
+  - <<: *agent
+    id: cap_agent_tool_calls
+    compatible_bottlenecks: [high_e2e_p95, high_api_cost_per_request, high_gpu_cost_per_request]
