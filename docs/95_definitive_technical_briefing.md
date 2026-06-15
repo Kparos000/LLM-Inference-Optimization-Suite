@@ -2886,6 +2886,20 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - reserved Model6 only as a future natural-language explainer candidate, never
   as the diagnosis source of truth.
 
+## Phase B3: Generation Quality Root-Cause Audit
+
+- audited all 65 failed B1 rows from existing evaluator, generation, context,
+  alias, and runner-input artifacts;
+- found at least one required gold evidence ID absent from rendered E1-E5
+  context in 52 failed rows;
+- found required evidence present but not cited in 18 failed rows;
+- classified 27 partial multi-evidence citations, seven invalid JSON rows,
+  eight invalid contracts, six truncations, and two safety violations;
+- found 18 of 19 failed Finance rows lacked exact required SEC/XBRL evidence,
+  despite ticker and company metadata appearing in every Finance context;
+- ran no new inference and changed no evaluator, gold, or promoted retrieval
+  semantics.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -2917,6 +2931,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   A1 comparison.
 - Phase B2 modular SLO profiles, bottleneck/optimization catalogs,
   deterministic diagnosis, and next-experiment recommendations.
+- Phase B3 deterministic generation-quality root-cause audit over the frozen
+  B1 artifacts.
 
 ## Current Block State
 
@@ -2925,7 +2941,9 @@ production-oriented nvidia-smi telemetry sampler. Blocks A5/A6 completed the
 bounded LangGraph mm4 implementation and matched 50-prompt agentic smoke.
 Phase B1 completed the stronger 1.5B local-model gate without OOM, but failed
 the required grounded-output thresholds. Phase B2 now turns measured failures
-into deterministic, compatibility-filtered experiment recommendations.
+into deterministic, compatibility-filtered experiment recommendations. Phase
+B3 established that frozen workload/context alignment is a prerequisite to a
+clean model-capability conclusion.
 
 Current decision:
 
@@ -2937,7 +2955,8 @@ QUALITY_BLOCKED_FOR_SCALE
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
 VRAM. The current blocker is generation quality: B1 reached 92% contract
 validity but only 35% evidence match and groundedness, with 93% JSON validity
-and two safety violations.
+and two safety violations. B3 found that 52 of the 65 failed rows also lacked
+at least one required evidence ID in their actual rendered E1-E5 context.
 
 ## What Is Ready
 
@@ -2994,6 +3013,9 @@ and two safety violations.
   tokenizer-matched throughput claim.
 - B1 Finance evidence match and groundedness were 5%, and six outputs were
   truncated at the frozen 128-token maximum.
+- B3 found exact required Finance evidence absent from E1-E5 in 18 of 19
+  failed Finance rows. This applies to the frozen B1 workload snapshot and does
+  not replace the promoted retrieval source of truth.
 - B2 recommendations do not apply changes automatically and do not estimate
   gains before measurement.
 - B2 local reports are ignored benchmark artifacts and must be regenerated
@@ -3014,13 +3036,13 @@ and two safety violations.
 
 ## Next Engineering Milestone
 
-Isolate the B1 quality failures on the frozen prompt set without modifying
-retrieval, gold data, or evaluator semantics. Prioritize Finance multi-evidence
-selection, the six 128-token truncations, and literal prohibited-phrase
-emission. Use the B2 catalog to change one factor at a time. Do not increase
-prompt count or run concurrency 2/4 until the quality gate passes or the
-model-capability limit is documented through a controlled stronger-model
-comparison.
+Run `B3R1_FROZEN_WORKLOAD_CONTEXT_ALIGNMENT_REPAIR` without modifying gold
+data, evaluator semantics, or the promoted retrieval source. Trace and
+re-export the same 100 prompt contexts, require every expected evidence ID to
+map to E1-E5, and rerun the offline audit. Only then use a maximum five-prompt
+Finance replay to isolate model citation selection. Do not increase prompt
+count or run concurrency 2/4 until the quality gate passes or a controlled
+comparison documents the model-capability limit.
 
 # 23. What An AI Inference Engineer Should Understand
 

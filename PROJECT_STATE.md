@@ -21,6 +21,11 @@ filtering, and one-factor next-experiment recommendations. It ran no new
 inference. Existing A1, A2/A3, and A5/A6 metrics were diagnosed from local
 artifacts.
 
+Phase B3 audited all 65 failed B1 rows from existing artifacts. It found that
+52 failures lacked at least one required gold evidence ID in the rendered E1-E5
+context, while 18 failures had available evidence that the model did not cite.
+No inference ran and no evaluator, gold, or promoted retrieval data changed.
+
 ## B1 Quality Gate
 
 - JSON validity: 93%, required 95%
@@ -49,14 +54,30 @@ real but insufficient for scale.
 PagedAttention is represented as an active vLLM engine capability, not an
 optimization toggle.
 
+## B3 Quality Root Cause
+
+- Failed B1 rows audited: 65
+- Required gold absent from E1-E5: 52
+- Evidence present but not cited: 18
+- Partial multi-evidence citation: 27
+- Invalid JSON / contract: 7 / 8
+- Truncation: 6
+- Finance failures with required evidence absent: 18 of 19
+- Finance safety violations: 0
+
+Finance is primarily a frozen workload/rendered-context alignment problem, with
+a secondary citation-selection and truncation problem. This does not revise the
+promoted retrieval source of truth.
+
 ## Next Step
 
-Repair and isolate grounded-output quality before increasing prompt count or
-concurrency. Finance evidence selection, 128-token truncation, and prohibited
-phrase emission are the current diagnostic priorities. Do not run a larger
-benchmark, SGLang, mm4, or RunPod from the B1 decision.
+Run `B3R1_FROZEN_WORKLOAD_CONTEXT_ALIGNMENT_REPAIR`: trace and re-export the
+same 100 prompt contexts, require every expected evidence ID to map to E1-E5,
+and rerun the offline audit. Only after that gate passes should a maximum
+five-prompt Finance replay isolate model citation selection. Do not run a larger
+benchmark, concurrency sweep, SGLang, mm4, or RunPod from the B1 decision.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
 `docs/99_modular_slo_diagnosis_and_optimization_catalog.md` for the B2 decision
-architecture.
+architecture and `docs/100_generation_quality_root_cause_audit.md` for B3.

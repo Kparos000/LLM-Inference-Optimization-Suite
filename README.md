@@ -44,7 +44,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The matched mm4 smoke reached 94% contract validity, 44% evidence match, and 42% groundedness with a 6% repair/escalation rate. It remains opt-in because mean E2E latency and normalized token use exceeded mm2/mm3.
 - Phase B1 loaded Qwen2.5-1.5B on the RTX 3070 and completed 100/100 requests without OOM. It reached 92% contract validity but only 35% evidence match and groundedness, 93% JSON validity, and two safety violations, so the result is `QUALITY_BLOCKED`.
 - Phase B2 adds modular SLO profiles, 51 structured bottlenecks, 57 structured optimizations, failed-SLO-only diagnosis, deterministic compatibility filtering, and one-factor next-experiment recommendations. No LLM is used as a decision source.
-- The next step is to isolate citation-selection, Finance grounding, truncation, and prohibited-phrase failures before increasing concurrency or workload size. The 1.5B model fits in 8 GB VRAM; quality, not memory, is the current blocker.
+- Phase B3 audited all 65 failed B1 rows without new inference. At least one required gold ID was absent from the frozen E1-E5 context in 52 failures; Finance accounted for 18 of those 52. Evidence was available but not cited in 18 failures.
+- The next step is `B3R1_FROZEN_WORKLOAD_CONTEXT_ALIGNMENT_REPAIR`: verify and re-export the same 100 prompt contexts before any bounded Finance replay, concurrency increase, or workload scaling.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -146,6 +147,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Qwen2.5-1.5B vLLM quality smoke](docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md)
 - [Modular SLO diagnosis and optimization catalog](docs/99_modular_slo_diagnosis_and_optimization_catalog.md)
 - [Block B2 summary](docs/summaries/blockB2_slo_diagnosis_optimization_catalog_summary.md)
+- [Generation quality root-cause audit](docs/100_generation_quality_root_cause_audit.md)
+- [Block B3 summary](docs/summaries/blockB3_generation_quality_root_cause_summary.md)
 - [Current project state](PROJECT_STATE.md)
 - [Data directory policy](data/README.md)
 
