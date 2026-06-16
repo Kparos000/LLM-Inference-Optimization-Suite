@@ -1,12 +1,12 @@
 # Full-Run AI Engineering Readiness
 
-Status: measured after B6 on June 15, 2026
+Status: measured after B6R1 on June 16, 2026
 
 ## Purpose
 
 This audit checks whether the repository is ready to move from the controlled
-500-prompt B6 gate to larger 2,000/10,000-prompt benchmarks, concurrency
-sweeps, or RunPod execution.
+500-prompt B6/B6R1 gates to larger prompt-count benchmarks, concurrency
+sweeps, SGLang/mm4 comparisons, or RunPod execution.
 
 The audit is deterministic and local. It does not use an LLM as a decision
 source.
@@ -26,14 +26,14 @@ The readiness status is:
 NOT_READY
 ```
 
-The audit found 36 checks:
+The audit found 40 checks:
 
-- passes: 33;
-- gaps: 2;
-- blocking failures: 1.
+- passes: 34;
+- gaps: 3;
+- blocking failures: 3.
 
-The blocking failure is the B6 scale gate result. B6 completed all 500
-requests, but the quality gate did not pass.
+The blocking failures are the failed B6 gate, the failed B6R1 targeted Research
+AI repair gate, and the resulting prohibition on a 1,000-prompt terminal run.
 
 ## Passed Areas
 
@@ -64,6 +64,11 @@ Run safety controls are present:
 - B6 manifest records `error_count`;
 - the partial-run check prevents a completed manifest with fewer than 500 rows.
 
+B6R1 adds targeted replay manifests and combined raw replay output for the
+Research AI failed-row audit. The full frozen 500-row B6R1 manifest is absent
+because no targeted strategy passed and the full rerun was intentionally not
+started.
+
 GPU/runtime controls are present:
 
 - `remote_rtx3070` profile;
@@ -86,6 +91,7 @@ RunPod cost claims are blocked:
 
 - `configs/runpod_projection_prices.yaml` has no reviewed hourly prices;
 - throughput multipliers for RTX 4090, L40S, A100, and H100 remain null.
+- external artifact sync/backup is still missing.
 
 GPU cost implementation is not centralized:
 
@@ -111,10 +117,22 @@ The blocking vertical is Research AI:
 - groundedness: 74%;
 - truncation: 18%.
 
+B6R1 replayed the 26 failed/truncated/invalid Research AI rows and did not
+clear the blocker:
+
+- `concise_research_ai_renderer`: JSON 46.15%, contract 38.46%, evidence
+  30.77%, groundedness 23.08%, truncation 53.85%, safety 0.
+- `research_ai_output_budget_224`: JSON 92.31%, contract 84.62%, evidence
+  73.08%, groundedness 65.38%, truncation 7.69%, safety 0.
+
+Neither strategy met the targeted thresholds, so the full frozen 500-row B6R1
+rerun was not triggered.
+
 ## Decision
 
 Do not run:
 
+- 1,000-prompt terminal run;
 - concurrency 2/4 sweep;
 - SGLang comparison;
 - mm4 agentic comparison;
@@ -122,13 +140,13 @@ Do not run:
 - 2,000-prompt benchmark;
 - 10,000-prompt benchmark.
 
-The next engineering block should remain quality-focused:
+The next engineering block should remain Research AI quality-focused:
 
 ```text
-B6R1_RESEARCH_AI_TRUNCATION_AND_CONTRACT_REPAIR
+B6R2_RESEARCH_AI_MODEL_OR_AGENTIC_COMPARISON
 ```
 
-Run only a targeted replay over B6 failed/truncated/invalid rows first. Keep
-the evaluator, gold data, and promoted retrieval source unchanged. After the
-targeted gate passes, rerun the same frozen 500 B6 matrix before considering
-any concurrency or larger-prompt-count work.
+Keep the frozen 26-row B6R1 Research AI replay set. Compare a stronger
+feasible model or a Research AI-only bounded mm4 path before any larger or
+concurrent run. Keep the evaluator, gold data, and promoted retrieval source
+unchanged.

@@ -1,12 +1,13 @@
 # Project State
 
-Status as of June 15, 2026.
+Status as of June 16, 2026.
 
 ## Current Decision
 
 ```text
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
 B6_QUALITY_IMPROVED_BUT_BLOCKED
+B6R1_BLOCKED
 FULL_RUN_NOT_READY
 ```
 
@@ -43,6 +44,12 @@ preflight mapped all required evidence into E1-E5 for 500 of 500 rows and did
 not expose canonical IDs to the model. The live run completed 500 of 500
 requests, but the gate is `B6_QUALITY_IMPROVED_BUT_BLOCKED` because JSON,
 contract, truncation, and Research AI vertical quality targets did not pass.
+
+Phase B6R1 replayed only the 26 B6 Research AI rows that were failed,
+truncated, invalid JSON, invalid contract, evidence-mismatched, or ungrounded.
+All required evidence had been present in the B6 E1-E5 context. Neither
+targeted repair strategy passed the B6R1 gate, so the full frozen 500-row
+rerun was not triggered.
 
 ## B1 Quality Gate
 
@@ -180,13 +187,46 @@ diagnosis, but it blocks larger runs because B6 failed quality. RunPod cost
 claims also remain blocked because hourly prices and throughput multipliers
 are unset.
 
+## B6R1 Research AI Truncation And Contract Repair
+
+- Replay rows: 26
+- Groundedness failures in the B6 replay set: 26
+- Evidence-match failures: 24
+- Invalid contract: 20
+- Invalid JSON: 18
+- Truncation: 18
+- Required evidence present in B6 E1-E5 context: yes
+
+Targeted strategy results:
+
+- `concise_research_ai_renderer`: 46.15% JSON, 38.46% contract, 30.77%
+  evidence match, 23.08% groundedness, 53.85% truncation, zero safety
+  violations.
+- `research_ai_output_budget_224`: 92.31% JSON, 84.62% contract, 73.08%
+  evidence match, 65.38% groundedness, 7.69% truncation, zero safety
+  violations.
+
+Result: `B6R1_BLOCKED`.
+
+B6R1 did not clear the Research AI blocker. The better 224-token strategy
+reduced truncation and improved quality, but not enough to pass the targeted
+gate. The failure is now best treated as a model/output-control limitation on
+Research AI under Qwen2.5-1.5B, not a promoted retrieval or gold-data problem.
+
+Result tracks are separated:
+
+- API provider track: `model5`/`model6` through OpenRouter, Novita, or Hugging
+  Face provider routes, with API token cost and no provider GPU telemetry.
+- Self-hosted GPU track: `model2`/`model3` through vLLM, SGLang, or RunPod,
+  with GPU telemetry and hourly infrastructure cost when configured, and no
+  API token price.
+
 ## Next Step
 
-Run `B6R1_RESEARCH_AI_TRUNCATION_AND_CONTRACT_REPAIR`: freeze B6 artifacts,
-replay only failed, truncated, or invalid Research AI rows first, then rerun
-the same 500-row B6 gate. Do not run concurrency 2/4, SGLang, mm4, RunPod, a
-2,000-prompt benchmark, or a 10,000-prompt benchmark until the 500-row gate
-passes.
+Run a Research AI-only stronger-model or bounded-mm4 comparison on the frozen
+26-row B6R1 replay set. Do not run a 1,000-prompt terminal run, concurrency
+2/4, SGLang, mm4, RunPod, a 2,000-prompt benchmark, or a 10,000-prompt
+benchmark until the Research AI blocker is cleared and the 500-row gate passes.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -196,4 +236,4 @@ architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
 `docs/102_final_generation_quality_hardening.md` for B5,
 `docs/103_b6_500_prompt_quality_scale_gate.md` for B6, and
 `docs/104_full_run_ai_engineering_readiness.md` for the full-run readiness
-audit.
+audit, and `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1.

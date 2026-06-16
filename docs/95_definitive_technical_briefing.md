@@ -1,6 +1,6 @@
 # Definitive Technical Briefing
 
-Status: authoritative repository reference as of June 15, 2026
+Status: authoritative repository reference as of June 16, 2026
 
 Repository: `LLM-Inference-Optimization-Suite`
 
@@ -2676,6 +2676,40 @@ are present, but larger runs are blocked by the failed B6 quality gate. RunPod
 cost claims also remain blocked because reviewed hourly prices and throughput
 multipliers are unset.
 
+## B6R1 Research AI Truncation And Contract Repair
+
+B6R1 froze the B6 artifacts and replayed only the 26 Research AI rows that
+were failed, truncated, invalid JSON, invalid contract, evidence-mismatched, or
+ungrounded. It did not modify gold data, evaluator semantics, or the promoted
+retrieval source of truth.
+
+The replay audit found:
+
+- groundedness failures: 26;
+- evidence-match failures: 24;
+- invalid contract: 20;
+- invalid JSON: 18;
+- truncation: 18;
+- required evidence present in B6 E1-E5 context: yes.
+
+Root causes were dominated by output budget, verbose answers, truncation, and
+model instruction following. The failure is not a promoted retrieval or
+gold-data problem.
+
+Two strategies were tested:
+
+- `concise_research_ai_renderer`: 46.15% JSON validity, 38.46% contract
+  validity, 30.77% evidence match, 23.08% groundedness, 53.85% truncation, and
+  zero safety violations.
+- `research_ai_output_budget_224`: 92.31% JSON validity, 84.62% contract
+  validity, 73.08% evidence match, 65.38% groundedness, 7.69% truncation, and
+  zero safety violations.
+
+Neither strategy passed the targeted B6R1 gate, so the full frozen 500-row
+rerun was not triggered. The decision is `B6R1_BLOCKED`. A 1,000-prompt
+terminal run, concurrency sweep, SGLang comparison, mm4 comparison, RunPod
+execution, and 2,000/10,000-prompt benchmarks remain blocked.
+
 # 18. Telemetry
 
 ## Request Telemetry Schema
@@ -3106,6 +3140,19 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - added a full-run AI engineering readiness audit and marked larger runs
   `NOT_READY`.
 
+## Phase B6R1: Research AI Truncation And Contract Repair
+
+- replayed the 26 B6 Research AI rows that were failed, truncated, invalid, or
+  ungrounded;
+- confirmed the failing rows already had required evidence in E1-E5;
+- diagnosed output budget, verbose answers, truncation, and instruction
+  following as the dominant causes;
+- compared a concise Research AI renderer against a 224-token Research AI
+  output budget;
+- found that neither strategy passed the targeted Research AI gate;
+- did not trigger the full 500-row rerun;
+- clarified API-provider versus self-hosted GPU result-track schema rules.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -3145,6 +3192,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   and frozen-matrix quality gate pass.
 - Phase B6 balanced 500-prompt vLLM scale gate, runtime projection, and
   full-run readiness audit.
+- Phase B6R1 targeted Research AI failed-row replay, strategy comparison, and
+  result-track schema clarification.
 
 ## Current Block State
 
@@ -3159,13 +3208,16 @@ clean model-capability conclusion. Phase B4 repaired that alignment for the
 same 100 prompts and showed a large quality gain. Phase B5 repaired the
 remaining safety and citation-selection behavior enough for the full frozen
 100-prompt quality gate to pass. Phase B6 scaled to 500 prompts and exposed a
-Research AI truncation/contract-validity blocker.
+Research AI truncation/contract-validity blocker. Phase B6R1 replayed the
+Research AI failures and showed that a simple concise renderer or 224-token
+budget increase is insufficient for the 1.5B model to pass the targeted gate.
 
 Current decision:
 
 ```text
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
 B6_QUALITY_IMPROVED_BUT_BLOCKED
+B6R1_BLOCKED
 FULL_RUN_NOT_READY
 ```
 
@@ -3174,8 +3226,11 @@ VRAM. B5 cleared the frozen 100-prompt generation quality gate with 99% JSON
 validity, 99% contract validity, 96% evidence match, 96% groundedness, and
 zero safety violations. B6 completed the controlled 500-prompt gate with 91.2%
 evidence match, 90.8% groundedness, and zero safety violations, but failed JSON,
-contract, truncation, and Research AI vertical quality targets. It is not ready
-for larger scale or concurrency.
+contract, truncation, and Research AI vertical quality targets. B6R1 improved
+the failed Research AI subset with a 224-token budget, but still reached only
+92.31% JSON validity, 84.62% contract validity, 73.08% evidence match, 65.38%
+groundedness, and 7.69% truncation. It is not ready for larger scale or
+concurrency.
 
 ## What Is Ready
 
@@ -3201,6 +3256,8 @@ for larger scale or concurrency.
   and full frozen 100 quality-gate pass;
 - B6 balanced 500-row context-aligned runner export and measured concurrency-one
   vLLM scale gate;
+- B6R1 26-row Research AI targeted replay, failure audit, and strategy
+  comparison;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3208,8 +3265,11 @@ for larger scale or concurrency.
 
 ## Remaining Blockers
 
-- B6 Research AI truncation, JSON, contract, evidence, and groundedness quality
-  repair;
+- B6R1 Research AI blocker after both targeted strategies failed;
+- Research AI stronger-model or bounded-mm4 comparison on the frozen B6R1
+  replay set;
+- 1,000-prompt terminal run remains blocked until the Research AI blocker is
+  cleared and the frozen 500-row gate passes;
 - bounded concurrency 2/4 sweep only after the 500-prompt gate passes;
 - stronger-than-1.5B model feasibility within 8 GB VRAM;
 - registered infrastructure cost if GPU cost comparisons are required;
@@ -3255,8 +3315,15 @@ for larger scale or concurrency.
   500-prompt scale gate because JSON validity was 95.4%, contract validity was
   94.8%, truncation was 4.6%, and Research AI reached only 76% evidence match
   and 74% groundedness.
+- B6R1 replayed the 26 failed/truncated/invalid Research AI rows, but neither
+  the concise renderer nor the 224-token Research AI budget passed the targeted
+  gate. The full 500-row B6R1 rerun was not triggered.
 - B6 runtime and cost projections are RTX 3070 local projections only. RunPod
   prices and throughput multipliers are still unset.
+- API provider result rows and self-hosted GPU result rows now share stable
+  join keys, but their cost and telemetry fields are intentionally different:
+  API runs have token price and no provider GPU telemetry; self-hosted GPU runs
+  have GPU telemetry/hourly cost when configured and no API token price.
 - B2 recommendations do not apply changes automatically and do not estimate
   gains before measurement.
 - B2 local reports are ignored benchmark artifacts and must be regenerated
@@ -3277,12 +3344,10 @@ for larger scale or concurrency.
 
 ## Next Engineering Milestone
 
-Run `B6R1_RESEARCH_AI_TRUNCATION_AND_CONTRACT_REPAIR` on the frozen B6
-artifacts. Replay only failed, truncated, or invalid Research AI rows first,
-without changing gold data, evaluator semantics, or the promoted retrieval
-source. Then rerun the same 500-row B6 gate. Do not run concurrency 2/4, SGLang,
-mm4, RunPod, 2,000-prompt, or 10,000-prompt benchmarks until the 500-row gate
-passes.
+Run a Research AI-only stronger-model or bounded-mm4 comparison on the frozen
+26-row B6R1 replay set. Do not run a 1,000-prompt terminal run, concurrency
+2/4, SGLang, mm4, RunPod, 2,000-prompt, or 10,000-prompt benchmarks until the
+Research AI blocker is cleared and the frozen 500-row gate passes.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3516,12 +3581,13 @@ gold leakage.
 
 The immediate work is operational:
 
-- repair the B6 Research AI truncation, JSON, contract, evidence, and
-  groundedness failures on the frozen 500-prompt artifacts;
-- rerun the same 500-prompt gate after the targeted repair;
+- run a Research AI-only stronger-model or bounded-mm4 comparison on the frozen
+  26-row B6R1 replay set;
+- rerun the same 500-prompt gate only after the targeted Research AI blocker is
+  cleared;
 - run a bounded concurrency 2/4 sweep only if the 500-prompt gate then passes
   quality and keeps safety at zero;
-- document whether residual 1.5B failures after B6R1 are prompt/context
+- document whether residual 1.5B Research AI failures are prompt/context
   presentation problems or a model-capability limit;
 - decide whether a model stronger than 1.5B is feasible under the 8 GB VRAM
   constraint or requires a controlled external GPU;
@@ -3558,6 +3624,8 @@ assumptions:
 - the B6 500-prompt result is retained as an operationally successful but
   quality-blocked scale gate, with Research AI truncation and contract failures
   called out before any larger or concurrent run.
+- the B6R1 targeted replay is retained even though neither targeted Research
+  AI strategy passed and no full 500-row rerun was allowed.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

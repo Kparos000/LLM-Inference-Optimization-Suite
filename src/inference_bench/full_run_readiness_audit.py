@@ -85,6 +85,47 @@ def _b6_gate_passed(root: Path) -> bool | None:
     return bool(gate.get("passed")) if isinstance(gate, dict) else None
 
 
+def _b6r1_gate_passed(root: Path) -> bool | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r1_vllm_1_5b_500_repaired_eval_report.json",
+    )
+    if payload is not None:
+        gate = payload.get("quality_gate")
+        return bool(gate.get("passed")) if isinstance(gate, dict) else None
+    targeted = _load_json_if_present(
+        root,
+        "results/processed/b6r1_research_ai_strategy_comparison.json",
+    )
+    if targeted is None:
+        return None
+    selection = targeted.get("selection")
+    if isinstance(selection, dict) and selection.get("selected_strategy") in (None, ""):
+        return False
+    return None
+
+
+def _b6r1_gate_status(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r1_vllm_1_5b_500_repaired_eval_report.json",
+    )
+    if payload is not None:
+        status = payload.get("status")
+        return str(status) if status not in (None, "") else None
+    targeted = _load_json_if_present(
+        root,
+        "results/processed/b6r1_research_ai_strategy_comparison.json",
+    )
+    if targeted is None:
+        return None
+    selection = targeted.get("selection")
+    if isinstance(selection, dict):
+        status = selection.get("selection_status")
+        return str(status) if status not in (None, "") else "B6R1_BLOCKED"
+    return "B6R1_BLOCKED"
+
+
 def partial_run_completion_check(
     *,
     expected_count: int,
@@ -363,19 +404,75 @@ def build_full_run_readiness_audit(
     )
 
     b6_passed = _b6_gate_passed(root)
+    b6r1_passed = _b6r1_gate_passed(root)
+    b6r1_status = _b6r1_gate_status(root)
     checks.append(
         _check(
             category="scaling",
             name="b6_500_gate_result",
-            status="PASS" if b6_passed else "GAP" if b6_passed is None else "FAIL",
+            status="PASS" if b6_passed or b6r1_passed else "GAP" if b6_passed is None else "FAIL",
             evidence=(
                 "B6 quality gate passed"
                 if b6_passed
+                else "B6 failed, but B6R1 supersedes the B6 quality blocker"
+                if b6r1_passed
                 else "B6 report missing"
                 if b6_passed is None
                 else "B6 gate did not pass"
             ),
-            blocking=b6_passed is False,
+            blocking=b6_passed is False and b6r1_passed is not True,
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="b6r1_clears_b6_quality_blocker",
+            status="PASS" if b6r1_passed else "GAP" if b6r1_passed is None else "FAIL",
+            evidence=(
+                "B6R1 quality gate passed; Research AI blocker cleared"
+                if b6r1_passed
+                else "B6R1 full 500 repaired report missing"
+                if b6r1_passed is None
+                else f"B6R1 quality gate did not pass ({b6r1_status or 'unknown status'})"
+            ),
+            blocking=b6r1_passed is False,
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="terminal_1000_prompt_run_allowed",
+            status="PASS" if b6r1_passed else "GAP" if b6r1_passed is None else "FAIL",
+            evidence=(
+                "A 1,000-prompt terminal run is allowed after B6R1_READY at concurrency one"
+                if b6r1_passed
+                else "Wait for B6R1 full 500 gate before a 1,000-prompt terminal run"
+                if b6r1_passed is None
+                else "Do not run 1,000 prompts until B6R1 blockers are repaired"
+            ),
+            blocking=b6r1_passed is False,
+        )
+    )
+    checks.append(
+        _check(
+            category="run_safety",
+            name="artifact_sync_backup_plan",
+            status="GAP",
+            evidence=(
+                "Raw incremental writes, manifests, completed IDs, failed rows, and "
+                "partial-run checks exist; external artifact sync/backup is still missing"
+            ),
+        )
+    )
+    checks.append(
+        _check(
+            category="gpu_runtime",
+            name="runpod_blocked_by_price_multiplier_artifact_sync",
+            status="PASS",
+            evidence=(
+                "RunPod remains blocked until hourly price, measured throughput multiplier, "
+                "and artifact sync/backup are configured"
+            ),
         )
     )
     checks.append(
