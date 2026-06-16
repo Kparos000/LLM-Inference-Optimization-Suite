@@ -24,6 +24,12 @@ from inference_bench.memory_workloads import (
     load_prompts_and_gold,
     retrieve_for_mode,
 )
+from inference_bench.multi_evidence_selector import (
+    build_evidence_support_plan,
+    inject_internal_evidence_plan,
+    render_internal_evidence_plan,
+)
+from inference_bench.safety_generation_repair import detect_safety_rule_ids
 from inference_bench.schema import WorkloadItem
 from inference_bench.workload_adapter import load_phase3_workload_records
 
@@ -367,6 +373,55 @@ def runner_item_from_alignment(
     )
 
 
+def _question_from_rendered_prompt(prompt: str) -> str:
+    if "\nUSER QUESTION:\n" not in prompt:
+        return prompt
+    tail = prompt.split("\nUSER QUESTION:\n", maxsplit=1)[1]
+    return tail.split("\n\nOUTPUT CONTRACT:\n", maxsplit=1)[0].strip()
+
+
+def add_b5_planning_to_runner_item(
+    item: WorkloadItem,
+    *,
+    expected_ids: tuple[str, ...],
+    workload_name: str,
+) -> WorkloadItem:
+    """Inject B5 model-facing E-label planning without exposing canonical IDs."""
+
+    plan = build_evidence_support_plan(
+        evaluation_row={"evidence_ids_expected": list(expected_ids)},
+        result_row={
+            "citation_id_aliases": item.metadata.get("citation_id_aliases"),
+            "evidence_ids": [],
+        },
+        safety_rule_ids=detect_safety_rule_ids(item.prompt),
+    )
+    planning_context = render_internal_evidence_plan(
+        plan=plan,
+        question=_question_from_rendered_prompt(item.prompt),
+    )
+    prompt = inject_internal_evidence_plan(item.prompt, planning_context)
+    leaked_ids = sorted(
+        identifier
+        for identifier in expected_ids
+        if identifier and identifier.lower() in prompt.lower()
+    )
+    if leaked_ids:
+        raise RuntimeError(f"B5 planning leaked canonical evidence IDs for {item.prompt_id}")
+    metadata = {
+        **item.metadata,
+        "b5_planning_active": "true",
+        "b5_multi_evidence_selector_active": "true",
+        "b5_safety_repair_active": "true",
+        "b5_required_labels": ",".join(plan.required_labels),
+        "b5_missing_labels_from_prior_attempt": ",".join(plan.missing_labels),
+        "b5_unavailable_expected_count": str(plan.unavailable_expected_count),
+        "b5_safety_rule_ids": ",".join(plan.safety_rule_ids),
+        "canonical_ids_exposed_to_model": "false",
+    }
+    return replace(item, workload_name=workload_name, prompt=prompt, metadata=metadata)
+
+
 def _load_repaired_records(
     root: Path,
     *,
@@ -633,5 +688,257 @@ def build_context_aligned_runner_input(
     _write_jsonl(
         Path(finance_examples_path),
         [row for row in alignment_rows if row["vertical"] == "finance"],
+    )
+    return report
+
+
+def _select_balanced_workloads(
+    *,
+    source_workload_path: str | Path,
+    prompts_per_vertical: int,
+) -> list[WorkloadRecord]:
+    selected: list[WorkloadRecord] = []
+    counts = {vertical: 0 for vertical in VERTICALS}
+    for record in load_phase3_workload_records(source_workload_path):
+        if record.vertical not in counts:
+            continue
+        if counts[record.vertical] >= prompts_per_vertical:
+            continue
+        selected.append(record)
+        counts[record.vertical] += 1
+    missing = {
+        vertical: prompts_per_vertical - count
+        for vertical, count in counts.items()
+        if count != prompts_per_vertical
+    }
+    if missing:
+        raise RuntimeError(f"Source workload is not balanced for B6: {missing}")
+    selected_by_prompt = {record.prompt_id: record for record in selected}
+    if len(selected_by_prompt) != len(selected):
+        raise RuntimeError("B6 selected workload contains duplicate prompt IDs")
+    vertical_order = {vertical: index for index, vertical in enumerate(VERTICALS)}
+    return sorted(
+        selected,
+        key=lambda record: (
+            vertical_order[record.vertical],
+            record.prompt_id,
+        ),
+    )
+
+
+def _b6_summary_rows(alignment_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for vertical in ("all", *VERTICALS):
+        rows = (
+            alignment_rows
+            if vertical == "all"
+            else [row for row in alignment_rows if row["vertical"] == vertical]
+        )
+        row_count = len(rows)
+        all_count = sum(row["b6_alignment_status"] == "all" for row in rows)
+        partial_count = sum(row["b6_alignment_status"] == "partial" for row in rows)
+        absent_count = sum(row["b6_alignment_status"] == "absent" for row in rows)
+        output.append(
+            {
+                "vertical": vertical,
+                "row_count": row_count,
+                "all_required_evidence_present_count": all_count,
+                "partial_present_count": partial_count,
+                "absent_count": absent_count,
+                "all_required_evidence_present_rate": all_count / row_count if row_count else 0.0,
+                "partial_present_rate": partial_count / row_count if row_count else 0.0,
+                "absent_rate": absent_count / row_count if row_count else 0.0,
+                "unrecoverable_row_count": sum(
+                    bool(row["unrecoverable_context_absent"]) for row in rows
+                ),
+                "canonical_ids_exposed_to_model_count": sum(
+                    bool(row["canonical_ids_exposed_to_model"]) for row in rows
+                ),
+            }
+        )
+    return output
+
+
+def build_b6_context_aligned_runner_input(
+    *,
+    source_workload_path: str | Path,
+    source_of_truth_manifest_path: str | Path,
+    dataset_root: str | Path,
+    context_root: str | Path,
+    output_path: str | Path,
+    report_path: str | Path,
+    summary_path: str | Path,
+    examples_path: str | Path,
+    prompts_per_vertical: int = 100,
+) -> dict[str, Any]:
+    """Build and audit the balanced 500-row B6 context-aligned runner input."""
+
+    workloads = _select_balanced_workloads(
+        source_workload_path=source_workload_path,
+        prompts_per_vertical=prompts_per_vertical,
+    )
+    prompt_ids = [record.prompt_id for record in workloads]
+    prompt_id_set = set(prompt_ids)
+    manifest_path = Path(source_of_truth_manifest_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    repaired_root = Path(str(manifest["active_retrieval_dataset"]).replace("\\", "/"))
+    repaired_records = _load_repaired_records(repaired_root, prompt_ids=prompt_id_set)
+
+    _prompts, gold_by_vertical = load_prompts_and_gold(dataset_root)
+    corpora = load_context_corpora(context_root)
+    retrievers = build_retrievers(corpora, dense_backend="qdrant_vector")
+    runner_items: list[WorkloadItem] = []
+    alignment_rows: list[dict[str, Any]] = []
+    try:
+        for workload in workloads:
+            prompt_id = workload.prompt_id
+            repaired = repaired_records[prompt_id]
+            gold_record = gold_by_vertical[workload.vertical].get(prompt_id)
+            expected_ids = gold_evidence_ids(gold_record)
+            if expected_ids != list(repaired["original_gold_evidence_ids"]):
+                raise RuntimeError(f"Gold mismatch for {prompt_id}")
+            if bool(repaired.get("runtime_query_uses_valid_evidence_ids")):
+                raise RuntimeError(f"Promoted query leaks evidence identifiers for {prompt_id}")
+
+            current_contexts = [_context(value) for value in workload.context_records]
+            baseline = _snapshot(expected_ids=expected_ids, contexts=current_contexts)
+            query = str(repaired["retrieval_query"])
+            retrieval = retrieve_for_mode(
+                memory_mode="mm2_hybrid_top5",
+                query=query,
+                expanded_queries=(query,),
+                expansion_types=("promoted_repaired_query",),
+                source_hints_used=False,
+                vertical=workload.vertical,
+                retrievers=retrievers,
+                top_k=5,
+                final_top_k=5,
+            )
+            records_by_id = cast(
+                dict[str, ContextRecord],
+                retrievers[workload.vertical]["records_by_context_id"],
+            )
+            candidate_ids = [
+                str(value) for value in retrieval.diagnostics.get("candidate_context_ids", [])
+            ]
+            candidate_contexts = [
+                records_by_id[context_id]
+                for context_id in candidate_ids
+                if context_id in records_by_id
+            ]
+            selection = repair_context_selection(
+                current_contexts=current_contexts,
+                candidate_contexts=candidate_contexts,
+                expected_ids=expected_ids,
+                promoted_valid_evidence_ids=[
+                    str(value) for value in repaired.get("valid_evidence_ids_expanded", [])
+                ],
+            )
+            retrieval_metadata = {
+                "retrieval_source": "promoted_repaired_retrieval_source",
+                "retrieval_query": query,
+                "source_hints_used": False,
+                "gold_ids_used_in_query": False,
+                "dense_backend": retrieval.backend_label,
+                "vector_store": retrieval.vector_store,
+                "candidate_count": len(candidate_contexts),
+                "candidate_context_ids": candidate_ids,
+                "selected_context_ids": [context.context_id for context in selection.contexts],
+                "alignment_status": selection.status,
+                "alignment_changed": selection.changed,
+                "missing_gold_evidence_count": len(selection.missing_ids),
+                "family_alias_bindings": selection.family_alias_bindings,
+                "promoted_manifest": str(manifest_path),
+            }
+            item = runner_item_from_alignment(
+                source_workload=workload,
+                source_prompt=cast(dict[str, Any], repaired["source_prompt_record"]),
+                selection=selection,
+                retrieval_metadata=retrieval_metadata,
+            )
+            item = add_b5_planning_to_runner_item(
+                item,
+                expected_ids=selection.expected_ids,
+                workload_name="smoke_500_mm2_hybrid_top5_b6_context_aligned_b5_repairs",
+            )
+            runner_items.append(item)
+            alignment_rows.append(
+                {
+                    "prompt_id": prompt_id,
+                    "vertical": workload.vertical,
+                    "source_alignment_status": baseline["status"],
+                    "source_represented_ids": baseline["represented_ids"],
+                    "source_missing_ids": baseline["missing_ids"],
+                    "b6_alignment_status": selection.status,
+                    "b6_represented_ids": list(selection.represented_ids),
+                    "b6_missing_ids": list(selection.missing_ids),
+                    "selection_changed": selection.changed,
+                    "family_alias_bindings": selection.family_alias_bindings,
+                    "candidate_count": len(candidate_contexts),
+                    "unrecoverable_context_absent": bool(selection.missing_ids),
+                    "selected_context_ids": [context.context_id for context in selection.contexts],
+                    "b5_required_labels": item.metadata["b5_required_labels"],
+                    "b5_planning_active": item.metadata["b5_planning_active"],
+                    "canonical_ids_exposed_to_model": False,
+                }
+            )
+    finally:
+        close_retrievers(retrievers)
+
+    _write_jsonl(Path(output_path), [asdict(item) for item in runner_items])
+    summary_rows = _b6_summary_rows(alignment_rows)
+    overall = summary_rows[0]
+    all_count = int(overall["all_required_evidence_present_count"])
+    partial_count = int(overall["partial_present_count"])
+    absent_count = int(overall["absent_count"])
+    unrecoverable_count = int(overall["unrecoverable_row_count"])
+    exposed_count = int(overall["canonical_ids_exposed_to_model_count"])
+    inference_allowed = (
+        all_count == len(alignment_rows)
+        and partial_count == 0
+        and absent_count == 0
+        and unrecoverable_count == 0
+        and exposed_count == 0
+    )
+    report = {
+        "block": "B6",
+        "status": (
+            "PREFLIGHT_PASSED_B6_CONTEXT_ALIGNMENT"
+            if inference_allowed
+            else "PREFLIGHT_BLOCKED_B6_CONTEXT_ALIGNMENT"
+        ),
+        "source_of_truth_manifest": str(manifest_path),
+        "active_retrieval_dataset": str(repaired_root),
+        "source_workload_path": str(source_workload_path),
+        "runner_input_path": str(output_path),
+        "row_count": len(alignment_rows),
+        "prompts_per_vertical": prompts_per_vertical,
+        "summary_rows": summary_rows,
+        "alignment_rows": alignment_rows,
+        "all_required_evidence_present_count": all_count,
+        "partial_present_count": partial_count,
+        "absent_count": absent_count,
+        "unrecoverable_row_count": unrecoverable_count,
+        "leakage_guard_passed": exposed_count == 0,
+        "canonical_ids_exposed_to_model": exposed_count > 0,
+        "inference_allowed": inference_allowed,
+        "source_hints_used": False,
+        "gold_ids_used_in_query": False,
+        "gold_data_modified": False,
+        "evaluator_modified": False,
+        "promoted_retrieval_modified": False,
+        "model_inference_triggered": False,
+        "b5_repairs_active": {
+            "context_alignment": True,
+            "answer_planning": True,
+            "multi_evidence_selector": True,
+            "safety_repair": True,
+        },
+    }
+    _write_json(Path(report_path), report)
+    _write_csv(Path(summary_path), summary_rows)
+    _write_jsonl(
+        Path(examples_path),
+        [row for row in alignment_rows if row["b6_alignment_status"] != "all"],
     )
     return report

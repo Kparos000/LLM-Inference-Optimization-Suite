@@ -2617,6 +2617,65 @@ The B5 decision is `QUALITY_READY_FOR_FROZEN_100`. It is not a final scale
 benchmark. Four residual full-run failures remain: one Airline citation miss,
 two Finance citation misses, and one Research AI truncated JSON output.
 
+## B6 500-Prompt Quality Scale Gate
+
+B6 ran the first controlled scale gate after the B5 frozen 100-prompt pass. It
+used Qwen2.5-1.5B, vLLM, the remote RTX 3070, `mm2_hybrid_top5`, concurrency
+one, streaming, temperature zero, the B5 160-token output cap, and the B5
+safety/planning/multi-evidence repair path.
+
+The offline B6 preflight passed:
+
+- 500 of 500 runner rows built, 100 per vertical;
+- all required gold evidence present in E1-E5 for 500 of 500 rows;
+- Finance all-required-gold-present rate: 100 of 100;
+- partial, absent, and unrecoverable context rows: zero;
+- canonical gold/source IDs exposed to the model: zero.
+
+The live run completed operationally:
+
+- 500 of 500 requests completed;
+- JSON validity: 95.4%;
+- contract validity: 94.8%;
+- evidence match: 91.2%;
+- deterministic groundedness: 90.8%;
+- safety violations: zero;
+- truncation rate: 4.6%;
+- bounded retry attempts: 99;
+- lexical-guard repairs: 10;
+- mean TTFT: 141.543 ms;
+- mean TPOT: 11.489 ms;
+- mean ITL p50/p95/p99: 11.245 / 15.442 / 20.095 ms;
+- mean E2E latency: 1,741.355 ms;
+- p95/p99 E2E latency: 5,021.188 / 5,771.729 ms;
+- mean/peak GPU utilization: 81.33% / 100%;
+- mean/peak GPU memory: 6,524.17 / 6,760 MB.
+
+Per-vertical evidence match and groundedness were:
+
+- Airline: 91% / 91%;
+- Healthcare Admin: 100% / 100%;
+- Retail: 94% / 94%;
+- Finance: 95% / 95%;
+- Research AI: 76% / 74%.
+
+B6 passed the aggregate evidence and groundedness targets and kept safety at
+zero, but failed JSON validity, contract validity, truncation, minimum vertical
+evidence match, and minimum vertical groundedness. The decision is
+`B6_QUALITY_IMPROVED_BUT_BLOCKED`.
+
+Finance is no longer the blocking vertical. Research AI is the blocker, with
+82% JSON validity, 80% contract validity, 18% truncation, 76% evidence match,
+and 74% groundedness. Since the B6 preflight confirms all required evidence is
+present in E1-E5, this is a generation contract/output-budget problem, not a
+retrieval availability problem.
+
+The B6 full-run readiness audit is `NOT_READY`. Repository controls for
+dataset/workload, context/generation, run safety, telemetry, and SLO diagnosis
+are present, but larger runs are blocked by the failed B6 quality gate. RunPod
+cost claims also remain blocked because reviewed hourly prices and throughput
+multipliers are unset.
+
 # 18. Telemetry
 
 ## Request Telemetry Schema
@@ -3032,6 +3091,21 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - marked the result `QUALITY_READY_FOR_FROZEN_100`, with controlled scale and
   concurrency gates still pending.
 
+## Phase B6: 500-Prompt Quality Scale Gate And Readiness Audit
+
+- built a balanced 500-row context-aligned runner input with 100 prompts per
+  vertical;
+- verified all required gold evidence mapped privately to E1-E5 for 500 of 500
+  rows;
+- ran Qwen2.5-1.5B through vLLM on the remote RTX 3070 at concurrency one;
+- completed 500 of 500 requests with zero final safety violations;
+- reached 91.2% evidence match and 90.8% groundedness overall;
+- failed JSON, contract, truncation, and minimum vertical quality thresholds;
+- identified Research AI truncation and contract validity as the scale blocker;
+- marked the result `B6_QUALITY_IMPROVED_BUT_BLOCKED`;
+- added a full-run AI engineering readiness audit and marked larger runs
+  `NOT_READY`.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -3069,6 +3143,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   quality audit, and B2 SLO diagnosis over B4 artifacts.
 - Phase B5 targeted failed-row safety/citation repair, full frozen 100 rerun,
   and frozen-matrix quality gate pass.
+- Phase B6 balanced 500-prompt vLLM scale gate, runtime projection, and
+  full-run readiness audit.
 
 ## Current Block State
 
@@ -3082,21 +3158,24 @@ B3 established that frozen workload/context alignment is a prerequisite to a
 clean model-capability conclusion. Phase B4 repaired that alignment for the
 same 100 prompts and showed a large quality gain. Phase B5 repaired the
 remaining safety and citation-selection behavior enough for the full frozen
-100-prompt quality gate to pass.
+100-prompt quality gate to pass. Phase B6 scaled to 500 prompts and exposed a
+Research AI truncation/contract-validity blocker.
 
 Current decision:
 
 ```text
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
-QUALITY_READY_FOR_FROZEN_100
-CONTROLLED_SCALE_GATE_PENDING
+B6_QUALITY_IMPROVED_BUT_BLOCKED
+FULL_RUN_NOT_READY
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
 VRAM. B5 cleared the frozen 100-prompt generation quality gate with 99% JSON
 validity, 99% contract validity, 96% evidence match, 96% groundedness, and
-zero safety violations. This is a frozen-smoke gate, not a final scale or
-concurrency benchmark.
+zero safety violations. B6 completed the controlled 500-prompt gate with 91.2%
+evidence match, 90.8% groundedness, and zero safety violations, but failed JSON,
+contract, truncation, and Research AI vertical quality targets. It is not ready
+for larger scale or concurrency.
 
 ## What Is Ready
 
@@ -3120,6 +3199,8 @@ concurrency benchmark.
   set;
 - B5 safety lexical guard, multi-evidence E-label planning, targeted replay,
   and full frozen 100 quality-gate pass;
+- B6 balanced 500-row context-aligned runner export and measured concurrency-one
+  vLLM scale gate;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3127,9 +3208,9 @@ concurrency benchmark.
 
 ## Remaining Blockers
 
-- controlled 500-prompt quality gate after the B5 frozen 100 pass;
-- bounded concurrency 2/4 sweep after the 500-prompt gate, if quality remains
-  above target and safety remains zero;
+- B6 Research AI truncation, JSON, contract, evidence, and groundedness quality
+  repair;
+- bounded concurrency 2/4 sweep only after the 500-prompt gate passes;
 - stronger-than-1.5B model feasibility within 8 GB VRAM;
 - registered infrastructure cost if GPU cost comparisons are required;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
@@ -3170,6 +3251,12 @@ concurrency benchmark.
   benchmark and still left four residual full-run failures: one Airline
   citation miss, two Finance citation misses, and one Research AI truncated
   JSON output.
+- B6 passed aggregate evidence and groundedness floors but failed the full
+  500-prompt scale gate because JSON validity was 95.4%, contract validity was
+  94.8%, truncation was 4.6%, and Research AI reached only 76% evidence match
+  and 74% groundedness.
+- B6 runtime and cost projections are RTX 3070 local projections only. RunPod
+  prices and throughput multipliers are still unset.
 - B2 recommendations do not apply changes automatically and do not estimate
   gains before measurement.
 - B2 local reports are ignored benchmark artifacts and must be regenerated
@@ -3190,12 +3277,12 @@ concurrency benchmark.
 
 ## Next Engineering Milestone
 
-Run `B6_CONTROLLED_SCALE_AND_CONCURRENCY_GATE`. First run a controlled
-500-prompt quality gate at concurrency one. If that gate preserves the B5
-quality thresholds and safety remains zero, run a bounded concurrency 2/4 sweep
-before any 2,000 or 10,000 record benchmark. Keep gold data, evaluator
-semantics, promoted retrieval, model, engine, memory mode, and temperature
-fixed for the next gate.
+Run `B6R1_RESEARCH_AI_TRUNCATION_AND_CONTRACT_REPAIR` on the frozen B6
+artifacts. Replay only failed, truncated, or invalid Research AI rows first,
+without changing gold data, evaluator semantics, or the promoted retrieval
+source. Then rerun the same 500-row B6 gate. Do not run concurrency 2/4, SGLang,
+mm4, RunPod, 2,000-prompt, or 10,000-prompt benchmarks until the 500-row gate
+passes.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3429,12 +3516,13 @@ gold leakage.
 
 The immediate work is operational:
 
-- run a controlled 500-prompt quality gate at concurrency one after the B5
-  frozen 100-prompt pass;
-- run a bounded concurrency 2/4 sweep only if the 500-prompt gate preserves
-  quality and zero safety violations;
-- document whether residual 1.5B failures are prompt/context presentation
-  problems or a model-capability limit;
+- repair the B6 Research AI truncation, JSON, contract, evidence, and
+  groundedness failures on the frozen 500-prompt artifacts;
+- rerun the same 500-prompt gate after the targeted repair;
+- run a bounded concurrency 2/4 sweep only if the 500-prompt gate then passes
+  quality and keeps safety at zero;
+- document whether residual 1.5B failures after B6R1 are prompt/context
+  presentation problems or a model-capability limit;
 - decide whether a model stronger than 1.5B is feasible under the 8 GB VRAM
   constraint or requires a controlled external GPU;
 - register an infrastructure price before making GPU cost claims;
@@ -3467,6 +3555,9 @@ assumptions:
   added latency/token cost, and persistent safety blocker.
 - the B5 final quality hardening result is retained alongside its successful
   frozen 100-prompt quality gate and remaining four residual failures.
+- the B6 500-prompt result is retained as an operationally successful but
+  quality-blocked scale gate, with Research AI truncation and contract failures
+  called out before any larger or concurrent run.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

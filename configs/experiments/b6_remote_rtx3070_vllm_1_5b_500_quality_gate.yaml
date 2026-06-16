@@ -1,0 +1,64 @@
+experiment_id: b6_remote_rtx3070_vllm_1_5b_500_quality_gate
+description: Phase B6 500-prompt controlled quality scale gate for Qwen2.5-1.5B on remote RTX 3070 vLLM.
+status: frozen_pending_run
+
+hardware_profile: remote_rtx3070
+engine: vllm
+backend_type: self_hosted
+model_alias: model2_1_5b
+model_id: Qwen/Qwen2.5-1.5B-Instruct
+memory_mode: mm2_hybrid_top5
+ablation_mode: prompt_plus_metadata
+
+split: smoke_500
+prompt_count: 500
+prompts_per_vertical: 100
+verticals:
+  - airline
+  - healthcare_admin
+  - retail
+  - finance
+  - research_ai
+
+runner_input_path: data/generated/phase4/b6_context_aligned_500_runner_input.jsonl
+preflight_report_path: results/processed/b6_context_alignment_preflight_report.json
+output_path: results/raw/b6_vllm_1_5b_500_results.jsonl
+manifest_path: results/raw/b6_vllm_1_5b_500_manifest.json
+eval_report_path: results/processed/b6_vllm_1_5b_500_eval_report.json
+eval_summary_path: results/processed/b6_vllm_1_5b_500_eval_summary.csv
+latency_summary_path: results/processed/b6_vllm_1_5b_500_latency_summary.csv
+gpu_telemetry_path: results/processed/b6_vllm_1_5b_500_gpu_telemetry.csv
+gpu_telemetry_summary_path: results/processed/b6_vllm_1_5b_500_gpu_telemetry_summary.json
+
+inference:
+  concurrency: 1
+  streaming: true
+  temperature: 0.0
+  max_new_tokens: 160
+  max_new_tokens_justification: B5 passed the frozen 100-prompt gate at 160 after B3 found 128-token truncation failures.
+  b5_repairs_active: true
+  context_alignment_required: true
+  require_preflight_pass: true
+
+quality_gate:
+  status_ready: B6_QUALITY_READY
+  status_improved_but_blocked: B6_QUALITY_IMPROVED_BUT_BLOCKED
+  status_blocked: B6_QUALITY_BLOCKED
+  json_valid_rate_min: 0.97
+  generation_contract_valid_rate_min: 0.97
+  evidence_match_rate_min: 0.90
+  grounded_rate_min: 0.90
+  safety_violation_count_max: 0
+  truncation_rate_max: 0.02
+  per_vertical_evidence_match_rate_min: 0.85
+  per_vertical_grounded_rate_min: 0.85
+
+blocked_actions:
+  - concurrency_above_1
+  - sglang_comparison
+  - mm4_agentic_run
+  - runpod_execution
+  - controlled_2000_or_final_10000_scale
+  - evaluator_changes
+  - gold_data_changes
+  - promoted_retrieval_changes

@@ -47,7 +47,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Phase B3 audited all 65 failed B1 rows without new inference. At least one required gold ID was absent from the frozen E1-E5 context in 52 failures; Finance accounted for 18 of those 52. Evidence was available but not cited in 18 failures.
 - Phase B4 executed the context-alignment repair on the exact 100 B1 prompt IDs. All required gold evidence now maps to E1-E5, including Finance 20/20. The rerun improved evidence match and groundedness from 35% to 76%, but safety violations remained 2.
 - Phase B5 repaired safety wording and multi-evidence citation selection on the frozen B4 matrix. The targeted 25 failed-row replay reached 100% JSON and contract validity, 92% evidence match and groundedness, and zero safety violations. The triggered full frozen 100 rerun reached 99% JSON and contract validity, 96% evidence match and groundedness, and zero safety violations.
-- The next step is `B6_CONTROLLED_SCALE_AND_CONCURRENCY_GATE`: run a controlled 500-prompt quality gate at concurrency one before any concurrency 2/4 sweep or larger benchmark.
+- Phase B6 ran the controlled 500-prompt concurrency-one quality gate. It completed 500/500 requests with 91.2% evidence match, 90.8% groundedness, and zero safety violations, but JSON validity, contract validity, truncation, and Research AI vertical quality failed the B6 gate. The decision is `B6_QUALITY_IMPROVED_BUT_BLOCKED`; full-run readiness is `NOT_READY`.
+- The next step is `B6R1_RESEARCH_AI_TRUNCATION_AND_CONTRACT_REPAIR`: freeze B6, replay failed/truncated/invalid Research AI rows first, then rerun the same 500-row gate before any concurrency sweep or larger benchmark.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -155,6 +156,9 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Block B4 summary](docs/summaries/blockB4_context_alignment_quality_repair_summary.md)
 - [Final generation quality hardening](docs/102_final_generation_quality_hardening.md)
 - [Block B5 summary](docs/summaries/blockB5_final_generation_quality_hardening_summary.md)
+- [B6 500-prompt quality scale gate](docs/103_b6_500_prompt_quality_scale_gate.md)
+- [Full-run AI engineering readiness](docs/104_full_run_ai_engineering_readiness.md)
+- [Block B6 summary](docs/summaries/blockB6_500_prompt_quality_and_readiness_summary.md)
 - [Current project state](PROJECT_STATE.md)
 - [Data directory policy](data/README.md)
 

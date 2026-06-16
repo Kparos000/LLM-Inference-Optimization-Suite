@@ -6,8 +6,8 @@ Status as of June 15, 2026.
 
 ```text
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
-QUALITY_READY_FOR_FROZEN_100
-CONTROLLED_SCALE_GATE_PENDING
+B6_QUALITY_IMPROVED_BUT_BLOCKED
+FULL_RUN_NOT_READY
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -37,6 +37,12 @@ path on the same frozen matrix. The targeted 25 failed-row replay passed the
 B5 gate and triggered a full frozen 100 rerun. The full rerun reached 99% JSON
 and contract validity, 96% evidence match and groundedness, and zero safety
 violations.
+
+Phase B6 ran the controlled 500-prompt concurrency-one scale gate. The
+preflight mapped all required evidence into E1-E5 for 500 of 500 rows and did
+not expose canonical IDs to the model. The live run completed 500 of 500
+requests, but the gate is `B6_QUALITY_IMPROVED_BUT_BLOCKED` because JSON,
+contract, truncation, and Research AI vertical quality targets did not pass.
 
 ## B1 Quality Gate
 
@@ -134,17 +140,60 @@ Residual full-run failures remain: one Airline citation miss, two Finance
 citation misses, and one Research AI truncated JSON output. The B5 result is a
 frozen 100-prompt gate, not a final scale benchmark or concurrency claim.
 
+## B6 500-Prompt Quality Scale Gate
+
+- Runner rows: 500
+- Per vertical: 100
+- All required evidence present in E1-E5: 500/500
+- Canonical IDs exposed to model: 0
+- Requests completed: 500/500
+- JSON validity: 95.4%, required 97%
+- Contract validity: 94.8%, required 97%
+- Evidence match: 91.2%, required 90%
+- Groundedness: 90.8%, required 90%
+- Safety violations: 0, required 0
+- Truncation: 4.6%, required <=2%
+- Mean TTFT: 141.543 ms
+- Mean TPOT: 11.489 ms
+- Mean E2E latency: 1,741.355 ms
+- p95 E2E latency: 5,021.188 ms
+- Mean/peak GPU utilization: 81.33% / 100%
+- Peak sampled GPU memory: 6,760 MB
+
+Result: `B6_QUALITY_IMPROVED_BUT_BLOCKED`.
+
+Per-vertical evidence match and groundedness:
+
+- Airline: 91% / 91%
+- Healthcare Admin: 100% / 100%
+- Retail: 94% / 94%
+- Finance: 95% / 95%
+- Research AI: 76% / 74%
+
+Finance is no longer the blocking vertical. Research AI is the blocker, with
+82% JSON validity, 80% contract validity, 18% truncation, 76% evidence match,
+and 74% groundedness.
+
+The full-run readiness audit is `NOT_READY`. It found repository safeguards
+for dataset/workload, context/generation, run safety, telemetry, and SLO
+diagnosis, but it blocks larger runs because B6 failed quality. RunPod cost
+claims also remain blocked because hourly prices and throughput multipliers
+are unset.
+
 ## Next Step
 
-Run `B6_CONTROLLED_SCALE_AND_CONCURRENCY_GATE`: first run a controlled
-500-prompt quality gate at concurrency one. Only run concurrency 2/4 if the
-500-prompt gate maintains evidence and groundedness above target and safety
-violations remain zero. Do not run a larger 2,000 or 10,000 record benchmark
-until that gate passes.
+Run `B6R1_RESEARCH_AI_TRUNCATION_AND_CONTRACT_REPAIR`: freeze B6 artifacts,
+replay only failed, truncated, or invalid Research AI rows first, then rerun
+the same 500-row B6 gate. Do not run concurrency 2/4, SGLang, mm4, RunPod, a
+2,000-prompt benchmark, or a 10,000-prompt benchmark until the 500-row gate
+passes.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
 `docs/99_modular_slo_diagnosis_and_optimization_catalog.md` for the B2 decision
 architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
 `docs/101_context_alignment_and_generation_quality_repair.md` for B4, and
-`docs/102_final_generation_quality_hardening.md` for B5.
+`docs/102_final_generation_quality_hardening.md` for B5,
+`docs/103_b6_500_prompt_quality_scale_gate.md` for B6, and
+`docs/104_full_run_ai_engineering_readiness.md` for the full-run readiness
+audit.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from inference_bench.b1_quality import build_b1_runtime_projection
+from inference_bench.runtime_projection import build_runtime_projection_report
 
 
 def test_b1_runtime_projection_includes_required_scales_and_matrix() -> None:
@@ -71,3 +72,54 @@ def test_runpod_projection_calculates_only_from_configured_inputs() -> None:
     assert l40s["estimated_full_matrix_seconds"] == 20000.0
     assert l40s["estimated_full_matrix_cost_usd"] == 20000.0 / 3600.0 * 2.0
     assert l40s["status"] == "estimated"
+
+
+def test_b6_runtime_projection_keeps_missing_prices_and_multipliers_null() -> None:
+    report = build_runtime_projection_report(
+        measured_prompt_count=500,
+        measured_wall_seconds=1000.0,
+        runpod_profiles={
+            "h100": {
+                "hourly_price_usd": None,
+                "throughput_multiplier_vs_rtx3070": None,
+            }
+        },
+    )
+
+    h100 = report["runpod_gpu_projections"]["h100"]
+    assert h100["status"] == "price_missing_and_throughput_multiplier_missing"
+    projected = h100["matrix_projections"][0]
+    assert projected["projected_hours"] is None
+    assert projected["projected_cost_usd"] is None
+
+
+def test_b6_runtime_projection_calculates_configured_runpod_cost() -> None:
+    report = build_runtime_projection_report(
+        measured_prompt_count=500,
+        measured_wall_seconds=1000.0,
+        runpod_profiles={
+            "l40s": {
+                "hourly_price_usd": 2.0,
+                "throughput_multiplier_vs_rtx3070": 4.0,
+            }
+        },
+    )
+
+    l40s = report["runpod_gpu_projections"]["l40s"]
+    projected = l40s["matrix_projections"][0]
+    assert l40s["status"] == "projected"
+    assert projected["projected_seconds"] == 80000 * 2.0 / 4.0
+    assert projected["projected_cost_usd"] == (projected["projected_seconds"] / 3600.0) * 2.0
+
+
+def test_b6_runtime_projection_rejects_zero_measured_count() -> None:
+    try:
+        build_runtime_projection_report(
+            measured_prompt_count=0,
+            measured_wall_seconds=1000.0,
+            runpod_profiles={},
+        )
+    except ValueError as exc:
+        assert "measured_prompt_count" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
