@@ -50,8 +50,9 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Phase B6 ran the controlled 500-prompt concurrency-one quality gate. It completed 500/500 requests with 91.2% evidence match, 90.8% groundedness, and zero safety violations, but JSON validity, contract validity, truncation, and Research AI vertical quality failed the B6 gate.
 - Phase B6R1 replayed the 26 failed/truncated/invalid Research AI rows with two targeted repair strategies. Neither strategy passed: the better 224-token strategy reached 92.31% JSON validity, 84.62% contract validity, 73.08% evidence match, 65.38% groundedness, 7.69% truncation, and zero safety violations. The decision is `B6R1_BLOCKED`; the full 500-row rerun was not triggered and full-run readiness remains `NOT_READY`.
 - Phase B6R2 added a versioned vertical generation-contract registry and tested five Research AI-specific contracts at 224 and 320 tokens on the same 26-row replay set. No candidate passed; the best `research_ai_limitations_v1` result reached 96.15% JSON/contract validity and 80.77% evidence/groundedness with zero truncation and zero safety violations. The decision is `B6R2_BLOCKED`; the full 500-row rerun was not triggered.
+- Phase B6R3 replayed the same frozen 26 Research AI failed rows through `model6_gated` / Llama 3.1 8B on the existing Hugging Face provider route. The targeted gate passed with 100% JSON and contract validity, 96.15% evidence match and groundedness, zero safety violations, and zero truncation. This indicates Qwen2.5-1.5B model capacity is the likely Research AI blocker, but it does not replace the failed full B6 500-row gate.
 - Result tracks are explicitly separated: API provider runs (`model5`/`model6` through OpenRouter, Novita, or HF provider routes) use API token cost and no provider GPU telemetry; self-hosted GPU runs (`model2`/`model3` through vLLM, SGLang, or RunPod) use GPU telemetry/hourly infrastructure cost when configured and no API token price.
-- The next step is a Research AI-only model-capability comparison on the frozen B6R2 replay set. Do not run a 1,000-prompt terminal run, concurrency sweep, SGLang comparison, mm4 comparison, RunPod execution, or 2,000/10,000-prompt benchmark from the current state.
+- The next step is `B6R4_STRONGER_MODEL_PATH_AND_500_GATE_DECISION`. Choose the stronger-model path before rerunning the frozen 500-row gate. Do not run a 1,000-prompt terminal run, concurrency sweep, SGLang comparison, mm4 comparison, RunPod execution, or 2,000/10,000-prompt benchmark from the current state.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -166,6 +167,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Block B6R1 summary](docs/summaries/blockB6R1_research_ai_truncation_contract_repair_summary.md)
 - [B6R2 Research AI vertical generation contract](docs/106_research_ai_vertical_generation_contract.md)
 - [Block B6R2 summary](docs/summaries/blockB6R2_research_ai_vertical_contract_summary.md)
+- [B6R3 Research AI model capacity validation](docs/107_b6r3_research_ai_model_capacity_validation.md)
+- [Block B6R3 summary](docs/summaries/blockB6R3_research_ai_model_capacity_summary.md)
 - [Current project state](PROJECT_STATE.md)
 - [Data directory policy](data/README.md)
 

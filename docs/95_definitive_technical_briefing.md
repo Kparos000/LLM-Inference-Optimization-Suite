@@ -2747,9 +2747,36 @@ full frozen 500-row B6R2 rerun was not triggered. The decision is
 `B6R2_BLOCKED`.
 
 B6R2 confirms that vertical-specific Research AI contracts improve output
-control but do not make Qwen2.5-1.5B pass the Research AI quality gate. The
-next controlled step is a Research AI-only model-capability comparison on the
-same frozen 26-row replay set.
+control but do not make Qwen2.5-1.5B pass the Research AI quality gate.
+
+## B6R3 Research AI Model Capacity Validation
+
+B6R3 replayed the same frozen 26 Research AI failed rows through
+`model6_gated`, resolved as `meta-llama/Llama-3.1-8B-Instruct` through the
+existing Hugging Face provider route with Novita pricing. It did not modify
+gold data, evaluator semantics, promoted retrieval data, B6/B6R1/B6R2
+artifacts, self-hosted vLLM/SGLang servers, RunPod inputs, or benchmark scale.
+
+The targeted model6 replay passed:
+
+- 26 of 26 requests completed;
+- JSON validity: 100%;
+- contract validity: 100%;
+- evidence match: 96.15%;
+- deterministic groundedness: 96.15%;
+- safety violations: zero;
+- truncation: zero;
+- total API cost: `$0.00077462`;
+- mean TTFT: 857.338 ms;
+- mean TPOT: 7.083 ms;
+- mean E2E latency: 1,498.687 ms.
+
+The decision is `B6R3_MODEL6_CAPACITY_PASSED`. One row,
+`research_ai_scaleup_2000_0099`, still missed evidence match and groundedness
+because it cited another supplied label while omitting the required
+introduction evidence. The B6R3 result makes Qwen2.5-1.5B model capacity the
+likely Research AI blocker, but it is a targeted API-provider result and does
+not replace the failed full B6 500-row gate.
 
 # 18. Telemetry
 
@@ -3208,6 +3235,19 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - found that no candidate passed the targeted B6R2 gate;
 - did not trigger the full 500-row rerun.
 
+## Phase B6R3: Research AI Model Capacity Validation
+
+- added a B6R1 replay loader that accepts extra audit fields without passing
+  unsupported kwargs into `WorkloadItem`;
+- added a paid-call-gated model6 API runner with streaming, incremental JSONL
+  writes, resume by `prompt_id`, token/cost accounting, and manifest guards;
+- replayed the same frozen 26 Research AI failed rows through
+  `model6_gated` / Llama 3.1 8B on the Hugging Face provider route;
+- passed the targeted gate with 100% JSON/contract validity, 96.15%
+  evidence/groundedness, zero safety violations, and zero truncation;
+- kept the full B6 500-row gate blocked until a stronger-model path is selected
+  and measured on the same 500-row gate.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -3251,6 +3291,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   result-track schema clarification.
 - Phase B6R2 Research AI vertical-contract registry, targeted contract
   selection replay, and full-run readiness update.
+- Phase B6R3 model6 API Research AI capacity validation over the frozen 26-row
+  failed replay set.
 
 ## Current Block State
 
@@ -3270,7 +3312,9 @@ Research AI failures and showed that a simple concise renderer or 224-token
 budget increase is insufficient for the 1.5B model to pass the targeted gate.
 Phase B6R2 tested vertical-specific Research AI contracts and found that even
 the strongest candidate remained below the targeted JSON/contract and
-evidence/groundedness thresholds.
+evidence/groundedness thresholds. Phase B6R3 replayed the same frozen failed
+Research AI set through model6 and passed the targeted gate, making
+Qwen2.5-1.5B model capacity the likely Research AI blocker.
 
 Current decision:
 
@@ -3279,6 +3323,7 @@ READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
 B6_QUALITY_IMPROVED_BUT_BLOCKED
 B6R1_BLOCKED
 B6R2_BLOCKED
+B6R3_MODEL6_CAPACITY_PASSED
 FULL_RUN_NOT_READY
 ```
 
@@ -3291,8 +3336,10 @@ contract, truncation, and Research AI vertical quality targets. B6R1 improved
 the failed Research AI subset with a 224-token budget, but still did not pass.
 B6R2 tested vertical-specific Research AI contracts; the best result reached
 96.15% JSON/contract validity and 80.77% evidence/groundedness with zero
-truncation and zero safety violations. It is not ready for larger scale or
-concurrency.
+truncation and zero safety violations. B6R3 passed the same targeted replay
+with model6 at 100% JSON/contract validity and 96.15% evidence/groundedness,
+but the last full 500-row gate remains failed. It is not ready for larger scale
+or concurrency.
 
 ## What Is Ready
 
@@ -3322,6 +3369,8 @@ concurrency.
   comparison;
 - B6R2 versioned vertical generation-contract registry and targeted Research AI
   contract selection replay;
+- B6R3 model6 API capacity validation over the frozen 26-row Research AI failed
+  replay set;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3329,10 +3378,10 @@ concurrency.
 
 ## Remaining Blockers
 
-- B6R2 Research AI blocker after all targeted vertical contracts failed;
-- Research AI model-capability comparison on the frozen B6R2 replay set;
+- stronger-model path decision after B6R3 passed the targeted model6 API replay;
+- frozen 500-row quality gate rerun with the selected stronger-model path;
 - 1,000-prompt terminal run remains blocked until the Research AI blocker is
-  cleared and the frozen 500-row gate passes;
+  cleared on the frozen 500-row gate;
 - bounded concurrency 2/4 sweep only after the 500-prompt gate passes;
 - stronger-than-1.5B model feasibility within 8 GB VRAM;
 - registered infrastructure cost if GPU cost comparisons are required;
@@ -3385,6 +3434,9 @@ concurrency.
   but no candidate passed the targeted gate. The best candidate reached 96.15%
   JSON/contract validity and 80.77% evidence/groundedness, so the full 500-row
   B6R2 rerun was not triggered.
+- B6R3 passed the same targeted 26-row replay with model6 through the API
+  provider route, but it is not hardware-equal with RTX 3070 vLLM and does not
+  replace B6 as the last full 500-row gate.
 - B6 runtime and cost projections are RTX 3070 local projections only. RunPod
   prices and throughput multipliers are still unset.
 - API provider result rows and self-hosted GPU result rows now share stable
@@ -3411,10 +3463,12 @@ concurrency.
 
 ## Next Engineering Milestone
 
-Run a Research AI-only model-capability comparison on the frozen 26-row B6R2
-replay set. Do not run a 1,000-prompt terminal run, concurrency 2/4, SGLang,
-mm4, RunPod, 2,000-prompt, or 10,000-prompt benchmarks until the Research AI
-blocker is cleared and the frozen 500-row gate passes.
+Run `B6R4_STRONGER_MODEL_PATH_AND_500_GATE_DECISION`. Choose whether the next
+500-row gate uses the API-provider model6 path, a stronger feasible self-hosted
+model path, or an explicit Qwen2.5-1.5B quality-limit decision. Do not run a
+1,000-prompt terminal run, concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt,
+or 10,000-prompt benchmark until a selected model path passes the frozen
+500-row gate.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3648,14 +3702,13 @@ gold leakage.
 
 The immediate work is operational:
 
-- run a Research AI-only model-capability comparison on the frozen 26-row B6R2
-  replay set;
-- rerun the same 500-prompt gate only after the targeted Research AI blocker is
-  cleared;
+- choose the stronger-model path after B6R3 showed model6 can clear the frozen
+  26-row Research AI failed replay set;
+- rerun the same 500-prompt gate only after that model path is selected;
 - run a bounded concurrency 2/4 sweep only if the 500-prompt gate then passes
   quality and keeps safety at zero;
-- document whether residual 1.5B Research AI failures are prompt/context
-  presentation problems or a model-capability limit;
+- document Qwen2.5-1.5B as quality-limited for Research AI if no stronger
+  self-hosted path is feasible;
 - decide whether a model stronger than 1.5B is feasible under the 8 GB VRAM
   constraint or requires a controlled external GPU;
 - register an infrastructure price before making GPU cost claims;
@@ -3695,6 +3748,9 @@ assumptions:
   AI strategy passed and no full 500-row rerun was allowed.
 - the B6R2 vertical-contract replay is retained even though no Research
   AI-specific contract passed and no full 500-row rerun was allowed.
+- the B6R3 model6 API replay is retained as targeted model-capacity evidence,
+  while still preserving the failed B6 500-row gate as the current full-run
+  readiness state.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

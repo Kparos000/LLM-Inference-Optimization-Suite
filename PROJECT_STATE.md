@@ -1,6 +1,6 @@
 # Project State
 
-Status as of June 16, 2026.
+Status as of June 17, 2026.
 
 ## Current Decision
 
@@ -9,6 +9,7 @@ READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
 B6_QUALITY_IMPROVED_BUT_BLOCKED
 B6R1_BLOCKED
 B6R2_BLOCKED
+B6R3_MODEL6_CAPACITY_PASSED
 FULL_RUN_NOT_READY
 ```
 
@@ -58,6 +59,14 @@ five Research AI-specific contracts at 224 and 320 output tokens on the same
 candidate, `research_ai_limitations_v1`, reached 96.15% JSON/contract validity
 and 80.77% evidence match/groundedness with zero truncation and zero safety
 violations. The full frozen 500-row rerun was not triggered.
+
+Phase B6R3 replayed the same frozen 26 Research AI failed rows through
+`model6_gated` / `meta-llama/Llama-3.1-8B-Instruct` on the existing Hugging
+Face provider route. The targeted gate passed with 100% JSON and contract
+validity, 96.15% evidence match and groundedness, zero truncation, and zero
+safety violations. This makes Qwen2.5-1.5B model capacity the likely Research
+AI blocker, but the full-run state remains `NOT_READY` because the frozen
+500-row gate has not passed.
 
 ## B1 Quality Gate
 
@@ -249,6 +258,27 @@ quality gate. The blocker is now a model/output-control capability limit on the
 frozen Research AI replay set, not promoted retrieval, context availability,
 gold data, or evaluator semantics.
 
+## B6R3 Research AI Model Capacity Validation
+
+- Replay rows: 26
+- Model: `model6_gated` / `meta-llama/Llama-3.1-8B-Instruct`
+- Provider route: Hugging Face provider route with Novita pricing
+- Maximum output: 320 tokens
+- JSON validity: 100%, required 97%
+- Contract validity: 100%, required 97%
+- Evidence match: 96.15%, required 85%
+- Groundedness: 96.15%, required 85%
+- Safety violations: 0, required 0
+- Truncation: 0%, required <=2%
+- Total API cost: `$0.00077462`
+
+Result: `B6R3_MODEL6_CAPACITY_PASSED`.
+
+One row, `research_ai_scaleup_2000_0099`, still missed evidence match and
+groundedness by omitting required introduction evidence. The targeted pass is a
+model-capacity signal only. It does not replace B6 as the last full 500-row
+gate and does not authorize larger or concurrent runs.
+
 Result tracks are separated:
 
 - API provider track: `model5`/`model6` through OpenRouter, Novita, or Hugging
@@ -259,10 +289,12 @@ Result tracks are separated:
 
 ## Next Step
 
-Run a Research AI-only model-capability comparison on the frozen 26-row B6R2
-replay set. Do not run a 1,000-prompt terminal run, concurrency 2/4, SGLang,
-mm4, RunPod, a 2,000-prompt benchmark, or a 10,000-prompt benchmark until the
-Research AI blocker is cleared and the 500-row gate passes.
+Run `B6R4_STRONGER_MODEL_PATH_AND_500_GATE_DECISION`. Choose whether the next
+500-row gate uses the API-provider model6 path, a stronger feasible self-hosted
+model path, or an explicit Qwen2.5-1.5B quality-limit decision. Do not run a
+1,000-prompt terminal run, concurrency 2/4, SGLang, mm4, RunPod, a 2,000-prompt
+benchmark, or a 10,000-prompt benchmark until a selected model path passes the
+500-row gate.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -273,4 +305,5 @@ architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
 `docs/103_b6_500_prompt_quality_scale_gate.md` for B6, and
 `docs/104_full_run_ai_engineering_readiness.md` for the full-run readiness
 audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
-`docs/106_research_ai_vertical_generation_contract.md` for B6R2.
+`docs/106_research_ai_vertical_generation_contract.md` for B6R2, and
+`docs/107_b6r3_research_ai_model_capacity_validation.md` for B6R3.
