@@ -126,6 +126,60 @@ def _b6r1_gate_status(root: Path) -> str | None:
     return "B6R1_BLOCKED"
 
 
+def _b6r2_gate_passed(root: Path) -> bool | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r2_vllm_1_5b_500_eval_report.json",
+    )
+    if payload is not None:
+        gate = payload.get("quality_gate")
+        return bool(gate.get("passed")) if isinstance(gate, dict) else None
+    targeted = _load_json_if_present(
+        root,
+        "results/processed/b6r2_research_ai_contract_selection_report.json",
+    )
+    if targeted is None:
+        return None
+    selection = targeted.get("selection")
+    if isinstance(selection, dict) and selection.get("selected_contract_id") in (None, ""):
+        return False
+    return None
+
+
+def _b6r2_gate_status(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r2_vllm_1_5b_500_eval_report.json",
+    )
+    if payload is not None:
+        status = payload.get("status")
+        return str(status) if status not in (None, "") else None
+    targeted = _load_json_if_present(
+        root,
+        "results/processed/b6r2_research_ai_contract_selection_report.json",
+    )
+    if targeted is None:
+        return None
+    status = targeted.get("status")
+    return str(status) if status not in (None, "") else "B6R2_BLOCKED"
+
+
+def _b6r2_selected_contract(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r2_vllm_1_5b_500_eval_report.json",
+    )
+    if payload is None:
+        payload = _load_json_if_present(
+            root,
+            "results/processed/b6r2_research_ai_contract_selection_report.json",
+        )
+    if payload is None:
+        return None
+    selected = payload.get("selected_research_ai_contract")
+    return str(selected) if selected not in (None, "") else None
+
+
 def partial_run_completion_check(
     *,
     expected_count: int,
@@ -402,25 +456,57 @@ def build_full_run_readiness_audit(
             blocking=not _contains(root, "src/inference_bench/slo_diagnosis.py", "UNAVAILABLE"),
         )
     )
+    result_track_schema_ready = _contains(
+        root,
+        "src/inference_bench/result_track_schema.py",
+        "api_provider",
+        "self_hosted_gpu",
+    )
+    checks.append(
+        _check(
+            category="slo_diagnosis",
+            name="result_track_schema_supports_api_gpu_combined_reporting",
+            status="PASS" if result_track_schema_ready else "FAIL",
+            evidence=(
+                "result_track_schema supports API provider and self-hosted GPU tracks"
+                if result_track_schema_ready
+                else "result_track_schema is missing API/GPU combined reporting fields"
+            ),
+            blocking=not result_track_schema_ready,
+        )
+    )
 
     b6_passed = _b6_gate_passed(root)
     b6r1_passed = _b6r1_gate_passed(root)
     b6r1_status = _b6r1_gate_status(root)
+    b6r2_passed = _b6r2_gate_passed(root)
+    b6r2_status = _b6r2_gate_status(root)
+    b6r2_contract = _b6r2_selected_contract(root)
+    latest_repair_passed = b6r2_passed if b6r2_passed is not None else b6r1_passed
+    latest_repair_label = "B6R2" if b6r2_passed is not None else "B6R1"
     checks.append(
         _check(
             category="scaling",
             name="b6_500_gate_result",
-            status="PASS" if b6_passed or b6r1_passed else "GAP" if b6_passed is None else "FAIL",
+            status=(
+                "PASS"
+                if b6_passed or b6r1_passed or b6r2_passed
+                else "GAP"
+                if b6_passed is None
+                else "FAIL"
+            ),
             evidence=(
                 "B6 quality gate passed"
                 if b6_passed
+                else "B6 failed, but B6R2 supersedes the B6 quality blocker"
+                if b6r2_passed
                 else "B6 failed, but B6R1 supersedes the B6 quality blocker"
                 if b6r1_passed
                 else "B6 report missing"
                 if b6_passed is None
                 else "B6 gate did not pass"
             ),
-            blocking=b6_passed is False and b6r1_passed is not True,
+            blocking=b6_passed is False and b6r1_passed is not True and b6r2_passed is not True,
         )
     )
     checks.append(
@@ -441,16 +527,56 @@ def build_full_run_readiness_audit(
     checks.append(
         _check(
             category="scaling",
-            name="terminal_1000_prompt_run_allowed",
-            status="PASS" if b6r1_passed else "GAP" if b6r1_passed is None else "FAIL",
+            name="b6r2_clears_b6_quality_blocker",
+            status="PASS" if b6r2_passed else "GAP" if b6r2_passed is None else "FAIL",
             evidence=(
-                "A 1,000-prompt terminal run is allowed after B6R1_READY at concurrency one"
-                if b6r1_passed
-                else "Wait for B6R1 full 500 gate before a 1,000-prompt terminal run"
-                if b6r1_passed is None
-                else "Do not run 1,000 prompts until B6R1 blockers are repaired"
+                "B6R2 quality gate passed; Research AI blocker cleared"
+                if b6r2_passed
+                else "B6R2 targeted/full report missing"
+                if b6r2_passed is None
+                else f"B6R2 quality gate did not pass ({b6r2_status or 'unknown status'})"
             ),
-            blocking=b6r1_passed is False,
+            blocking=b6r2_passed is False,
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="selected_research_ai_contract_frozen",
+            status="PASS"
+            if b6r2_passed and b6r2_contract
+            else "GAP"
+            if b6r2_passed is None
+            else "FAIL",
+            evidence=(
+                f"Selected Research AI contract frozen for larger runs: {b6r2_contract}"
+                if b6r2_passed and b6r2_contract
+                else "No B6R2 contract selection has passed full 500 validation yet"
+            ),
+            blocking=b6r2_passed is False,
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="terminal_1000_prompt_run_allowed",
+            status=(
+                "PASS"
+                if latest_repair_passed
+                else "GAP"
+                if latest_repair_passed is None
+                else "FAIL"
+            ),
+            evidence=(
+                f"A 1,000-prompt terminal run is allowed after {latest_repair_label}_READY "
+                "at concurrency one"
+                if latest_repair_passed
+                else f"Wait for {latest_repair_label} full 500 gate before a 1,000-prompt "
+                "terminal run"
+                if latest_repair_passed is None
+                else f"Do not run 1,000 prompts until {latest_repair_label} blockers are repaired"
+            ),
+            blocking=latest_repair_passed is False,
         )
     )
     checks.append(

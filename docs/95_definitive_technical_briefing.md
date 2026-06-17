@@ -2710,6 +2710,47 @@ rerun was not triggered. The decision is `B6R1_BLOCKED`. A 1,000-prompt
 terminal run, concurrency sweep, SGLang comparison, mm4 comparison, RunPod
 execution, and 2,000/10,000-prompt benchmarks remain blocked.
 
+## B6R2 Research AI Vertical Generation Contract
+
+B6R2 added a versioned generation-contract registry and tested Research
+AI-specific output contracts over the same frozen 26-row B6 Research AI replay
+set. It did not modify gold data, evaluator semantics, promoted retrieval
+data, SLO thresholds, or the mm4 workflow.
+
+The Research AI-specific outputs are normalized back into the existing common
+five-field generation contract before evaluation. The unchanged evaluator still
+scores JSON validity, contract validity, evidence match, deterministic
+groundedness, safety, truncation, and task success.
+
+Five candidates were tested at 224 and 320 maximum new tokens:
+
+- `research_ai_minimal_answer_v1`;
+- `research_ai_findings_v1`;
+- `research_ai_limitations_v1`;
+- `research_ai_comparison_v1`;
+- `research_ai_adaptive_v1`.
+
+No candidate passed the targeted B6R2 gate. The best candidate was
+`research_ai_limitations_v1` at both token budgets:
+
+- JSON validity: 96.15%, below the 97% target;
+- contract validity: 96.15%, below the 97% target;
+- evidence match: 80.77%, below the 85% target;
+- deterministic groundedness: 80.77%, below the 85% target;
+- truncation: 0%, passing the <=2% target;
+- safety violations: zero.
+
+The corrected targeted replay eliminated truncation for every candidate and
+kept safety at zero, but the model still failed the JSON/contract and
+evidence/groundedness thresholds. Because no targeted candidate passed, the
+full frozen 500-row B6R2 rerun was not triggered. The decision is
+`B6R2_BLOCKED`.
+
+B6R2 confirms that vertical-specific Research AI contracts improve output
+control but do not make Qwen2.5-1.5B pass the Research AI quality gate. The
+next controlled step is a Research AI-only model-capability comparison on the
+same frozen 26-row replay set.
+
 # 18. Telemetry
 
 ## Request Telemetry Schema
@@ -3153,6 +3194,20 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - did not trigger the full 500-row rerun;
 - clarified API-provider versus self-hosted GPU result-track schema rules.
 
+## Phase B6R2: Research AI Vertical Generation Contract
+
+- added a versioned vertical generation-contract registry;
+- added Research AI-specific minimal, findings, limitations, comparison, and
+  adaptive contract candidates;
+- mapped vertical-specific outputs back to the unchanged common evaluator
+  contract;
+- tested all candidates at 224 and 320 output tokens on the same frozen 26-row
+  B6 Research AI replay set;
+- fixed adaptive routing so it uses the user-visible request rather than
+  generic prompt-instruction text;
+- found that no candidate passed the targeted B6R2 gate;
+- did not trigger the full 500-row rerun.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -3194,6 +3249,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   full-run readiness audit.
 - Phase B6R1 targeted Research AI failed-row replay, strategy comparison, and
   result-track schema clarification.
+- Phase B6R2 Research AI vertical-contract registry, targeted contract
+  selection replay, and full-run readiness update.
 
 ## Current Block State
 
@@ -3211,6 +3268,9 @@ remaining safety and citation-selection behavior enough for the full frozen
 Research AI truncation/contract-validity blocker. Phase B6R1 replayed the
 Research AI failures and showed that a simple concise renderer or 224-token
 budget increase is insufficient for the 1.5B model to pass the targeted gate.
+Phase B6R2 tested vertical-specific Research AI contracts and found that even
+the strongest candidate remained below the targeted JSON/contract and
+evidence/groundedness thresholds.
 
 Current decision:
 
@@ -3218,6 +3278,7 @@ Current decision:
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
 B6_QUALITY_IMPROVED_BUT_BLOCKED
 B6R1_BLOCKED
+B6R2_BLOCKED
 FULL_RUN_NOT_READY
 ```
 
@@ -3227,9 +3288,10 @@ validity, 99% contract validity, 96% evidence match, 96% groundedness, and
 zero safety violations. B6 completed the controlled 500-prompt gate with 91.2%
 evidence match, 90.8% groundedness, and zero safety violations, but failed JSON,
 contract, truncation, and Research AI vertical quality targets. B6R1 improved
-the failed Research AI subset with a 224-token budget, but still reached only
-92.31% JSON validity, 84.62% contract validity, 73.08% evidence match, 65.38%
-groundedness, and 7.69% truncation. It is not ready for larger scale or
+the failed Research AI subset with a 224-token budget, but still did not pass.
+B6R2 tested vertical-specific Research AI contracts; the best result reached
+96.15% JSON/contract validity and 80.77% evidence/groundedness with zero
+truncation and zero safety violations. It is not ready for larger scale or
 concurrency.
 
 ## What Is Ready
@@ -3258,6 +3320,8 @@ concurrency.
   vLLM scale gate;
 - B6R1 26-row Research AI targeted replay, failure audit, and strategy
   comparison;
+- B6R2 versioned vertical generation-contract registry and targeted Research AI
+  contract selection replay;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3265,9 +3329,8 @@ concurrency.
 
 ## Remaining Blockers
 
-- B6R1 Research AI blocker after both targeted strategies failed;
-- Research AI stronger-model or bounded-mm4 comparison on the frozen B6R1
-  replay set;
+- B6R2 Research AI blocker after all targeted vertical contracts failed;
+- Research AI model-capability comparison on the frozen B6R2 replay set;
 - 1,000-prompt terminal run remains blocked until the Research AI blocker is
   cleared and the frozen 500-row gate passes;
 - bounded concurrency 2/4 sweep only after the 500-prompt gate passes;
@@ -3318,6 +3381,10 @@ concurrency.
 - B6R1 replayed the 26 failed/truncated/invalid Research AI rows, but neither
   the concise renderer nor the 224-token Research AI budget passed the targeted
   gate. The full 500-row B6R1 rerun was not triggered.
+- B6R2 tested Research AI-specific vertical contracts at 224 and 320 tokens,
+  but no candidate passed the targeted gate. The best candidate reached 96.15%
+  JSON/contract validity and 80.77% evidence/groundedness, so the full 500-row
+  B6R2 rerun was not triggered.
 - B6 runtime and cost projections are RTX 3070 local projections only. RunPod
   prices and throughput multipliers are still unset.
 - API provider result rows and self-hosted GPU result rows now share stable
@@ -3344,10 +3411,10 @@ concurrency.
 
 ## Next Engineering Milestone
 
-Run a Research AI-only stronger-model or bounded-mm4 comparison on the frozen
-26-row B6R1 replay set. Do not run a 1,000-prompt terminal run, concurrency
-2/4, SGLang, mm4, RunPod, 2,000-prompt, or 10,000-prompt benchmarks until the
-Research AI blocker is cleared and the frozen 500-row gate passes.
+Run a Research AI-only model-capability comparison on the frozen 26-row B6R2
+replay set. Do not run a 1,000-prompt terminal run, concurrency 2/4, SGLang,
+mm4, RunPod, 2,000-prompt, or 10,000-prompt benchmarks until the Research AI
+blocker is cleared and the frozen 500-row gate passes.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3581,8 +3648,8 @@ gold leakage.
 
 The immediate work is operational:
 
-- run a Research AI-only stronger-model or bounded-mm4 comparison on the frozen
-  26-row B6R1 replay set;
+- run a Research AI-only model-capability comparison on the frozen 26-row B6R2
+  replay set;
 - rerun the same 500-prompt gate only after the targeted Research AI blocker is
   cleared;
 - run a bounded concurrency 2/4 sweep only if the 500-prompt gate then passes
@@ -3626,6 +3693,8 @@ assumptions:
   called out before any larger or concurrent run.
 - the B6R1 targeted replay is retained even though neither targeted Research
   AI strategy passed and no full 500-row rerun was allowed.
+- the B6R2 vertical-contract replay is retained even though no Research
+  AI-specific contract passed and no full 500-row rerun was allowed.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

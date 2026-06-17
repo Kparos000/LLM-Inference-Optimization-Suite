@@ -8,6 +8,7 @@ Status as of June 16, 2026.
 READY_FOR_SMALL_MODEL_SERVING_EXPERIMENTS
 B6_QUALITY_IMPROVED_BUT_BLOCKED
 B6R1_BLOCKED
+B6R2_BLOCKED
 FULL_RUN_NOT_READY
 ```
 
@@ -50,6 +51,13 @@ truncated, invalid JSON, invalid contract, evidence-mismatched, or ungrounded.
 All required evidence had been present in the B6 E1-E5 context. Neither
 targeted repair strategy passed the B6R1 gate, so the full frozen 500-row
 rerun was not triggered.
+
+Phase B6R2 added a versioned vertical generation-contract registry and tested
+five Research AI-specific contracts at 224 and 320 output tokens on the same
+26-row frozen replay set. No candidate passed the targeted gate. The best
+candidate, `research_ai_limitations_v1`, reached 96.15% JSON/contract validity
+and 80.77% evidence match/groundedness with zero truncation and zero safety
+violations. The full frozen 500-row rerun was not triggered.
 
 ## B1 Quality Gate
 
@@ -213,6 +221,34 @@ reduced truncation and improved quality, but not enough to pass the targeted
 gate. The failure is now best treated as a model/output-control limitation on
 Research AI under Qwen2.5-1.5B, not a promoted retrieval or gold-data problem.
 
+## B6R2 Research AI Vertical Contract Selection
+
+- Replay rows: 26
+- Candidate contracts: minimal answer, findings, limitations, comparison, and
+  deterministic adaptive routing
+- Output budgets tested: 224 and 320
+- Full frozen 500 rerun triggered: no
+- Safety violations across candidates: 0
+- Truncation after corrected targeted replay: 0% for all candidates
+
+Best candidate:
+
+- `research_ai_limitations_v1` at 224 and 320
+- JSON validity: 96.15%, required 97%
+- Contract validity: 96.15%, required 97%
+- Evidence match: 80.77%, required 85%
+- Groundedness: 80.77%, required 85%
+- Truncation: 0%, required <=2%
+- Safety violations: 0, required 0
+
+Result: `B6R2_BLOCKED`.
+
+B6R2 confirms that a vertical-specific Research AI contract can eliminate
+truncation but still does not make Qwen2.5-1.5B pass the Research AI targeted
+quality gate. The blocker is now a model/output-control capability limit on the
+frozen Research AI replay set, not promoted retrieval, context availability,
+gold data, or evaluator semantics.
+
 Result tracks are separated:
 
 - API provider track: `model5`/`model6` through OpenRouter, Novita, or Hugging
@@ -223,10 +259,10 @@ Result tracks are separated:
 
 ## Next Step
 
-Run a Research AI-only stronger-model or bounded-mm4 comparison on the frozen
-26-row B6R1 replay set. Do not run a 1,000-prompt terminal run, concurrency
-2/4, SGLang, mm4, RunPod, a 2,000-prompt benchmark, or a 10,000-prompt
-benchmark until the Research AI blocker is cleared and the 500-row gate passes.
+Run a Research AI-only model-capability comparison on the frozen 26-row B6R2
+replay set. Do not run a 1,000-prompt terminal run, concurrency 2/4, SGLang,
+mm4, RunPod, a 2,000-prompt benchmark, or a 10,000-prompt benchmark until the
+Research AI blocker is cleared and the 500-row gate passes.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -236,4 +272,5 @@ architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
 `docs/102_final_generation_quality_hardening.md` for B5,
 `docs/103_b6_500_prompt_quality_scale_gate.md` for B6, and
 `docs/104_full_run_ai_engineering_readiness.md` for the full-run readiness
-audit, and `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1.
+audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
+`docs/106_research_ai_vertical_generation_contract.md` for B6R2.
