@@ -46,9 +46,13 @@ not a public EDA output.
 | key | model id | current role |
 | --- | --- | --- |
 | `qwen2_5_0_5b_instruct` | `Qwen/Qwen2.5-0.5B-Instruct` | local smoke/dev model |
-| `qwen2_5_1_5b_instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | small baseline candidate |
+| `qwen2_5_1_5b_instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | historical B1-B6 small baseline |
+| `qwen2_5_3b_instruct` | `Qwen/Qwen2.5-3B-Instruct` | small production baseline |
 | `qwen2_5_7b_instruct` | `Qwen/Qwen2.5-7B-Instruct` | first serious GPU benchmark candidate |
 | `qwen2_5_32b_instruct` | `Qwen/Qwen2.5-32B-Instruct` | later scale comparison candidate |
+| `ministral_3b_2512_api` | `mistralai/ministral-3b-2512` | small priced API baseline |
+| `llama_3_1_8b_instruct_api` | `meta-llama/Llama-3.1-8B-Instruct` | 8B gated/API quality baseline |
+| `mistral_small_3_2_24b_instruct_api` | `mistralai/Mistral-Small-3.2-24B-Instruct-2506` | large gated/API baseline |
 | `large_model_placeholder` | `placeholder/large-model` | future large model placeholder |
 
 ### Required Model Fields
@@ -88,10 +92,16 @@ Requested public key migration:
 | current key | proposed key |
 | --- | --- |
 | `qwen2_5_0_5b_instruct` | `model1_0_5b` |
-| `qwen2_5_1_5b_instruct` | `model2_1_5b` |
+| `qwen2_5_3b_instruct` | `model2_3b` |
 | `qwen2_5_7b_instruct` | `model3_7b` |
 | `qwen2_5_32b_instruct` | `model4_32b` |
-| `large_model_placeholder` | `model5_large_placeholder` |
+| `ministral_3b_2512_api` | `model5_gated` |
+| `llama_3_1_8b_instruct_api` | `model6_gated` |
+| `mistral_small_3_2_24b_instruct_api` | `model7_gated` |
+
+Deprecated compatibility aliases keep historical rows resolvable:
+`model2_1_5b`, `model7_large_placeholder`, `large_model_placeholder`,
+`model5_large_placeholder`, and `old_model5_llama_3_2_3b`.
 
 Recommended migration:
 

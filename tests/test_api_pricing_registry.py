@@ -36,3 +36,15 @@ def test_model6_pricing_remains_available() -> None:
 
     assert pricing.model_id == "meta-llama/Llama-3.1-8B-Instruct"
     assert pricing.provider == "novita"
+
+
+def test_model7_pricing_is_explicitly_unavailable_until_captured() -> None:
+    registry = load_api_pricing_registry()
+    model7 = registry["model7_gated"]
+
+    assert model7.model_id == "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+    assert model7.pricing_status == "unavailable"
+    assert model7.input_usd_per_1m_tokens is None
+    assert model7.output_usd_per_1m_tokens is None
+    with pytest.raises(ValueError, match="Missing API pricing"):
+        resolve_api_pricing("model7_gated")

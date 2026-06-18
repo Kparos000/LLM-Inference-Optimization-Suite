@@ -18,11 +18,14 @@ def test_loads_default_project_config() -> None:
     config = load_project_config()
 
     assert "qwen2_5_0_5b_instruct" in config.models
+    assert "qwen2_5_1_5b_instruct" in config.models
+    assert "qwen2_5_3b_instruct" in config.models
     assert "qwen2_5_7b_instruct" in config.models
     assert "qwen2_5_32b_instruct" in config.models
     assert "ministral_3b_2512_api" in config.models
     assert "llama_3_2_3b_instruct_api" in config.models
     assert "llama_3_1_8b_instruct_api" in config.models
+    assert "mistral_small_3_2_24b_instruct_api" in config.models
     assert "future_large_model_placeholder" in config.models
     assert config.workloads["smoke"].path == "data/prompts/smoke_workload.jsonl"
     assert (
@@ -93,8 +96,8 @@ def test_cli_validate_config_succeeds_with_default_config() -> None:
 
     assert result.exit_code == 0
     assert "Configuration valid" in result.output
-    assert "Models loaded: 8" in result.output
-    assert "Model aliases loaded: 10" in result.output
+    assert "Models loaded: 10" in result.output
+    assert "Model aliases loaded: 12" in result.output
     assert "Workloads loaded: 6" in result.output
     assert "Experiments loaded: 6" in result.output
     assert "mock_smoke" in result.output

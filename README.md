@@ -35,6 +35,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - All five verticals pass the promoted retrieval SLOs in `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.
 - Memory modes mm0 through mm3 provide single-pass workloads; mm4 is an executable bounded LangGraph inference mode with one optional repair.
 - Mock, local Hugging Face, OpenAI-compatible, concurrent load, Hugging Face provider, and OpenRouter execution paths are implemented.
+- The production model registry is frozen with active aliases `model1_0_5b`, `model2_3b`, `model3_7b`, `model4_32b`, `model5_gated`, `model6_gated`, and `model7_gated`. Historical `model2_1_5b` and placeholder aliases remain deprecated but resolvable.
 - The grounded generation contract, short evidence labels, deterministic evaluator, streaming metrics, API cost accounting, run manifests, checkpointing, and resume controls are implemented.
 - Historical curated Phase 1 samples document RunPod L40S vLLM calibration and concurrency behavior. They are not a hardware-equal comparison with local CPU results.
 - Current local and API smoke tests have produced real model output. Model6 currently leads the API smoke on quality and cost; Model5 remains a provider/model-size comparison.

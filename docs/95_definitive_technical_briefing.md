@@ -1411,23 +1411,40 @@ is intentionally not committed.
 | Public alias | Canonical key | Model ID | Role | Current execution target |
 | --- | --- | --- | --- | --- |
 | `model1_0_5b` | `qwen2_5_0_5b_instruct` | `Qwen/Qwen2.5-0.5B-Instruct` | local smoke | local HF or optional self-host |
-| `model2_1_5b` | `qwen2_5_1_5b_instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | stronger local baseline | validated RTX 3070 vLLM |
+| `model2_3b` | `qwen2_5_3b_instruct` | `Qwen/Qwen2.5-3B-Instruct` | small open-weight production baseline | local HF or self-hosted GPU |
 | `model3_7b` | `qwen2_5_7b_instruct` | `Qwen/Qwen2.5-7B-Instruct` | first serious GPU model | vLLM target |
 | `model4_32b` | `qwen2_5_32b_instruct` | `Qwen/Qwen2.5-32B-Instruct` | later scale study | larger self-hosted GPU |
 | `model5_gated` | `ministral_3b_2512_api` | `mistralai/ministral-3b-2512` | API-priced small model | OpenRouter |
 | `model6_gated` | `llama_3_1_8b_instruct_api` | `meta-llama/Llama-3.1-8B-Instruct` | preferred API quality/cost baseline | HF router / Novita |
-| `model7_large_placeholder` | `future_large_model_placeholder` | placeholder | future model | none |
+| `model7_gated` | `mistral_small_3_2_24b_instruct_api` | `mistralai/Mistral-Small-3.2-24B-Instruct-2506` | large API model-capacity baseline | HF provider route, pricing pending |
 
 The alias names are stable experiment roles. Canonical keys preserve descriptive
 model identity.
 
+Human-readable alias roles:
+
+- `model1_0_5b`: lowest-cost open-weight smoke model.
+- `model2_3b`: small open-weight production baseline replacing the active
+  1.5B role.
+- `model3_7b`: medium open-weight self-hosted quality baseline.
+- `model4_32b`: large open-weight scale comparison target.
+- `model5_gated`: small priced API baseline through OpenRouter.
+- `model6_gated`: 8B gated/API quality baseline retained as Llama 3.1 8B.
+- `model7_gated`: large gated/API model-capacity baseline using Mistral Small
+  3.2 24B, blocked for paid runs until pricing is captured.
+
 ## Deprecated Aliases
 
+- `model2_1_5b`;
+- `model7_large_placeholder`;
 - `large_model_placeholder`;
 - `model5_large_placeholder`;
 - `old_model5_llama_3_2_3b`.
 
-They remain resolvable for historical configs and reports.
+They remain resolvable for historical configs and reports. The canonical
+`qwen2_5_1_5b_instruct` model record is retained because B1 through B6 and B6R2
+used Qwen2.5-1.5B. B6R3 results are not removed or remapped; they remain tied
+to `model6_gated` / Llama 3.1 8B.
 
 ## Why Model5 Changed
 
@@ -1461,6 +1478,8 @@ Current registered rates:
 - Model5/OpenRouter: `$0.10` per 1M input tokens and `$0.10` per 1M output
   tokens.
 - Model6/Novita: `$0.02` per 1M input tokens and `$0.05` per 1M output tokens.
+- Model7/Mistral Small 3.2 24B: registered as an HF provider-route candidate,
+  but no complete input/output token price is registered yet.
 
 Prices are snapshots, not permanent guarantees. They must be revalidated before
 a new cost claim.
@@ -3324,6 +3343,7 @@ B6_QUALITY_IMPROVED_BUT_BLOCKED
 B6R1_BLOCKED
 B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
+PRODUCTION_MODEL_REGISTRY_FROZEN
 FULL_RUN_NOT_READY
 ```
 
@@ -3339,7 +3359,9 @@ B6R2 tested vertical-specific Research AI contracts; the best result reached
 truncation and zero safety violations. B6R3 passed the same targeted replay
 with model6 at 100% JSON/contract validity and 96.15% evidence/groundedness,
 but the last full 500-row gate remains failed. It is not ready for larger scale
-or concurrency.
+or concurrency. Phase 1A froze active aliases as `model1_0_5b`, `model2_3b`,
+`model3_7b`, `model4_32b`, `model5_gated`, `model6_gated`, and
+`model7_gated`.
 
 ## What Is Ready
 
@@ -3371,6 +3393,8 @@ or concurrency.
   contract selection replay;
 - B6R3 model6 API capacity validation over the frozen 26-row Research AI failed
   replay set;
+- frozen production model registry with deprecated compatibility aliases for
+  historical B1-B6 artifacts;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3384,6 +3408,7 @@ or concurrency.
   cleared on the frozen 500-row gate;
 - bounded concurrency 2/4 sweep only after the 500-prompt gate passes;
 - stronger-than-1.5B model feasibility within 8 GB VRAM;
+- complete provider pricing for `model7_gated` before paid API execution;
 - registered infrastructure cost if GPU cost comparisons are required;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
 - larger 2,000 and 10,000 record runs.

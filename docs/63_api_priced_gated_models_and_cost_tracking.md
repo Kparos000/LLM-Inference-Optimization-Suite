@@ -16,15 +16,16 @@ The public model alias order is now:
 | Alias | Model ID | Execution target |
 |---|---|---|
 | `model1_0_5b` | `Qwen/Qwen2.5-0.5B-Instruct` | local or self-hosted |
-| `model2_1_5b` | `Qwen/Qwen2.5-1.5B-Instruct` | local or self-hosted |
+| `model2_3b` | `Qwen/Qwen2.5-3B-Instruct` | local or self-hosted |
 | `model3_7b` | `Qwen/Qwen2.5-7B-Instruct` | self-hosted GPU |
 | `model4_32b` | `Qwen/Qwen2.5-32B-Instruct` | later self-hosted GPU |
-| `model5_gated` | `meta-llama/Llama-3.2-3B-Instruct` | HF Inference Provider API |
+| `model5_gated` | `mistralai/ministral-3b-2512` | OpenRouter API |
 | `model6_gated` | `meta-llama/Llama-3.1-8B-Instruct` | HF Inference Provider API |
-| `model7_large_placeholder` | `placeholder/large-model` | future placeholder |
+| `model7_gated` | `mistralai/Mistral-Small-3.2-24B-Instruct-2506` | HF Inference Provider API, pricing pending |
 
-The old `model5_large_placeholder` alias is retained as a deprecated alias to
-the same future placeholder target.
+Deprecated aliases such as `model2_1_5b`, `model7_large_placeholder`,
+`model5_large_placeholder`, and `old_model5_llama_3_2_3b` are retained for
+historical reports and frozen experiment configs.
 
 ## Why API-Priced Models Were Added
 
@@ -53,7 +54,7 @@ Pricing is captured from Hugging Face router model metadata:
 
 ```powershell
 python scripts/phase3/snapshot_hf_inference_pricing.py `
-  --models model5_gated model6_gated `
+  --models model5_gated model6_gated model7_gated `
   --output configs/api_pricing.yaml `
   --report data/generated/context_engineering/hf_api_pricing_snapshot_report.json
 ```

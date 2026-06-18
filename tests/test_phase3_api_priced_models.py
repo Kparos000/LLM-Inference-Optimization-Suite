@@ -48,9 +48,10 @@ def test_old_qwen_aliases_still_resolve() -> None:
     config = load_project_config()
 
     assert config.resolve_model_config("model1_0_5b").model_id == "Qwen/Qwen2.5-0.5B-Instruct"
-    assert config.resolve_model_config("model2_1_5b").model_id == "Qwen/Qwen2.5-1.5B-Instruct"
+    assert config.resolve_model_config("model2_3b").model_id == "Qwen/Qwen2.5-3B-Instruct"
     assert config.resolve_model_config("model3_7b").model_id == "Qwen/Qwen2.5-7B-Instruct"
     assert config.resolve_model_config("model4_32b").model_id == "Qwen/Qwen2.5-32B-Instruct"
+    assert config.resolve_model_config("model2_1_5b").model_id == "Qwen/Qwen2.5-1.5B-Instruct"
 
 
 def test_new_gated_and_large_aliases_resolve() -> None:
@@ -60,8 +61,8 @@ def test_new_gated_and_large_aliases_resolve() -> None:
     assert (
         config.resolve_model_config("model6_gated").model_id == "meta-llama/Llama-3.1-8B-Instruct"
     )
-    assert config.resolve_model_config("model7_large_placeholder").model_id == (
-        "placeholder/large-model"
+    assert config.resolve_model_config("model7_gated").model_id == (
+        "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
     )
     assert config.resolve_model_config("model5_large_placeholder").model_id == (
         "placeholder/large-model"
@@ -85,23 +86,36 @@ def test_api_model_metadata_indicates_provider_specific_credentials() -> None:
     assert model6.execution_target == "hf_inference_provider_api"
     assert "hf_inference_provider" in model6.allowed_backends
 
+    model7 = config.resolve_model_config("model7_gated")
+    assert model7.access_type == "api_priced_pending"
+    assert model7.requires_hf_token is True
+    assert model7.execution_target == "hf_inference_provider_api"
+    assert "hf_inference_provider" in model7.allowed_backends
 
-def test_model7_large_placeholder_is_last_public_alias() -> None:
+
+def test_model7_gated_is_last_public_alias() -> None:
     config = load_project_config()
     public_aliases = [
         alias
         for alias in config.model_aliases
-        if alias.startswith("model") and alias != "model5_large_placeholder"
+        if alias.startswith("model")
+        and alias
+        not in {
+            "model2_1_5b",
+            "model5_large_placeholder",
+            "model7_large_placeholder",
+            "old_model5_llama_3_2_3b",
+        }
     ]
 
     assert public_aliases[:7] == [
         "model1_0_5b",
-        "model2_1_5b",
+        "model2_3b",
         "model3_7b",
         "model4_32b",
         "model5_gated",
         "model6_gated",
-        "model7_large_placeholder",
+        "model7_gated",
     ]
 
 
@@ -115,6 +129,14 @@ def test_pricing_config_loads() -> None:
     assert entries["model6_gated"].provider == "novita"
     assert entries["model6_gated"].input_cost_per_1m_tokens_usd == pytest.approx(0.02)
     assert entries["model6_gated"].output_cost_per_1m_tokens_usd == pytest.approx(0.05)
+
+
+def test_model7_pricing_is_registered_but_unavailable() -> None:
+    entries = load_api_pricing_config("configs/api_pricing.yaml")
+
+    assert "model7_gated" not in entries
+    with pytest.raises(ValueError, match="Missing API pricing"):
+        resolve_api_pricing("model7_gated")
 
 
 def test_cost_calculation_works_with_fixture_pricing() -> None:

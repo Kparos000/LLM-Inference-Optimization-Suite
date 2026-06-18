@@ -20,6 +20,16 @@ models:
     pricing_last_checked: "2026-06-06T01:22:14.834095+00:00"
     pricing_status: detected
     notes: Lowest complete live provider price detected during the Block 27 snapshot.
+  model7_gated:
+    model_id: mistralai/Mistral-Small-3.2-24B-Instruct-2506
+    provider: null
+    input_usd_per_1m_tokens: null
+    output_usd_per_1m_tokens: null
+    pricing_source: not_yet_captured
+    pricing_source_url: https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506
+    pricing_last_checked: "2026-06-18"
+    pricing_status: unavailable
+    notes: Production model7 API alias is registered, but paid execution remains blocked until complete provider input/output token prices are captured.
   old_model5_llama_3_2_3b:
     model_id: meta-llama/Llama-3.2-3B-Instruct
     provider: featherless-ai

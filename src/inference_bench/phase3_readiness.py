@@ -33,14 +33,17 @@ ALL_MEMORY_MODES = (*MM0_TO_MM3, "mm4_bounded_agentic")
 WORKLOAD_SPLITS = ("smoke_500", "controlled_2000", "final_10000")
 MODEL_ALIAS_PAIRS = {
     "model1_0_5b": "qwen2_5_0_5b_instruct",
-    "model2_1_5b": "qwen2_5_1_5b_instruct",
+    "model2_3b": "qwen2_5_3b_instruct",
     "model3_7b": "qwen2_5_7b_instruct",
     "model4_32b": "qwen2_5_32b_instruct",
     "model5_gated": "ministral_3b_2512_api",
     "model6_gated": "llama_3_1_8b_instruct_api",
+    "model7_gated": "mistral_small_3_2_24b_instruct_api",
+    "model2_1_5b": "qwen2_5_1_5b_instruct",
     "model7_large_placeholder": "future_large_model_placeholder",
     "large_model_placeholder": "future_large_model_placeholder",
     "model5_large_placeholder": "future_large_model_placeholder",
+    "old_model5_llama_3_2_3b": "llama_3_2_3b_instruct_api",
 }
 
 

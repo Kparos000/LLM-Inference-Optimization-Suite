@@ -9,6 +9,7 @@ qwen2_5_0_5b_instruct:
     - "huggingface"
     - "vllm_optional"
     - "sglang_optional"
+    - "tensorrt_llm_optional"
   access_type: "open"
   requires_hf_token: false
   requires_license_acceptance: false
@@ -26,11 +27,30 @@ qwen2_5_1_5b_instruct:
     - "huggingface"
     - "vllm_optional"
     - "sglang_optional"
+    - "tensorrt_llm_optional"
   access_type: "open"
   requires_hf_token: false
   requires_license_acceptance: false
-  intended_role: "small_baseline_model"
-  notes: "Candidate small benchmark model after smoke tests."
+  intended_role: "deprecated_small_baseline_model"
+  notes: "Historical B1-B6 small benchmark model retained for frozen artifacts and deprecated alias compatibility."
+
+qwen2_5_3b_instruct:
+  name: "Qwen2.5 3B Instruct"
+  provider: "huggingface"
+  model_id: "Qwen/Qwen2.5-3B-Instruct"
+  parameter_count: 3000000000
+  default_dtype: "auto"
+  execution_target: "local_or_self_hosted"
+  allowed_backends:
+    - "huggingface"
+    - "vllm_optional"
+    - "sglang_optional"
+    - "tensorrt_llm_optional"
+  access_type: "open"
+  requires_hf_token: false
+  requires_license_acceptance: false
+  intended_role: "small_production_baseline_model"
+  notes: "Production small open-weight baseline replacing the historical 1.5B active alias."
 
 qwen2_5_7b_instruct:
   name: "Qwen2.5 7B Instruct"
@@ -43,6 +63,7 @@ qwen2_5_7b_instruct:
     - "vllm"
     - "sglang_optional"
     - "huggingface_optional"
+    - "tensorrt_llm_optional"
   access_type: "open"
   requires_hf_token: false
   requires_license_acceptance: false
@@ -59,6 +80,8 @@ qwen2_5_32b_instruct:
   allowed_backends:
     - "vllm"
     - "sglang_optional"
+    - "huggingface_optional"
+    - "tensorrt_llm_optional"
   access_type: "open"
   requires_hf_token: false
   requires_license_acceptance: false
@@ -93,6 +116,7 @@ llama_3_2_3b_instruct_api:
     - "hf_inference_provider"
     - "vllm_optional"
     - "sglang_optional"
+    - "tensorrt_llm_optional"
   access_type: "gated"
   requires_hf_token: true
   requires_license_acceptance: true
@@ -110,11 +134,30 @@ llama_3_1_8b_instruct_api:
     - "hf_inference_provider"
     - "vllm_optional"
     - "sglang_optional"
+    - "tensorrt_llm_optional"
   access_type: "gated"
   requires_hf_token: true
   requires_license_acceptance: true
   intended_role: "api_priced_8b_model"
   notes: "Gated API-priced 8B model for Hugging Face Inference Provider cost tracking."
+
+mistral_small_3_2_24b_instruct_api:
+  name: "Mistral Small 3.2 24B Instruct API"
+  provider: "huggingface"
+  model_id: "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+  parameter_count: 24000000000
+  default_dtype: "provider_default"
+  execution_target: "hf_inference_provider_api"
+  allowed_backends:
+    - "hf_inference_provider"
+    - "vllm_optional"
+    - "sglang_optional"
+    - "tensorrt_llm_optional"
+  access_type: "api_priced_pending"
+  requires_hf_token: true
+  requires_license_acceptance: false
+  intended_role: "api_priced_24b_model"
+  notes: "Production large gated/API-track model placeholder; paid execution remains blocked until complete provider pricing is registered."
 
 future_large_model_placeholder:
   name: "Large Model Placeholder"
@@ -133,14 +176,16 @@ future_large_model_placeholder:
 
 model_aliases:
   model1_0_5b: qwen2_5_0_5b_instruct
-  model2_1_5b: qwen2_5_1_5b_instruct
+  model2_3b: qwen2_5_3b_instruct
   model3_7b: qwen2_5_7b_instruct
   model4_32b: qwen2_5_32b_instruct
   model5_gated: ministral_3b_2512_api
   model6_gated: llama_3_1_8b_instruct_api
-  model7_large_placeholder: future_large_model_placeholder
+  model7_gated: mistral_small_3_2_24b_instruct_api
 
 deprecated_model_aliases:
+  model2_1_5b: qwen2_5_1_5b_instruct
+  model7_large_placeholder: future_large_model_placeholder
   large_model_placeholder: future_large_model_placeholder
   model5_large_placeholder: future_large_model_placeholder
   old_model5_llama_3_2_3b: llama_3_2_3b_instruct_api

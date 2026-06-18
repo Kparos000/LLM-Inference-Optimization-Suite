@@ -11,6 +11,19 @@ hf_local:
   cost_model: local_compute
   status: ready
 
+hf_inference_provider_api:
+  backend_name: hf_inference_provider
+  endpoint_type: openai_compatible_http
+  requires_server: false
+  requires_gpu: false
+  supports_streaming: true
+  supports_ttft: true
+  supports_tpot: true
+  supports_batch: true
+  supports_concurrency: true
+  cost_model: api_token
+  status: ready
+
 openai_compatible_vllm:
   backend_name: vllm
   endpoint_type: openai_compatible_http
@@ -32,6 +45,19 @@ sglang_openai_compatible_future:
   supports_streaming: true
   supports_ttft: true
   supports_tpot: true
+  supports_batch: true
+  supports_concurrency: true
+  cost_model: gpu_infra
+  status: future
+
+tensorrt_llm_future:
+  backend_name: tensorrt_llm
+  endpoint_type: serving_engine_future
+  requires_server: true
+  requires_gpu: true
+  supports_streaming: false
+  supports_ttft: false
+  supports_tpot: false
   supports_batch: true
   supports_concurrency: true
   cost_model: gpu_infra

@@ -24,6 +24,11 @@ Phase 3 adds public aliases:
 - `model4_32b`
 - `model5_large_placeholder`
 
+Current production aliases have since been frozen in `configs/models.yaml` as
+`model1_0_5b`, `model2_3b`, `model3_7b`, `model4_32b`, `model5_gated`,
+`model6_gated`, and `model7_gated`. The Phase 3 aliases above remain historical
+context or deprecated compatibility aliases where applicable.
+
 Aliases are safer than directly renaming keys because current configs, tests,
 docs, and sample artifacts already reference the old names. The alias resolver
 lets future configs use clearer public names while old configs keep working.

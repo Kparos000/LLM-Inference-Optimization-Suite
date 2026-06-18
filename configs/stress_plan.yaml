@@ -15,6 +15,7 @@ planned_backends:
   - huggingface
   - vllm
   - sglang_optional
+  - tensorrt_llm_future
 
 planned_optimizations:
   - hf_baseline
@@ -26,7 +27,7 @@ planned_optimizations:
 
 planned_models:
   local_smoke: qwen2_5_0_5b_instruct
-  small_baseline: qwen2_5_1_5b_instruct
+  small_baseline: qwen2_5_3b_instruct
   first_gpu_benchmark: qwen2_5_7b_instruct
   scale_comparison: qwen2_5_32b_instruct
-  large_placeholder: large_model_placeholder
+  large_api_baseline: mistral_small_3_2_24b_instruct_api

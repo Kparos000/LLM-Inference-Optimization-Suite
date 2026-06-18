@@ -10,6 +10,7 @@ B6_QUALITY_IMPROVED_BUT_BLOCKED
 B6R1_BLOCKED
 B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
+PRODUCTION_MODEL_REGISTRY_FROZEN
 FULL_RUN_NOT_READY
 ```
 
@@ -67,6 +68,14 @@ validity, 96.15% evidence match and groundedness, zero truncation, and zero
 safety violations. This makes Qwen2.5-1.5B model capacity the likely Research
 AI blocker, but the full-run state remains `NOT_READY` because the frozen
 500-row gate has not passed.
+
+Phase 1A froze the production model registry. Active aliases are now
+`model1_0_5b`, `model2_3b`, `model3_7b`, `model4_32b`, `model5_gated`,
+`model6_gated`, and `model7_gated`. Historical aliases including
+`model2_1_5b` and `model7_large_placeholder` remain resolvable as deprecated
+compatibility aliases. `model6_gated` remains Llama 3.1 8B. `model7_gated`
+uses Mistral Small 3.2 24B through the HF provider route, with paid execution
+blocked until complete input/output token pricing is captured.
 
 ## B1 Quality Gate
 
@@ -281,11 +290,14 @@ gate and does not authorize larger or concurrent runs.
 
 Result tracks are separated:
 
-- API provider track: `model5`/`model6` through OpenRouter, Novita, or Hugging
-  Face provider routes, with API token cost and no provider GPU telemetry.
-- Self-hosted GPU track: `model2`/`model3` through vLLM, SGLang, or RunPod,
-  with GPU telemetry and hourly infrastructure cost when configured, and no
-  API token price.
+- API provider track: `model5_gated`, `model6_gated`, and `model7_gated`
+  through OpenRouter, Novita, or Hugging Face provider routes, with API token
+  cost and no provider GPU telemetry. `model7_gated` is registered but
+  unpriced.
+- Self-hosted GPU track: `model2_3b`, `model3_7b`, and `model4_32b` through
+  Hugging Face local, vLLM, SGLang, TensorRT-LLM future work, or RunPod, with
+  GPU telemetry and hourly infrastructure cost when configured, and no API
+  token price.
 
 ## Next Step
 

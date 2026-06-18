@@ -20,12 +20,30 @@ the deprecated alias `old_model5_llama_3_2_3b`. It is no longer the active
 | Alias | Canonical key | Model ID | Execution |
 | --- | --- | --- | --- |
 | `model1_0_5b` | `qwen2_5_0_5b_instruct` | `Qwen/Qwen2.5-0.5B-Instruct` | local or self-hosted |
-| `model2_1_5b` | `qwen2_5_1_5b_instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | local or self-hosted |
+| `model2_3b` | `qwen2_5_3b_instruct` | `Qwen/Qwen2.5-3B-Instruct` | local or self-hosted |
 | `model3_7b` | `qwen2_5_7b_instruct` | `Qwen/Qwen2.5-7B-Instruct` | self-hosted GPU |
 | `model4_32b` | `qwen2_5_32b_instruct` | `Qwen/Qwen2.5-32B-Instruct` | later self-hosted GPU |
 | `model5_gated` | `ministral_3b_2512_api` | `mistralai/ministral-3b-2512` | OpenRouter API |
 | `model6_gated` | `llama_3_1_8b_instruct_api` | `meta-llama/Llama-3.1-8B-Instruct` | HF Inference Provider |
-| `model7_large_placeholder` | `future_large_model_placeholder` | `placeholder/large-model` | future |
+| `model7_gated` | `mistral_small_3_2_24b_instruct_api` | `mistralai/Mistral-Small-3.2-24B-Instruct-2506` | HF Inference Provider, pricing pending |
+
+Human-readable alias roles:
+
+- `model1_0_5b`: lightweight open-weight smoke model.
+- `model2_3b`: small open-weight production baseline.
+- `model3_7b`: medium open-weight self-hosted benchmark target.
+- `model4_32b`: large open-weight scale comparison target.
+- `model5_gated`: small priced API baseline.
+- `model6_gated`: 8B gated/API quality baseline; remains Llama 3.1 8B.
+- `model7_gated`: large gated/API model-capacity baseline.
+
+Deprecated compatibility aliases:
+
+- `model2_1_5b`: historical Qwen2.5-1.5B B1-B6 alias.
+- `model7_large_placeholder`: historical placeholder.
+- `large_model_placeholder`: historical placeholder.
+- `model5_large_placeholder`: historical placeholder.
+- `old_model5_llama_3_2_3b`: former model5 route.
 
 The generated, machine-readable table is in:
 
