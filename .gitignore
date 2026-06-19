@@ -10,14 +10,26 @@ __pycache__/
 .tmp_pytest/
 pytest_tmp/
 pytest_run_tmp_*/
+tmp/
+temp/
+*.tmp
+*.temp
 .coverage
 htmlcov/
 
 # Virtual environments
 .venv/
+.venv*/
 venv/
+venv*/
 env/
+env*/
 ENV/
+ENV*/
+virtualenv/
+.tox/
+.nox/
+.uv/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -48,6 +60,16 @@ huggingface/
 results/raw/*
 results/processed/*
 results/figures/*
+results/raw/**/*api*
+results/raw/**/*paid*
+results/raw/**/*provider*
+results/raw/**/*openrouter*
+results/raw/**/*novita*
+results/processed/**/*api*
+results/processed/**/*paid*
+results/processed/**/*provider*
+results/processed/**/*openrouter*
+results/processed/**/*novita*
 data/prompts/scaled/*_1000.jsonl
 data/prompts/scaled/*_5000.jsonl
 data/prompts/scaled/*_10000.jsonl
@@ -154,6 +176,8 @@ Thumbs.db
 
 # Logs
 *.log
+*.log.*
+logs/
 
 # Python packaging metadata
 *.egg-info/

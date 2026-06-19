@@ -102,6 +102,9 @@ def test_cli_validate_config_succeeds_with_default_config() -> None:
     assert "Sequence length buckets loaded: 6 input, 6 output" in result.output
     assert "Traffic profiles loaded: 4" in result.output
     assert "Optimization negative-rule groups loaded: 8" in result.output
+    assert "SLO targets loaded: 5 verticals, 7 metric families" in result.output
+    assert "SLO profiles loaded: 1" in result.output
+    assert "Result track schema join keys loaded: 12" in result.output
     assert "Workloads loaded: 6" in result.output
     assert "Experiments loaded: 6" in result.output
     assert "mock_smoke" in result.output

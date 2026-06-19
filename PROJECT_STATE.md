@@ -13,6 +13,7 @@ B6R3_MODEL6_CAPACITY_PASSED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
+REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 FULL_RUN_NOT_READY
 ```
 
@@ -91,6 +92,11 @@ Phase 1C added production workload and deployment guardrails before any
 pre-run support for ISL/OSL distributions, traffic profiles, request-arrival
 mode, cache-readiness metrics, optional profiling metadata, post-SLO negative
 optimization rules, and deterministic production readiness guardrails.
+
+Phase 1D cleaned local pytest/tool temp folders, strengthened `.gitignore`,
+and hardened CI/CD validation. The CI workflow now mirrors the local validation
+order and runs targeted config, repository-hygiene, CI-audit, mypy, pytest,
+ruff, public-content audit, doctor, and validate-config gates.
 
 ## B1 Quality Gate
 
@@ -343,4 +349,6 @@ audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/109_production_workload_profiles.md`,
 `docs/110_cache_readiness_metrics.md`, `docs/111_profiling_hooks.md`,
 `docs/112_post_slo_optimization_principle.md`, and
-`docs/113_deployment_readiness_guardrails.md` for Phase 1C.
+`docs/113_deployment_readiness_guardrails.md` for Phase 1C. See
+`docs/114_repository_cleanup_ci_hardening.md` for Phase 1D repository hygiene
+and CI validation hardening.

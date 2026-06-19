@@ -25,13 +25,17 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
-      - name: Run ruff lint
+      - name: Validate config coverage tests
         run: |
-          ruff check .
+          pytest tests/test_config_validation.py
 
-      - name: Run ruff format check
+      - name: Validate repo hygiene tests
         run: |
-          ruff format --check .
+          pytest tests/test_repo_hygiene.py
+
+      - name: Validate CI config audit tests
+        run: |
+          pytest tests/test_ci_config_audit.py
 
       - name: Run mypy
         run: |
@@ -41,6 +45,22 @@ jobs:
         run: |
           pytest
 
-      - name: Run CLI smoke test
+      - name: Run ruff lint
+        run: |
+          ruff check .
+
+      - name: Run ruff format check
+        run: |
+          ruff format --check .
+
+      - name: Run public content audit
+        run: |
+          python scripts/audit_repo_public_content.py
+
+      - name: Run CLI doctor
         run: |
           inference-bench doctor
+
+      - name: Validate benchmark configuration
+        run: |
+          inference-bench validate-config

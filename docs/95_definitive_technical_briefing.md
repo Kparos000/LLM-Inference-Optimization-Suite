@@ -3432,6 +3432,7 @@ B6R3_MODEL6_CAPACITY_PASSED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
+REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 FULL_RUN_NOT_READY
 ```
 
@@ -3454,7 +3455,10 @@ guard for Hugging Face Transformers, vLLM, SGLang, API provider routes, and
 the planned TensorRT-LLM placeholder. Phase 1C added production workload
 profiles, ISL/OSL distributions, cache-readiness metrics, optional profiling
 metadata hooks, post-SLO negative optimization rules, and deployment
-readiness guardrails.
+readiness guardrails. Phase 1D cleaned local pytest/tool temp folders,
+strengthened ignore rules, and aligned CI with the local validation gates for
+config coverage, repository hygiene, mypy, pytest, ruff, public-content audit,
+doctor, and validate-config.
 
 ## What Is Ready
 

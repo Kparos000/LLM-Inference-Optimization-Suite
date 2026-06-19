@@ -24,11 +24,14 @@ from inference_bench.reporting.plots import (
     plot_throughput_by_optimization,
 )
 from inference_bench.reporting.summary import summarize_results
+from inference_bench.result_track_schema import RESULT_TRACK_JOIN_KEYS, validate_result_track_row
 from inference_bench.runners.hf_runner import run_hf_benchmark
 from inference_bench.runners.mock_runner import run_mock_benchmark
 from inference_bench.runners.openai_compatible_runner import run_openai_compatible_benchmark
 from inference_bench.runners.openai_load_runner import run_openai_compatible_load_benchmark
 from inference_bench.runtime_registry import load_runtime_registry
+from inference_bench.slo import SLO_METRIC_FAMILIES, SLO_VERTICALS, load_slo_config
+from inference_bench.slo_profiles import load_slo_profiles
 from inference_bench.system_info import collect_system_info, write_system_info_json
 from inference_bench.workloads.scaled_generator import generate_scaled_workloads
 
@@ -101,6 +104,14 @@ def validate_config(
         str,
         typer.Option(help="Path to the optimization negative-rules YAML config."),
     ] = "configs/optimization_negative_rules.yaml",
+    slo_targets_path: Annotated[
+        str,
+        typer.Option(help="Path to the production SLO target YAML config."),
+    ] = "configs/slo_targets.yaml",
+    slo_profiles_path: Annotated[
+        str,
+        typer.Option(help="Path to the modular SLO profiles YAML config."),
+    ] = "configs/slo_profiles.yaml",
 ) -> None:
     """Validate benchmark configuration files."""
 
@@ -113,7 +124,33 @@ def validate_config(
     sequence_buckets = load_sequence_buckets(load_profiles_path)
     traffic_profiles = load_traffic_profiles(load_profiles_path)
     negative_rules = load_optimization_negative_rules(optimization_negative_rules_path)
+    slo_config = load_slo_config(slo_targets_path)
+    slo_profiles = load_slo_profiles(slo_profiles_path)
+    result_track_errors = validate_result_track_row(
+        {
+            "run_id": "config-validation",
+            "config_id": "schema-smoke",
+            "prompt_id": "prompt-0",
+            "vertical": "airline",
+            "model_alias": "model2_3b",
+            "memory_mode": "mm2_hybrid_top5",
+            "runtime": "vllm",
+            "backend_type": "self_hosted_gpu",
+            "engine": "vllm",
+            "hardware": "remote_rtx3070",
+            "provider": "huggingface",
+            "concurrency": 1,
+            "api_cost_usd": None,
+            "gpu_cost_usd": None,
+            "gpu_hourly_price_usd": None,
+        }
+    )
+    if result_track_errors:
+        msg = "Result-track schema validation failed: " + ", ".join(result_track_errors)
+        raise typer.BadParameter(msg)
     experiment_names = sorted(project_config.experiments)
+    slo_verticals = slo_config.get("verticals", {})
+    profiles = slo_profiles.get("profiles", {})
 
     console.print("[bold green]Configuration valid.[/bold green]")
     console.print(f"Models loaded: {len(project_config.models)}")
@@ -125,8 +162,15 @@ def validate_config(
     )
     console.print(f"Traffic profiles loaded: {len(traffic_profiles)}")
     console.print(f"Optimization negative-rule groups loaded: {len(negative_rules)}")
+    console.print(
+        f"SLO targets loaded: {len(slo_verticals)} verticals, "
+        f"{len(SLO_METRIC_FAMILIES)} metric families"
+    )
+    console.print(f"SLO profiles loaded: {len(profiles)}")
+    console.print(f"Result track schema join keys loaded: {len(RESULT_TRACK_JOIN_KEYS)}")
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")
+    console.print("SLO verticals: " + ", ".join(SLO_VERTICALS))
     console.print("Experiments: " + (", ".join(experiment_names) if experiment_names else "none"))
 
 
