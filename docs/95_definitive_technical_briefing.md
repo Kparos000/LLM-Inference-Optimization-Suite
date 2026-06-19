@@ -274,6 +274,22 @@ Transformers, vLLM, or SGLang when both the model registry and runtime registry
 allow the pairing. TensorRT-LLM is registered only as a planned engine and is
 not selectable for live runs until smoke-tested.
 
+### Production Workload Metadata
+
+`configs/load_profiles.yaml` and `src/inference_bench/load_profiles.py` define
+input sequence length buckets, output sequence length buckets, traffic
+profiles, and deterministic jittered request-arrival simulation. Production
+benchmark reports must include:
+
+- input token distribution;
+- output token distribution;
+- traffic profile;
+- concurrency;
+- request arrival mode.
+
+Registered traffic profiles are `online_low_latency`, `office_hours_bursty`,
+`offline_throughput`, and `custom`.
+
 ### Prompt System
 
 The Phase 3 `WorkloadRecord` preserves source prompt data, selected context,
@@ -1884,6 +1900,15 @@ Then:
 
 # 14. Optimization Techniques
 
+## Post-SLO Optimization Principle
+
+Optimization is a post-SLO diagnosis action, not a baseline matrix dimension.
+`configs/optimization_negative_rules.yaml` records when not to use
+quantization, prefix caching, speculative decoding, tensor parallelism,
+disaggregated prefill, context compression, concurrency increase, and stronger
+model escalation. A change should be applied only after a measured SLO failure
+identifies the bottleneck it is supposed to address.
+
 ## Implemented Or Partially Implemented
 
 ### Hybrid Retrieval
@@ -2119,6 +2144,28 @@ while concurrency produces high aggregate throughput.
 - estimated context tokens.
 
 Provider counts are preferred for API cost. Local runs use the model tokenizer.
+
+## Sequence Length And Traffic Shape
+
+Production workload reports include input sequence length and output sequence
+length distributions using the configured ISL/OSL buckets. They also record
+traffic profile, concurrency, and request arrival mode so throughput and tail
+latency are interpreted against the intended traffic shape rather than only a
+row count.
+
+## Cache Readiness
+
+Pre-run cache-readiness metrics include:
+
+- repeated prefix tokens;
+- shared context percentage;
+- prefix reuse potential;
+- KV-cache pressure estimate;
+- cacheability score;
+- estimated prefix-cache benefit.
+
+These are planning signals, not cache-hit claims. Real prefix-cache experiments
+still require backend-native hit-rate, queue, batch, and cache telemetry.
 
 ## GPU Utilization
 
@@ -2937,6 +2984,13 @@ Recommended:
 - optional DCGM or Prometheus for serious multi-GPU runs;
 - run-aligned timestamps for cost and hardware samples.
 
+## Profiling Hooks
+
+Profiling support is optional and disabled by default. Manifest metadata can
+record `disabled`, `pytorch`, `nsys`, or `ncu` profiling modes plus an output
+path when explicitly enabled. The hooks do not require PyTorch profiler,
+Nsight Systems, or Nsight Compute for normal runs.
+
 # 19. Reporting
 
 ## Data EDA
@@ -3377,6 +3431,7 @@ B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
+PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 FULL_RUN_NOT_READY
 ```
 
@@ -3396,7 +3451,10 @@ or concurrency. Phase 1A froze active aliases as `model1_0_5b`, `model2_3b`,
 `model3_7b`, `model4_32b`, `model5_gated`, `model6_gated`, and
 `model7_gated`. Phase 1B added a production runtime registry and compatibility
 guard for Hugging Face Transformers, vLLM, SGLang, API provider routes, and
-the planned TensorRT-LLM placeholder.
+the planned TensorRT-LLM placeholder. Phase 1C added production workload
+profiles, ISL/OSL distributions, cache-readiness metrics, optional profiling
+metadata hooks, post-SLO negative optimization rules, and deployment
+readiness guardrails.
 
 ## What Is Ready
 
@@ -3432,6 +3490,15 @@ the planned TensorRT-LLM placeholder.
   historical B1-B6 artifacts;
 - production runtime registry with API/self-hosted route separation and
   TensorRT-LLM live-run exclusion until smoke-tested;
+- production workload profiles for `online_low_latency`, `office_hours_bursty`,
+  `offline_throughput`, and `custom`;
+- ISL/OSL distribution helpers, jittered arrival simulation, and result schema
+  fields for traffic profile, arrival mode, concurrency, and sequence buckets;
+- cache-readiness scoring with repeated-prefix, shared-context, KV-pressure,
+  cacheability, and estimated prefix-cache benefit metrics;
+- optional profiling manifest hooks for PyTorch profiler, Nsight Systems, and
+  Nsight Compute placeholders, disabled by default;
+- post-SLO negative optimization rules and production readiness guardrails;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3448,6 +3515,8 @@ the planned TensorRT-LLM placeholder.
 - complete provider pricing for `model7_gated` before paid API execution;
 - TensorRT-LLM smoke validation before it can enter live experiment matrices;
 - registered infrastructure cost if GPU cost comparisons are required;
+- artifact sync before long self-hosted/RunPod runs;
+- API provider load probe before large API runs;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
 - larger 2,000 and 10,000 record runs.
 
@@ -3507,6 +3576,10 @@ the planned TensorRT-LLM placeholder.
   intentionally different: API runs have token price and no provider GPU
   telemetry; self-hosted GPU runs have GPU telemetry/hourly cost when
   configured and no API token price.
+- Cache-readiness metrics estimate reuse potential before a run; they are not
+  measured prefix-cache hit rates.
+- Profiling hooks record metadata only unless a profiler mode is explicitly
+  enabled by a controlled run.
 - TensorRT-LLM is registry-visible for planning but remains not ready and not
   live-selectable.
 - B2 recommendations do not apply changes automatically and do not estimate

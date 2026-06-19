@@ -12,6 +12,7 @@ B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
+PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 FULL_RUN_NOT_READY
 ```
 
@@ -84,6 +85,12 @@ vLLM, SGLang, and API provider routes are typed runtime entries with explicit
 model/provider/execution-target/hardware compatibility. TensorRT-LLM is
 registered only as a planned engine and is excluded from live selection until
 it is smoke-tested.
+
+Phase 1C added production workload and deployment guardrails before any
+1,000-prompt, RunPod, concurrency, or final matrix run. Reports now have
+pre-run support for ISL/OSL distributions, traffic profiles, request-arrival
+mode, cache-readiness metrics, optional profiling metadata, post-SLO negative
+optimization rules, and deterministic production readiness guardrails.
 
 ## B1 Quality Gate
 
@@ -307,6 +314,10 @@ Result tracks are separated:
   infrastructure cost when configured, and no API token price.
 - Planned engine track: TensorRT-LLM is registered for future compatibility
   planning only and is not runnable until smoke-tested.
+- Production guardrail track: long RunPod/self-hosted runs require artifact
+  sync and checkpoint/resume; GPU cost claims require hourly price; large API
+  runs require a provider load probe; partial runs cannot be marked complete;
+  API and GPU tracks must join through the unified result schema.
 
 ## Next Step
 
@@ -328,4 +339,8 @@ architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
 audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/106_research_ai_vertical_generation_contract.md` for B6R2, and
 `docs/107_b6r3_research_ai_model_capacity_validation.md` for B6R3, and
-`docs/108_production_runtime_registry.md` for Phase 1B.
+`docs/108_production_runtime_registry.md` for Phase 1B. See
+`docs/109_production_workload_profiles.md`,
+`docs/110_cache_readiness_metrics.md`, `docs/111_profiling_hooks.md`,
+`docs/112_post_slo_optimization_principle.md`, and
+`docs/113_deployment_readiness_guardrails.md` for Phase 1C.

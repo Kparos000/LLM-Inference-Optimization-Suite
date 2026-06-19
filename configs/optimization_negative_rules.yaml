@@ -1,0 +1,79 @@
+version: 1
+principle: "Optimizations are recommended only after SLO diagnosis; they are not baseline matrix dimensions."
+
+rules:
+  quantization:
+    optimization_ids:
+      - use_quantized_model
+      - enable_int8_quantization
+      - enable_awq_int4
+      - enable_gptq_int4
+      - enable_fp8_where_supported
+    when_not_to_use:
+      - quality gate is already failing and no stronger-model comparison has isolated capacity
+      - calibrated kernels or quantized weights are unavailable for the selected runtime
+      - target model already fits with acceptable memory headroom
+      - comparison would mix model precision with retrieval, prompt, or evaluator changes
+  prefix_caching:
+    optimization_ids:
+      - enable_prefix_cache
+    when_not_to_use:
+      - prefix reuse potential is low
+      - traffic does not route repeated prefixes to the same worker
+      - workload context is highly unique per request
+      - cache-hit telemetry cannot be collected
+  speculative_decoding:
+    optimization_ids:
+      - enable_speculative_decoding
+    when_not_to_use:
+      - no compatible draft model is registered
+      - quality or JSON/contract validity is below target
+      - TPOT is not the diagnosed bottleneck
+      - acceptance-rate telemetry cannot be measured
+  tensor_parallelism:
+    optimization_ids:
+      - use_tensor_parallelism
+    when_not_to_use:
+      - model fits and meets latency on one GPU
+      - multi-GPU interconnect or placement is not controlled
+      - cost per grounded answer is already above target
+      - experiment would change hardware and engine at the same time
+  disaggregated_prefill:
+    optimization_ids:
+      - prefill_decode_disaggregation
+    when_not_to_use:
+      - prefill time or TTFT is not the diagnosed bottleneck
+      - traffic volume is too low to amortize additional infrastructure
+      - queue, prefill, and decode telemetry are unavailable
+      - runtime deployment does not support separate prefill/decode workers
+  context_compression:
+    optimization_ids:
+      - enable_context_compression
+      - reduce_context_tokens
+    when_not_to_use:
+      - retrieval final recall or evidence match is below target
+      - compression recall loss exceeds the configured ceiling
+      - answer quality relies on long contiguous evidence spans
+      - token savings would be measured without a groundedness guard
+  concurrency_increase:
+    optimization_ids:
+      - increase_concurrency
+      - concurrency_sweep
+    when_not_to_use:
+      - quality gate has not passed at concurrency one
+      - p95 or p99 latency is already above target
+      - checkpoint/resume is missing for the selected run size
+      - GPU memory headroom or OOM telemetry is unavailable
+  stronger_model_escalation:
+    optimization_ids:
+      - use_stronger_model
+      - increase_gpu_size
+      - move_to_runpod_rtx4090
+      - move_to_runpod_l40s
+      - move_to_runpod_a100
+      - move_to_runpod_h100
+    when_not_to_use:
+      - retrieval/gold evidence is absent from rendered context
+      - provider or GPU cost is unpriced
+      - smaller-model failures are caused by truncation or prompt-contract bugs
+      - model change would be combined with retrieval, prompt, or evaluator changes

@@ -8,6 +8,8 @@ from rich.table import Table
 
 from inference_bench import __version__
 from inference_bench.config import load_project_config
+from inference_bench.load_profiles import load_sequence_buckets, load_traffic_profiles
+from inference_bench.optimization_negative_rules import load_optimization_negative_rules
 from inference_bench.quality import score_structured_output
 from inference_bench.reporting.compare import compare_result_files, write_comparison_csv
 from inference_bench.reporting.phase1_plots import (
@@ -91,6 +93,14 @@ def validate_config(
         str,
         typer.Option(help="Path to the runtime/engine registry YAML config."),
     ] = "configs/runtime_engines.yaml",
+    load_profiles_path: Annotated[
+        str,
+        typer.Option(help="Path to the production load profiles YAML config."),
+    ] = "configs/load_profiles.yaml",
+    optimization_negative_rules_path: Annotated[
+        str,
+        typer.Option(help="Path to the optimization negative-rules YAML config."),
+    ] = "configs/optimization_negative_rules.yaml",
 ) -> None:
     """Validate benchmark configuration files."""
 
@@ -100,12 +110,21 @@ def validate_config(
         experiments_path=experiments_path,
     )
     runtime_registry = load_runtime_registry(runtime_registry_path)
+    sequence_buckets = load_sequence_buckets(load_profiles_path)
+    traffic_profiles = load_traffic_profiles(load_profiles_path)
+    negative_rules = load_optimization_negative_rules(optimization_negative_rules_path)
     experiment_names = sorted(project_config.experiments)
 
     console.print("[bold green]Configuration valid.[/bold green]")
     console.print(f"Models loaded: {len(project_config.models)}")
     console.print(f"Model aliases loaded: {len(project_config.model_aliases)}")
     console.print(f"Runtime engines loaded: {len(runtime_registry)}")
+    console.print(
+        "Sequence length buckets loaded: "
+        f"{len(sequence_buckets['input'])} input, {len(sequence_buckets['output'])} output"
+    )
+    console.print(f"Traffic profiles loaded: {len(traffic_profiles)}")
+    console.print(f"Optimization negative-rule groups loaded: {len(negative_rules)}")
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")
     console.print("Experiments: " + (", ".join(experiment_names) if experiment_names else "none"))

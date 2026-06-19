@@ -267,6 +267,8 @@ that aligns telemetry timestamps with request timestamps.
 ```text
 run_id,timestamp_utc,backend,model_name,optimization,workload_name,prompt_id,
 runtime,engine,backend_type,hardware,provider,
+traffic_profile,request_arrival_mode,concurrency,input_token_bucket,
+output_token_bucket,
 input_tokens,output_tokens,ttft_ms,tpot_ms,end_to_end_latency_ms,
 throughput_tokens_per_second,peak_memory_mb,estimated_cost_usd,success,
 error_message

@@ -65,6 +65,10 @@ class RunManifest:
     error_count: int
     telemetry_path: str | None = None
     telemetry_summary_path: str | None = None
+    profiling_enabled: bool = False
+    profiling_mode: str = "disabled"
+    profiler_output_path: str | None = None
+    profiling_metadata: dict[str, object] | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -91,6 +95,21 @@ class RunManifest:
             value = getattr(self, field_name)
             if value is not None:
                 _validate_non_empty_string(value, field_name)
+        if not isinstance(self.profiling_enabled, bool):
+            msg = "profiling_enabled must be boolean"
+            raise ValueError(msg)
+        _validate_non_empty_string(self.profiling_mode, "profiling_mode")
+        if self.profiling_mode not in {"disabled", "pytorch", "nsys", "ncu"}:
+            msg = "profiling_mode must be disabled, pytorch, nsys, or ncu"
+            raise ValueError(msg)
+        if self.profiling_enabled and self.profiling_mode == "disabled":
+            msg = "profiling_mode must not be disabled when profiling_enabled is true"
+            raise ValueError(msg)
+        if self.profiler_output_path is not None:
+            _validate_non_empty_string(self.profiler_output_path, "profiler_output_path")
+        if self.profiling_enabled and self.profiler_output_path is None:
+            msg = "profiler_output_path is required when profiling is enabled"
+            raise ValueError(msg)
         if self.status not in {"planned", "running", "completed", "failed"}:
             msg = "status must be one of: planned, running, completed, failed"
             raise ValueError(msg)

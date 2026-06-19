@@ -58,6 +58,11 @@ class GenerationRecord:
     backend_type: str | None = None
     hardware: str | None = None
     provider: str | None = None
+    traffic_profile: str | None = None
+    request_arrival_mode: str | None = None
+    concurrency: int | None = None
+    input_token_bucket: str | None = None
+    output_token_bucket: str | None = None
     expected_output_format: str | None = None
     citation_id_aliases: str | None = None
     generation_contract_valid: bool = False

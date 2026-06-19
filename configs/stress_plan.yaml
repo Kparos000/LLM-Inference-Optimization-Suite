@@ -19,7 +19,7 @@ planned_backends:
 planned_engines_not_runnable:
   - tensorrt_llm
 
-planned_optimizations:
+post_slo_candidate_optimizations:
   - hf_baseline
   - vllm_baseline
   - quantization

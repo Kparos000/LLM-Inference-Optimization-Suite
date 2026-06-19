@@ -139,6 +139,11 @@ class BenchmarkResult:
     backend_type: str | None = None
     hardware: str | None = None
     provider: str | None = None
+    traffic_profile: str | None = None
+    request_arrival_mode: str | None = None
+    concurrency: int | None = None
+    input_token_bucket: str | None = None
+    output_token_bucket: str | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -161,6 +166,11 @@ class BenchmarkResult:
         _validate_optional_string(self.backend_type, "backend_type")
         _validate_optional_string(self.hardware, "hardware")
         _validate_optional_string(self.provider, "provider")
+        _validate_optional_string(self.traffic_profile, "traffic_profile")
+        _validate_optional_string(self.request_arrival_mode, "request_arrival_mode")
+        _validate_optional_non_negative_int(self.concurrency, "concurrency")
+        _validate_optional_string(self.input_token_bucket, "input_token_bucket")
+        _validate_optional_string(self.output_token_bucket, "output_token_bucket")
         _validate_optional_non_negative_int(
             self.context_token_estimate,
             "context_token_estimate",
@@ -209,6 +219,11 @@ class BenchmarkResult:
             "backend_type",
             "hardware",
             "provider",
+            "traffic_profile",
+            "request_arrival_mode",
+            "concurrency",
+            "input_token_bucket",
+            "output_token_bucket",
             "input_tokens",
             "output_tokens",
             "ttft_ms",
