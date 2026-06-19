@@ -253,6 +253,27 @@ Current runner families:
 keys and aliases. Deprecated aliases remain supported to avoid breaking older
 configs and reports.
 
+### Runtime Registry
+
+`configs/runtime_engines.yaml` and `src/inference_bench/runtime_registry.py`
+define the production runtime layer. The registry separates:
+
+- Runtime: Hugging Face Transformers, vLLM, SGLang, API provider route, and
+  TensorRT-LLM planned placeholder;
+- Infrastructure: developer workstation, self-hosted GPU, RunPod GPU, or
+  provider-managed API infrastructure;
+- Tooling: runners, manifests, telemetry, pricing, checkpointing, and result
+  schemas;
+- Evaluation: deterministic contract, evidence, groundedness, safety, latency,
+  throughput, and cost gates.
+
+Runtime status values are `ready`, `dry_run_ready`, `planned`, and
+`deprecated`. API aliases must use the API provider route with
+provider-managed hardware. Open-weight aliases may use Hugging Face
+Transformers, vLLM, or SGLang when both the model registry and runtime registry
+allow the pairing. TensorRT-LLM is registered only as a planned engine and is
+not selectable for live runs until smoke-tested.
+
 ### Prompt System
 
 The Phase 3 `WorkloadRecord` preserves source prompt data, selected context,
@@ -1617,6 +1638,17 @@ The matched 50-prompt run completed without request failures. SGLang improved
 mean TTFT and evidence match relative to vLLM, but regressed E2E latency, TPOT,
 throughput, peak memory, contract validity, and groundedness. It remains a
 secondary controlled backend rather than the RTX 3070 default.
+
+## TensorRT-LLM
+
+Status: **planned, not live-selectable**.
+
+TensorRT-LLM is present only in the production runtime registry as
+`tensorrt_llm` with `status: planned`, `planned_engine: true`, and
+`smoke_tested: false`. It is intentionally excluded from runnable experiment
+and stress matrices until a future smoke test explicitly changes those fields.
+API-provider model aliases must not be routed to TensorRT-LLM or RunPod GPU
+paths.
 
 ## Hugging Face Provider API
 
@@ -3344,6 +3376,7 @@ B6R1_BLOCKED
 B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
 PRODUCTION_MODEL_REGISTRY_FROZEN
+PRODUCTION_RUNTIME_REGISTRY_READY
 FULL_RUN_NOT_READY
 ```
 
@@ -3361,7 +3394,9 @@ with model6 at 100% JSON/contract validity and 96.15% evidence/groundedness,
 but the last full 500-row gate remains failed. It is not ready for larger scale
 or concurrency. Phase 1A froze active aliases as `model1_0_5b`, `model2_3b`,
 `model3_7b`, `model4_32b`, `model5_gated`, `model6_gated`, and
-`model7_gated`.
+`model7_gated`. Phase 1B added a production runtime registry and compatibility
+guard for Hugging Face Transformers, vLLM, SGLang, API provider routes, and
+the planned TensorRT-LLM placeholder.
 
 ## What Is Ready
 
@@ -3395,6 +3430,8 @@ or concurrency. Phase 1A froze active aliases as `model1_0_5b`, `model2_3b`,
   replay set;
 - frozen production model registry with deprecated compatibility aliases for
   historical B1-B6 artifacts;
+- production runtime registry with API/self-hosted route separation and
+  TensorRT-LLM live-run exclusion until smoke-tested;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3409,6 +3446,7 @@ or concurrency. Phase 1A froze active aliases as `model1_0_5b`, `model2_3b`,
 - bounded concurrency 2/4 sweep only after the 500-prompt gate passes;
 - stronger-than-1.5B model feasibility within 8 GB VRAM;
 - complete provider pricing for `model7_gated` before paid API execution;
+- TensorRT-LLM smoke validation before it can enter live experiment matrices;
 - registered infrastructure cost if GPU cost comparisons are required;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
 - larger 2,000 and 10,000 record runs.
@@ -3465,9 +3503,12 @@ or concurrency. Phase 1A froze active aliases as `model1_0_5b`, `model2_3b`,
 - B6 runtime and cost projections are RTX 3070 local projections only. RunPod
   prices and throughput multipliers are still unset.
 - API provider result rows and self-hosted GPU result rows now share stable
-  join keys, but their cost and telemetry fields are intentionally different:
-  API runs have token price and no provider GPU telemetry; self-hosted GPU runs
-  have GPU telemetry/hourly cost when configured and no API token price.
+  runtime/provider join keys, but their cost and telemetry fields are
+  intentionally different: API runs have token price and no provider GPU
+  telemetry; self-hosted GPU runs have GPU telemetry/hourly cost when
+  configured and no API token price.
+- TensorRT-LLM is registry-visible for planning but remains not ready and not
+  live-selectable.
 - B2 recommendations do not apply changes automatically and do not estimate
   gains before measurement.
 - B2 local reports are ignored benchmark artifacts and must be regenerated

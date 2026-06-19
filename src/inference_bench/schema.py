@@ -134,6 +134,11 @@ class BenchmarkResult:
     ablation_mode: str | None = None
     context_token_estimate: int | None = None
     gold_evidence_ids: str | None = None
+    runtime: str | None = None
+    engine: str | None = None
+    backend_type: str | None = None
+    hardware: str | None = None
+    provider: str | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -151,6 +156,11 @@ class BenchmarkResult:
         _validate_optional_string(self.vertical, "vertical")
         _validate_optional_string(self.memory_mode, "memory_mode")
         _validate_optional_string(self.ablation_mode, "ablation_mode")
+        _validate_optional_string(self.runtime, "runtime")
+        _validate_optional_string(self.engine, "engine")
+        _validate_optional_string(self.backend_type, "backend_type")
+        _validate_optional_string(self.hardware, "hardware")
+        _validate_optional_string(self.provider, "provider")
         _validate_optional_non_negative_int(
             self.context_token_estimate,
             "context_token_estimate",
@@ -194,6 +204,11 @@ class BenchmarkResult:
             "ablation_mode",
             "context_token_estimate",
             "gold_evidence_ids",
+            "runtime",
+            "engine",
+            "backend_type",
+            "hardware",
+            "provider",
             "input_tokens",
             "output_tokens",
             "ttft_ms",

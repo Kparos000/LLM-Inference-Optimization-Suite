@@ -76,16 +76,16 @@ state.
 
 B6R1 also clarified result-track semantics:
 
-- API provider track: `model5`/`model6` through OpenRouter, Novita, or Hugging
+- API provider track: `model5`/`model6`/`model7` through OpenRouter, Novita, or Hugging
   Face provider routes. API token pricing can be recorded, but provider GPU
   telemetry is not available and selected RunPod hardware does not apply.
-- Self-hosted GPU track: `model2`/`model3` through vLLM, SGLang, or RunPod.
-  GPU telemetry and hourly infrastructure cost can be recorded when configured,
-  but API token pricing does not apply.
+- Self-hosted GPU track: `model2`/`model3`/`model4` through Hugging Face local,
+  vLLM, SGLang, or RunPod. GPU telemetry and hourly infrastructure cost can be
+  recorded when configured, but API token pricing does not apply.
 
 Both tracks use stable result join keys for plots and comparisons:
 `run_id`, `config_id`, `prompt_id`, `vertical`, `model_alias`, `memory_mode`,
-`backend_type`, `engine`, `hardware`, and `concurrency`.
+`runtime`, `backend_type`, `engine`, `hardware`, `provider`, and `concurrency`.
 
 ## Next Block
 

@@ -19,7 +19,7 @@ from inference_bench.config import load_yaml_file
 from inference_bench.telemetry import TELEMETRY_FIELDS
 
 ReadinessStatus = Literal["PASS", "NOT_AVAILABLE", "FAIL"]
-BackendStatus = Literal["ready", "dry_run_ready", "future"]
+BackendStatus = Literal["ready", "dry_run_ready", "planned", "deprecated"]
 CostModel = Literal["local_compute", "gpu_infra", "api_token"]
 
 DEFAULT_BACKEND_MATRIX_PATH = "configs/backend_matrix.yaml"
@@ -105,8 +105,8 @@ class BackendConfig:
         if self.cost_model not in {"local_compute", "gpu_infra", "api_token"}:
             msg = "cost_model must be local_compute, gpu_infra, or api_token"
             raise ValueError(msg)
-        if self.status not in {"ready", "dry_run_ready", "future"}:
-            msg = "status must be ready, dry_run_ready, or future"
+        if self.status not in {"ready", "dry_run_ready", "planned", "deprecated"}:
+            msg = "status must be ready, dry_run_ready, planned, or deprecated"
             raise ValueError(msg)
 
 

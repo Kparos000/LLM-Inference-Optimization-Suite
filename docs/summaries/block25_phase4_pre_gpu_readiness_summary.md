@@ -35,7 +35,8 @@ These items are reported as `NOT_AVAILABLE`, not failed.
 | --- | --- | --- |
 | `hf_local` | `ready` | Local in-process correctness plumbing |
 | `openai_compatible_vllm` | `dry_run_ready` | Requires a live GPU server |
-| `sglang_openai_compatible_future` | `future` | Dry-run scaffold complete |
+| `sglang_openai_compatible_future` | `ready` | Dry-run scaffold and live validation complete |
+| `tensorrt_llm_future` | `planned` | Registry-visible only; not runnable until smoke-tested |
 
 ## SGLang Dry-Run
 

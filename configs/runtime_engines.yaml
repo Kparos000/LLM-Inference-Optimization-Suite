@@ -1,0 +1,107 @@
+huggingface_transformers:
+  runtime: huggingface_transformers
+  engine: huggingface
+  backend_type: local_compute
+  status: ready
+  planned_engine: false
+  smoke_tested: true
+  live_run_supported: true
+  backend_routes:
+    - huggingface
+  supported_model_providers:
+    - huggingface
+  supported_execution_targets:
+    - local_or_self_hosted
+    - self_hosted_gpu
+    - self_hosted_gpu_later
+  supported_hardware_types:
+    - developer_workstation
+    - local_cpu
+    - local_gpu
+  notes: "In-process Hugging Face Transformers runtime for local validation and transparent baseline runs."
+
+vllm:
+  runtime: vllm
+  engine: vllm
+  backend_type: self_hosted_gpu
+  status: ready
+  planned_engine: false
+  smoke_tested: true
+  live_run_supported: true
+  backend_routes:
+    - openai_compatible_vllm
+  supported_model_providers:
+    - huggingface
+  supported_execution_targets:
+    - local_or_self_hosted
+    - self_hosted_gpu
+    - self_hosted_gpu_later
+  supported_hardware_types:
+    - self_hosted_gpu
+    - remote_rtx3070
+    - runpod_gpu
+  notes: "OpenAI-compatible vLLM serving runtime for self-hosted GPU experiments."
+
+sglang:
+  runtime: sglang
+  engine: sglang
+  backend_type: self_hosted_gpu
+  status: ready
+  planned_engine: false
+  smoke_tested: true
+  live_run_supported: true
+  backend_routes:
+    - sglang_openai_compatible
+  supported_model_providers:
+    - huggingface
+  supported_execution_targets:
+    - local_or_self_hosted
+    - self_hosted_gpu
+    - self_hosted_gpu_later
+  supported_hardware_types:
+    - self_hosted_gpu
+    - remote_rtx3070
+    - runpod_gpu
+  notes: "OpenAI-compatible SGLang serving runtime retained for controlled backend comparison."
+
+api_provider_route:
+  runtime: api_provider_route
+  engine: api_provider
+  backend_type: api_provider
+  status: ready
+  planned_engine: false
+  smoke_tested: true
+  live_run_supported: true
+  backend_routes:
+    - openrouter
+    - hf_inference_provider
+  supported_model_providers:
+    - openrouter
+    - huggingface
+  supported_execution_targets:
+    - openrouter_api
+    - hf_inference_provider_api
+  supported_hardware_types:
+    - provider_managed
+  notes: "Provider-managed API route for OpenRouter and Hugging Face provider execution."
+
+tensorrt_llm:
+  runtime: tensorrt_llm
+  engine: tensorrt_llm
+  backend_type: self_hosted_gpu
+  status: planned
+  planned_engine: true
+  smoke_tested: false
+  live_run_supported: false
+  backend_routes:
+    - tensorrt_llm
+  supported_model_providers:
+    - huggingface
+  supported_execution_targets:
+    - local_or_self_hosted
+    - self_hosted_gpu
+    - self_hosted_gpu_later
+  supported_hardware_types:
+    - self_hosted_gpu
+    - runpod_gpu
+  notes: "Planned TensorRT-LLM placeholder only; excluded from live selection until smoke_tested is true."

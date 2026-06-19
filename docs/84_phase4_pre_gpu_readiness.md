@@ -52,11 +52,17 @@ override the promoted repaired validation.
 | --- | --- | ---: | ---: | --- |
 | Local Hugging Face | `ready` | No | No | `local_compute` |
 | OpenAI-compatible vLLM | `dry_run_ready` | Yes | Yes | `gpu_infra` |
-| OpenAI-compatible SGLang | `future` | Yes | Yes | `gpu_infra` |
+| OpenAI-compatible SGLang | `ready` | Yes | Yes | `gpu_infra` |
+| TensorRT-LLM | `planned` | Yes | Yes | `gpu_infra` |
 
 The matrix also records streaming, TTFT, TPOT, batch, and concurrency support.
 These fields describe interface capability; they do not claim that a live
 server benchmark has already run.
+
+The newer production runtime registry in `configs/runtime_engines.yaml`
+controls live selection. TensorRT-LLM is registry-visible only as a planned,
+unsmoked engine and must not be added to runnable matrices until a future
+smoke test changes that status deliberately.
 
 ## SGLang Scaffold
 

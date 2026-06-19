@@ -26,6 +26,7 @@ from inference_bench.runners.hf_runner import run_hf_benchmark
 from inference_bench.runners.mock_runner import run_mock_benchmark
 from inference_bench.runners.openai_compatible_runner import run_openai_compatible_benchmark
 from inference_bench.runners.openai_load_runner import run_openai_compatible_load_benchmark
+from inference_bench.runtime_registry import load_runtime_registry
 from inference_bench.system_info import collect_system_info, write_system_info_json
 from inference_bench.workloads.scaled_generator import generate_scaled_workloads
 
@@ -86,6 +87,10 @@ def validate_config(
         str,
         typer.Option(help="Path to the experiments YAML config."),
     ] = "configs/experiments.yaml",
+    runtime_registry_path: Annotated[
+        str,
+        typer.Option(help="Path to the runtime/engine registry YAML config."),
+    ] = "configs/runtime_engines.yaml",
 ) -> None:
     """Validate benchmark configuration files."""
 
@@ -94,11 +99,13 @@ def validate_config(
         workloads_path=workloads_path,
         experiments_path=experiments_path,
     )
+    runtime_registry = load_runtime_registry(runtime_registry_path)
     experiment_names = sorted(project_config.experiments)
 
     console.print("[bold green]Configuration valid.[/bold green]")
     console.print(f"Models loaded: {len(project_config.models)}")
     console.print(f"Model aliases loaded: {len(project_config.model_aliases)}")
+    console.print(f"Runtime engines loaded: {len(runtime_registry)}")
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")
     console.print("Experiments: " + (", ".join(experiment_names) if experiment_names else "none"))

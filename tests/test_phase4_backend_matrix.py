@@ -12,8 +12,8 @@ def test_backend_matrix_loads_required_backends() -> None:
         "tensorrt_llm_future",
     }
     assert backends["hf_local"].status == "ready"
-    assert backends["sglang_openai_compatible_future"].status == "future"
-    assert backends["tensorrt_llm_future"].status == "future"
+    assert backends["sglang_openai_compatible_future"].status == "ready"
+    assert backends["tensorrt_llm_future"].status == "planned"
 
 
 def test_vllm_backend_requires_server_and_gpu() -> None:

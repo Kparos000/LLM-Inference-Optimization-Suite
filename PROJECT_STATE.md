@@ -11,6 +11,7 @@ B6R1_BLOCKED
 B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
 PRODUCTION_MODEL_REGISTRY_FROZEN
+PRODUCTION_RUNTIME_REGISTRY_READY
 FULL_RUN_NOT_READY
 ```
 
@@ -76,6 +77,13 @@ Phase 1A froze the production model registry. Active aliases are now
 compatibility aliases. `model6_gated` remains Llama 3.1 8B. `model7_gated`
 uses Mistral Small 3.2 24B through the HF provider route, with paid execution
 blocked until complete input/output token pricing is captured.
+
+Phase 1B added the production runtime registry. The stack is now documented as
+Runtime -> Infrastructure -> Tooling -> Evaluation. Hugging Face Transformers,
+vLLM, SGLang, and API provider routes are typed runtime entries with explicit
+model/provider/execution-target/hardware compatibility. TensorRT-LLM is
+registered only as a planned engine and is excluded from live selection until
+it is smoke-tested.
 
 ## B1 Quality Gate
 
@@ -295,9 +303,10 @@ Result tracks are separated:
   cost and no provider GPU telemetry. `model7_gated` is registered but
   unpriced.
 - Self-hosted GPU track: `model2_3b`, `model3_7b`, and `model4_32b` through
-  Hugging Face local, vLLM, SGLang, TensorRT-LLM future work, or RunPod, with
-  GPU telemetry and hourly infrastructure cost when configured, and no API
-  token price.
+  Hugging Face local, vLLM, SGLang, or RunPod, with GPU telemetry and hourly
+  infrastructure cost when configured, and no API token price.
+- Planned engine track: TensorRT-LLM is registered for future compatibility
+  planning only and is not runnable until smoke-tested.
 
 ## Next Step
 
@@ -318,4 +327,5 @@ architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
 `docs/104_full_run_ai_engineering_readiness.md` for the full-run readiness
 audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/106_research_ai_vertical_generation_contract.md` for B6R2, and
-`docs/107_b6r3_research_ai_model_capacity_validation.md` for B6R3.
+`docs/107_b6r3_research_ai_model_capacity_validation.md` for B6R3, and
+`docs/108_production_runtime_registry.md` for Phase 1B.

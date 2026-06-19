@@ -266,6 +266,7 @@ that aligns telemetry timestamps with request timestamps.
 
 ```text
 run_id,timestamp_utc,backend,model_name,optimization,workload_name,prompt_id,
+runtime,engine,backend_type,hardware,provider,
 input_tokens,output_tokens,ttft_ms,tpot_ms,end_to_end_latency_ms,
 throughput_tokens_per_second,peak_memory_mb,estimated_cost_usd,success,
 error_message
@@ -524,13 +525,13 @@ Recommended chunking:
 - HF baseline: local plumbing, tokenizer correctness, and small validation.
 - vLLM: first serious GPU backend through the existing OpenAI-compatible path.
 - SGLang: add after vLLM metrics and result schema are stable.
-- TensorRT-LLM: future work only for larger models such as 70B or
-  NVIDIA-specific maximum-performance experiments.
+- TensorRT-LLM: planned registry placeholder only; do not include it in
+  runnable matrices until it is smoke-tested.
 
 ### Models
 
 - 0.5B: local plumbing and server smoke tests.
-- 1.5B: small baseline if useful after plumbing is stable.
+- 3B: small production baseline after plumbing is stable.
 - 7B: first serious GPU benchmark.
 - 32B: later scale comparison after telemetry, memory, and sharding plans are
   validated.

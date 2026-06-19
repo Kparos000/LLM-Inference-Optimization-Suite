@@ -48,7 +48,7 @@ sglang_openai_compatible_future:
   supports_batch: true
   supports_concurrency: true
   cost_model: gpu_infra
-  status: future
+  status: ready
 
 tensorrt_llm_future:
   backend_name: tensorrt_llm
@@ -61,4 +61,4 @@ tensorrt_llm_future:
   supports_batch: true
   supports_concurrency: true
   cost_model: gpu_infra
-  status: future
+  status: planned

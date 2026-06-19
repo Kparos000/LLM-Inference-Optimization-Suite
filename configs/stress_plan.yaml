@@ -15,7 +15,9 @@ planned_backends:
   - huggingface
   - vllm
   - sglang_optional
-  - tensorrt_llm_future
+
+planned_engines_not_runnable:
+  - tensorrt_llm
 
 planned_optimizations:
   - hf_baseline

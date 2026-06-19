@@ -53,6 +53,11 @@ class GenerationRecord:
     vertical: str | None = None
     memory_mode: str | None = None
     ablation_mode: str | None = None
+    runtime: str | None = None
+    engine: str | None = None
+    backend_type: str | None = None
+    hardware: str | None = None
+    provider: str | None = None
     expected_output_format: str | None = None
     citation_id_aliases: str | None = None
     generation_contract_valid: bool = False
