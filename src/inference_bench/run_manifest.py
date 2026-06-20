@@ -6,7 +6,9 @@ import json
 import subprocess
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
+from typing import Any
 
 
 def utc_now() -> str:
@@ -42,6 +44,49 @@ def _validate_non_negative_int(value: int, field_name: str) -> None:
         raise ValueError(msg)
 
 
+def _validate_optional_non_negative_int(value: int | None, field_name: str) -> None:
+    if value is not None:
+        _validate_non_negative_int(value, field_name)
+
+
+def _validate_optional_non_empty_string(value: str | None, field_name: str) -> None:
+    if value is not None:
+        _validate_non_empty_string(value, field_name)
+
+
+def file_sha256(path: str | Path) -> str:
+    """Return a SHA-256 hash for a local artifact."""
+
+    digest = sha256()
+    with Path(path).open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def hash_existing_paths(paths: list[str | Path]) -> str:
+    """Return one deterministic hash over existing path names and bytes."""
+
+    digest = sha256()
+    for raw_path in sorted(str(path) for path in paths):
+        path = Path(raw_path)
+        if not path.exists() or not path.is_file():
+            continue
+        digest.update(raw_path.replace("\\", "/").encode("utf-8"))
+        digest.update(file_sha256(path).encode("utf-8"))
+    return digest.hexdigest()
+
+
+VALID_MANIFEST_STATUSES = {
+    "planned",
+    "initialized",
+    "running",
+    "partial",
+    "completed",
+    "failed",
+}
+
+
 @dataclass(frozen=True)
 class RunManifest:
     """Metadata describing one benchmark or smoke-test run."""
@@ -69,6 +114,25 @@ class RunManifest:
     profiling_mode: str = "disabled"
     profiler_output_path: str | None = None
     profiling_metadata: dict[str, object] | None = None
+    config_id: str | None = None
+    vertical: str | None = None
+    runtime: str | None = None
+    engine: str | None = None
+    backend_type: str | None = None
+    hardware: str | None = None
+    provider: str | None = None
+    concurrency: int | None = None
+    traffic_profile: str | None = None
+    prompt_count: int | None = None
+    dataset_workload_hash: str | None = None
+    config_hash: str | None = None
+    started_at: str | None = None
+    updated_at: str | None = None
+    completed_at: str | None = None
+    completed_count: int | None = None
+    failed_count: int | None = None
+    expected_count: int | None = None
+    artifact_paths: dict[str, str] | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -110,14 +174,57 @@ class RunManifest:
         if self.profiling_enabled and self.profiler_output_path is None:
             msg = "profiler_output_path is required when profiling is enabled"
             raise ValueError(msg)
-        if self.status not in {"planned", "running", "completed", "failed"}:
-            msg = "status must be one of: planned, running, completed, failed"
+        if self.status not in VALID_MANIFEST_STATUSES:
+            msg = "status must be one of: " + ", ".join(sorted(VALID_MANIFEST_STATUSES))
             raise ValueError(msg)
+        for field_name in (
+            "config_id",
+            "vertical",
+            "runtime",
+            "engine",
+            "backend_type",
+            "hardware",
+            "provider",
+            "traffic_profile",
+            "dataset_workload_hash",
+            "config_hash",
+            "started_at",
+            "updated_at",
+            "completed_at",
+        ):
+            _validate_optional_non_empty_string(
+                getattr(self, field_name),
+                field_name,
+            )
+        for field_name in (
+            "concurrency",
+            "prompt_count",
+            "completed_count",
+            "failed_count",
+            "expected_count",
+        ):
+            _validate_optional_non_negative_int(getattr(self, field_name), field_name)
+        if self.artifact_paths is not None:
+            for key, value in self.artifact_paths.items():
+                _validate_non_empty_string(key, "artifact_paths key")
+                _validate_non_empty_string(value, f"artifact_paths[{key}]")
+        if self.status == "completed" and self.completed_at is None and self.end_time is None:
+            msg = "completed manifests require completed_at or end_time"
+            raise ValueError(msg)
+        if self.status == "completed" and self.expected_count is not None:
+            observed = (self.completed_count or 0) + (self.failed_count or 0)
+            if observed < self.expected_count:
+                msg = "completed manifests cannot be partial"
+                raise ValueError(msg)
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable manifest payload."""
 
-        return asdict(self)
+        payload: dict[str, Any] = asdict(self)
+        payload["started_at"] = self.started_at or self.start_time
+        payload["updated_at"] = self.updated_at or self.timestamp_utc
+        payload["completed_at"] = self.completed_at or self.end_time
+        return payload
 
 
 def write_run_manifest(manifest: RunManifest, output_path: str | Path) -> Path:
@@ -130,3 +237,13 @@ def write_run_manifest(manifest: RunManifest, output_path: str | Path) -> Path:
         encoding="utf-8",
     )
     return path
+
+
+def read_run_manifest(path: str | Path) -> dict[str, Any]:
+    """Read a run manifest payload from disk."""
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        msg = "Run manifest must be a JSON object"
+        raise ValueError(msg)
+    return payload

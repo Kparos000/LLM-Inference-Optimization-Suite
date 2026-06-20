@@ -3433,6 +3433,7 @@ PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
+ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
 FULL_RUN_NOT_READY
 ```
 
@@ -3458,7 +3459,9 @@ metadata hooks, post-SLO negative optimization rules, and deployment
 readiness guardrails. Phase 1D cleaned local pytest/tool temp folders,
 strengthened ignore rules, and aligned CI with the local validation gates for
 config coverage, repository hygiene, mypy, pytest, ruff, public-content audit,
-doctor, and validate-config.
+doctor, and validate-config. Phase 1E added local artifact synchronization,
+backup verification, and checkpoint/resume hardening with a passing 20-prompt
+long-run recovery dry run.
 
 ## What Is Ready
 
@@ -3503,6 +3506,12 @@ doctor, and validate-config.
 - optional profiling manifest hooks for PyTorch profiler, Nsight Systems, and
   Nsight Compute placeholders, disabled by default;
 - post-SLO negative optimization rules and production readiness guardrails;
+- first-class production run manifests with workload/config hashes, artifact
+  paths, row counts, and partial/completed status protection;
+- local artifact sync to `backups/` plus backup verification for required
+  files, hashes, and manifest row accounting;
+- checkpoint/resume manager for completed prompt IDs, partial raw JSONL resume,
+  duplicate prompt prevention, failed-row persistence, and resume reports;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process

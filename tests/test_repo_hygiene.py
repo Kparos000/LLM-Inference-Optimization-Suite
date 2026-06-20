@@ -22,6 +22,7 @@ REQUIRED_GITIGNORE_PATTERNS = {
     "venv*/",
     "env/",
     "env*/",
+    "backups/",
     "results/raw/*",
     "results/processed/*",
     "results/raw/**/*api*",

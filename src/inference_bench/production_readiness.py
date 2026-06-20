@@ -26,6 +26,9 @@ class ProductionRunReadinessInput:
     gpu_hourly_price_usd: float | None = None
     making_gpu_cost_claim: bool = False
     checkpoint_resume_supported: bool = False
+    manifest_enabled: bool = False
+    backup_dry_run_completed: bool = False
+    backup_verification_passed: bool = False
     api_provider_load_probe_completed: bool = False
     result_track_rows: list[dict[str, Any]] | None = None
 
@@ -108,6 +111,26 @@ def build_production_readiness_verdict(
             ),
         ),
         _check(
+            name="manifest_required_for_long_run",
+            passed=(not runpod_like_run or readiness.manifest_enabled),
+            required=runpod_like_run,
+            evidence=(
+                "Run manifest enabled"
+                if readiness.manifest_enabled
+                else "First-class run manifest required before long self-hosted/RunPod runs"
+            ),
+        ),
+        _check(
+            name="gpu_hourly_price_registered_for_runpod_long_run",
+            passed=(not runpod_like_run or readiness.gpu_hourly_price_usd is not None),
+            required=runpod_like_run,
+            evidence=(
+                f"gpu_hourly_price_usd={readiness.gpu_hourly_price_usd}"
+                if readiness.gpu_hourly_price_usd is not None
+                else "GPU hourly price must be registered before long RunPod/self-hosted runs"
+            ),
+        ),
+        _check(
             name="gpu_hourly_price_required_before_gpu_cost_claim",
             passed=(
                 not readiness.making_gpu_cost_claim or readiness.gpu_hourly_price_usd is not None
@@ -127,6 +150,19 @@ def build_production_readiness_verdict(
                 "Checkpoint/resume supported"
                 if readiness.checkpoint_resume_supported
                 else "Checkpoint/resume required for 1,000+ prompt runs"
+            ),
+        ),
+        _check(
+            name="backup_verification_dry_run_required_for_runpod",
+            passed=(
+                not runpod_like_run
+                or (readiness.backup_dry_run_completed and readiness.backup_verification_passed)
+            ),
+            required=runpod_like_run,
+            evidence=(
+                "Backup verification dry run passed"
+                if readiness.backup_dry_run_completed and readiness.backup_verification_passed
+                else "Backup verification dry run required before long self-hosted/RunPod runs"
             ),
         ),
         _check(

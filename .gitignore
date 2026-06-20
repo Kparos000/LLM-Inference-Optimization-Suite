@@ -30,6 +30,7 @@ virtualenv/
 .tox/
 .nox/
 .uv/
+backups/
 
 # Jupyter
 .ipynb_checkpoints/

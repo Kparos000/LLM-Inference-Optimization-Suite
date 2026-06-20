@@ -583,10 +583,83 @@ def build_full_run_readiness_audit(
         _check(
             category="run_safety",
             name="artifact_sync_backup_plan",
-            status="GAP",
+            status="PASS" if _exists(root, "src/inference_bench/artifact_sync.py") else "FAIL",
             evidence=(
-                "Raw incremental writes, manifests, completed IDs, failed rows, and "
-                "partial-run checks exist; external artifact sync/backup is still missing"
+                "Local artifact sync and backup verification engine is implemented"
+                if _exists(root, "src/inference_bench/artifact_sync.py")
+                else "Missing artifact sync and backup verification engine"
+            ),
+            blocking=not _exists(root, "src/inference_bench/artifact_sync.py"),
+        )
+    )
+    checks.append(
+        _check(
+            category="run_safety",
+            name="first_class_manifest_fields",
+            status="PASS"
+            if _contains(
+                root,
+                "src/inference_bench/run_manifest.py",
+                "config_id",
+                "dataset_workload_hash",
+                "artifact_paths",
+                "completed_count",
+                "expected_count",
+            )
+            else "FAIL",
+            evidence="RunManifest includes production long-run fields",
+            blocking=not _contains(
+                root,
+                "src/inference_bench/run_manifest.py",
+                "config_id",
+                "dataset_workload_hash",
+                "artifact_paths",
+                "completed_count",
+                "expected_count",
+            ),
+        )
+    )
+    checks.append(
+        _file_check(
+            root,
+            category="run_safety",
+            name="checkpoint_resume_manager",
+            relative_path="src/inference_bench/checkpoint_resume.py",
+            blocking=True,
+        )
+    )
+    checks.append(
+        _file_check(
+            root,
+            category="run_safety",
+            name="long_run_recovery_dry_run",
+            relative_path="scripts/phase4/test_long_run_recovery_dry_run.py",
+            blocking=True,
+        )
+    )
+    checks.append(
+        _check(
+            category="run_safety",
+            name="runpod_guardrails_require_sync_checkpoint_manifest_backup",
+            status="PASS"
+            if _contains(
+                root,
+                "src/inference_bench/production_readiness.py",
+                "manifest_required_for_long_run",
+                "backup_verification_dry_run_required_for_runpod",
+                "gpu_hourly_price_registered_for_runpod_long_run",
+            )
+            else "FAIL",
+            evidence=(
+                "RunPod/long-run readiness requires artifact sync, checkpoint/resume, "
+                "hourly price, manifest, and backup verification dry run"
+            ),
+            blocking=not _contains(
+                root,
+                "src/inference_bench/production_readiness.py",
+                "manifest_required_for_long_run",
+                "backup_verification_dry_run_required_for_runpod",
+                "gpu_hourly_price_registered_for_runpod_long_run",
             ),
         )
     )

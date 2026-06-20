@@ -1,6 +1,6 @@
 # Full-Run AI Engineering Readiness
 
-Status: measured after B6R1 on June 16, 2026
+Status: updated after Phase 1E on June 19, 2026
 
 ## Purpose
 
@@ -63,6 +63,13 @@ Run safety controls are present:
 - B6 writes per-prompt failure rows;
 - B6 manifest records `error_count`;
 - the partial-run check prevents a completed manifest with fewer than 500 rows.
+- Phase 1E adds first-class production run-manifest fields;
+- checkpoint/resume can recover from checkpoint JSON and partial raw JSONL;
+- duplicate `prompt_id` rows are blocked unless explicitly allowed;
+- failed rows are persisted;
+- local artifact sync writes run-scoped backups under `backups/`;
+- backup verification checks file existence, non-zero size, hashes, and
+  manifest row accounting.
 
 B6R1 adds targeted replay manifests and combined raw replay output for the
 Research AI failed-row audit. The full frozen 500-row B6R1 manifest is absent
@@ -91,7 +98,8 @@ RunPod cost claims are blocked:
 
 - `configs/runpod_projection_prices.yaml` has no reviewed hourly prices;
 - throughput multipliers for RTX 4090, L40S, A100, and H100 remain null.
-- external artifact sync/backup is still missing.
+- cloud artifact sync is not implemented yet; local backup is implemented and
+  S3/R2/GDrive remain future providers.
 
 GPU cost implementation is not centralized:
 
@@ -139,6 +147,10 @@ Do not run:
 - RunPod execution;
 - 2,000-prompt benchmark;
 - 10,000-prompt benchmark.
+
+Long RunPod/self-hosted runs are additionally blocked unless artifact sync,
+checkpoint/resume, GPU hourly pricing, first-class manifests, partial-run
+protection, and a passing backup verification dry run are all enabled.
 
 The next engineering block should remain Research AI quality-focused:
 

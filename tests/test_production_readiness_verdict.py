@@ -57,7 +57,10 @@ def test_long_run_guardrails_block_without_sync_checkpoint_and_price() -> None:
     assert report["status"] == "NOT_READY"
     assert "artifact_sync_before_long_run" in failed
     assert "gpu_hourly_price_required_before_gpu_cost_claim" in failed
+    assert "gpu_hourly_price_registered_for_runpod_long_run" in failed
     assert "checkpoint_resume_required_for_1000_plus" in failed
+    assert "manifest_required_for_long_run" in failed
+    assert "backup_verification_dry_run_required_for_runpod" in failed
 
 
 def test_partial_completed_run_is_blocked() -> None:
@@ -137,6 +140,9 @@ def test_ready_verdict_when_required_guardrails_are_satisfied() -> None:
             gpu_hourly_price_usd=0.5,
             making_gpu_cost_claim=True,
             checkpoint_resume_supported=True,
+            manifest_enabled=True,
+            backup_dry_run_completed=True,
+            backup_verification_passed=True,
             result_track_rows=[_result_row(gpu_hourly_price_usd=0.5)],
         )
     )

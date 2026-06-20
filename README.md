@@ -39,6 +39,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The production runtime registry separates Runtime -> Infrastructure -> Tooling -> Evaluation. Hugging Face Transformers, vLLM, SGLang, and API provider routes are selectable when compatible; TensorRT-LLM is registered only as a planned, unsmoked engine.
 - Production workload profiles, ISL/OSL distributions, cache-readiness metrics, optional profiling hooks, post-SLO negative optimization rules, and deployment readiness guardrails are implemented as pre-run controls.
 - Repository hygiene and CI validation are hardened: local temp/cache folders are ignored, public-content auditing runs in CI, and `validate-config` now covers model/runtime registries, SLO targets/profiles, load profiles, optimization negative rules, and the unified result-track schema.
+- Artifact sync and long-run recovery controls are implemented locally. Production manifests now record runtime/backend/provider identity, workload/config hashes, counts, timestamps, status, and artifact paths; checkpoint/resume blocks duplicate prompt rows; local backup verification passed the 20-prompt dry run.
 - The grounded generation contract, short evidence labels, deterministic evaluator, streaming metrics, API cost accounting, run manifests, checkpointing, and resume controls are implemented.
 - Historical curated Phase 1 samples document RunPod L40S vLLM calibration and concurrency behavior. They are not a hardware-equal comparison with local CPU results.
 - Current local and API smoke tests have produced real model output. Model6 currently leads the API smoke on quality and cost; Model5 remains a provider/model-size comparison.
@@ -174,12 +175,14 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [B6R3 Research AI model capacity validation](docs/107_b6r3_research_ai_model_capacity_validation.md)
 - [Block B6R3 summary](docs/summaries/blockB6R3_research_ai_model_capacity_summary.md)
 - [Production runtime registry](docs/108_production_runtime_registry.md)
+- [Artifact sync and long-run recovery](docs/108_artifact_sync_and_long_run_recovery.md)
 - [Production workload profiles](docs/109_production_workload_profiles.md)
 - [Cache-readiness metrics](docs/110_cache_readiness_metrics.md)
 - [Profiling hooks](docs/111_profiling_hooks.md)
 - [Post-SLO optimization principle](docs/112_post_slo_optimization_principle.md)
 - [Deployment readiness guardrails](docs/113_deployment_readiness_guardrails.md)
 - [Repository cleanup and CI hardening](docs/114_repository_cleanup_ci_hardening.md)
+- [Phase 1E artifact sync summary](docs/summaries/blockPhase1E_artifact_sync_long_run_recovery_summary.md)
 - [Current project state](PROJECT_STATE.md)
 - [Data directory policy](data/README.md)
 

@@ -14,6 +14,7 @@ PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
+ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
 FULL_RUN_NOT_READY
 ```
 
@@ -97,6 +98,15 @@ Phase 1D cleaned local pytest/tool temp folders, strengthened `.gitignore`,
 and hardened CI/CD validation. The CI workflow now mirrors the local validation
 order and runs targeted config, repository-hygiene, CI-audit, mypy, pytest,
 ruff, public-content audit, doctor, and validate-config gates.
+
+Phase 1E added local artifact sync and long-run recovery controls. Production
+manifests now include runtime/backend/provider identity, workload/config
+hashes, row counts, timestamps, statuses, and artifact paths. The checkpoint
+manager resumes from partial raw JSONL, prevents duplicate prompt IDs by
+default, persists failed rows, and writes a clear resume report. The local
+backup engine syncs raw, manifest, telemetry, processed, checkpoint, failed-row,
+and log artifacts to `backups/` and verifies existence, non-zero size, hashes,
+and manifest row accounting.
 
 ## B1 Quality Gate
 
@@ -324,6 +334,9 @@ Result tracks are separated:
   sync and checkpoint/resume; GPU cost claims require hourly price; large API
   runs require a provider load probe; partial runs cannot be marked complete;
   API and GPU tracks must join through the unified result schema.
+- Phase 1E dry-run track: 20 simulated prompts wrote 10 rows, resumed the
+  remaining 10, persisted one failed row, synced local artifacts, and passed
+  backup verification with completeness score 1.0.
 
 ## Next Step
 
@@ -351,4 +364,7 @@ audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/112_post_slo_optimization_principle.md`, and
 `docs/113_deployment_readiness_guardrails.md` for Phase 1C. See
 `docs/114_repository_cleanup_ci_hardening.md` for Phase 1D repository hygiene
-and CI validation hardening.
+and CI validation hardening. See
+`docs/108_artifact_sync_and_long_run_recovery.md` and
+`docs/summaries/blockPhase1E_artifact_sync_long_run_recovery_summary.md` for
+Phase 1E artifact sync and recovery controls.
