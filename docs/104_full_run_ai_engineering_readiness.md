@@ -1,11 +1,11 @@
 # Full-Run AI Engineering Readiness
 
-Status: updated after Phase B6R4 on June 20, 2026
+Status: updated after Phase B6R5 on June 20, 2026
 
 ## Purpose
 
 This audit checks whether the repository is ready to move from the controlled
-500-prompt B6/B6R1/B6R2/B6R4 gates to larger prompt-count benchmarks,
+500-prompt B6/B6R1/B6R2/B6R4/B6R5 gates to larger prompt-count benchmarks,
 concurrency sweeps, SGLang/mm4 comparisons, or RunPod execution.
 
 The audit is deterministic and local. It does not use an LLM as a decision
@@ -23,19 +23,26 @@ source.
 The readiness status is:
 
 ```text
-NOT_READY
+READY_WITH_QUALITY_CAVEAT
 ```
 
-The audit found 49 checks:
+Detailed readiness is split:
 
-- passes: 41;
+- deployability readiness: `NOT_READY`;
+- benchmark execution readiness: `READY_WITH_QUALITY_CAVEAT`;
+- 1,000-prompt terminal baseline allowed: `true`.
+
+The audit found 50 checks:
+
+- passes: 42;
 - gaps: 2;
-- blocking failures: 6.
+- non-blocking failures: 5;
+- blocking failures: 0.
 
-The blocking failures are the failed B6, B6R1, and B6R2 quality gates, the
-absence of a passed selected B6R2 full-500 contract gate, the blocked B6R4
-full-500 `model2_3b` gate, and the resulting prohibition on a 1,000-prompt
-terminal run.
+The failed B6, B6R1, B6R2, and B6R4 quality gates remain recorded evidence.
+B6R5 did not make the selected model deployable, but it separated benchmark
+execution readiness from deployability readiness. A controlled 1,000-prompt
+terminal baseline is allowed as caveated benchmark evidence only.
 
 ## Passed Areas
 
@@ -82,6 +89,11 @@ B6R4 adds a `model2_3b` targeted replay manifest, full 500-row raw output, and
 processed evaluation reports. The targeted Research AI gate passed; the full
 500-row gate completed and remains blocked by minimum vertical quality.
 
+B6R5 adds Finance/Research failed-row replay input, failure-audit reports,
+targeted strategy comparison reports, and a refreshed readiness report. The
+selected strategy did not trigger a full 500 rerun because Research AI remained
+below the targeted vertical threshold.
+
 GPU/runtime controls are present:
 
 - `remote_rtx3070` profile;
@@ -113,7 +125,7 @@ GPU cost implementation is not centralized:
 - API pricing exists separately in `src/inference_bench/api_pricing.py`;
 - `configs/gpu_costs.yaml` remains a template.
 
-## Blocking Failure
+## Quality Caveat
 
 The B6 gate did not pass:
 
@@ -170,11 +182,32 @@ truncation. The full gate remains blocked because Finance and Research AI each
 reached only 80% evidence match and 80% groundedness, below the 85% minimum
 vertical threshold.
 
+B6R5 replayed the 40 Finance and Research AI failed B6R4 rows with three
+targeted strategies. The selected strategy, `evidence_selection_preplan`,
+reached:
+
+- JSON validity: 100%;
+- contract validity: 100%;
+- evidence match: 80%;
+- groundedness: 80%;
+- Finance evidence/groundedness: 90% / 90%;
+- Research AI evidence/groundedness: 70% / 70%;
+- safety violations: 0;
+- truncation: 0%.
+
+The decision is `B6R5_QUALITY_CAVEATED`. Finance cleared the targeted floor on
+the failed-row subset, but Research AI did not. Therefore no full 500-row B6R5
+rerun was triggered, and no deployability claim is allowed.
+
 ## Decision
+
+Allowed next benchmark:
+
+- controlled 1,000-prompt terminal baseline, only as caveated benchmark
+  evidence.
 
 Do not run:
 
-- 1,000-prompt terminal run;
 - concurrency 2/4 sweep;
 - SGLang comparison;
 - mm4 agentic comparison;
@@ -186,14 +219,13 @@ Long RunPod/self-hosted runs are additionally blocked unless artifact sync,
 checkpoint/resume, GPU hourly pricing, first-class manifests, partial-run
 protection, and a passing backup verification dry run are all enabled.
 
-The next engineering block should remain Research AI quality-focused:
+The next engineering action should keep the benchmark/deployability distinction
+explicit:
 
 ```text
-B6R5_MODEL2_3B_FINANCE_RESEARCH_VERTICAL_REPAIR
+CONTROLLED_1000_PROMPT_TERMINAL_BASELINE_WITH_QUALITY_CAVEAT
 ```
 
-Freeze B6R4 artifacts. Diagnose Finance and Research AI full-500 failures on
-the `model2_3b` run, then decide whether the next controlled comparison should
-repair Qwen2.5-3B citation selection, test model3_7b feasibility, or run a full
-500 API-provider model6 gate. Keep the evaluator, gold data, and promoted
-retrieval source unchanged.
+Keep deployability blocked until a selected model path clears the Finance and
+Research AI vertical floors without caveat. Keep the evaluator, gold data, and
+promoted retrieval source unchanged.

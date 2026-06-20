@@ -2913,8 +2913,41 @@ The targeted decision is `B6R4_TARGETED_MODEL2_3B_PASSED`, so the full frozen
 The full decision is `B6R4_MODEL2_3B_500_BLOCKED`. Aggregate quality improved
 and passed, but the minimum vertical evidence and groundedness gates failed:
 Finance reached 80% evidence match and 80% groundedness, and Research AI
-reached 80% evidence match and 80% groundedness. A 1,000-prompt run remains
-blocked until the full frozen 500-row gate passes.
+reached 80% evidence match and 80% groundedness. At B6R4, a 1,000-prompt run
+remained blocked until the Finance and Research AI failures were isolated.
+
+## B6R5 Finance And Research Quality Repair
+
+B6R5 replayed the 40 Finance and Research AI rows that blocked the full B6R4
+500-row gate. It used the same `model2_3b` / Qwen2.5-3B vLLM path on the
+remote RTX 3070 and did not change evaluator semantics, gold data, promoted
+retrieval, B6R4 artifacts, or workload-specific model routing.
+
+The root-cause audit found:
+
+- model instruction-following failure: 40 rows;
+- likely model-capacity limitation: 40 rows;
+- partial multi-evidence citation: 39 rows;
+- wrong evidence selected: 28 rows;
+- Finance metric ambiguity and numeric-table extraction issues: 20 rows each;
+- Research AI synthesis ambiguity: 20 rows.
+
+Three targeted strategies were tested. The selected strategy was
+`evidence_selection_preplan`:
+
+- JSON validity: 100%;
+- contract validity: 100%;
+- evidence match: 80%;
+- deterministic groundedness: 80%;
+- Finance evidence/groundedness: 90% / 90%;
+- Research AI evidence/groundedness: 70% / 70%;
+- safety violations: zero;
+- truncation: zero.
+
+The decision is `B6R5_QUALITY_CAVEATED`. Finance cleared the targeted failed-row
+floor, but Research AI did not. The full 500-row B6R5 rerun was not triggered.
+The refreshed readiness audit is `READY_WITH_QUALITY_CAVEAT` for benchmark
+execution and `NOT_READY` for deployability.
 
 # 18. Telemetry
 
@@ -3405,6 +3438,23 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - blocked scaling because Finance and Research AI each reached only 80%
   evidence match and groundedness on the full run.
 
+## Phase B6R5: Finance And Research Quality Repair
+
+- added a B6R5 failure-audit and targeted replay module for the B6R4 Finance
+  and Research AI failed rows;
+- selected 40 rows, 20 Finance and 20 Research AI, without changing evaluator
+  semantics, gold data, promoted retrieval, or B6R4 artifacts;
+- tested `evidence_selection_preplan`,
+  `vertical_specific_citation_reminder`, and `output_budget_320`;
+- selected `evidence_selection_preplan` because it produced the strongest
+  evidence and groundedness improvement without passing the targeted gate;
+- improved Finance failed-row evidence match and groundedness to 90%;
+- left Research AI at 70% evidence match and groundedness, so no full 500-row
+  rerun was triggered;
+- split readiness into deployability readiness and benchmark execution
+  readiness, allowing a caveated 1,000-prompt terminal baseline while keeping
+  deployability blocked.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -3452,6 +3502,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   failed replay set.
 - Phase B6R4 Qwen2.5-3B vLLM Research AI targeted pass and full frozen 500-row
   quality-gate block.
+- Phase B6R5 Finance and Research failed-row repair replay, caveated readiness
+  update, and 1,000-prompt benchmark-path separation from deployability.
 
 ## Current Block State
 
@@ -3477,7 +3529,9 @@ Qwen2.5-1.5B model capacity the likely Research AI blocker. Phase B6R4 replayed
 the frozen Research AI set through `model2_3b` / Qwen2.5-3B, passed the
 targeted gate, and then completed the full 500-row gate, which remains blocked
 because Finance and Research AI each reached only 80% evidence match and
-groundedness.
+groundedness. Phase B6R5 replayed the 40 failed Finance and Research AI rows,
+selected `evidence_selection_preplan`, repaired Finance failed-row evidence and
+groundedness to 90%, and left Research AI at 70%.
 
 Current decision:
 
@@ -3489,12 +3543,15 @@ B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
 B6R4_TARGETED_MODEL2_3B_PASSED
 B6R4_MODEL2_3B_500_BLOCKED
+B6R5_QUALITY_CAVEATED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
-FULL_RUN_NOT_READY
+BENCHMARK_EXECUTION_READY_WITH_QUALITY_CAVEAT
+TERMINAL_1000_PROMPT_BASELINE_ALLOWED_WITH_CAVEAT
+DEPLOYABILITY_NOT_READY
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
@@ -3513,8 +3570,10 @@ replay with Qwen2.5-3B and improved the full 500-row gate to 98.4% JSON and
 contract validity, 90.6% evidence match and groundedness, zero safety
 violations, and 1.6% truncation. The full gate still failed because Finance and
 Research AI were each 80% on evidence match and groundedness, below the 85%
-minimum vertical target. It is not ready for larger scale or concurrency. Phase
-1A froze active aliases as `model1_0_5b`, `model2_3b`,
+minimum vertical target. B6R5 moved Finance failed-row evidence and groundedness
+to 90%, but Research AI stayed at 70%. This is not deployability-ready, but it
+allows a controlled 1,000-prompt terminal baseline as caveated benchmark
+evidence. Phase 1A froze active aliases as `model1_0_5b`, `model2_3b`,
 `model3_7b`, `model4_32b`, `model5_gated`, `model6_gated`, and
 `model7_gated`. Phase 1B added a production runtime registry and compatibility
 guard for Hugging Face Transformers, vLLM, SGLang, API provider routes, and
@@ -3560,6 +3619,8 @@ long-run recovery dry run.
   replay set;
 - B6R4 Qwen2.5-3B vLLM targeted Research AI pass and measured full 500-row
   gate;
+- B6R5 Finance and Research failed-row audit, strategy comparison, and
+  caveated benchmark readiness update;
 - frozen production model registry with deprecated compatibility aliases for
   historical B1-B6 artifacts;
 - production runtime registry with API/self-hosted route separation and
@@ -3586,13 +3647,14 @@ long-run recovery dry run.
 
 ## Remaining Blockers
 
-- B6R4 full 500-row Finance and Research AI vertical evidence/groundedness
-  blockers;
-- 1,000-prompt terminal run remains blocked until the full frozen 500-row gate
-  passes;
-- bounded concurrency 2/4 sweep only after the 500-prompt gate passes;
-- decision between Qwen2.5-3B citation repair, model3_7b feasibility, or a full
-  model6 API-provider 500-row gate;
+- deployability remains blocked because B6R5 left Research AI failed-row
+  evidence match and groundedness at 70%;
+- the 1,000-prompt terminal baseline is allowed only as caveated benchmark
+  evidence, not as a deployability claim;
+- bounded concurrency 2/4 sweep only after the caveated 1,000-prompt baseline
+  is reviewed and the vertical-quality risk is accepted or repaired;
+- decision between deeper Qwen2.5-3B Research AI citation repair, model3_7b
+  feasibility, or a full 500 API-provider model6 gate for deployability;
 - complete provider pricing for `model7_gated` before paid API execution;
 - TensorRT-LLM smoke validation before it can enter live experiment matrices;
 - registered infrastructure cost if GPU cost comparisons are required;
@@ -3653,6 +3715,9 @@ long-run recovery dry run.
 - B6R4 passed the targeted Research AI replay and completed the full 500-row
   gate on Qwen2.5-3B, but the full gate remains blocked by Finance and
   Research AI minimum vertical evidence and groundedness.
+- B6R5 repaired Finance failed-row evidence and groundedness to 90%, but
+  Research AI remained at 70% on the failed-row replay set. The selected
+  strategy is benchmarkable with a quality caveat, not deployable.
 - B6 runtime and cost projections are RTX 3070 local projections only. RunPod
   prices and throughput multipliers are still unset.
 - API provider result rows and self-hosted GPU result rows now share stable
@@ -3686,13 +3751,11 @@ long-run recovery dry run.
 
 ## Next Engineering Milestone
 
-Run `B6R5_MODEL2_3B_FINANCE_RESEARCH_VERTICAL_REPAIR`. Freeze B6R4 artifacts,
-diagnose the Finance and Research AI full-500 failures, and decide whether the
-next controlled comparison should repair Qwen2.5-3B citation selection, test
-model3_7b feasibility, or run a full 500 API-provider model6 gate. Do not run a
-1,000-prompt terminal run, concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt,
-or 10,000-prompt benchmark until a selected model path passes the frozen
-500-row gate.
+Run only a controlled 1,000-prompt terminal baseline if the objective is a
+caveated benchmark-capacity measurement. Keep deployability blocked until a
+selected model path clears the Finance and Research AI vertical floors without
+caveat. Do not run concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt, or
+10,000-prompt benchmarks from the current state.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -3926,14 +3989,15 @@ gold leakage.
 
 The immediate work is operational:
 
-- freeze B6R4 artifacts and diagnose Finance and Research AI full-500 failures;
-- rerun the same 500-prompt gate only after the selected repair or model path is
-  frozen;
-- run a bounded concurrency 2/4 sweep only if the 500-prompt gate then passes
-  quality and keeps safety at zero;
-- decide whether Qwen2.5-3B can be repaired, whether model3_7b is feasible
-  under the 8 GB VRAM constraint, or whether the model6 API path should be used
-  for the next full gate;
+- run a controlled 1,000-prompt terminal baseline only as caveated benchmark
+  evidence;
+- keep deployability blocked until Research AI clears the vertical
+  evidence/groundedness floor without caveat;
+- run a bounded concurrency 2/4 sweep only after the caveated baseline is
+  reviewed and the vertical-quality risk is accepted or repaired;
+- decide whether deeper Qwen2.5-3B Research AI citation repair, model3_7b
+  feasibility under the 8 GB VRAM constraint, or a full 500 API-provider model6
+  gate is the correct deployability path;
 - register an infrastructure price before making GPU cost claims;
 - add backend-native queue, batch, and cache telemetry;
 - then scale through 2,000 and 10,000 records only after guards pass;
@@ -3977,6 +4041,9 @@ assumptions:
 - the B6R4 Qwen2.5-3B replay is retained because it passed the targeted
   Research AI gate and improved aggregate full-500 quality while exposing
   Finance and Research AI as the remaining vertical blockers.
+- the B6R5 repair replay is retained because it repaired Finance failed-row
+  evidence and groundedness while showing Research AI still below target; it
+  authorizes only a caveated terminal benchmark path, not deployability.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

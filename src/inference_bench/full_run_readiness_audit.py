@@ -218,6 +218,56 @@ def _b6r4_gate_status(root: Path) -> str | None:
     return str(status) if status not in (None, "") else None
 
 
+def _b6r5_full_gate_passed(root: Path) -> bool | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r5_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        return None
+    gate = payload.get("quality_gate")
+    return bool(gate.get("passed")) if isinstance(gate, dict) else None
+
+
+def _b6r5_gate_status(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r5_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        payload = _load_json_if_present(
+            root,
+            "results/processed/b6r5_finance_research_targeted_replay_report.json",
+        )
+    if payload is None:
+        return None
+    status = payload.get("status")
+    return str(status) if status not in (None, "") else None
+
+
+def _b6r5_benchmark_readiness(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r5_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        payload = _load_json_if_present(
+            root,
+            "results/processed/b6r5_finance_research_targeted_replay_report.json",
+        )
+    if payload is None:
+        return None
+    readiness = payload.get("benchmark_execution_readiness")
+    if readiness not in (None, ""):
+        return str(readiness)
+    status = str(payload.get("status") or "")
+    if status in {"B6R5_PASS", "B6R5_TARGETED_PASS"}:
+        return "READY"
+    if status == "B6R5_QUALITY_CAVEATED":
+        return "READY_WITH_QUALITY_CAVEAT"
+    return None
+
+
 def partial_run_completion_check(
     *,
     expected_count: int,
@@ -523,15 +573,27 @@ def build_full_run_readiness_audit(
     b6r4_targeted_passed = _b6r4_targeted_gate_passed(root)
     b6r4_full_passed = _b6r4_full_gate_passed(root)
     b6r4_status = _b6r4_gate_status(root)
+    b6r5_full_passed = _b6r5_full_gate_passed(root)
+    b6r5_status = _b6r5_gate_status(root)
+    b6r5_benchmark_readiness = _b6r5_benchmark_readiness(root)
+    has_b6r5_result = b6r5_status is not None or b6r5_benchmark_readiness is not None
     latest_full_gate_passed = (
-        b6r4_full_passed
+        b6r5_full_passed
+        if b6r5_full_passed is not None
+        else b6r4_full_passed
         if b6r4_full_passed is not None
         else b6r2_passed
         if b6r2_passed is not None
         else b6r1_passed
     )
     latest_full_gate_label = (
-        "B6R4" if b6r4_full_passed is not None else "B6R2" if b6r2_passed is not None else "B6R1"
+        "B6R5"
+        if b6r5_full_passed is not None
+        else "B6R4"
+        if b6r4_full_passed is not None
+        else "B6R2"
+        if b6r2_passed is not None
+        else "B6R1"
     )
     checks.append(
         _check(
@@ -539,7 +601,7 @@ def build_full_run_readiness_audit(
             name="b6_500_gate_result",
             status=(
                 "PASS"
-                if b6_passed or b6r1_passed or b6r2_passed or b6r4_full_passed
+                if b6_passed or b6r1_passed or b6r2_passed or b6r4_full_passed or b6r5_full_passed
                 else "GAP"
                 if b6_passed is None
                 else "FAIL"
@@ -547,6 +609,8 @@ def build_full_run_readiness_audit(
             evidence=(
                 "B6 quality gate passed"
                 if b6_passed
+                else "B6 failed, but B6R5 is the current measured quality state"
+                if has_b6r5_result
                 else "B6 failed, but B6R4 model2_3b full 500 supersedes the blocker"
                 if b6r4_full_passed
                 else "B6 failed, but B6R2 supersedes the B6 quality blocker"
@@ -557,7 +621,9 @@ def build_full_run_readiness_audit(
                 if b6_passed is None
                 else "B6 gate did not pass"
             ),
-            blocking=b6_passed is False
+            blocking=False
+            if has_b6r5_result
+            else b6_passed is False
             and b6r1_passed is not True
             and b6r2_passed is not True
             and b6r4_full_passed is not True,
@@ -575,7 +641,7 @@ def build_full_run_readiness_audit(
                 if b6r1_passed is None
                 else f"B6R1 quality gate did not pass ({b6r1_status or 'unknown status'})"
             ),
-            blocking=b6r1_passed is False,
+            blocking=b6r1_passed is False and not has_b6r5_result,
         )
     )
     checks.append(
@@ -590,7 +656,7 @@ def build_full_run_readiness_audit(
                 if b6r2_passed is None
                 else f"B6R2 quality gate did not pass ({b6r2_status or 'unknown status'})"
             ),
-            blocking=b6r2_passed is False,
+            blocking=b6r2_passed is False and not has_b6r5_result,
         )
     )
     checks.append(
@@ -607,7 +673,7 @@ def build_full_run_readiness_audit(
                 if b6r2_passed and b6r2_contract
                 else "No B6R2 contract selection has passed full 500 validation yet"
             ),
-            blocking=b6r2_passed is False,
+            blocking=b6r2_passed is False and not has_b6r5_result,
         )
     )
     checks.append(
@@ -643,7 +709,32 @@ def build_full_run_readiness_audit(
                 if b6r4_full_passed is None
                 else f"B6R4 full frozen 500 gate blocked ({b6r4_status or 'unknown status'})"
             ),
-            blocking=b6r4_full_passed is False,
+            blocking=b6r4_full_passed is False and not has_b6r5_result,
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="b6r5_finance_research_repair_gate",
+            status=(
+                "PASS"
+                if b6r5_full_passed
+                else "GAP"
+                if b6r5_status is None
+                else "WARN"
+                if b6r5_benchmark_readiness == "READY_WITH_QUALITY_CAVEAT"
+                else "FAIL"
+            ),
+            evidence=(
+                "B6R5 full frozen 500 gate passed"
+                if b6r5_full_passed
+                else "B6R5 Finance/Research repair has not run"
+                if b6r5_status is None
+                else f"B6R5 measured quality caveat ({b6r5_status})"
+                if b6r5_benchmark_readiness == "READY_WITH_QUALITY_CAVEAT"
+                else f"B6R5 blocked ({b6r5_status})"
+            ),
+            blocking=False,
         )
     )
     checks.append(
@@ -653,6 +744,7 @@ def build_full_run_readiness_audit(
             status=(
                 "PASS"
                 if latest_full_gate_passed
+                or b6r5_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
                 else "GAP"
                 if latest_full_gate_passed is None
                 else "FAIL"
@@ -661,6 +753,13 @@ def build_full_run_readiness_audit(
                 f"A 1,000-prompt terminal run is allowed after {latest_full_gate_label}_READY "
                 "at concurrency one"
                 if latest_full_gate_passed
+                else (
+                    "A 1,000-prompt baseline run is allowed as a caveated benchmark after "
+                    "B6R5 measured non-deployable quality"
+                )
+                if b6r5_benchmark_readiness == "READY_WITH_QUALITY_CAVEAT"
+                else "A 1,000-prompt baseline run is allowed after B6R5_READY"
+                if b6r5_benchmark_readiness == "READY"
                 else f"Wait for {latest_full_gate_label} full 500 gate before a 1,000-prompt "
                 "terminal run"
                 if latest_full_gate_passed is None
@@ -669,7 +768,8 @@ def build_full_run_readiness_audit(
                     "blockers are repaired"
                 )
             ),
-            blocking=latest_full_gate_passed is False,
+            blocking=latest_full_gate_passed is False
+            and b6r5_benchmark_readiness not in {"READY", "READY_WITH_QUALITY_CAVEAT"},
         )
     )
     checks.append(
@@ -778,15 +878,34 @@ def build_full_run_readiness_audit(
 
     blocking_failures = [check for check in checks if check["blocking"]]
     gaps = [check for check in checks if check["status"] == "GAP"]
-    if blocking_failures:
-        status = "NOT_READY"
-    elif gaps:
-        status = "READY_WITH_GAPS"
+    deployability_readiness = "READY" if latest_full_gate_passed else "NOT_READY"
+    benchmark_blockers = [
+        check
+        for check in blocking_failures
+        if check["category"]
+        in {
+            "dataset_workload",
+            "context_generation",
+            "run_safety",
+            "slo_diagnosis",
+        }
+    ]
+    if benchmark_blockers:
+        benchmark_execution_readiness = "NOT_READY"
+    elif latest_full_gate_passed:
+        benchmark_execution_readiness = "READY"
+    elif b6r5_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}:
+        benchmark_execution_readiness = b6r5_benchmark_readiness
     else:
-        status = "FULL_RUN_READY"
+        benchmark_execution_readiness = "NOT_READY"
+    status = benchmark_execution_readiness
 
     return {
         "status": status,
+        "deployability_readiness": deployability_readiness,
+        "benchmark_execution_readiness": benchmark_execution_readiness,
+        "terminal_1000_prompt_baseline_allowed": benchmark_execution_readiness
+        in {"READY", "READY_WITH_QUALITY_CAVEAT", "READY_WITH_GAPS"},
         "checks": checks,
         "summary": {
             "check_count": len(checks),

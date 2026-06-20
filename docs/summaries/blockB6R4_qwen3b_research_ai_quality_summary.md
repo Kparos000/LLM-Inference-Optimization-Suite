@@ -47,12 +47,12 @@ The full-run readiness audit remains `NOT_READY`. A 1,000-prompt run is not
 allowed. RunPod remains blocked until the full 500 gate passes and hourly
 price/calibration inputs are configured.
 
-## Next Block
+## Follow-Up
 
 ```text
 B6R5_MODEL2_3B_FINANCE_RESEARCH_VERTICAL_REPAIR
 ```
 
-Freeze B6R4 artifacts and diagnose the Finance and Research AI full-500
-failures without modifying gold data, evaluator semantics, or promoted
-retrieval.
+B6R5 has since replayed the Finance and Research AI failed rows without
+modifying gold data, evaluator semantics, or promoted retrieval. See
+`docs/110_b6r5_finance_research_quality_repair.md`.
