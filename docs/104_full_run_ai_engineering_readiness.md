@@ -1,12 +1,12 @@
 # Full-Run AI Engineering Readiness
 
-Status: updated after Phase 1E on June 19, 2026
+Status: updated after Phase B6R4 on June 20, 2026
 
 ## Purpose
 
 This audit checks whether the repository is ready to move from the controlled
-500-prompt B6/B6R1 gates to larger prompt-count benchmarks, concurrency
-sweeps, SGLang/mm4 comparisons, or RunPod execution.
+500-prompt B6/B6R1/B6R2/B6R4 gates to larger prompt-count benchmarks,
+concurrency sweeps, SGLang/mm4 comparisons, or RunPod execution.
 
 The audit is deterministic and local. It does not use an LLM as a decision
 source.
@@ -26,14 +26,16 @@ The readiness status is:
 NOT_READY
 ```
 
-The audit found 40 checks:
+The audit found 49 checks:
 
-- passes: 34;
-- gaps: 3;
-- blocking failures: 3.
+- passes: 41;
+- gaps: 2;
+- blocking failures: 6.
 
-The blocking failures are the failed B6 gate, the failed B6R1 targeted Research
-AI repair gate, and the resulting prohibition on a 1,000-prompt terminal run.
+The blocking failures are the failed B6, B6R1, and B6R2 quality gates, the
+absence of a passed selected B6R2 full-500 contract gate, the blocked B6R4
+full-500 `model2_3b` gate, and the resulting prohibition on a 1,000-prompt
+terminal run.
 
 ## Passed Areas
 
@@ -75,6 +77,10 @@ B6R1 adds targeted replay manifests and combined raw replay output for the
 Research AI failed-row audit. The full frozen 500-row B6R1 manifest is absent
 because no targeted strategy passed and the full rerun was intentionally not
 started.
+
+B6R4 adds a `model2_3b` targeted replay manifest, full 500-row raw output, and
+processed evaluation reports. The targeted Research AI gate passed; the full
+500-row gate completed and remains blocked by minimum vertical quality.
 
 GPU/runtime controls are present:
 
@@ -136,6 +142,34 @@ clear the blocker:
 Neither strategy met the targeted thresholds, so the full frozen 500-row B6R1
 rerun was not triggered.
 
+B6R2 tested Research AI-specific contracts and also did not clear the targeted
+blocker. The best candidate reached 96.15% JSON/contract validity and 80.77%
+evidence match and groundedness with zero safety violations and zero
+truncation, so the full B6R2 rerun was not triggered.
+
+B6R3 replayed the same frozen 26 rows through `model6_gated` / Llama 3.1 8B
+through the API provider route. It passed the targeted gate with 100%
+JSON/contract validity, 96.15% evidence match and groundedness, zero safety
+violations, and zero truncation. This was targeted API-provider capacity
+evidence, not a replacement for the full 500-row gate.
+
+B6R4 replayed the same targeted set through `model2_3b` /
+Qwen2.5-3B-Instruct on the remote RTX 3070 vLLM path and passed:
+
+- JSON validity: 100%;
+- contract validity: 100%;
+- evidence match: 88.46%;
+- groundedness: 88.46%;
+- safety violations: 0;
+- truncation: 0%.
+
+The targeted pass triggered the full frozen 500-row B6R4 run. It completed 500
+of 500 requests with 98.4% JSON validity, 98.4% contract validity, 90.6%
+evidence match, 90.6% groundedness, zero safety violations, and 1.6%
+truncation. The full gate remains blocked because Finance and Research AI each
+reached only 80% evidence match and 80% groundedness, below the 85% minimum
+vertical threshold.
+
 ## Decision
 
 Do not run:
@@ -155,10 +189,11 @@ protection, and a passing backup verification dry run are all enabled.
 The next engineering block should remain Research AI quality-focused:
 
 ```text
-B6R2_RESEARCH_AI_MODEL_OR_AGENTIC_COMPARISON
+B6R5_MODEL2_3B_FINANCE_RESEARCH_VERTICAL_REPAIR
 ```
 
-Keep the frozen 26-row B6R1 Research AI replay set. Compare a stronger
-feasible model or a Research AI-only bounded mm4 path before any larger or
-concurrent run. Keep the evaluator, gold data, and promoted retrieval source
-unchanged.
+Freeze B6R4 artifacts. Diagnose Finance and Research AI full-500 failures on
+the `model2_3b` run, then decide whether the next controlled comparison should
+repair Qwen2.5-3B citation selection, test model3_7b feasibility, or run a full
+500 API-provider model6 gate. Keep the evaluator, gold data, and promoted
+retrieval source unchanged.

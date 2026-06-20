@@ -1,6 +1,6 @@
 # Project State
 
-Status as of June 17, 2026.
+Status as of June 20, 2026.
 
 ## Current Decision
 
@@ -10,6 +10,8 @@ B6_QUALITY_IMPROVED_BUT_BLOCKED
 B6R1_BLOCKED
 B6R2_BLOCKED
 B6R3_MODEL6_CAPACITY_PASSED
+B6R4_TARGETED_MODEL2_3B_PASSED
+B6R4_MODEL2_3B_500_BLOCKED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
@@ -72,6 +74,16 @@ validity, 96.15% evidence match and groundedness, zero truncation, and zero
 safety violations. This makes Qwen2.5-1.5B model capacity the likely Research
 AI blocker, but the full-run state remains `NOT_READY` because the frozen
 500-row gate has not passed.
+
+Phase B6R4 tested the active self-hosted small baseline, `model2_3b` /
+`Qwen/Qwen2.5-3B-Instruct`, on the remote RTX 3070 vLLM path. The frozen
+26-row Research AI targeted replay passed with 100% JSON/contract validity,
+88.46% evidence match and groundedness, zero truncation, and zero safety
+violations. The targeted pass triggered the full frozen 500-row run. That run
+completed 500/500 requests and passed aggregate JSON, contract, evidence,
+groundedness, safety, and truncation thresholds, but it is
+`B6R4_MODEL2_3B_500_BLOCKED` because Finance and Research AI each reached only
+80% evidence match and 80% groundedness, below the 85% minimum vertical gate.
 
 Phase 1A froze the production model registry. Active aliases are now
 `model1_0_5b`, `model2_3b`, `model3_7b`, `model4_32b`, `model5_gated`,
@@ -319,6 +331,44 @@ groundedness by omitting required introduction evidence. The targeted pass is a
 model-capacity signal only. It does not replace B6 as the last full 500-row
 gate and does not authorize larger or concurrent runs.
 
+## B6R4 Qwen2.5-3B Research AI Quality Validation
+
+Targeted replay:
+
+- Replay rows: 26
+- Model: `model2_3b` / `Qwen/Qwen2.5-3B-Instruct`
+- Runtime: vLLM on remote RTX 3070
+- Maximum output: 320 tokens
+- JSON validity: 100%, required 97%
+- Contract validity: 100%, required 97%
+- Evidence match: 88.46%, required 85%
+- Groundedness: 88.46%, required 85%
+- Safety violations: 0, required 0
+- Truncation: 0%, required <=2%
+
+Result: `B6R4_TARGETED_MODEL2_3B_PASSED`.
+
+Full 500:
+
+- Requests completed: 500/500
+- JSON validity: 98.4%, required 97%
+- Contract validity: 98.4%, required 97%
+- Evidence match: 90.6%, required 90%
+- Groundedness: 90.6%, required 90%
+- Safety violations: 0, required 0
+- Truncation: 1.6%, required <=2%
+- Mean TTFT: 690.308 ms
+- Mean TPOT: 17.249 ms
+- Mean E2E latency: 2,702.659 ms
+
+Result: `B6R4_MODEL2_3B_500_BLOCKED`.
+
+The full gate failed only the minimum vertical evidence/groundedness checks:
+Finance and Research AI both reached 80% evidence match and 80% groundedness,
+below the 85% vertical minimum. Qwen2.5-3B materially improves Research AI
+relative to Qwen2.5-1.5B and passes the targeted gate, but it does not yet
+authorize 1,000 prompts or larger/concurrent runs.
+
 Result tracks are separated:
 
 - API provider track: `model5_gated`, `model6_gated`, and `model7_gated`
@@ -340,12 +390,12 @@ Result tracks are separated:
 
 ## Next Step
 
-Run `B6R4_STRONGER_MODEL_PATH_AND_500_GATE_DECISION`. Choose whether the next
-500-row gate uses the API-provider model6 path, a stronger feasible self-hosted
-model path, or an explicit Qwen2.5-1.5B quality-limit decision. Do not run a
+Run `B6R5_MODEL2_3B_FINANCE_RESEARCH_VERTICAL_REPAIR`. Freeze B6R4 artifacts
+and diagnose the Finance and Research AI full-500 failures without modifying
+gold data, evaluator semantics, or promoted retrieval. Do not run a
 1,000-prompt terminal run, concurrency 2/4, SGLang, mm4, RunPod, a 2,000-prompt
 benchmark, or a 10,000-prompt benchmark until a selected model path passes the
-500-row gate.
+full 500-row gate.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -358,6 +408,7 @@ architecture, `docs/100_generation_quality_root_cause_audit.md` for B3,
 audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/106_research_ai_vertical_generation_contract.md` for B6R2, and
 `docs/107_b6r3_research_ai_model_capacity_validation.md` for B6R3, and
+`docs/109_b6r4_qwen3b_research_ai_quality_validation.md` for B6R4, and
 `docs/108_production_runtime_registry.md` for Phase 1B. See
 `docs/109_production_workload_profiles.md`,
 `docs/110_cache_readiness_metrics.md`, `docs/111_profiling_hooks.md`,

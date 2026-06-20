@@ -180,6 +180,44 @@ def _b6r2_selected_contract(root: Path) -> str | None:
     return str(selected) if selected not in (None, "") else None
 
 
+def _b6r4_targeted_gate_passed(root: Path) -> bool | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r4_model2_3b_research_ai_targeted_report.json",
+    )
+    if payload is None:
+        return None
+    gate = payload.get("quality_gate")
+    return bool(gate.get("passed")) if isinstance(gate, dict) else False
+
+
+def _b6r4_full_gate_passed(root: Path) -> bool | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r4_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        return None
+    gate = payload.get("quality_gate")
+    return bool(gate.get("passed")) if isinstance(gate, dict) else None
+
+
+def _b6r4_gate_status(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r4_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        payload = _load_json_if_present(
+            root,
+            "results/processed/b6r4_model2_3b_research_ai_targeted_report.json",
+        )
+    if payload is None:
+        return None
+    status = payload.get("status")
+    return str(status) if status not in (None, "") else None
+
+
 def partial_run_completion_check(
     *,
     expected_count: int,
@@ -482,15 +520,26 @@ def build_full_run_readiness_audit(
     b6r2_passed = _b6r2_gate_passed(root)
     b6r2_status = _b6r2_gate_status(root)
     b6r2_contract = _b6r2_selected_contract(root)
-    latest_repair_passed = b6r2_passed if b6r2_passed is not None else b6r1_passed
-    latest_repair_label = "B6R2" if b6r2_passed is not None else "B6R1"
+    b6r4_targeted_passed = _b6r4_targeted_gate_passed(root)
+    b6r4_full_passed = _b6r4_full_gate_passed(root)
+    b6r4_status = _b6r4_gate_status(root)
+    latest_full_gate_passed = (
+        b6r4_full_passed
+        if b6r4_full_passed is not None
+        else b6r2_passed
+        if b6r2_passed is not None
+        else b6r1_passed
+    )
+    latest_full_gate_label = (
+        "B6R4" if b6r4_full_passed is not None else "B6R2" if b6r2_passed is not None else "B6R1"
+    )
     checks.append(
         _check(
             category="scaling",
             name="b6_500_gate_result",
             status=(
                 "PASS"
-                if b6_passed or b6r1_passed or b6r2_passed
+                if b6_passed or b6r1_passed or b6r2_passed or b6r4_full_passed
                 else "GAP"
                 if b6_passed is None
                 else "FAIL"
@@ -498,6 +547,8 @@ def build_full_run_readiness_audit(
             evidence=(
                 "B6 quality gate passed"
                 if b6_passed
+                else "B6 failed, but B6R4 model2_3b full 500 supersedes the blocker"
+                if b6r4_full_passed
                 else "B6 failed, but B6R2 supersedes the B6 quality blocker"
                 if b6r2_passed
                 else "B6 failed, but B6R1 supersedes the B6 quality blocker"
@@ -506,7 +557,10 @@ def build_full_run_readiness_audit(
                 if b6_passed is None
                 else "B6 gate did not pass"
             ),
-            blocking=b6_passed is False and b6r1_passed is not True and b6r2_passed is not True,
+            blocking=b6_passed is False
+            and b6r1_passed is not True
+            and b6r2_passed is not True
+            and b6r4_full_passed is not True,
         )
     )
     checks.append(
@@ -559,24 +613,63 @@ def build_full_run_readiness_audit(
     checks.append(
         _check(
             category="scaling",
-            name="terminal_1000_prompt_run_allowed",
+            name="b6r4_model2_3b_targeted_status",
             status=(
                 "PASS"
-                if latest_repair_passed
+                if b6r4_targeted_passed
                 else "GAP"
-                if latest_repair_passed is None
+                if b6r4_targeted_passed is None
                 else "FAIL"
             ),
             evidence=(
-                f"A 1,000-prompt terminal run is allowed after {latest_repair_label}_READY "
-                "at concurrency one"
-                if latest_repair_passed
-                else f"Wait for {latest_repair_label} full 500 gate before a 1,000-prompt "
-                "terminal run"
-                if latest_repair_passed is None
-                else f"Do not run 1,000 prompts until {latest_repair_label} blockers are repaired"
+                "B6R4 targeted Research AI replay passed on model2_3b"
+                if b6r4_targeted_passed
+                else "B6R4 targeted Research AI replay missing"
+                if b6r4_targeted_passed is None
+                else f"B6R4 targeted Research AI replay blocked ({b6r4_status or 'unknown status'})"
             ),
-            blocking=latest_repair_passed is False,
+            blocking=b6r4_targeted_passed is False,
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="b6r4_model2_3b_full_500_gate",
+            status=("PASS" if b6r4_full_passed else "GAP" if b6r4_full_passed is None else "FAIL"),
+            evidence=(
+                "B6R4 model2_3b full frozen 500 gate passed"
+                if b6r4_full_passed
+                else "B6R4 full 500 not run or report missing"
+                if b6r4_full_passed is None
+                else f"B6R4 full frozen 500 gate blocked ({b6r4_status or 'unknown status'})"
+            ),
+            blocking=b6r4_full_passed is False,
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="terminal_1000_prompt_run_allowed",
+            status=(
+                "PASS"
+                if latest_full_gate_passed
+                else "GAP"
+                if latest_full_gate_passed is None
+                else "FAIL"
+            ),
+            evidence=(
+                f"A 1,000-prompt terminal run is allowed after {latest_full_gate_label}_READY "
+                "at concurrency one"
+                if latest_full_gate_passed
+                else f"Wait for {latest_full_gate_label} full 500 gate before a 1,000-prompt "
+                "terminal run"
+                if latest_full_gate_passed is None
+                else (
+                    f"Do not run 1,000 prompts until {latest_full_gate_label} full 500 "
+                    "blockers are repaired"
+                )
+            ),
+            blocking=latest_full_gate_passed is False,
         )
     )
     checks.append(
