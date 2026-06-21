@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -188,7 +189,14 @@ def write_checkpoint(state: CheckpointState, path: str | Path) -> Path:
         json.dumps(state.to_dict(), ensure_ascii=True, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    temporary_path.replace(checkpoint_path)
+    for attempt in range(8):
+        try:
+            temporary_path.replace(checkpoint_path)
+            break
+        except PermissionError:
+            if attempt == 7:
+                raise
+            time.sleep(0.05 * (attempt + 1))
     return checkpoint_path
 
 

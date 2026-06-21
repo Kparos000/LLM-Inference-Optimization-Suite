@@ -3509,6 +3509,21 @@ leakage and ambiguity. The final promoted validation uses non-leaking
 - B6R6 then selected `answer_skeleton`, restored the Research AI failed-row
   targeted score to 90%, and passed the full frozen 500-row gate.
 
+## Phase B7: Controlled 1,000-Prompt Baseline
+
+- built a 1,000-row `model2_3b` runner input with 200 prompts per vertical;
+- confirmed all required gold evidence was present in E1-E5 and no canonical
+  IDs were exposed to the model;
+- ran vLLM on the remote RTX 3070 at concurrency one with artifact sync,
+  checkpoint/resume, manifest recording, and GPU telemetry;
+- resumed from partial raw output after a checkpoint write interruption without
+  duplicating prompt IDs;
+- recorded 1,000 unique raw rows, 663 successful requests, and 337 failed
+  request rows;
+- identified a vLLM EngineCore CUDA/CUBLAS fatal error at Finance prompt 17 as
+  the operational blocker;
+- marked the result `B7_CONTROLLED_1000_BASELINE_BLOCKED`.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -3560,6 +3575,9 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   update, and 1,000-prompt benchmark-path separation from deployability.
 - Phase B6R6 Research AI baseline-lock recovery, selected answer-skeleton
   strategy, full frozen 500-row quality pass, and READY readiness update.
+- Phase B7 controlled 1,000-prompt `model2_3b` vLLM baseline with artifact
+  sync, checkpoint/resume, GPU telemetry, runtime projection, and a blocked
+  operational serving-stability decision.
 
 ## Current Block State
 
@@ -3590,7 +3608,10 @@ selected `evidence_selection_preplan`, repaired Finance failed-row evidence and
 groundedness to 90%, and left Research AI at 70%. Phase B6R6 replayed the
 20 failed Research AI rows under an 80% baseline lock, selected
 `answer_skeleton`, restored targeted Research AI evidence/groundedness to 90%,
-and passed the full frozen 500-row gate.
+and passed the full frozen 500-row gate. Phase B7 then ran the controlled
+1,000-prompt `model2_3b` baseline with manifest, checkpoint/resume, artifact
+sync, and GPU telemetry enabled. B7 preflight passed, but the live run is
+blocked by a vLLM EngineCore CUDA/CUBLAS fatal error at Finance prompt 17.
 
 Current decision:
 
@@ -3605,14 +3626,15 @@ B6R4_MODEL2_3B_500_BLOCKED
 B6R5_QUALITY_CAVEATED
 B6R6_TARGETED_READY
 B6R6_QUALITY_READY
+B7_CONTROLLED_1000_BASELINE_BLOCKED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
-BENCHMARK_EXECUTION_READY
-TERMINAL_1000_PROMPT_BASELINE_ALLOWED
-DEPLOYABILITY_READY
+BENCHMARK_EXECUTION_NOT_READY
+API_LOAD_PROBE_BLOCKED
+DEPLOYABILITY_BLOCKED_BY_B7_OPERATIONAL_FAILURE
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
@@ -3648,7 +3670,12 @@ strengthened ignore rules, and aligned CI with the local validation gates for
 config coverage, repository hygiene, mypy, pytest, ruff, public-content audit,
 doctor, and validate-config. Phase 1E added local artifact synchronization,
 backup verification, and checkpoint/resume hardening with a passing 20-prompt
-long-run recovery dry run.
+long-run recovery dry run. B7 ran the allowed 1,000-prompt baseline and wrote
+1,000 unique raw rows, but only 663 requests succeeded. The vLLM server failed
+at Finance prompt 17, producing one HTTP 500 followed by connection failures
+for the remaining first-pass Finance and Research AI requests. B7 is therefore
+an operational serving-stability blocker rather than a clean model-quality
+scale result.
 
 ## What Is Ready
 
@@ -3686,6 +3713,8 @@ long-run recovery dry run.
   historical caveated repair evidence;
 - B6R6 Research AI baseline-lock recovery, selected answer-skeleton strategy,
   and full frozen 500-row quality readiness pass;
+- B7 controlled 1,000-row runner export, preflight, manifest, checkpoint/resume,
+  artifact sync, backup verification, GPU telemetry, and runtime projection;
 - frozen production model registry with deprecated compatibility aliases for
   historical B1-B6 artifacts;
 - production runtime registry with API/self-hosted route separation and
@@ -3712,9 +3741,12 @@ long-run recovery dry run.
 
 ## Remaining Blockers
 
-- measured 1,000-prompt terminal baseline at concurrency one;
-- reviewed 1,000-prompt quality, latency, and artifact-recovery results before
-  any concurrency or backend comparison;
+- B7 vLLM EngineCore CUDA/CUBLAS fatal error at Finance prompt 17;
+- B7 request success rate was 66.3%, so the 1,000-prompt baseline is not a
+  clean model-quality result;
+- rerun the same 1,000-row B7 input after serving-stability isolation;
+- reviewed clean 1,000-prompt quality, latency, and artifact-recovery results
+  before any concurrency or backend comparison;
 - registered infrastructure cost if GPU cost comparisons are required;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
 - RunPod price and throughput multipliers before any RunPod cost claim;
@@ -3785,6 +3817,13 @@ long-run recovery dry run.
   strategy is benchmarkable with a quality caveat, not deployable.
 - B6 runtime and cost projections are RTX 3070 local projections only. RunPod
   prices and throughput multipliers are still unset.
+- B7 produced 1,000 unique raw rows but only 663 successful requests. The first
+  failure was a vLLM EngineCore CUDA/CUBLAS fatal error at Finance prompt 17,
+  and the Finance/Research AI quality rates are dominated by downstream request
+  failures rather than clean model behavior.
+- B7 projected a 10,000-prompt single-config runtime of 4.284 RTX 3070 hours
+  from measured concurrency-one throughput, but this is not a RunPod cost claim
+  and should not be used for scale approval until the serving failure is fixed.
 - API provider result rows and self-hosted GPU result rows now share stable
   runtime/provider join keys, but their cost and telemetry fields are
   intentionally different: API runs have token price and no provider GPU
@@ -3816,11 +3855,12 @@ long-run recovery dry run.
 
 ## Next Engineering Milestone
 
-Run a controlled 1,000-prompt terminal baseline at concurrency one. Do not run
-concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt, or 10,000-prompt
-benchmarks until the 1,000-prompt result is measured and reviewed. Keep RunPod
-cost claims blocked until reviewed hourly price and throughput multiplier
-inputs are configured.
+Isolate the B7 vLLM/CUDA serving failure on the failing Finance request shape,
+then rerun the same controlled 1,000-row B7 input at concurrency one. Do not run
+an API load probe, concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt, or
+10,000-prompt benchmark until a clean 1,000-row result is measured and reviewed.
+Keep RunPod cost claims blocked until reviewed hourly price and throughput
+multiplier inputs are configured.
 
 # 23. What An AI Inference Engineer Should Understand
 

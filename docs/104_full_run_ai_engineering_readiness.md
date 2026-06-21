@@ -1,12 +1,13 @@
 # Full-Run AI Engineering Readiness
 
-Status: updated after Phase B6R6 on June 20, 2026
+Status: updated after Phase B7 on June 21, 2026
 
 ## Purpose
 
 This audit checks whether the repository is ready to move from the controlled
-500-prompt B6/B6R1/B6R2/B6R4/B6R5/B6R6 gates to larger prompt-count benchmarks,
-concurrency sweeps, SGLang/mm4 comparisons, or RunPod execution.
+500-prompt B6/B6R1/B6R2/B6R4/B6R5/B6R6 gates and the controlled B7 1,000-prompt
+baseline to larger prompt-count benchmarks, concurrency sweeps, SGLang/mm4
+comparisons, API load probes, or RunPod execution.
 
 The audit is deterministic and local. It does not use an LLM as a decision
 source.
@@ -20,10 +21,16 @@ source.
 
 ## Result
 
-The readiness status is:
+The deterministic B6R6 repository audit status remains:
 
 ```text
 READY
+```
+
+The current measured B7 operational readiness status is:
+
+```text
+NOT_READY
 ```
 
 Detailed readiness is split:
@@ -42,7 +49,9 @@ The audit found 52 checks:
 The failed B6, B6R1, B6R2, and B6R4 quality gates remain recorded evidence.
 B6R5 repaired Finance but left Research AI below the locked baseline. B6R6
 restored Research AI and passed the full frozen 500-row quality gate, so a
-controlled 1,000-prompt terminal baseline is now allowed at concurrency one.
+controlled 1,000-prompt terminal baseline was allowed at concurrency one. B7
+then ran that baseline and found a serving-stability blocker, so larger runs
+and API load probing are now blocked until B7 is repaired and rerun.
 
 ## Passed Areas
 
@@ -98,6 +107,11 @@ B6R6 adds a Research AI baseline lock, targeted strategy comparison, full
 500-row raw output, full evaluation report, and refreshed readiness report. The
 selected Research AI strategy triggered and passed the full frozen 500-row
 gate.
+
+B7 adds a 1,000-row `model2_3b` vLLM runner input, raw output, manifest,
+checkpoint/resume state, GPU telemetry, evaluation report, runtime projection,
+artifact sync report, and B7 readiness report. The preflight passed, but the
+live run is blocked by vLLM serving failure.
 
 GPU/runtime controls are present:
 
@@ -235,14 +249,55 @@ Per-vertical evidence match and groundedness:
 
 The decision is `B6R6_QUALITY_READY`.
 
+## B7 Operational Finding
+
+B7 ran the first controlled 1,000-prompt baseline at concurrency one with
+artifact sync, checkpoint/resume, manifest, and GPU telemetry enabled. Preflight
+passed:
+
+- runner input rows: 1,000;
+- per vertical: 200;
+- all required gold evidence present in E1-E5: 1,000/1,000;
+- canonical IDs exposed to the model: 0;
+- artifact sync dry run: passed;
+- runtime registry allowed vLLM on `remote_rtx3070`.
+
+The raw output contains 1,000 unique prompt IDs, but only 663 successful
+requests. vLLM failed at Finance prompt 17 with an EngineCore fatal CUDA/CUBLAS
+error. The run resumed from partial raw output and preserved 337 failed request
+rows.
+
+Overall B7 quality:
+
+- JSON validity: 64.8%;
+- contract validity: 64.8%;
+- evidence match: 64.3%;
+- groundedness: 64.3%;
+- safety violations: 0;
+- truncation: 1.2%.
+
+Per-vertical evidence match and groundedness:
+
+- Airline: 93% / 93%;
+- Healthcare Admin: 100% / 100%;
+- Retail: 99.5% / 99.5%;
+- Finance: 7.5% / 7.5%;
+- Research AI: 21.5% / 21.5%.
+
+Finance and Research AI are dominated by request failures after the engine died,
+so B7 is not a clean model-quality comparison. The decision is
+`B7_CONTROLLED_1000_BASELINE_BLOCKED`.
+
 ## Decision
 
 Allowed next benchmark:
 
-- controlled 1,000-prompt terminal baseline at concurrency one.
+- none until B7 serving stability is isolated and the same 1,000-row input is
+  rerun cleanly.
 
 Do not run:
 
+- API load probe;
 - concurrency 2/4 sweep;
 - SGLang comparison;
 - mm4 agentic comparison;
@@ -258,11 +313,11 @@ The next engineering action should keep the benchmark/deployability distinction
 explicit:
 
 ```text
-CONTROLLED_1000_PROMPT_TERMINAL_BASELINE
+B7R1_VLLM_CUDA_FAILURE_ISOLATION
 ```
 
-Keep concurrency, SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt runs
-blocked until the 1,000-prompt result is measured and reviewed. Keep RunPod
-cost claims blocked until reviewed hourly price and throughput multiplier
-inputs are configured. Keep the evaluator, gold data, and promoted retrieval
-source unchanged.
+Keep API load probe, concurrency, SGLang, mm4, RunPod, 2,000-prompt, and
+10,000-prompt runs blocked until the B7 serving failure is fixed and a clean
+1,000-prompt result is measured and reviewed. Keep RunPod cost claims blocked
+until reviewed hourly price and throughput multiplier inputs are configured.
+Keep the evaluator, gold data, and promoted retrieval source unchanged.

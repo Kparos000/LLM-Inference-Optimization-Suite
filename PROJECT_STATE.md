@@ -1,6 +1,6 @@
 # Project State
 
-Status as of June 20, 2026.
+Status as of June 21, 2026.
 
 ## Current Decision
 
@@ -15,14 +15,15 @@ B6R4_MODEL2_3B_500_BLOCKED
 B6R5_QUALITY_CAVEATED
 B6R6_TARGETED_READY
 B6R6_QUALITY_READY
+B7_CONTROLLED_1000_BASELINE_BLOCKED
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
-BENCHMARK_EXECUTION_READY
-TERMINAL_1000_PROMPT_BASELINE_ALLOWED
-DEPLOYABILITY_READY
+BENCHMARK_EXECUTION_NOT_READY
+API_LOAD_PROBE_BLOCKED
+DEPLOYABILITY_BLOCKED_BY_B7_OPERATIONAL_FAILURE
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -108,6 +109,17 @@ validity, 97.0% evidence match, 96.6% groundedness, zero safety violations,
 and 1.8% truncation. Finance reached 96% evidence/groundedness and Research AI
 reached 96%/94%. The readiness audit is now `READY` for benchmark execution
 and deployability.
+
+Phase B7 ran the controlled 1,000-prompt `model2_3b` / Qwen2.5-3B vLLM
+baseline at concurrency one with artifact sync, checkpoint/resume, manifest,
+and GPU telemetry enabled. Preflight passed for all 1,000 rows, including
+required evidence in E1-E5 and no canonical ID leakage. The live run is
+`B7_CONTROLLED_1000_BASELINE_BLOCKED`: vLLM failed at Finance prompt 17 with an
+EngineCore CUDA/CUBLAS fatal error, leaving 663 successful requests and 337
+failed request rows. The raw file contains 1,000 unique prompt IDs and was
+resumed from partial raw output without duplicate rows. B7 blocks API load
+probe, concurrency, SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt runs
+until serving stability is isolated and the same 1,000-row input is rerun.
 
 Phase 1A froze the production model registry. Active aliases are now
 `model1_0_5b`, `model2_3b`, `model3_7b`, `model4_32b`, `model5_gated`,
@@ -456,6 +468,48 @@ concurrency one. The refreshed readiness audit is `READY` for benchmark
 execution and deployability. RunPod cost claims remain blocked until price and
 throughput multiplier inputs are registered.
 
+## B7 Controlled 1,000-Prompt Baseline
+
+- Model: `model2_3b` / `Qwen/Qwen2.5-3B-Instruct`
+- Runtime: vLLM on remote RTX 3070
+- Memory mode: `mm2_hybrid_top5`
+- Prompt count: 1,000, 200 per vertical
+- Concurrency: 1
+- Artifact sync, checkpoint/resume, manifest, and GPU telemetry: enabled
+
+Preflight passed:
+
+- required gold evidence present in E1-E5: 1,000/1,000;
+- canonical IDs exposed to the model: 0;
+- artifact sync dry run: passed;
+- runtime registry allowed vLLM on `remote_rtx3070`.
+
+Live result:
+
+- raw rows: 1,000 unique prompt IDs;
+- successful requests: 663;
+- failed requests: 337;
+- first serving failure: Finance prompt 17;
+- root serving error: vLLM EngineCore fatal CUDA/CUBLAS error;
+- resumed from partial raw output: yes.
+
+Quality:
+
+- JSON validity: 64.8%;
+- contract validity: 64.8%;
+- evidence match: 64.3%;
+- groundedness: 64.3%;
+- safety violations: 0;
+- truncation: 1.2%.
+
+Result: `B7_CONTROLLED_1000_BASELINE_BLOCKED`.
+
+B7 is an operational serving-stability blocker, not a clean model-quality
+scale result. Finance and Research AI quality rates are dominated by request
+failures after the vLLM engine died. Do not proceed to API load probe,
+concurrency sweep, SGLang, mm4, RunPod, 2,000-prompt, or 10,000-prompt runs
+until the serving failure is isolated and the same 1,000-row input is rerun.
+
 Result tracks are separated:
 
 - API provider track: `model5_gated`, `model6_gated`, and `model7_gated`
@@ -477,12 +531,12 @@ Result tracks are separated:
 
 ## Next Step
 
-Run a controlled 1,000-prompt terminal baseline at concurrency one if the
-objective is the next benchmark-capacity measurement. Concurrency 2/4, SGLang,
-mm4, RunPod, 2,000-prompt, and 10,000-prompt runs remain blocked until the
-1,000-prompt result is measured and reviewed. RunPod cost claims remain
-blocked until reviewed hourly price and throughput multiplier inputs are
-configured.
+Isolate the B7 vLLM/CUDA serving failure on the failing Finance request shape,
+then rerun the same controlled 1,000-row B7 input at concurrency one.
+Concurrency 2/4, SGLang, mm4, RunPod, API load probe, 2,000-prompt, and
+10,000-prompt runs remain blocked until a clean 1,000-prompt result is measured
+and reviewed. RunPod cost claims remain blocked until reviewed hourly price and
+throughput multiplier inputs are configured.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -498,6 +552,7 @@ audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/109_b6r4_qwen3b_research_ai_quality_validation.md` for B6R4, and
 `docs/110_b6r5_finance_research_quality_repair.md` for B6R5, and
 `docs/111_b6r6_research_ai_quality_recovery.md` for B6R6, and
+`docs/112_b7_controlled_1000_prompt_baseline.md` for B7, and
 `docs/108_production_runtime_registry.md` for Phase 1B. See
 `docs/109_production_workload_profiles.md`,
 `docs/110_cache_readiness_metrics.md`, `docs/111_profiling_hooks.md`,
@@ -507,4 +562,6 @@ audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 and CI validation hardening. See
 `docs/108_artifact_sync_and_long_run_recovery.md` and
 `docs/summaries/blockPhase1E_artifact_sync_long_run_recovery_summary.md` for
-Phase 1E artifact sync and recovery controls.
+Phase 1E artifact sync and recovery controls. See
+`docs/summaries/blockB7_controlled_1000_prompt_baseline_summary.md` for the B7
+summary.
