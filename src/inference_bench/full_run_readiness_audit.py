@@ -268,6 +268,113 @@ def _b6r5_benchmark_readiness(root: Path) -> str | None:
     return None
 
 
+def _b6r6_full_gate_passed(root: Path) -> bool | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r6_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        return None
+    gate = payload.get("quality_gate")
+    return bool(gate.get("passed")) if isinstance(gate, dict) else None
+
+
+def _b6r6_gate_status(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r6_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        payload = _load_json_if_present(
+            root,
+            "results/processed/b6r6_research_ai_targeted_replay_report.json",
+        )
+    if payload is None:
+        return None
+    status = payload.get("status")
+    return str(status) if status not in (None, "") else None
+
+
+def _b6r6_benchmark_readiness(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r6_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        targeted = _load_json_if_present(
+            root,
+            "results/processed/b6r6_research_ai_targeted_replay_report.json",
+        )
+        if targeted is None:
+            return None
+        selection = targeted.get("selection")
+        if isinstance(selection, dict) and selection.get("targeted_passed"):
+            return "NOT_READY"
+        return "NOT_READY"
+    readiness = payload.get("benchmark_execution_readiness")
+    if readiness not in (None, ""):
+        return str(readiness)
+    status = str(payload.get("status") or "")
+    if status == "B6R6_QUALITY_READY":
+        return "READY"
+    if status == "BENCHMARK_EXECUTION_READY_WITH_QUALITY_CAVEAT":
+        return "READY_WITH_QUALITY_CAVEAT"
+    return "NOT_READY"
+
+
+def _b6r6_research_ai_floor_passed(root: Path) -> bool | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r6_model2_3b_500_eval_report.json",
+    )
+    if payload is None:
+        targeted = _load_json_if_present(
+            root,
+            "results/processed/b6r6_research_ai_targeted_replay_report.json",
+        )
+        if targeted is None:
+            return None
+        selection = targeted.get("selection")
+        if not isinstance(selection, dict):
+            return False
+        selected = str(selection.get("selected_strategy") or "")
+        for summary in selection.get("strategy_summaries") or []:
+            if summary.get("strategy_id") != selected:
+                continue
+            return (
+                float(summary.get("evidence_match_rate") or 0.0) >= 0.80
+                and float(summary.get("grounded_rate") or 0.0) >= 0.80
+            )
+        return False
+    vertical_rows = payload.get("per_vertical_quality") or []
+    for row in vertical_rows:
+        if str(row.get("vertical")) != "research_ai":
+            continue
+        return (
+            float(row.get("evidence_match_rate") or 0.0) >= 0.80
+            and float(row.get("grounded_rate") or 0.0) >= 0.80
+        )
+    return False
+
+
+def _b6r6_baseline_lock_present(root: Path) -> bool:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b6r6_research_ai_failure_audit_report.json",
+    )
+    if payload is None:
+        return False
+    lock = payload.get("baseline_lock")
+    if not isinstance(lock, dict):
+        return False
+    return (
+        float(lock.get("full_vertical_evidence_floor") or 0.0) >= 0.80
+        and float(lock.get("full_vertical_grounded_floor") or 0.0) >= 0.80
+        and float(lock.get("effective_targeted_evidence_floor") or 0.0) >= 0.80
+        and float(lock.get("effective_targeted_grounded_floor") or 0.0) >= 0.80
+    )
+
+
 def partial_run_completion_check(
     *,
     expected_count: int,
@@ -576,25 +683,12 @@ def build_full_run_readiness_audit(
     b6r5_full_passed = _b6r5_full_gate_passed(root)
     b6r5_status = _b6r5_gate_status(root)
     b6r5_benchmark_readiness = _b6r5_benchmark_readiness(root)
+    b6r6_status = _b6r6_gate_status(root)
+    b6r6_benchmark_readiness = _b6r6_benchmark_readiness(root)
+    b6r6_research_ai_floor_passed = _b6r6_research_ai_floor_passed(root)
+    b6r6_baseline_lock_present = _b6r6_baseline_lock_present(root)
     has_b6r5_result = b6r5_status is not None or b6r5_benchmark_readiness is not None
-    latest_full_gate_passed = (
-        b6r5_full_passed
-        if b6r5_full_passed is not None
-        else b6r4_full_passed
-        if b6r4_full_passed is not None
-        else b6r2_passed
-        if b6r2_passed is not None
-        else b6r1_passed
-    )
-    latest_full_gate_label = (
-        "B6R5"
-        if b6r5_full_passed is not None
-        else "B6R4"
-        if b6r4_full_passed is not None
-        else "B6R2"
-        if b6r2_passed is not None
-        else "B6R1"
-    )
+    has_b6r6_result = b6r6_status is not None or b6r6_benchmark_readiness is not None
     checks.append(
         _check(
             category="scaling",
@@ -609,6 +703,8 @@ def build_full_run_readiness_audit(
             evidence=(
                 "B6 quality gate passed"
                 if b6_passed
+                else "B6 failed, but B6R6 is the current measured quality state"
+                if has_b6r6_result
                 else "B6 failed, but B6R5 is the current measured quality state"
                 if has_b6r5_result
                 else "B6 failed, but B6R4 model2_3b full 500 supersedes the blocker"
@@ -622,7 +718,7 @@ def build_full_run_readiness_audit(
                 else "B6 gate did not pass"
             ),
             blocking=False
-            if has_b6r5_result
+            if has_b6r6_result
             else b6_passed is False
             and b6r1_passed is not True
             and b6r2_passed is not True
@@ -740,36 +836,72 @@ def build_full_run_readiness_audit(
     checks.append(
         _check(
             category="scaling",
-            name="terminal_1000_prompt_run_allowed",
+            name="b6r6_research_ai_baseline_lock",
+            status="PASS" if b6r6_baseline_lock_present else "GAP",
+            evidence=(
+                "B6R6 baseline lock keeps Research AI targeted and full floors at 80%"
+                if b6r6_baseline_lock_present
+                else "B6R6 baseline lock audit has not been generated"
+            ),
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="b6r6_research_ai_quality_recovery_gate",
             status=(
                 "PASS"
-                if latest_full_gate_passed
-                or b6r5_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                if b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                and b6r6_research_ai_floor_passed
                 else "GAP"
-                if latest_full_gate_passed is None
+                if not has_b6r6_result
                 else "FAIL"
             ),
             evidence=(
-                f"A 1,000-prompt terminal run is allowed after {latest_full_gate_label}_READY "
-                "at concurrency one"
-                if latest_full_gate_passed
+                f"B6R6 benchmark readiness {b6r6_benchmark_readiness}; Research AI floor passed"
+                if b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                and b6r6_research_ai_floor_passed
+                else "B6R6 result missing; B6R5 caveat is no longer sufficient"
+                if not has_b6r6_result
                 else (
-                    "A 1,000-prompt baseline run is allowed as a caveated benchmark after "
-                    "B6R5 measured non-deployable quality"
-                )
-                if b6r5_benchmark_readiness == "READY_WITH_QUALITY_CAVEAT"
-                else "A 1,000-prompt baseline run is allowed after B6R5_READY"
-                if b6r5_benchmark_readiness == "READY"
-                else f"Wait for {latest_full_gate_label} full 500 gate before a 1,000-prompt "
-                "terminal run"
-                if latest_full_gate_passed is None
-                else (
-                    f"Do not run 1,000 prompts until {latest_full_gate_label} full 500 "
-                    "blockers are repaired"
+                    f"B6R6 status {b6r6_status or 'unknown'}; benchmark readiness "
+                    f"{b6r6_benchmark_readiness or 'unknown'}; Research AI floor "
+                    f"{b6r6_research_ai_floor_passed}"
                 )
             ),
-            blocking=latest_full_gate_passed is False
-            and b6r5_benchmark_readiness not in {"READY", "READY_WITH_QUALITY_CAVEAT"},
+            blocking=has_b6r6_result
+            and (
+                b6r6_benchmark_readiness not in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                or b6r6_research_ai_floor_passed is not True
+            ),
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="terminal_1000_prompt_run_allowed",
+            status=(
+                "PASS"
+                if b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                and b6r6_research_ai_floor_passed
+                else "GAP"
+                if not has_b6r6_result
+                else "FAIL"
+            ),
+            evidence=(
+                "A 1,000-prompt baseline run is allowed after B6R6 restored the "
+                "Research AI floor at concurrency one"
+                if b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                and b6r6_research_ai_floor_passed
+                else "Wait for B6R6 Research AI recovery before a 1,000-prompt run"
+                if not has_b6r6_result
+                else "Do not run 1,000 prompts until B6R6 Research AI recovery passes"
+            ),
+            blocking=has_b6r6_result
+            and (
+                b6r6_benchmark_readiness not in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                or b6r6_research_ai_floor_passed is not True
+            ),
         )
     )
     checks.append(
@@ -878,7 +1010,15 @@ def build_full_run_readiness_audit(
 
     blocking_failures = [check for check in checks if check["blocking"]]
     gaps = [check for check in checks if check["status"] == "GAP"]
-    deployability_readiness = "READY" if latest_full_gate_passed else "NOT_READY"
+    b6r6_benchmark_passed = (
+        b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+        and b6r6_research_ai_floor_passed is True
+    )
+    deployability_readiness = (
+        "READY"
+        if b6r6_benchmark_readiness == "READY" and b6r6_research_ai_floor_passed is True
+        else "NOT_READY"
+    )
     benchmark_blockers = [
         check
         for check in blocking_failures
@@ -892,10 +1032,8 @@ def build_full_run_readiness_audit(
     ]
     if benchmark_blockers:
         benchmark_execution_readiness = "NOT_READY"
-    elif latest_full_gate_passed:
-        benchmark_execution_readiness = "READY"
-    elif b6r5_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}:
-        benchmark_execution_readiness = b6r5_benchmark_readiness
+    elif b6r6_benchmark_passed:
+        benchmark_execution_readiness = str(b6r6_benchmark_readiness)
     else:
         benchmark_execution_readiness = "NOT_READY"
     status = benchmark_execution_readiness

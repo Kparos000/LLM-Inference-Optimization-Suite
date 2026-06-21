@@ -80,7 +80,7 @@ def _seed_non_quality_readiness_files(root: Path) -> None:
     )
 
 
-def test_benchmark_execution_can_pass_when_deployability_fails_with_caveat(
+def test_b6r5_caveat_no_longer_allows_benchmark_execution_without_b6r6(
     tmp_path: Path,
 ) -> None:
     _seed_non_quality_readiness_files(tmp_path)
@@ -100,23 +100,61 @@ def test_benchmark_execution_can_pass_when_deployability_fails_with_caveat(
     report = build_full_run_readiness_audit(repo_root=tmp_path)
 
     assert report["deployability_readiness"] == "NOT_READY"
-    assert report["benchmark_execution_readiness"] == "READY_WITH_QUALITY_CAVEAT"
-    assert report["terminal_1000_prompt_baseline_allowed"] is True
+    assert report["benchmark_execution_readiness"] == "NOT_READY"
+    assert report["terminal_1000_prompt_baseline_allowed"] is False
 
 
-def test_deployability_and_benchmark_readiness_pass_when_b6r5_full_gate_passes(
+def test_benchmark_execution_can_pass_when_b6r6_research_ai_floor_is_restored(
     tmp_path: Path,
 ) -> None:
     _seed_non_quality_readiness_files(tmp_path)
     _write(
         tmp_path,
-        "results/processed/b6r5_model2_3b_500_eval_report.json",
+        "results/processed/b6r6_model2_3b_500_eval_report.json",
         json.dumps(
             {
-                "status": "B6R5_PASS",
+                "status": "BENCHMARK_EXECUTION_READY_WITH_QUALITY_CAVEAT",
+                "benchmark_execution_readiness": "READY_WITH_QUALITY_CAVEAT",
+                "deployability_readiness": "NOT_READY",
+                "quality_gate": {"passed": True},
+                "per_vertical_quality": [
+                    {
+                        "vertical": "research_ai",
+                        "evidence_match_rate": 0.8,
+                        "grounded_rate": 0.8,
+                    }
+                ],
+            }
+        ),
+    )
+
+    report = build_full_run_readiness_audit(repo_root=tmp_path)
+
+    assert report["deployability_readiness"] == "NOT_READY"
+    assert report["benchmark_execution_readiness"] == "READY_WITH_QUALITY_CAVEAT"
+    assert report["terminal_1000_prompt_baseline_allowed"] is True
+
+
+def test_deployability_and_benchmark_readiness_pass_when_b6r6_full_gate_passes(
+    tmp_path: Path,
+) -> None:
+    _seed_non_quality_readiness_files(tmp_path)
+    _write(
+        tmp_path,
+        "results/processed/b6r6_model2_3b_500_eval_report.json",
+        json.dumps(
+            {
+                "status": "B6R6_QUALITY_READY",
                 "benchmark_execution_readiness": "READY",
                 "deployability_readiness": "READY",
                 "quality_gate": {"passed": True},
+                "per_vertical_quality": [
+                    {
+                        "vertical": "research_ai",
+                        "evidence_match_rate": 0.85,
+                        "grounded_rate": 0.85,
+                    }
+                ],
             }
         ),
     )

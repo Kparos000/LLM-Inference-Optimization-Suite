@@ -13,14 +13,16 @@ B6R3_MODEL6_CAPACITY_PASSED
 B6R4_TARGETED_MODEL2_3B_PASSED
 B6R4_MODEL2_3B_500_BLOCKED
 B6R5_QUALITY_CAVEATED
+B6R6_TARGETED_READY
+B6R6_QUALITY_READY
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
-BENCHMARK_EXECUTION_READY_WITH_QUALITY_CAVEAT
-TERMINAL_1000_PROMPT_BASELINE_ALLOWED_WITH_CAVEAT
-DEPLOYABILITY_NOT_READY
+BENCHMARK_EXECUTION_READY
+TERMINAL_1000_PROMPT_BASELINE_ALLOWED
+DEPLOYABILITY_READY
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -94,8 +96,18 @@ contract validity, 80% evidence match, 80% groundedness, zero truncation, and
 zero safety violations. Finance cleared the targeted floor at 90% evidence
 match and groundedness; Research AI remained blocked at 70% evidence match and
 groundedness. No full 500-row rerun was triggered. The full-run readiness audit
-is now `READY_WITH_QUALITY_CAVEAT` for benchmark execution and `NOT_READY` for
-deployability.
+was caveated and is now superseded by B6R6.
+
+Phase B6R6 locked the B6R4 Research AI floor at 80%, replayed the 20 failed
+Research AI rows, and selected `answer_skeleton`. The targeted replay reached
+100% JSON and contract validity, 90% evidence match, 90% groundedness, zero
+truncation, and zero safety violations. The full frozen 500-row rerun used the
+B6R5 Finance repair, B6R6 Research AI skeleton, and unchanged baseline behavior
+for the other verticals. It reached 98.2% JSON validity, 97.8% contract
+validity, 97.0% evidence match, 96.6% groundedness, zero safety violations,
+and 1.8% truncation. Finance reached 96% evidence/groundedness and Research AI
+reached 96%/94%. The readiness audit is now `READY` for benchmark execution
+and deployability.
 
 Phase 1A froze the production model registry. Active aliases are now
 `model1_0_5b`, `model2_3b`, `model3_7b`, `model4_32b`, `model5_gated`,
@@ -406,9 +418,43 @@ Result: `B6R5_QUALITY_CAVEATED`.
 
 B6R5 shows that Finance is repairable with stricter evidence preplanning on
 the failed-row subset. Research AI remains a model/output-control limitation
-for Qwen2.5-3B on the failed-row subset. The refreshed readiness audit permits
-a controlled 1,000-prompt terminal baseline as caveated benchmark evidence,
-but deployability remains blocked.
+for Qwen2.5-3B on the failed-row subset. B6R5 is retained as diagnostic
+evidence, but its readiness claim is superseded by B6R6.
+
+## B6R6 Research AI Quality Recovery
+
+- Replay rows: 20 Research AI failed B6R4 rows
+- Model: `model2_3b` / `Qwen/Qwen2.5-3B-Instruct`
+- Runtime: vLLM on remote RTX 3070
+- Selected Research AI strategy: `answer_skeleton`
+- Full frozen 500 rerun triggered: yes
+
+Targeted selected-strategy metrics:
+
+- JSON validity: 100%
+- Contract validity: 100%
+- Evidence match: 90%
+- Groundedness: 90%
+- Safety violations: 0
+- Truncation: 0%
+
+Full 500 metrics:
+
+- JSON validity: 98.2%
+- Contract validity: 97.8%
+- Evidence match: 97.0%
+- Groundedness: 96.6%
+- Finance evidence/groundedness: 96% / 96%
+- Research AI evidence/groundedness: 96% / 94%
+- Safety violations: 0
+- Truncation: 1.8%
+
+Result: `B6R6_QUALITY_READY`.
+
+B6R6 clears the full frozen 500-row quality gate for `model2_3b` at
+concurrency one. The refreshed readiness audit is `READY` for benchmark
+execution and deployability. RunPod cost claims remain blocked until price and
+throughput multiplier inputs are registered.
 
 Result tracks are separated:
 
@@ -431,12 +477,12 @@ Result tracks are separated:
 
 ## Next Step
 
-Run only a controlled 1,000-prompt terminal baseline if the objective is a
-caveated benchmark-capacity measurement. Do not treat B6R5 as a deployability
-pass. Concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt
-runs remain blocked until a selected model path clears the Finance and
-Research AI vertical floors without caveat and the required cost/telemetry
-guardrails are configured.
+Run a controlled 1,000-prompt terminal baseline at concurrency one if the
+objective is the next benchmark-capacity measurement. Concurrency 2/4, SGLang,
+mm4, RunPod, 2,000-prompt, and 10,000-prompt runs remain blocked until the
+1,000-prompt result is measured and reviewed. RunPod cost claims remain
+blocked until reviewed hourly price and throughput multiplier inputs are
+configured.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -451,6 +497,7 @@ audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/107_b6r3_research_ai_model_capacity_validation.md` for B6R3, and
 `docs/109_b6r4_qwen3b_research_ai_quality_validation.md` for B6R4, and
 `docs/110_b6r5_finance_research_quality_repair.md` for B6R5, and
+`docs/111_b6r6_research_ai_quality_recovery.md` for B6R6, and
 `docs/108_production_runtime_registry.md` for Phase 1B. See
 `docs/109_production_workload_profiles.md`,
 `docs/110_cache_readiness_metrics.md`, `docs/111_profiling_hooks.md`,

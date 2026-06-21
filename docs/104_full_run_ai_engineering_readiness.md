@@ -1,11 +1,11 @@
 # Full-Run AI Engineering Readiness
 
-Status: updated after Phase B6R5 on June 20, 2026
+Status: updated after Phase B6R6 on June 20, 2026
 
 ## Purpose
 
 This audit checks whether the repository is ready to move from the controlled
-500-prompt B6/B6R1/B6R2/B6R4/B6R5 gates to larger prompt-count benchmarks,
+500-prompt B6/B6R1/B6R2/B6R4/B6R5/B6R6 gates to larger prompt-count benchmarks,
 concurrency sweeps, SGLang/mm4 comparisons, or RunPod execution.
 
 The audit is deterministic and local. It does not use an LLM as a decision
@@ -23,26 +23,26 @@ source.
 The readiness status is:
 
 ```text
-READY_WITH_QUALITY_CAVEAT
+READY
 ```
 
 Detailed readiness is split:
 
-- deployability readiness: `NOT_READY`;
-- benchmark execution readiness: `READY_WITH_QUALITY_CAVEAT`;
+- deployability readiness: `READY`;
+- benchmark execution readiness: `READY`;
 - 1,000-prompt terminal baseline allowed: `true`.
 
-The audit found 50 checks:
+The audit found 52 checks:
 
-- passes: 42;
+- passes: 44;
 - gaps: 2;
 - non-blocking failures: 5;
 - blocking failures: 0.
 
 The failed B6, B6R1, B6R2, and B6R4 quality gates remain recorded evidence.
-B6R5 did not make the selected model deployable, but it separated benchmark
-execution readiness from deployability readiness. A controlled 1,000-prompt
-terminal baseline is allowed as caveated benchmark evidence only.
+B6R5 repaired Finance but left Research AI below the locked baseline. B6R6
+restored Research AI and passed the full frozen 500-row quality gate, so a
+controlled 1,000-prompt terminal baseline is now allowed at concurrency one.
 
 ## Passed Areas
 
@@ -94,6 +94,11 @@ targeted strategy comparison reports, and a refreshed readiness report. The
 selected strategy did not trigger a full 500 rerun because Research AI remained
 below the targeted vertical threshold.
 
+B6R6 adds a Research AI baseline lock, targeted strategy comparison, full
+500-row raw output, full evaluation report, and refreshed readiness report. The
+selected Research AI strategy triggered and passed the full frozen 500-row
+gate.
+
 GPU/runtime controls are present:
 
 - `remote_rtx3070` profile;
@@ -125,7 +130,7 @@ GPU cost implementation is not centralized:
 - API pricing exists separately in `src/inference_bench/api_pricing.py`;
 - `configs/gpu_costs.yaml` remains a template.
 
-## Quality Caveat
+## Quality History And B6R6 Recovery
 
 The B6 gate did not pass:
 
@@ -199,12 +204,42 @@ The decision is `B6R5_QUALITY_CAVEATED`. Finance cleared the targeted floor on
 the failed-row subset, but Research AI did not. Therefore no full 500-row B6R5
 rerun was triggered, and no deployability claim is allowed.
 
+B6R6 replayed only the 20 failed B6R4 Research AI rows with a baseline lock at
+80% evidence match and 80% groundedness. The selected `answer_skeleton`
+strategy reached:
+
+- JSON validity: 100%;
+- contract validity: 100%;
+- evidence match: 90%;
+- groundedness: 90%;
+- safety violations: 0;
+- truncation: 0%.
+
+The selected strategy exceeded the preferred 85% floor, so the full frozen
+500-row B6R6 run was triggered. It completed 500 of 500 requests with:
+
+- JSON validity: 98.2%;
+- contract validity: 97.8%;
+- evidence match: 97.0%;
+- groundedness: 96.6%;
+- safety violations: 0;
+- truncation: 1.8%.
+
+Per-vertical evidence match and groundedness:
+
+- Airline: 93% / 93%;
+- Healthcare Admin: 100% / 100%;
+- Retail: 100% / 100%;
+- Finance: 96% / 96%;
+- Research AI: 96% / 94%.
+
+The decision is `B6R6_QUALITY_READY`.
+
 ## Decision
 
 Allowed next benchmark:
 
-- controlled 1,000-prompt terminal baseline, only as caveated benchmark
-  evidence.
+- controlled 1,000-prompt terminal baseline at concurrency one.
 
 Do not run:
 
@@ -223,9 +258,11 @@ The next engineering action should keep the benchmark/deployability distinction
 explicit:
 
 ```text
-CONTROLLED_1000_PROMPT_TERMINAL_BASELINE_WITH_QUALITY_CAVEAT
+CONTROLLED_1000_PROMPT_TERMINAL_BASELINE
 ```
 
-Keep deployability blocked until a selected model path clears the Finance and
-Research AI vertical floors without caveat. Keep the evaluator, gold data, and
-promoted retrieval source unchanged.
+Keep concurrency, SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt runs
+blocked until the 1,000-prompt result is measured and reviewed. Keep RunPod
+cost claims blocked until reviewed hourly price and throughput multiplier
+inputs are configured. Keep the evaluator, gold data, and promoted retrieval
+source unchanged.
