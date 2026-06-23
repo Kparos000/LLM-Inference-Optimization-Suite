@@ -7,6 +7,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from inference_bench.calibration_manifest import (
+    calibration_readiness_verdict,
+    load_runpod_calibration_profiles,
+    validate_calibration_profile,
+)
+from inference_bench.gpu_price_registry import load_gpu_price_registry
+
 
 def _exists(root: Path, relative_path: str) -> bool:
     return (root / relative_path).exists()
@@ -65,6 +72,14 @@ def _load_json_if_present(root: Path, relative_path: str) -> dict[str, Any] | No
 
 
 def _gpu_price_configured(root: Path) -> bool:
+    gpu_prices_path = root / "configs/gpu_prices.yaml"
+    if gpu_prices_path.exists():
+        try:
+            registry = load_gpu_price_registry(gpu_prices_path)
+        except (FileNotFoundError, ValueError):
+            registry = {}
+        if any(record.hourly_price is not None for record in registry.values()):
+            return True
     payload = _load_json_if_present(root, "results/processed/b6_runtime_projection_report.json")
     if payload is None:
         return False
@@ -75,6 +90,83 @@ def _gpu_price_configured(root: Path) -> bool:
         isinstance(profile, dict) and profile.get("hourly_price_usd") is not None
         for profile in projections.values()
     )
+
+
+def _backup_dry_run_passed(root: Path) -> bool:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/long_run_recovery_dry_run_report.json",
+    )
+    if payload is None:
+        return False
+    verification = payload.get("backup_verification")
+    if isinstance(verification, dict):
+        return bool(verification.get("passed"))
+    return bool(payload.get("backup_verification_passed"))
+
+
+def _calibration_readiness(root: Path) -> dict[str, Any]:
+    profiles_path = root / "configs/runpod_calibration_profiles.yaml"
+    if not profiles_path.exists():
+        return {
+            "status": "CALIBRATION_NOT_READY",
+            "profiles": {},
+            "reason": "configs/runpod_calibration_profiles.yaml missing",
+        }
+    try:
+        profiles = load_runpod_calibration_profiles(profiles_path)
+    except (FileNotFoundError, ValueError) as exc:
+        return {
+            "status": "CALIBRATION_NOT_READY",
+            "profiles": {},
+            "reason": str(exc),
+        }
+    artifact_sync_enabled = _exists(root, "src/inference_bench/artifact_sync.py")
+    checkpoint_resume_enabled = _exists(root, "src/inference_bench/checkpoint_resume.py")
+    manifest_enabled = _exists(root, "src/inference_bench/run_manifest.py")
+    backup_passed = _backup_dry_run_passed(root)
+    profile_reports: dict[str, Any] = {}
+    for profile_id, profile in profiles.items():
+        try:
+            validation = validate_calibration_profile(
+                profile,
+                models_path=root / "configs/models.yaml",
+                runtime_registry_path=root / "configs/runtime_engines.yaml",
+                gpu_price_registry_path=root / "configs/gpu_prices.yaml",
+            )
+        except (FileNotFoundError, KeyError, ValueError) as exc:
+            validation = {
+                "profile_id": profile_id,
+                "gpu_registered": False,
+                "gpu_price_registered": False,
+                "profile_price_matches_registry": False,
+                "runtime_profile_valid": False,
+                "runtime_errors": [str(exc)],
+                "registered_hourly_price": None,
+            }
+        verdict = calibration_readiness_verdict(
+            profile=profile,
+            artifact_sync_enabled=artifact_sync_enabled,
+            checkpoint_resume_enabled=checkpoint_resume_enabled,
+            manifest_enabled=manifest_enabled,
+            runtime_profile_valid=bool(validation["runtime_profile_valid"]),
+            gpu_price_registered=bool(validation["gpu_price_registered"]),
+            backup_verification_dry_run_passed=backup_passed,
+        )
+        profile_reports[profile_id] = {
+            "validation": validation,
+            "readiness": verdict,
+        }
+    ready_profiles = [
+        profile_id
+        for profile_id, payload in profile_reports.items()
+        if bool(payload["readiness"]["ready"])
+    ]
+    return {
+        "status": "READY" if ready_profiles else "CALIBRATION_NOT_READY",
+        "ready_profiles": ready_profiles,
+        "profiles": profile_reports,
+    }
 
 
 def _b6_gate_passed(root: Path) -> bool | None:
@@ -646,6 +738,40 @@ def build_full_run_readiness_audit(
             ),
         )
     )
+    for name, relative_path in (
+        ("gpu_price_registry", "configs/gpu_prices.yaml"),
+        ("runpod_calibration_profiles", "configs/runpod_calibration_profiles.yaml"),
+        ("gpu_price_registry_loader", "src/inference_bench/gpu_price_registry.py"),
+        ("api_load_probe_framework", "src/inference_bench/api_load_probe.py"),
+        ("runpod_calibration_manifest", "src/inference_bench/calibration_manifest.py"),
+    ):
+        checks.append(
+            _file_check(
+                root,
+                category="calibration",
+                name=name,
+                relative_path=relative_path,
+                blocking=False,
+            )
+        )
+    calibration_readiness = _calibration_readiness(root)
+    for profile_id, payload in calibration_readiness.get("profiles", {}).items():
+        readiness = payload["readiness"]
+        validation = payload["validation"]
+        checks.append(
+            _check(
+                category="calibration",
+                name=f"{profile_id.lower()}_calibration_readiness",
+                status="PASS" if readiness["ready"] else "GAP",
+                evidence=(
+                    str(readiness["verdict"])
+                    if readiness["ready"]
+                    else "Calibration blocked by: "
+                    + ", ".join(str(item) for item in readiness["failed_checks"])
+                    + f"; gpu_price_registered={validation['gpu_price_registered']}"
+                ),
+            )
+        )
     checks.append(telemetry_availability_check(b6_report))
 
     for name, relative_path in (
@@ -1148,6 +1274,7 @@ def build_full_run_readiness_audit(
         "status": status,
         "deployability_readiness": deployability_readiness,
         "benchmark_execution_readiness": benchmark_execution_readiness,
+        "runpod_calibration_readiness": calibration_readiness,
         "terminal_1000_prompt_baseline_allowed": benchmark_execution_readiness
         in {"READY", "READY_WITH_QUALITY_CAVEAT", "READY_WITH_GAPS"},
         "b7_status": b7_status,

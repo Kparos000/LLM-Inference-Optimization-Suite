@@ -7,7 +7,9 @@ from rich.console import Console
 from rich.table import Table
 
 from inference_bench import __version__
+from inference_bench.calibration_manifest import load_runpod_calibration_profiles
 from inference_bench.config import load_project_config
+from inference_bench.gpu_price_registry import load_gpu_price_registry
 from inference_bench.load_profiles import load_sequence_buckets, load_traffic_profiles
 from inference_bench.optimization_negative_rules import load_optimization_negative_rules
 from inference_bench.quality import score_structured_output
@@ -117,6 +119,14 @@ def validate_config(
         str,
         typer.Option(help="Path to the modular SLO profiles YAML config."),
     ] = "configs/slo_profiles.yaml",
+    gpu_prices_path: Annotated[
+        str,
+        typer.Option(help="Path to the RunPod GPU price registry YAML config."),
+    ] = "configs/gpu_prices.yaml",
+    runpod_calibration_profiles_path: Annotated[
+        str,
+        typer.Option(help="Path to the RunPod calibration profile YAML config."),
+    ] = "configs/runpod_calibration_profiles.yaml",
 ) -> None:
     """Validate benchmark configuration files."""
 
@@ -132,6 +142,8 @@ def validate_config(
     negative_rules = load_optimization_negative_rules(optimization_negative_rules_path)
     slo_config = load_slo_config(slo_targets_path)
     slo_profiles = load_slo_profiles(slo_profiles_path)
+    gpu_price_registry = load_gpu_price_registry(gpu_prices_path)
+    calibration_profiles = load_runpod_calibration_profiles(runpod_calibration_profiles_path)
     result_track_errors = validate_result_track_row(
         {
             "run_id": "config-validation",
@@ -174,6 +186,8 @@ def validate_config(
         f"{len(SLO_METRIC_FAMILIES)} metric families"
     )
     console.print(f"SLO profiles loaded: {len(profiles)}")
+    console.print(f"GPU price registry loaded: {len(gpu_price_registry)} GPUs")
+    console.print(f"RunPod calibration profiles loaded: {len(calibration_profiles)}")
     console.print(f"Result track schema join keys loaded: {len(RESULT_TRACK_JOIN_KEYS)}")
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")

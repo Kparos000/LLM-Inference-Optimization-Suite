@@ -2446,6 +2446,13 @@ GPU cost claim. `configs/runpod_projection_prices.yaml` also keeps RTX 4090,
 L40S, A100, and H100 projection prices and measured throughput multipliers
 null until reviewed inputs exist.
 
+Phase 2A adds `configs/gpu_prices.yaml`, a RunPod GPU price registry covering
+22 observed GPU types, and `src/inference_bench/gpu_price_registry.py` for
+metadata lookup and cost projections. All reviewed hourly prices are currently
+null by design, so GPU cost fields remain present but unclaimable. The API load
+probe framework and RunPod calibration profiles also exist, but no live API
+probe or RunPod calibration has run.
+
 ## Historical RunPod Infrastructure
 
 Phase 1 documents a Linux RunPod pod with an NVIDIA L40S used for:
@@ -3543,6 +3550,22 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   95.9% groundedness, zero safety violations, and 1.2% truncation;
 - marked the result `B7R1_STABILITY_READY`.
 
+## Phase 2A: Infrastructure Readiness Framework
+
+- added a RunPod GPU price registry covering 22 observed GPU types with
+  reviewed hourly prices intentionally left null;
+- added GPU metadata lookup and self-hosted cost projection helpers while
+  preserving API-provider token-cost separation;
+- added an API provider load-probe framework for `model5_gated`,
+  `model6_gated`, and `model7_gated` at concurrency 1/2/4/8/16;
+- added a dry-run API probe script that writes framework artifacts without
+  sending live requests;
+- added RunPod calibration profiles for A100 SXM, H100 SXM, and L40S;
+- added 100/200-prompt calibration manifest support;
+- updated readiness gates so RunPod calibration remains blocked until artifact
+  sync, checkpoint/resume, manifests, runtime validation, backup verification,
+  and reviewed GPU prices all pass.
+
 ## Current Architecture Replacements
 
 - Old raw internal EDA paths were replaced by public
@@ -3599,6 +3622,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   operational serving-stability decision.
 - Phase B7R1 vLLM CUDA stability audit, safe RTX 3070 serving profile, and
   clean rerun of the same 1,000-row input.
+- Phase 2A infrastructure readiness framework for RunPod pricing, API load
+  probes, and RunPod calibration manifests.
 
 ## Current Block State
 
@@ -3634,7 +3659,10 @@ and passed the full frozen 500-row gate. Phase B7 then ran the controlled
 sync, and GPU telemetry enabled. B7 preflight passed, but the live run was
 blocked by a vLLM EngineCore CUDA/CUBLAS fatal error at Finance prompt 17.
 Phase B7R1 isolated that serving failure, adjusted the vLLM serving profile,
-and completed the same frozen 1,000-row input cleanly.
+and completed the same frozen 1,000-row input cleanly. Phase 2A then added the
+infrastructure readiness framework for RunPod pricing, API load probes, and
+RunPod calibration manifests without running a live API probe or RunPod
+calibration.
 
 Current decision:
 
@@ -3656,6 +3684,9 @@ PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
+PHASE2A_INFRASTRUCTURE_FRAMEWORK_READY
+API_LOAD_PROBE_FRAMEWORK_READY_NOT_RUN
+RUNPOD_CALIBRATION_NOT_READY_PRICE_MISSING
 BENCHMARK_EXECUTION_READY
 API_LOAD_PROBE_ALLOWED
 DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
@@ -3701,6 +3732,9 @@ for the remaining first-pass Finance and Research AI requests. B7 is therefore
 an operational serving-stability finding rather than a clean model-quality
 scale result. B7R1 then reran the exact same 1,000 rows with the safe profile
 and completed 1,000/1,000 requests with `B7R1_STABILITY_READY`.
+Phase 2A added `configs/gpu_prices.yaml`, the API load-probe framework, and
+RunPod calibration profiles. All RunPod hourly prices remain null, no live API
+probe has run, and calibration readiness remains blocked.
 
 ## What Is Ready
 
@@ -3761,6 +3795,11 @@ and completed 1,000/1,000 requests with `B7R1_STABILITY_READY`.
   files, hashes, and manifest row accounting;
 - checkpoint/resume manager for completed prompt IDs, partial raw JSONL resume,
   duplicate prompt prevention, failed-row persistence, and resume reports;
+- RunPod GPU price registry with null reviewed prices until price review;
+- API provider load-probe framework for `model5_gated`, `model6_gated`, and
+  `model7_gated` across concurrency 1/2/4/8/16;
+- RunPod calibration profiles for A100 SXM, H100 SXM, and L40S plus 100/200
+  prompt calibration manifests;
 - executable bounded LangGraph mm4 inference with one optional repair;
 - benchmarkable agent traces with node latency, token, tool, and status fields;
 - nvidia-smi GPU utilization, memory, power, temperature, and process
@@ -3768,16 +3807,16 @@ and completed 1,000/1,000 requests with `B7R1_STABILITY_READY`.
 
 ## Remaining Blockers
 
-- registered infrastructure cost if GPU cost comparisons are required;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
-- RunPod price and throughput multipliers before any RunPod cost claim;
+- reviewed RunPod hourly prices before any GPU cost or calibration-readiness
+  claim;
+- RunPod throughput multipliers before any hardware projection claim;
+- live API provider load probe before large API runs;
 - controlled concurrency sweep before scaling request count beyond the
   reviewed 1,000-prompt baseline;
 - complete provider pricing for `model7_gated` before paid API execution;
 - TensorRT-LLM smoke validation before it can enter live experiment matrices;
-- registered infrastructure cost if GPU cost comparisons are required;
-- artifact sync before long self-hosted/RunPod runs;
-- API provider load probe before large API runs;
+- cloud artifact sync before remote long-run backup claims beyond local backup;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
 - larger 2,000 and 10,000 record runs.
 
@@ -3848,6 +3887,12 @@ and completed 1,000/1,000 requests with `B7R1_STABILITY_READY`.
   2,000-prompt, or 10,000-prompt runs by itself.
 - B7R1 projected a 10,000-prompt single-config runtime of 6.412 RTX 3070 hours
   from measured concurrency-one throughput, but this is not a RunPod cost claim.
+- Phase 2A registers RunPod GPU names but no reviewed hourly prices; every
+  listed `hourly_price` is null until price review.
+- The API load-probe framework is implemented, but no live provider load probe
+  has been executed.
+- RunPod calibration profiles are implemented, but A100/H100/L40S calibration
+  readiness is blocked by missing reviewed GPU prices.
 - API provider result rows and self-hosted GPU result rows now share stable
   runtime/provider join keys, but their cost and telemetry fields are
   intentionally different: API runs have token price and no provider GPU
@@ -3879,11 +3924,12 @@ and completed 1,000/1,000 requests with `B7R1_STABILITY_READY`.
 
 ## Next Engineering Milestone
 
-Run the next independent API provider load probe while preserving API and
-self-hosted GPU result-track separation. Treat concurrency 2/4, SGLang, mm4,
-RunPod, 2,000-prompt, and 10,000-prompt runs as separate follow-on decisions
-after B7R1 review. Keep RunPod cost claims blocked until reviewed hourly price
-and throughput multiplier inputs are configured.
+Run the next independent, explicitly authorized API provider load probe using
+the Phase 2A framework while preserving API and self-hosted GPU result-track
+separation. Treat concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt, and
+10,000-prompt runs as separate follow-on decisions after B7R1 and Phase 2A
+review. Keep RunPod cost and calibration claims blocked until reviewed hourly
+price and throughput multiplier inputs are configured.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -4117,13 +4163,15 @@ gold leakage.
 
 The immediate work is operational:
 
-- run a controlled 1,000-prompt terminal baseline at concurrency one;
-- review the 1,000-prompt quality, latency, checkpoint/resume, and artifact
-  recovery evidence before changing concurrency or backend;
-- register an infrastructure price before making GPU cost claims;
+- run an explicitly authorized API provider load probe using the Phase 2A
+  framework;
+- review and register RunPod hourly prices before any GPU cost or calibration
+  claim;
+- keep RunPod calibration blocked until price, runtime, artifact sync,
+  checkpoint/resume, manifest, and backup verification gates pass;
 - add backend-native queue, batch, and cache telemetry;
 - then consider concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt, and
-  10,000-prompt runs only after the 1,000-prompt result passes review;
+  10,000-prompt runs only as separate reviewed decisions;
 - implement semantic groundedness and evaluate mm4 with a stronger feasible
   model.
 
@@ -4167,6 +4215,11 @@ assumptions:
 - the B6R5 repair replay is retained because it repaired Finance failed-row
   evidence and groundedness while showing Research AI still below target; it
   authorizes only a caveated terminal benchmark path, not deployability.
+- the B7/B7R1 pair is retained because it shows a real vLLM serving-stability
+  failure and the measured safe-profile repair on the same 1,000-row input.
+- the Phase 2A framework is retained without price or calibration claims; null
+  prices and blocked calibration readiness are intentional until reviewed data
+  exists.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical

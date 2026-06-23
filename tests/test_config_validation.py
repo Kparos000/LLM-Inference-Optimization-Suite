@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
+from inference_bench.calibration_manifest import load_runpod_calibration_profiles
 from inference_bench.cli import app
 from inference_bench.config import load_project_config
+from inference_bench.gpu_price_registry import load_gpu_price_registry
 from inference_bench.load_profiles import load_sequence_buckets, load_traffic_profiles
 from inference_bench.optimization_negative_rules import load_optimization_negative_rules
 from inference_bench.result_track_schema import RESULT_TRACK_JOIN_KEYS, validate_result_track_row
@@ -28,6 +30,8 @@ def test_validate_config_cli_covers_production_config_files() -> None:
         "Optimization negative-rule groups loaded: 8",
         "SLO targets loaded: 5 verticals, 7 metric families",
         "SLO profiles loaded: 1",
+        "GPU price registry loaded: 22 GPUs",
+        "RunPod calibration profiles loaded: 3",
         "Result track schema join keys loaded: 12",
     ]
     for expected in expected_lines:
@@ -43,6 +47,8 @@ def test_direct_config_loaders_cover_all_production_registries() -> None:
     negative_rules = load_optimization_negative_rules()
     slo_config = load_slo_config()
     slo_profiles = load_slo_profiles()
+    gpu_prices = load_gpu_price_registry()
+    calibration_profiles = load_runpod_calibration_profiles()
 
     assert "model2_3b" in project.model_aliases
     assert project.resolve_model_key("model2_1_5b") == "qwen2_5_1_5b_instruct"
@@ -71,6 +77,12 @@ def test_direct_config_loaders_cover_all_production_registries() -> None:
     assert set(slo_config["verticals"]) == set(SLO_VERTICALS)
     assert len(SLO_METRIC_FAMILIES) == 7
     assert slo_profiles["default_profile"] in slo_profiles["profiles"]
+    assert len(gpu_prices) == 22
+    assert set(calibration_profiles) == {
+        "A100_SXM_CALIBRATION",
+        "H100_SXM_CALIBRATION",
+        "L40S_CALIBRATION",
+    }
 
 
 def test_result_track_schema_smoke_row_is_validated_by_config_gate() -> None:

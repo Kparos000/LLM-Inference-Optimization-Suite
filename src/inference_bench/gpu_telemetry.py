@@ -12,6 +12,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from inference_bench.gpu_price_registry import estimate_gpu_cost
+
 GPU_QUERY_FIELDS = (
     "timestamp",
     "name",
@@ -299,6 +301,9 @@ def build_runtime_projections(
     p50_latency_ms: float,
     p95_latency_ms: float,
     target_prompt_counts: Sequence[int] = (500, 2500, 5000, 10000),
+    gpu_name: str | None = None,
+    backend_type: str = "self_hosted_gpu",
+    provider: str = "runpod",
 ) -> dict[str, object]:
     """Project concurrency-one runtimes from measured latency and throughput."""
 
@@ -318,6 +323,18 @@ def build_runtime_projections(
             raise ValueError(msg)
 
     measured_requests_per_second = measured_prompt_count / measured_wall_seconds
+    required_cost_projection_counts = {1000, 10000, 40000}
+    projected_seconds_by_prompt_count = {
+        prompt_count: prompt_count / measured_requests_per_second
+        for prompt_count in required_cost_projection_counts
+    }
+    cost_fields = estimate_gpu_cost(
+        gpu_name=gpu_name,
+        elapsed_seconds=measured_wall_seconds,
+        projected_seconds_by_prompt_count=projected_seconds_by_prompt_count,
+        backend_type=backend_type,
+        provider=provider,
+    )
     projections: list[dict[str, object]] = []
     for prompt_count in target_prompt_counts:
         if prompt_count <= 0:
@@ -344,7 +361,14 @@ def build_runtime_projections(
             "prompt and output length distributions remain comparable",
             "server remains warm and free of competing GPU workloads",
             "network and queue conditions remain comparable",
+            "GPU costs require a reviewed hourly price before any cost claim is made",
         ],
+        "gpu_hourly_cost": cost_fields["gpu_hourly_cost"],
+        "estimated_run_cost": cost_fields["estimated_run_cost"],
+        "projected_1000_cost": cost_fields["projected_1000_cost"],
+        "projected_10000_cost": cost_fields["projected_10000_cost"],
+        "projected_40000_cost": cost_fields["projected_40000_cost"],
+        "gpu_cost_metadata": cost_fields,
         "projections": projections,
     }
 

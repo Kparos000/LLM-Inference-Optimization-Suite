@@ -1,6 +1,6 @@
 # Full-Run AI Engineering Readiness
 
-Status: updated after Phase B7R1 on June 22, 2026
+Status: updated after Phase 2A on June 23, 2026
 
 ## Purpose
 
@@ -42,10 +42,10 @@ Detailed readiness is split:
 - API load probe allowed: `true`;
 - RTX 3070 Qwen3B suitability: `stable`.
 
-The audit found 55 checks:
+The audit found 63 checks:
 
-- passes: 47;
-- gaps: 2;
+- passes: 53;
+- gaps: 4;
 - non-blocking failures: 5;
 - blocking failures: 0.
 
@@ -123,6 +123,17 @@ report, comparison report, runtime projection, artifact sync report, and
 B7R1 readiness report. The repaired run completed 1,000 of 1,000 requests with
 zero fatal engine errors.
 
+Phase 2A adds infrastructure readiness controls:
+
+- RunPod GPU price registry with 22 supported GPU entries;
+- API provider load-probe framework for `model5_gated`, `model6_gated`, and
+  `model7_gated`;
+- framework-only API probe CLI that does not send live requests;
+- RunPod calibration profiles for A100 SXM, H100 SXM, and L40S;
+- 100/200-prompt calibration manifest support;
+- GPU cost fields in runtime projections that remain null until a reviewed
+  hourly price exists.
+
 GPU/runtime controls are present:
 
 - `remote_rtx3070` profile;
@@ -143,16 +154,27 @@ SLO and diagnosis controls are present:
 
 RunPod cost claims are blocked:
 
+- `configs/gpu_prices.yaml` contains supported RunPod GPUs, but all
+  `hourly_price` values are intentionally null until reviewed;
 - `configs/runpod_projection_prices.yaml` has no reviewed hourly prices;
 - throughput multipliers for RTX 4090, L40S, A100, and H100 remain null.
 - cloud artifact sync is not implemented yet; local backup is implemented and
   S3/R2/GDrive remain future providers.
 
-GPU cost implementation is not centralized:
+RunPod calibration readiness is blocked:
 
-- no `src/inference_bench/cost.py` module exists;
-- API pricing exists separately in `src/inference_bench/api_pricing.py`;
-- `configs/gpu_costs.yaml` remains a template.
+- A100 SXM, H100 SXM, and L40S calibration profiles exist;
+- readiness requires artifact sync, checkpoint/resume, manifests, runtime
+  compatibility, backup verification dry run, and reviewed GPU price;
+- the missing reviewed GPU price blocks all three calibration-ready verdicts.
+
+Cost implementation is now split by track:
+
+- API pricing exists in `src/inference_bench/api_pricing.py`;
+- GPU price lookup and projection support exists in
+  `src/inference_bench/gpu_price_registry.py`;
+- `src/inference_bench/cost.py` re-exports the unified GPU estimator;
+- `configs/gpu_costs.yaml` remains a historical/template config.
 
 ## Quality History And B6R6 Recovery
 
@@ -331,7 +353,7 @@ The decision is `B7R1_STABILITY_READY`.
 
 Allowed next independent track:
 
-- API provider load probe.
+- explicitly authorized API provider load probe using the Phase 2A framework.
 
 Do not run:
 
@@ -354,7 +376,7 @@ API_PROVIDER_LOAD_PROBE
 ```
 
 Keep concurrency, SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt runs as
-separate follow-on decisions after B7R1 review. Keep RunPod cost claims
-blocked until reviewed hourly price and throughput multiplier inputs are
-configured. Keep the evaluator, gold data, and promoted retrieval source
-unchanged.
+separate follow-on decisions after B7R1 and Phase 2A review. Keep RunPod cost
+and calibration readiness claims blocked until reviewed hourly price,
+throughput multiplier inputs, and calibration gate evidence are configured.
+Keep the evaluator, gold data, and promoted retrieval source unchanged.

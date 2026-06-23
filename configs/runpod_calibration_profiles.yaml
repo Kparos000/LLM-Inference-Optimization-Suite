@@ -1,0 +1,89 @@
+A100_SXM_CALIBRATION:
+  profile_id: "A100_SXM_CALIBRATION"
+  gpu_name: "A100 SXM 80GB"
+  provider: runpod
+  vram_gb: 80
+  hourly_price: null
+  runtime: vllm
+  engine: vllm
+  hardware_type: runpod_gpu
+  backend_type: self_hosted_gpu
+  concurrency_list:
+    - 1
+    - 2
+    - 4
+  model_aliases:
+    - model2_3b
+    - model3_7b
+    - model4_32b
+  memory_modes:
+    - mm2_hybrid_top5
+    - mm3_compressed_hybrid_top5
+  prompt_counts:
+    - 100
+    - 200
+  traffic_profile: online_low_latency
+  artifact_sync_required: true
+  checkpoint_resume_required: true
+  manifest_required: true
+  notes: "Planned A100 SXM calibration profile; blocked until reviewed hourly price is registered."
+
+H100_SXM_CALIBRATION:
+  profile_id: "H100_SXM_CALIBRATION"
+  gpu_name: "H100 SXM 80GB"
+  provider: runpod
+  vram_gb: 80
+  hourly_price: null
+  runtime: vllm
+  engine: vllm
+  hardware_type: runpod_gpu
+  backend_type: self_hosted_gpu
+  concurrency_list:
+    - 1
+    - 2
+    - 4
+    - 8
+  model_aliases:
+    - model2_3b
+    - model3_7b
+    - model4_32b
+  memory_modes:
+    - mm2_hybrid_top5
+    - mm3_compressed_hybrid_top5
+  prompt_counts:
+    - 100
+    - 200
+  traffic_profile: online_low_latency
+  artifact_sync_required: true
+  checkpoint_resume_required: true
+  manifest_required: true
+  notes: "Planned H100 SXM calibration profile; blocked until reviewed hourly price is registered."
+
+L40S_CALIBRATION:
+  profile_id: "L40S_CALIBRATION"
+  gpu_name: "L40S"
+  provider: runpod
+  vram_gb: 48
+  hourly_price: null
+  runtime: vllm
+  engine: vllm
+  hardware_type: runpod_gpu
+  backend_type: self_hosted_gpu
+  concurrency_list:
+    - 1
+    - 2
+    - 4
+  model_aliases:
+    - model2_3b
+    - model3_7b
+  memory_modes:
+    - mm2_hybrid_top5
+    - mm3_compressed_hybrid_top5
+  prompt_counts:
+    - 100
+    - 200
+  traffic_profile: online_low_latency
+  artifact_sync_required: true
+  checkpoint_resume_required: true
+  manifest_required: true
+  notes: "Planned L40S calibration profile; blocked until reviewed hourly price is registered."

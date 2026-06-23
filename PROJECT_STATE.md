@@ -1,6 +1,6 @@
 # Project State
 
-Status as of June 22, 2026.
+Status as of June 23, 2026.
 
 ## Current Decision
 
@@ -22,6 +22,9 @@ PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
+PHASE2A_INFRASTRUCTURE_FRAMEWORK_READY
+API_LOAD_PROBE_FRAMEWORK_READY_NOT_RUN
+RUNPOD_CALIBRATION_NOT_READY_PRICE_MISSING
 BENCHMARK_EXECUTION_READY
 API_LOAD_PROBE_ALLOWED
 DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
@@ -167,6 +170,15 @@ default, persists failed rows, and writes a clear resume report. The local
 backup engine syncs raw, manifest, telemetry, processed, checkpoint, failed-row,
 and log artifacts to `backups/` and verifies existence, non-zero size, hashes,
 and manifest row accounting.
+
+Phase 2A added the infrastructure readiness framework before paid/provider
+scale work. `configs/gpu_prices.yaml` now lists 22 RunPod GPU types with
+hourly prices intentionally left null until reviewed. The API load-probe
+framework supports `model5_gated`, `model6_gated`, and `model7_gated` across
+concurrency 1/2/4/8/16, but no live probe has run. RunPod calibration profiles
+exist for A100 SXM, H100 SXM, and L40S at 100 and 200 prompts, but calibration
+readiness remains blocked until reviewed GPU prices and backup/readiness gates
+pass.
 
 ## B1 Quality Gate
 

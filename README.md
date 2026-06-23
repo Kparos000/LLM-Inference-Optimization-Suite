@@ -61,8 +61,9 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Phase B6R6 locked the B6R4 Research AI 80% floor, replayed the 20 failed Research AI rows, and selected `answer_skeleton`. Targeted Research AI evidence match and groundedness recovered to 90%. The triggered full frozen 500-row run reached 98.2% JSON validity, 97.8% contract validity, 97.0% evidence match, 96.6% groundedness, zero safety violations, and 1.8% truncation. Finance reached 96% evidence/groundedness and Research AI reached 96%/94%. The readiness audit is now `READY` for benchmark execution and deployability.
 - Phase B7 ran the controlled 1,000-prompt `model2_3b` vLLM baseline at concurrency one with artifact sync, checkpoint/resume, manifest, and GPU telemetry enabled. Preflight passed with all required evidence present in E1-E5, but the live run was `B7_CONTROLLED_1000_BASELINE_BLOCKED`: vLLM failed at Finance prompt 17 with an EngineCore CUDA/CUBLAS fatal error, leaving 663 successful requests and 337 failed request rows.
 - Phase B7R1 repaired the B7 serving-stability blocker on the same frozen 1,000-row input. The stable profile uses vLLM on the remote RTX 3070 with `gpu_memory_utilization=0.82`, `max_model_len=3584`, `max_num_seqs=1`, `max_num_batched_tokens=3584`, eager execution, and custom all-reduce disabled. The rerun completed 1,000/1,000 requests with zero fatal engine errors, 98.5% JSON validity, 98.3% contract validity, 96.1% evidence match, 95.9% groundedness, zero safety violations, 1.2% truncation, and status `B7R1_STABILITY_READY`.
+- Phase 2A added the infrastructure readiness framework for RunPod pricing, API provider load probes, and 100/200-prompt RunPod calibration manifests. The framework is ready, but no live API probe or RunPod calibration has run. All RunPod hourly prices remain null until reviewed.
 - Result tracks are explicitly separated: API provider runs (`model5`/`model6`/`model7` through OpenRouter, Novita, or HF provider routes) use API token cost and no provider GPU telemetry; self-hosted GPU runs (`model2`/`model3`/`model4` through Hugging Face local, vLLM, SGLang, or RunPod) use GPU telemetry/hourly infrastructure cost when configured and no API token price.
-- The next independent track can be an API load probe. Concurrency sweep, SGLang comparison, mm4 comparison, RunPod execution, and 2,000/10,000-prompt benchmarks remain follow-on decisions after B7R1 review. RunPod cost claims remain blocked until price and throughput multiplier inputs are registered.
+- The next independent track can be an explicitly authorized API load probe. Concurrency sweep, SGLang comparison, mm4 comparison, RunPod execution, and 2,000/10,000-prompt benchmarks remain follow-on decisions after B7R1/Phase 2A review. RunPod cost and calibration readiness claims remain blocked until reviewed prices and throughput calibration inputs are registered.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -189,6 +190,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Block B7 summary](docs/summaries/blockB7_controlled_1000_prompt_baseline_summary.md)
 - [B7R1 vLLM CUDA stability repair](docs/113_b7r1_vllm_cuda_stability_repair.md)
 - [Block B7R1 summary](docs/summaries/blockB7R1_vllm_cuda_stability_repair_summary.md)
+- [Phase 2A infrastructure readiness](docs/114_phase2a_infrastructure_readiness.md)
+- [Block Phase 2A summary](docs/summaries/blockPhase2A_infrastructure_readiness_summary.md)
 - [Production runtime registry](docs/108_production_runtime_registry.md)
 - [Artifact sync and long-run recovery](docs/108_artifact_sync_and_long_run_recovery.md)
 - [Production workload profiles](docs/109_production_workload_profiles.md)
@@ -224,6 +227,11 @@ python scripts/audit_repo_public_content.py
 inference-bench doctor
 inference-bench validate-config
 ```
+
+`validate-config` covers the model registry, runtime registry, serving
+profiles, load profiles, optimization negative rules, SLO targets/profiles,
+result-track schema, RunPod GPU price registry, and RunPod calibration
+profiles.
 
 ## Initial Development Model
 
