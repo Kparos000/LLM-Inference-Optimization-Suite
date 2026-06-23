@@ -178,9 +178,10 @@ Primary reports:
 
 ## Next Step
 
-The next step cannot be an API load probe, concurrency sweep, SGLang
-comparison, mm4 comparison, RunPod run, or 2,000/10,000-prompt run. First
-isolate the vLLM/CUDA failure on the failing Finance request shape and decide
-whether the repair is a vLLM launch setting, CUDA/container change, model
-runtime change, or a hardware-capacity constraint. Then rerun the same
-controlled 1,000-row B7 input before expanding scale.
+B7R1 has now superseded this operational blocker. It audited the vLLM
+EngineCore failure, found that `gpu_memory_utilization=0.78` could not
+initialize KV-cache blocks, loaded a safe profile at
+`gpu_memory_utilization=0.82` with `max_model_len=3584`, and reran the same
+frozen 1,000-row input successfully.
+
+See `docs/113_b7r1_vllm_cuda_stability_repair.md` for the repaired result.

@@ -1,0 +1,49 @@
+remote_rtx3070_qwen3b_baseline_b7:
+  profile_id: remote_rtx3070_qwen3b_baseline_b7
+  status: unstable_observed
+  engine: vllm
+  model_alias: model2_3b
+  model_id: Qwen/Qwen2.5-3B-Instruct
+  hardware: remote_rtx3070
+  backend_type: self_hosted_gpu
+  provider: self_hosted
+  gpu_memory_utilization: 0.90
+  max_model_len: 4096
+  max_num_seqs: 1
+  max_num_batched_tokens: 8192
+  enforce_eager: false
+  disable_custom_all_reduce: false
+  dtype: auto
+  trust_remote_code: false
+  smoke_tested: true
+  live_run_allowed: false
+  health_check_every_n_requests: 25
+  restart_on_fatal_engine_error: false
+  max_serving_restarts: 0
+  peak_vram_safe_threshold_mb: 7770
+  notes: "Original B7 vLLM profile retained for audit; B7 observed EngineCore/CUDA/CUBLAS collapse near 7.77 GB VRAM."
+
+remote_rtx3070_qwen3b_safe_v1:
+  profile_id: remote_rtx3070_qwen3b_safe_v1
+  status: ready
+  engine: vllm
+  model_alias: model2_3b
+  model_id: Qwen/Qwen2.5-3B-Instruct
+  hardware: remote_rtx3070
+  backend_type: self_hosted_gpu
+  provider: self_hosted
+  gpu_memory_utilization: 0.82
+  max_model_len: 3584
+  max_num_seqs: 1
+  max_num_batched_tokens: 3584
+  enforce_eager: true
+  disable_custom_all_reduce: true
+  dtype: auto
+  trust_remote_code: false
+  smoke_tested: true
+  live_run_allowed: true
+  health_check_every_n_requests: 10
+  restart_on_fatal_engine_error: false
+  max_serving_restarts: 0
+  peak_vram_safe_threshold_mb: 7600
+  notes: "Conservative RTX 3070 repair profile for B7R1: 0.78 could not allocate KV blocks on vLLM 0.23.0, while 0.82 with max_model_len 3584 loaded successfully and remains below the unstable B7 0.90 baseline."

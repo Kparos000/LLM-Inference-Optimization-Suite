@@ -30,6 +30,7 @@ from inference_bench.runners.mock_runner import run_mock_benchmark
 from inference_bench.runners.openai_compatible_runner import run_openai_compatible_benchmark
 from inference_bench.runners.openai_load_runner import run_openai_compatible_load_benchmark
 from inference_bench.runtime_registry import load_runtime_registry
+from inference_bench.serving_profiles import load_serving_profiles
 from inference_bench.slo import SLO_METRIC_FAMILIES, SLO_VERTICALS, load_slo_config
 from inference_bench.slo_profiles import load_slo_profiles
 from inference_bench.system_info import collect_system_info, write_system_info_json
@@ -96,6 +97,10 @@ def validate_config(
         str,
         typer.Option(help="Path to the runtime/engine registry YAML config."),
     ] = "configs/runtime_engines.yaml",
+    serving_profiles_path: Annotated[
+        str,
+        typer.Option(help="Path to the serving-profile YAML config."),
+    ] = "configs/serving_profiles.yaml",
     load_profiles_path: Annotated[
         str,
         typer.Option(help="Path to the production load profiles YAML config."),
@@ -121,6 +126,7 @@ def validate_config(
         experiments_path=experiments_path,
     )
     runtime_registry = load_runtime_registry(runtime_registry_path)
+    serving_profiles = load_serving_profiles(serving_profiles_path)
     sequence_buckets = load_sequence_buckets(load_profiles_path)
     traffic_profiles = load_traffic_profiles(load_profiles_path)
     negative_rules = load_optimization_negative_rules(optimization_negative_rules_path)
@@ -156,6 +162,7 @@ def validate_config(
     console.print(f"Models loaded: {len(project_config.models)}")
     console.print(f"Model aliases loaded: {len(project_config.model_aliases)}")
     console.print(f"Runtime engines loaded: {len(runtime_registry)}")
+    console.print(f"Serving profiles loaded: {len(serving_profiles)}")
     console.print(
         "Sequence length buckets loaded: "
         f"{len(sequence_buckets['input'])} input, {len(sequence_buckets['output'])} output"

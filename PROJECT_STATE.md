@@ -1,6 +1,6 @@
 # Project State
 
-Status as of June 21, 2026.
+Status as of June 22, 2026.
 
 ## Current Decision
 
@@ -16,14 +16,15 @@ B6R5_QUALITY_CAVEATED
 B6R6_TARGETED_READY
 B6R6_QUALITY_READY
 B7_CONTROLLED_1000_BASELINE_BLOCKED
+B7R1_STABILITY_READY
 PRODUCTION_MODEL_REGISTRY_FROZEN
 PRODUCTION_RUNTIME_REGISTRY_READY
 PRODUCTION_WORKLOAD_AND_GUARDRAILS_READY
 REPOSITORY_CLEANED_AND_CI_VALIDATION_HARDENED
 ARTIFACT_SYNC_LONG_RUN_RECOVERY_READY
-BENCHMARK_EXECUTION_NOT_READY
-API_LOAD_PROBE_BLOCKED
-DEPLOYABILITY_BLOCKED_BY_B7_OPERATIONAL_FAILURE
+BENCHMARK_EXECUTION_READY
+API_LOAD_PROBE_ALLOWED
+DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -120,6 +121,17 @@ failed request rows. The raw file contains 1,000 unique prompt IDs and was
 resumed from partial raw output without duplicate rows. B7 blocks API load
 probe, concurrency, SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt runs
 until serving stability is isolated and the same 1,000-row input is rerun.
+
+Phase B7R1 audited the B7 vLLM EngineCore CUDA/CUBLAS failure and reran the
+same frozen 1,000-row input with the safe
+`remote_rtx3070_qwen3b_safe_v1` profile. The initial 0.78 GPU-memory cap could
+not allocate KV-cache blocks, so the loadable profile uses
+`gpu_memory_utilization=0.82`, `max_model_len=3584`, `max_num_seqs=1`,
+`max_num_batched_tokens=3584`, eager execution, and disabled custom all-reduce.
+The rerun completed 1,000/1,000 requests with zero fatal engine errors, 98.5%
+JSON validity, 98.3% contract validity, 96.1% evidence match, 95.9%
+groundedness, zero safety violations, 1.2% truncation, and status
+`B7R1_STABILITY_READY`.
 
 Phase 1A froze the production model registry. Active aliases are now
 `model1_0_5b`, `model2_3b`, `model3_7b`, `model4_32b`, `model5_gated`,
@@ -506,9 +518,41 @@ Result: `B7_CONTROLLED_1000_BASELINE_BLOCKED`.
 
 B7 is an operational serving-stability blocker, not a clean model-quality
 scale result. Finance and Research AI quality rates are dominated by request
-failures after the vLLM engine died. Do not proceed to API load probe,
-concurrency sweep, SGLang, mm4, RunPod, 2,000-prompt, or 10,000-prompt runs
-until the serving failure is isolated and the same 1,000-row input is rerun.
+failures after the vLLM engine died. B7R1 supersedes this operational blocker.
+
+## B7R1 vLLM CUDA Stability Repair
+
+- Model: `model2_3b` / `Qwen/Qwen2.5-3B-Instruct`
+- Runtime: vLLM on remote RTX 3070
+- Serving profile: `remote_rtx3070_qwen3b_safe_v1`
+- Memory mode: `mm2_hybrid_top5`
+- Prompt count: 1,000, 200 per vertical
+- Concurrency: 1
+
+Profile:
+
+- `gpu_memory_utilization`: 0.82
+- `max_model_len`: 3,584
+- `max_num_seqs`: 1
+- `max_num_batched_tokens`: 3,584
+- `enforce_eager`: true
+- `disable_custom_all_reduce`: true
+
+Result:
+
+- completed prompts: 1,000/1,000;
+- successful requests: 1,000;
+- fatal engine errors: 0;
+- JSON validity: 98.5%;
+- contract validity: 98.3%;
+- evidence match: 96.1%;
+- groundedness: 95.9%;
+- safety violations: 0;
+- truncation: 1.2%;
+- peak sampled VRAM: 7,404 MB;
+- backup completeness score: 1.0.
+
+Result: `B7R1_STABILITY_READY`.
 
 Result tracks are separated:
 
@@ -531,12 +575,10 @@ Result tracks are separated:
 
 ## Next Step
 
-Isolate the B7 vLLM/CUDA serving failure on the failing Finance request shape,
-then rerun the same controlled 1,000-row B7 input at concurrency one.
-Concurrency 2/4, SGLang, mm4, RunPod, API load probe, 2,000-prompt, and
-10,000-prompt runs remain blocked until a clean 1,000-prompt result is measured
-and reviewed. RunPod cost claims remain blocked until reviewed hourly price and
-throughput multiplier inputs are configured.
+The next independent track can be an API provider load probe. Concurrency 2/4,
+SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt runs remain follow-on
+decisions after B7R1 review. RunPod cost claims remain blocked until reviewed
+hourly price and throughput multiplier inputs are configured.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -553,6 +595,7 @@ audit, `docs/105_b6r1_research_ai_truncation_contract_repair.md` for B6R1, and
 `docs/110_b6r5_finance_research_quality_repair.md` for B6R5, and
 `docs/111_b6r6_research_ai_quality_recovery.md` for B6R6, and
 `docs/112_b7_controlled_1000_prompt_baseline.md` for B7, and
+`docs/113_b7r1_vllm_cuda_stability_repair.md` for B7R1, and
 `docs/108_production_runtime_registry.md` for Phase 1B. See
 `docs/109_production_workload_profiles.md`,
 `docs/110_cache_readiness_metrics.md`, `docs/111_profiling_hooks.md`,
@@ -564,4 +607,6 @@ and CI validation hardening. See
 `docs/summaries/blockPhase1E_artifact_sync_long_run_recovery_summary.md` for
 Phase 1E artifact sync and recovery controls. See
 `docs/summaries/blockB7_controlled_1000_prompt_baseline_summary.md` for the B7
+summary, and
+`docs/summaries/blockB7R1_vllm_cuda_stability_repair_summary.md` for the B7R1
 summary.

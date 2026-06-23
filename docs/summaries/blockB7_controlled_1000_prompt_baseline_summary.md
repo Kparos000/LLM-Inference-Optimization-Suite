@@ -2,6 +2,10 @@
 
 Status: measured on June 21, 2026
 
+Supersession note: B7 remains the frozen failed baseline. B7R1 reran the same
+1,000-row input with a safe vLLM serving profile and reached
+`B7R1_STABILITY_READY`.
+
 B7 ran the first 1,000-prompt post-quality-gate baseline for `model2_3b` /
 Qwen2.5-3B on the remote RTX 3070 vLLM path at concurrency one.
 

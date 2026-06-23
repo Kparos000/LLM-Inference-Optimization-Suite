@@ -375,6 +375,52 @@ def _b6r6_baseline_lock_present(root: Path) -> bool:
     )
 
 
+def _b7_status(root: Path) -> str | None:
+    payload = _load_json_if_present(
+        root,
+        "results/processed/b7_model2_3b_1000_readiness_report.json",
+    )
+    if payload is None:
+        payload = _load_json_if_present(
+            root,
+            "results/processed/b7_model2_3b_1000_eval_report.json",
+        )
+    if payload is None:
+        return None
+    status = payload.get("status")
+    return str(status) if status not in (None, "") else None
+
+
+def _b7r1_status(root: Path) -> str | None:
+    payload = _load_json_if_present(root, "results/processed/b7r1_readiness_report.json")
+    if payload is None:
+        payload = _load_json_if_present(
+            root,
+            "results/processed/b7r1_model2_3b_1000_eval_report.json",
+        )
+    if payload is None:
+        return None
+    status = payload.get("status")
+    return str(status) if status not in (None, "") else None
+
+
+def _b7r1_stability_ready(root: Path) -> bool | None:
+    status = _b7r1_status(root)
+    if status is None:
+        return None
+    return status in {"B7R1_STABILITY_READY", "B7R1_STABLE_WITH_QUALITY_CAVEAT"}
+
+
+def _rtx3070_qwen3b_suitability(root: Path) -> str:
+    b7r1_ready = _b7r1_stability_ready(root)
+    if b7r1_ready:
+        status = _b7r1_status(root)
+        return "stable" if status == "B7R1_STABILITY_READY" else "stable_but_memory_tight"
+    if _b7_status(root) is not None:
+        return "unstable"
+    return "unknown"
+
+
 def partial_run_completion_check(
     *,
     expected_count: int,
@@ -687,8 +733,13 @@ def build_full_run_readiness_audit(
     b6r6_benchmark_readiness = _b6r6_benchmark_readiness(root)
     b6r6_research_ai_floor_passed = _b6r6_research_ai_floor_passed(root)
     b6r6_baseline_lock_present = _b6r6_baseline_lock_present(root)
+    b7_status = _b7_status(root)
+    b7r1_status = _b7r1_status(root)
+    b7r1_ready = _b7r1_stability_ready(root)
+    rtx3070_qwen3b_suitability = _rtx3070_qwen3b_suitability(root)
     has_b6r5_result = b6r5_status is not None or b6r5_benchmark_readiness is not None
     has_b6r6_result = b6r6_status is not None or b6r6_benchmark_readiness is not None
+    has_b7_result = b7_status is not None
     checks.append(
         _check(
             category="scaling",
@@ -879,29 +930,84 @@ def build_full_run_readiness_audit(
     checks.append(
         _check(
             category="scaling",
+            name="b7r1_vllm_stability_gate",
+            status=("PASS" if b7r1_ready else "GAP" if not has_b7_result else "FAIL"),
+            evidence=(
+                f"B7R1 stability repair passed ({b7r1_status})"
+                if b7r1_ready
+                else "B7 has not run yet; B6R6 still gates the first 1,000-prompt attempt"
+                if not has_b7_result
+                else (
+                    f"B7 status is {b7_status}; B7R1 stability repair is {b7r1_status or 'missing'}"
+                )
+            ),
+            blocking=has_b7_result and b7r1_ready is not True,
+        )
+    )
+    checks.append(
+        _check(
+            category="gpu_runtime",
+            name="rtx3070_qwen3b_suitability",
+            status=(
+                "PASS"
+                if rtx3070_qwen3b_suitability in {"stable", "stable_but_memory_tight"}
+                else "GAP"
+                if rtx3070_qwen3b_suitability == "unknown"
+                else "FAIL"
+            ),
+            evidence=f"RTX 3070 Qwen3B suitability: {rtx3070_qwen3b_suitability}",
+            blocking=rtx3070_qwen3b_suitability == "unstable",
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
             name="terminal_1000_prompt_run_allowed",
             status=(
                 "PASS"
-                if b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
-                and b6r6_research_ai_floor_passed
+                if (
+                    b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                    and b6r6_research_ai_floor_passed
+                    and (not has_b7_result or b7r1_ready is True)
+                )
                 else "GAP"
                 if not has_b6r6_result
                 else "FAIL"
             ),
             evidence=(
-                "A 1,000-prompt baseline run is allowed after B6R6 restored the "
-                "Research AI floor at concurrency one"
-                if b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
-                and b6r6_research_ai_floor_passed
+                "A 1,000-prompt baseline run is allowed after B6R6 and B7R1 stability"
+                if (
+                    b6r6_benchmark_readiness in {"READY", "READY_WITH_QUALITY_CAVEAT"}
+                    and b6r6_research_ai_floor_passed
+                    and (not has_b7_result or b7r1_ready is True)
+                )
+                else "B7 failed; wait for B7R1 stability before another 1,000+ run"
+                if has_b7_result and b7r1_ready is not True
                 else "Wait for B6R6 Research AI recovery before a 1,000-prompt run"
                 if not has_b6r6_result
                 else "Do not run 1,000 prompts until B6R6 Research AI recovery passes"
             ),
-            blocking=has_b6r6_result
+            blocking=(has_b7_result and b7r1_ready is not True)
+            or has_b6r6_result
             and (
                 b6r6_benchmark_readiness not in {"READY", "READY_WITH_QUALITY_CAVEAT"}
                 or b6r6_research_ai_floor_passed is not True
             ),
+        )
+    )
+    checks.append(
+        _check(
+            category="scaling",
+            name="api_load_probe_allowed_after_b7r1_or_independent",
+            status="PASS" if b7r1_ready else "GAP" if not has_b7_result else "FAIL",
+            evidence=(
+                "API load probe can proceed after B7R1 stability"
+                if b7r1_ready
+                else "API load probe may only proceed now if explicitly declared independent"
+                if has_b7_result
+                else "No B7 stability result yet"
+            ),
+            blocking=False,
         )
     )
     checks.append(
@@ -1044,6 +1150,11 @@ def build_full_run_readiness_audit(
         "benchmark_execution_readiness": benchmark_execution_readiness,
         "terminal_1000_prompt_baseline_allowed": benchmark_execution_readiness
         in {"READY", "READY_WITH_QUALITY_CAVEAT", "READY_WITH_GAPS"},
+        "b7_status": b7_status,
+        "b7r1_status": b7r1_status,
+        "b7r1_stability_ready": b7r1_ready,
+        "api_load_probe_allowed": bool(b7r1_ready),
+        "rtx3070_qwen3b_suitability": rtx3070_qwen3b_suitability,
         "checks": checks,
         "summary": {
             "check_count": len(checks),

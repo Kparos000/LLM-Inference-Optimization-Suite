@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -179,24 +180,68 @@ def load_checkpoint(path: str | Path) -> CheckpointState:
     )
 
 
-def write_checkpoint(state: CheckpointState, path: str | Path) -> Path:
-    """Write checkpoint state atomically where possible."""
+def _checkpoint_warning_path(checkpoint_path: Path) -> Path:
+    return checkpoint_path.with_suffix(checkpoint_path.suffix + ".warning.json")
+
+
+def _fallback_checkpoint_path(checkpoint_path: Path) -> Path:
+    stamp = utc_now().replace(":", "").replace("-", "").replace("+", "Z")
+    return checkpoint_path.with_name(f"{checkpoint_path.name}.fallback-{stamp}.json")
+
+
+def write_checkpoint(
+    state: CheckpointState,
+    path: str | Path,
+    *,
+    max_replace_attempts: int = 8,
+    retry_base_seconds: float = 0.05,
+) -> Path:
+    """Write checkpoint state atomically where possible.
+
+    Windows antivirus and file indexers can briefly hold the target path open.
+    After bounded retries, the checkpoint state is still preserved in a
+    timestamped fallback file and a warning sidecar records why the primary
+    path could not be replaced.
+    """
 
     checkpoint_path = Path(path)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = checkpoint_path.with_suffix(checkpoint_path.suffix + ".tmp")
-    temporary_path.write_text(
-        json.dumps(state.to_dict(), ensure_ascii=True, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    for attempt in range(8):
+    payload = json.dumps(state.to_dict(), ensure_ascii=True, indent=2, sort_keys=True) + "\n"
+    with temporary_path.open("w", encoding="utf-8", newline="\n") as file:
+        file.write(payload)
+        file.flush()
+        os.fsync(file.fileno())
+    for attempt in range(max_replace_attempts):
         try:
             temporary_path.replace(checkpoint_path)
             break
         except PermissionError:
-            if attempt == 7:
-                raise
-            time.sleep(0.05 * (attempt + 1))
+            if attempt == max_replace_attempts - 1:
+                fallback_path = _fallback_checkpoint_path(checkpoint_path)
+                fallback_path.write_text(payload, encoding="utf-8")
+                _checkpoint_warning_path(checkpoint_path).write_text(
+                    json.dumps(
+                        {
+                            "warning": "primary_checkpoint_replace_failed",
+                            "primary_checkpoint_path": str(checkpoint_path),
+                            "fallback_checkpoint_path": str(fallback_path),
+                            "attempts": max_replace_attempts,
+                            "updated_at": utc_now(),
+                        },
+                        ensure_ascii=True,
+                        indent=2,
+                        sort_keys=True,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                try:
+                    temporary_path.unlink()
+                except FileNotFoundError:
+                    pass
+                return fallback_path
+            time.sleep(retry_base_seconds * (attempt + 1))
     return checkpoint_path
 
 

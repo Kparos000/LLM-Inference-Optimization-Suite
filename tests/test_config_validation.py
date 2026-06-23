@@ -8,6 +8,7 @@ from inference_bench.load_profiles import load_sequence_buckets, load_traffic_pr
 from inference_bench.optimization_negative_rules import load_optimization_negative_rules
 from inference_bench.result_track_schema import RESULT_TRACK_JOIN_KEYS, validate_result_track_row
 from inference_bench.runtime_registry import load_runtime_registry
+from inference_bench.serving_profiles import load_serving_profiles
 from inference_bench.slo import SLO_METRIC_FAMILIES, SLO_VERTICALS, load_slo_config
 from inference_bench.slo_profiles import load_slo_profiles
 
@@ -21,6 +22,7 @@ def test_validate_config_cli_covers_production_config_files() -> None:
         "Models loaded: 10",
         "Model aliases loaded: 12",
         "Runtime engines loaded: 5",
+        "Serving profiles loaded: 2",
         "Sequence length buckets loaded: 6 input, 6 output",
         "Traffic profiles loaded: 4",
         "Optimization negative-rule groups loaded: 8",
@@ -35,6 +37,7 @@ def test_validate_config_cli_covers_production_config_files() -> None:
 def test_direct_config_loaders_cover_all_production_registries() -> None:
     project = load_project_config()
     runtime_registry = load_runtime_registry()
+    serving_profiles = load_serving_profiles()
     sequence_buckets = load_sequence_buckets()
     traffic_profiles = load_traffic_profiles()
     negative_rules = load_optimization_negative_rules()
@@ -45,6 +48,8 @@ def test_direct_config_loaders_cover_all_production_registries() -> None:
     assert project.resolve_model_key("model2_1_5b") == "qwen2_5_1_5b_instruct"
     assert runtime_registry["tensorrt_llm"].status == "planned"
     assert runtime_registry["tensorrt_llm"].live_run_supported is False
+    assert serving_profiles["remote_rtx3070_qwen3b_baseline_b7"].status == "unstable_observed"
+    assert serving_profiles["remote_rtx3070_qwen3b_safe_v1"].status == "ready"
     assert len(sequence_buckets["input"]) == 6
     assert len(sequence_buckets["output"]) == 6
     assert set(traffic_profiles) == {
