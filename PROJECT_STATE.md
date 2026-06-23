@@ -171,14 +171,16 @@ backup engine syncs raw, manifest, telemetry, processed, checkpoint, failed-row,
 and log artifacts to `backups/` and verifies existence, non-zero size, hashes,
 and manifest row accounting.
 
-Phase 2A added the infrastructure readiness framework before paid/provider
-scale work. `configs/gpu_prices.yaml` now lists 22 RunPod GPU types with
-hourly prices intentionally left null until reviewed. The API load-probe
-framework supports `model5_gated`, `model6_gated`, and `model7_gated` across
-concurrency 1/2/4/8/16, but no live probe has run. RunPod calibration profiles
-exist for A100 SXM, H100 SXM, and L40S at 100 and 200 prompts, but calibration
-readiness remains blocked until reviewed GPU prices and backup/readiness gates
-pass.
+Phase 2A-R1/B/C registered observed RunPod console prices for 26 GPU types in
+`configs/gpu_prices.yaml`. The prices are reviewed enough for controlled
+projection math but still carry the source note to verify before final cost
+claims. The guarded live API load probe ran on priced routes for
+`model5_gated` and `model6_gated` at concurrency 1/2/4 and passed with zero
+429s, 5xxs, timeouts, retries, or throttling. `model7_gated` remains skipped
+because complete API pricing is not registered. A100 SXM, H100 SXM, and L40S
+calibration profiles are price-ready; the A100 SXM 100/200-prompt package is
+prepared locally, but live RunPod calibration remains blocked until a
+`RUNPOD_SSH_HOST` target is explicitly configured.
 
 ## B1 Quality Gate
 

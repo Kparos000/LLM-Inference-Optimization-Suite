@@ -3,15 +3,17 @@ A100_SXM_CALIBRATION:
   gpu_name: "A100 SXM 80GB"
   provider: runpod
   vram_gb: 80
-  hourly_price: null
+  hourly_price: 1.49
   runtime: vllm
   engine: vllm
   hardware_type: runpod_gpu
   backend_type: self_hosted_gpu
   concurrency_list:
     - 1
-    - 2
     - 4
+    - 8
+    - 16
+    - 32
   model_aliases:
     - model2_3b
     - model3_7b
@@ -26,14 +28,14 @@ A100_SXM_CALIBRATION:
   artifact_sync_required: true
   checkpoint_resume_required: true
   manifest_required: true
-  notes: "Planned A100 SXM calibration profile; blocked until reviewed hourly price is registered."
+  notes: "Primary RunPod calibration profile after observed UI price registration; verify price before final cost claims."
 
 H100_SXM_CALIBRATION:
   profile_id: "H100_SXM_CALIBRATION"
   gpu_name: "H100 SXM 80GB"
   provider: runpod
   vram_gb: 80
-  hourly_price: null
+  hourly_price: 3.29
   runtime: vllm
   engine: vllm
   hardware_type: runpod_gpu
@@ -57,14 +59,14 @@ H100_SXM_CALIBRATION:
   artifact_sync_required: true
   checkpoint_resume_required: true
   manifest_required: true
-  notes: "Planned H100 SXM calibration profile; blocked until reviewed hourly price is registered."
+  notes: "High-throughput scale validation profile after observed UI price registration; verify price before final cost claims."
 
 L40S_CALIBRATION:
   profile_id: "L40S_CALIBRATION"
   gpu_name: "L40S"
   provider: runpod
   vram_gb: 48
-  hourly_price: null
+  hourly_price: 0.99
   runtime: vllm
   engine: vllm
   hardware_type: runpod_gpu
@@ -86,4 +88,4 @@ L40S_CALIBRATION:
   artifact_sync_required: true
   checkpoint_resume_required: true
   manifest_required: true
-  notes: "Planned L40S calibration profile; blocked until reviewed hourly price is registered."
+  notes: "Lower-cost comparison profile after observed UI price registration; verify price before final cost claims."

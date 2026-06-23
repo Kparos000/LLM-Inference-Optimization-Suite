@@ -304,6 +304,8 @@ def build_runtime_projections(
     gpu_name: str | None = None,
     backend_type: str = "self_hosted_gpu",
     provider: str = "runpod",
+    total_tokens: int | None = None,
+    successful_requests: int | None = None,
 ) -> dict[str, object]:
     """Project concurrency-one runtimes from measured latency and throughput."""
 
@@ -332,6 +334,8 @@ def build_runtime_projections(
         gpu_name=gpu_name,
         elapsed_seconds=measured_wall_seconds,
         projected_seconds_by_prompt_count=projected_seconds_by_prompt_count,
+        total_tokens=total_tokens,
+        successful_requests=successful_requests,
         backend_type=backend_type,
         provider=provider,
     )
@@ -368,6 +372,8 @@ def build_runtime_projections(
         "projected_1000_cost": cost_fields["projected_1000_cost"],
         "projected_10000_cost": cost_fields["projected_10000_cost"],
         "projected_40000_cost": cost_fields["projected_40000_cost"],
+        "tokens_per_gpu_dollar": cost_fields["tokens_per_gpu_dollar"],
+        "successful_requests_per_gpu_dollar": cost_fields["successful_requests_per_gpu_dollar"],
         "gpu_cost_metadata": cost_fields,
         "projections": projections,
     }

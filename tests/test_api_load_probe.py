@@ -3,9 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
+import pytest
+
 from inference_bench.api_load_probe import (
     build_api_load_probe_plan,
     build_framework_only_api_probe_report,
+    load_probe_environment,
+    run_live_api_probe,
     summarize_api_probe_results,
     write_api_probe_artifacts,
 )
@@ -37,6 +41,7 @@ def _row(
         "timeout_count": timeout_count,
         "retry_count": retry_count,
         "provider_throttling_count": http_429_count,
+        "total_cost_usd": 0.001,
     }
 
 
@@ -71,6 +76,48 @@ def test_api_probe_pass_warning_and_blocked_verdicts() -> None:
     assert passed["verdict"] == "API_PROBE_PASSED"
     assert warned["verdict"] == "API_PROBE_WARNING"
     assert blocked["verdict"] == "API_PROBE_BLOCKED"
+    assert passed["total_api_cost_usd"] == 0.01
+
+
+def test_probe_environment_loads_dotenv_without_overwriting_process_values(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "HF_TOKEN=file-token",
+                "OPENROUTER_API_KEY=file-openrouter",
+                "EXISTING=from-file",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_probe_environment(
+        env_path=env_file,
+        base_environment={"EXISTING": "from-env"},
+    )
+
+    assert loaded["HF_TOKEN"] == "file-token"
+    assert loaded["OPENROUTER_API_KEY"] == "file-openrouter"
+    assert loaded["EXISTING"] == "from-env"
+
+
+def test_live_probe_skips_without_required_provider_keys(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    report = run_live_api_probe(
+        model_aliases=("model5_gated", "model6_gated"),
+        concurrencies=(1,),
+        prompt_count_per_model=1,
+        env_path=tmp_path / ".env",
+    )
+
+    assert report["status"] == "API_PROBE_SKIPPED_MISSING_KEYS"
+    assert report["no_live_requests_were_sent"] is True
+    assert report["required_env_vars"] == ["HF_TOKEN", "OPENROUTER_API_KEY"]
 
 
 def test_api_probe_artifact_writer(tmp_path: Path) -> None:

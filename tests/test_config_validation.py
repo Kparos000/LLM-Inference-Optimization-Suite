@@ -30,7 +30,7 @@ def test_validate_config_cli_covers_production_config_files() -> None:
         "Optimization negative-rule groups loaded: 8",
         "SLO targets loaded: 5 verticals, 7 metric families",
         "SLO profiles loaded: 1",
-        "GPU price registry loaded: 22 GPUs",
+        "GPU price registry loaded: 26 GPUs",
         "RunPod calibration profiles loaded: 3",
         "Result track schema join keys loaded: 12",
     ]
@@ -77,7 +77,7 @@ def test_direct_config_loaders_cover_all_production_registries() -> None:
     assert set(slo_config["verticals"]) == set(SLO_VERTICALS)
     assert len(SLO_METRIC_FAMILIES) == 7
     assert slo_profiles["default_profile"] in slo_profiles["profiles"]
-    assert len(gpu_prices) == 22
+    assert len(gpu_prices) == 26
     assert set(calibration_profiles) == {
         "A100_SXM_CALIBRATION",
         "H100_SXM_CALIBRATION",

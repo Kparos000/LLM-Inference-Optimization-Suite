@@ -12,7 +12,7 @@ from inference_bench.calibration_manifest import (
 )
 
 
-def test_runpod_calibration_profiles_load_with_null_prices() -> None:
+def test_runpod_calibration_profiles_load_with_registered_prices() -> None:
     profiles = load_runpod_calibration_profiles()
 
     assert set(profiles) == {
@@ -21,18 +21,18 @@ def test_runpod_calibration_profiles_load_with_null_prices() -> None:
         "L40S_CALIBRATION",
     }
     assert profiles["A100_SXM_CALIBRATION"].gpu_name == "A100 SXM 80GB"
-    assert profiles["A100_SXM_CALIBRATION"].hourly_price is None
+    assert profiles["A100_SXM_CALIBRATION"].hourly_price == pytest.approx(1.49)
     assert profiles["H100_SXM_CALIBRATION"].prompt_counts == (100, 200)
 
 
-def test_calibration_profile_validation_blocks_missing_price_only() -> None:
+def test_calibration_profile_validation_accepts_registered_price() -> None:
     profile = load_runpod_calibration_profiles()["L40S_CALIBRATION"]
     validation = validate_calibration_profile(profile)
 
     assert validation["gpu_registered"] is True
-    assert validation["gpu_price_registered"] is False
+    assert validation["gpu_price_registered"] is True
     assert validation["runtime_profile_valid"] is True
-    assert validation["registered_hourly_price"] is None
+    assert validation["registered_hourly_price"] == pytest.approx(0.99)
 
 
 def test_calibration_manifest_generation_and_write(tmp_path: Path) -> None:
@@ -48,7 +48,8 @@ def test_calibration_manifest_generation_and_write(tmp_path: Path) -> None:
     )
 
     assert manifest.profile_id == "A100_SXM_CALIBRATION"
-    assert manifest.cost_estimate["cost_blocked_reason"] == "gpu_hourly_price_missing"
+    assert manifest.cost_estimate["cost_blocked_reason"] is None
+    assert manifest.cost_estimate["gpu_hourly_cost"] == pytest.approx(1.49)
     output = write_calibration_manifest(manifest, tmp_path / "manifest.json")
     assert output.exists()
 

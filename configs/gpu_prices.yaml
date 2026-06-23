@@ -1,219 +1,285 @@
 a100_sxm_80gb:
   gpu_name: "A100 SXM 80GB"
   provider: runpod
-  hourly_price: null
+  hourly_price: 1.49
   vram_gb: 80
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 117
+  vcpus: 16
   generation: "ampere"
-  recommended_use: "large-model calibration and final matrix candidates after pricing review"
+  recommended_use: "primary_calibration_gpu"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 a100_pcie_80gb:
   gpu_name: "A100 PCIe 80GB"
   provider: runpod
-  hourly_price: null
+  hourly_price: 1.39
   vram_gb: 80
   system_ram_gb: null
   vcpus: null
   generation: "ampere"
   recommended_use: "large-model calibration when SXM availability is limited"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 h100_pcie_80gb:
   gpu_name: "H100 PCIe 80GB"
   provider: runpod
-  hourly_price: null
+  hourly_price: 2.89
   vram_gb: 80
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 251
+  vcpus: 16
   generation: "hopper"
-  recommended_use: "high-throughput calibration after pricing and throughput review"
+  recommended_use: "high-throughput calibration when SXM availability is limited"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 h100_sxm_80gb:
   gpu_name: "H100 SXM 80GB"
   provider: runpod
-  hourly_price: null
+  hourly_price: 3.29
   vram_gb: 80
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 125
+  vcpus: 8
   generation: "hopper"
-  recommended_use: "primary high-end calibration candidate after pricing review"
+  recommended_use: "high_throughput_scale_validation"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
-h100_nvl:
-  gpu_name: "H100 NVL"
+h100_nvl_94gb:
+  gpu_name: "H100 NVL 94GB"
   provider: runpod
-  hourly_price: null
+  hourly_price: 3.19
   vram_gb: 94
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 141
+  vcpus: 16
   generation: "hopper"
   recommended_use: "high-memory calibration candidate for larger context or model tests"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
-h200_sxm:
-  gpu_name: "H200 SXM"
+h200_sxm_141gb:
+  gpu_name: "H200 SXM 141GB"
   provider: runpod
-  hourly_price: null
+  hourly_price: 4.39
   vram_gb: 141
+  system_ram_gb: 188
+  vcpus: 12
+  generation: "hopper"
+  recommended_use: "future high-memory large-model calibration after throughput review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
+
+h200_nvl_143gb:
+  gpu_name: "H200 NVL 143GB"
+  provider: runpod
+  hourly_price: 3.79
+  vram_gb: 143
   system_ram_gb: null
   vcpus: null
   generation: "hopper"
-  recommended_use: "future high-memory large-model calibration after pricing review"
+  recommended_use: "future high-memory large-model calibration after throughput review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
-h200_nvl:
-  gpu_name: "H200 NVL"
+b200_180gb:
+  gpu_name: "B200 180GB"
   provider: runpod
-  hourly_price: null
-  vram_gb: 141
-  system_ram_gb: null
-  vcpus: null
-  generation: "hopper"
-  recommended_use: "future high-memory large-model calibration after pricing review"
+  hourly_price: 5.89
+  vram_gb: 180
+  system_ram_gb: 251
+  vcpus: 24
+  generation: "blackwell"
+  recommended_use: "future very-large-model calibration after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
-l40s:
+b300_288gb:
+  gpu_name: "B300 288GB"
+  provider: runpod
+  hourly_price: 7.39
+  vram_gb: 288
+  system_ram_gb: 251
+  vcpus: 32
+  generation: "blackwell"
+  recommended_use: "future maximum-memory calibration after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
+
+l40s_48gb:
   gpu_name: "L40S"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.99
   vram_gb: 48
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 94
+  vcpus: 16
   generation: "ada"
-  recommended_use: "cost/performance calibration candidate and historical comparison anchor"
+  recommended_use: "lower_cost_comparison"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
-l40:
+l40_48gb:
   gpu_name: "L40"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.82
   vram_gb: 48
   system_ram_gb: null
   vcpus: null
   generation: "ada"
-  recommended_use: "cost/performance calibration when L40S is unavailable"
+  recommended_use: "lower-cost comparison when L40S is unavailable"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
-a40:
+a40_48gb:
   gpu_name: "A40"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.44
   vram_gb: 48
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 50
+  vcpus: 9
   generation: "ampere"
-  recommended_use: "older 48 GB baseline only after explicit availability review"
+  recommended_use: "older 48 GB comparison only after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_6000_ada:
   gpu_name: "RTX 6000 Ada"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.77
   vram_gb: 48
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 62
+  vcpus: 16
   generation: "ada"
   recommended_use: "single-GPU self-hosted calibration candidate"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_a6000:
   gpu_name: "RTX A6000"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.49
   vram_gb: 48
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 62
+  vcpus: 9
   generation: "ampere"
   recommended_use: "older workstation-class calibration candidate"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
+
+rtx_pro_6000:
+  gpu_name: "RTX Pro 6000"
+  provider: runpod
+  hourly_price: 2.09
+  vram_gb: 96
+  system_ram_gb: 140
+  vcpus: 16
+  generation: "blackwell"
+  recommended_use: "future high-memory workstation-class calibration after review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
+
+rtx_pro_4500:
+  gpu_name: "RTX Pro 4500"
+  provider: runpod
+  hourly_price: 0.74
+  vram_gb: 32
+  system_ram_gb: 54
+  vcpus: 12
+  generation: "blackwell"
+  recommended_use: "future midrange workstation-class calibration after review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
+
+rtx_pro_4000:
+  gpu_name: "RTX Pro 4000"
+  provider: runpod
+  hourly_price: 0.57
+  vram_gb: 24
+  system_ram_gb: 31
+  vcpus: 12
+  generation: "blackwell"
+  recommended_use: "future small-model workstation-class calibration after review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_5090:
   gpu_name: "RTX 5090"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.99
   vram_gb: 32
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 60
+  vcpus: 15
   generation: "blackwell"
-  recommended_use: "future consumer-GPU calibration after availability and pricing review"
+  recommended_use: "consumer-GPU calibration after availability review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_4090:
   gpu_name: "RTX 4090"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.69
   vram_gb: 24
   system_ram_gb: null
   vcpus: null
   generation: "ada"
   recommended_use: "single-GPU cost/performance projection after throughput calibration"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_3090:
   gpu_name: "RTX 3090"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.46
   vram_gb: 24
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 125
+  vcpus: 32
   generation: "ampere"
   recommended_use: "legacy consumer-GPU comparison only after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
+
+rtx_2000_ada:
+  gpu_name: "RTX 2000 Ada"
+  provider: runpod
+  hourly_price: 0.24
+  vram_gb: 16
+  system_ram_gb: 31
+  vcpus: 6
+  generation: "ada"
+  recommended_use: "small-model validation only after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
+
+rtx_4000_ada:
+  gpu_name: "RTX 4000 Ada"
+  provider: runpod
+  hourly_price: 0.26
+  vram_gb: 20
+  system_ram_gb: 50
+  vcpus: 9
+  generation: "ada"
+  recommended_use: "small-model validation only after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_a5000:
   gpu_name: "RTX A5000"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.27
   vram_gb: 24
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 25
+  vcpus: 9
   generation: "ampere"
   recommended_use: "legacy workstation-class comparison only after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_a4500:
   gpu_name: "RTX A4500"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.25
   vram_gb: 20
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 62
+  vcpus: 12
   generation: "ampere"
   recommended_use: "small-model validation only after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
 rtx_a4000:
   gpu_name: "RTX A4000"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.25
   vram_gb: 16
-  system_ram_gb: null
-  vcpus: null
+  system_ram_gb: 50
+  vcpus: 16
   generation: "ampere"
   recommended_use: "small-model validation only after explicit review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."
 
-l4:
+l4_24gb:
   gpu_name: "L4"
   provider: runpod
-  hourly_price: null
+  hourly_price: 0.39
   vram_gb: 24
   system_ram_gb: null
   vcpus: null
   generation: "ada"
   recommended_use: "low-power serving comparison after pricing and capacity review"
-
-rtx_pro_6000:
-  gpu_name: "RTX Pro 6000"
-  provider: runpod
-  hourly_price: null
-  vram_gb: 96
-  system_ram_gb: null
-  vcpus: null
-  generation: "blackwell"
-  recommended_use: "future high-memory workstation-class calibration after pricing review"
-
-rtx_pro_4500:
-  gpu_name: "RTX Pro 4500"
-  provider: runpod
-  hourly_price: null
-  vram_gb: 32
-  system_ram_gb: null
-  vcpus: null
-  generation: "blackwell"
-  recommended_use: "future midrange workstation-class calibration after pricing review"
-
-rtx_pro_4000:
-  gpu_name: "RTX Pro 4000"
-  provider: runpod
-  hourly_price: null
-  vram_gb: 24
-  system_ram_gb: null
-  vcpus: null
-  generation: "blackwell"
-  recommended_use: "future small-model workstation-class calibration after pricing review"
+  source_note: "Observed from RunPod console UI screenshot; verify before final cost claims."

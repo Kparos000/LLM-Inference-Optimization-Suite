@@ -125,14 +125,15 @@ zero fatal engine errors.
 
 Phase 2A adds infrastructure readiness controls:
 
-- RunPod GPU price registry with 22 supported GPU entries;
+- RunPod GPU price registry with 26 observed-price GPU entries;
 - API provider load-probe framework for `model5_gated`, `model6_gated`, and
   `model7_gated`;
-- framework-only API probe CLI that does not send live requests;
+- guarded API probe CLI with live-if-keys-present mode;
 - RunPod calibration profiles for A100 SXM, H100 SXM, and L40S;
 - 100/200-prompt calibration manifest support;
-- GPU cost fields in runtime projections that remain null until a reviewed
-  hourly price exists.
+- GPU cost fields in runtime projections, including run cost, 1,000/10,000/
+  40,000-prompt projections, tokens per GPU dollar, and successful requests per
+  GPU dollar when measured inputs exist.
 
 GPU/runtime controls are present:
 
@@ -152,21 +153,23 @@ SLO and diagnosis controls are present:
 
 ## Gaps
 
-RunPod cost claims are blocked:
+RunPod final cost claims remain caveated:
 
-- `configs/gpu_prices.yaml` contains supported RunPod GPUs, but all
-  `hourly_price` values are intentionally null until reviewed;
+- `configs/gpu_prices.yaml` contains observed RunPod console UI prices with
+  source notes requiring re-verification before final cost claims;
 - `configs/runpod_projection_prices.yaml` has no reviewed hourly prices;
 - throughput multipliers for RTX 4090, L40S, A100, and H100 remain null.
 - cloud artifact sync is not implemented yet; local backup is implemented and
   S3/R2/GDrive remain future providers.
 
-RunPod calibration readiness is blocked:
+RunPod calibration execution is blocked:
 
 - A100 SXM, H100 SXM, and L40S calibration profiles exist;
 - readiness requires artifact sync, checkpoint/resume, manifests, runtime
   compatibility, backup verification dry run, and reviewed GPU price;
-- the missing reviewed GPU price blocks all three calibration-ready verdicts.
+- A100 SXM local package readiness passes those local gates;
+- no live RunPod calibration is allowed until `RUNPOD_SSH_HOST` or an
+  equivalent explicit target is configured.
 
 Cost implementation is now split by track:
 

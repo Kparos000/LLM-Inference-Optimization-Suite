@@ -62,6 +62,7 @@ class GpuPriceRecord:
     vcpus: int | None
     generation: str
     recommended_use: str
+    source_note: str | None = None
 
     def __post_init__(self) -> None:
         _non_empty(self.key, "key")
@@ -83,6 +84,8 @@ class GpuPriceRecord:
             raise ValueError(msg)
         _non_empty(self.generation, "generation")
         _non_empty(self.recommended_use, "recommended_use")
+        if self.source_note is not None:
+            _non_empty(self.source_note, "source_note")
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable registry row."""
@@ -113,6 +116,9 @@ def load_gpu_price_registry(
             vcpus=_optional_int(raw.get("vcpus"), f"{key}.vcpus"),
             generation=_non_empty(raw.get("generation"), f"{key}.generation"),
             recommended_use=_non_empty(raw.get("recommended_use"), f"{key}.recommended_use"),
+            source_note=(
+                str(raw.get("source_note")) if raw.get("source_note") not in (None, "") else None
+            ),
         )
         normalized = _normalize_name(record.gpu_name)
         if normalized in normalized_names:
@@ -199,6 +205,8 @@ def estimate_gpu_cost(
     elapsed_seconds: float | None = None,
     elapsed_hours: float | None = None,
     projected_seconds_by_prompt_count: dict[int, float] | None = None,
+    total_tokens: int | None = None,
+    successful_requests: int | None = None,
     backend_type: str = "self_hosted_gpu",
     provider: str = "runpod",
     registry_path: str | Path = DEFAULT_GPU_PRICE_REGISTRY_PATH,
@@ -220,6 +228,8 @@ def estimate_gpu_cost(
             "projected_1000_cost": None,
             "projected_10000_cost": None,
             "projected_40000_cost": None,
+            "tokens_per_gpu_dollar": None,
+            "successful_requests_per_gpu_dollar": None,
         }
     if gpu_name in (None, ""):
         return {
@@ -231,6 +241,8 @@ def estimate_gpu_cost(
             "projected_1000_cost": None,
             "projected_10000_cost": None,
             "projected_40000_cost": None,
+            "tokens_per_gpu_dollar": None,
+            "successful_requests_per_gpu_dollar": None,
         }
     resolved_gpu_name = str(gpu_name)
     record = _resolve_record(resolved_gpu_name, registry_path=registry_path)
@@ -243,11 +255,14 @@ def estimate_gpu_cost(
             "cost_blocked_reason": "gpu_hourly_price_missing",
             "gpu_name": record.gpu_name,
             "gpu_provider": record.provider,
+            "gpu_source_note": record.source_note,
             "gpu_hourly_cost": None,
             "estimated_run_cost": None,
             "projected_1000_cost": None,
             "projected_10000_cost": None,
             "projected_40000_cost": None,
+            "tokens_per_gpu_dollar": None,
+            "successful_requests_per_gpu_dollar": None,
         }
 
     def projected_cost(prompt_count: int) -> float | None:
@@ -256,14 +271,35 @@ def estimate_gpu_cost(
             return None
         return seconds / 3600.0 * price
 
+    estimated_run_cost = None if hours is None else hours * price
+    if total_tokens is not None and total_tokens < 0:
+        msg = "total_tokens must be >= 0 when provided"
+        raise ValueError(msg)
+    if successful_requests is not None and successful_requests < 0:
+        msg = "successful_requests must be >= 0 when provided"
+        raise ValueError(msg)
+    tokens_per_gpu_dollar = None
+    if estimated_run_cost is not None and estimated_run_cost != 0 and total_tokens is not None:
+        tokens_per_gpu_dollar = total_tokens / estimated_run_cost
+    successful_requests_per_gpu_dollar = None
+    if (
+        estimated_run_cost is not None
+        and estimated_run_cost != 0
+        and successful_requests is not None
+    ):
+        successful_requests_per_gpu_dollar = successful_requests / estimated_run_cost
+
     return {
         "cost_applicable": True,
         "cost_blocked_reason": None,
         "gpu_name": record.gpu_name,
         "gpu_provider": record.provider,
+        "gpu_source_note": record.source_note,
         "gpu_hourly_cost": price,
-        "estimated_run_cost": None if hours is None else hours * price,
+        "estimated_run_cost": estimated_run_cost,
         "projected_1000_cost": projected_cost(1000),
         "projected_10000_cost": projected_cost(10000),
         "projected_40000_cost": projected_cost(40000),
+        "tokens_per_gpu_dollar": tokens_per_gpu_dollar,
+        "successful_requests_per_gpu_dollar": successful_requests_per_gpu_dollar,
     }

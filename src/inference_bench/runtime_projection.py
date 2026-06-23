@@ -69,6 +69,16 @@ def build_runtime_projection_report(
         hourly_price = _float_or_none(profile.get("hourly_price_usd"))
         multiplier = _float_or_none(profile.get("throughput_multiplier_vs_rtx3070"))
         status = _projection_status(hourly_price=hourly_price, multiplier=multiplier)
+        projected_cost_by_prompt_count: dict[int, float | None] = {}
+        for prompt_count in (1000, 10000, 40000):
+            projected_seconds = (
+                prompt_count * seconds_per_prompt / multiplier if multiplier is not None else None
+            )
+            projected_cost_by_prompt_count[prompt_count] = (
+                projected_seconds / 3600.0 * hourly_price
+                if projected_seconds is not None and hourly_price is not None
+                else None
+            )
         gpu_matrices: list[dict[str, object]] = []
         for matrix in matrix_projections:
             baseline_seconds = float(matrix["seconds"])
@@ -92,6 +102,12 @@ def build_runtime_projection_report(
             )
         runpod[gpu_name] = {
             "hourly_price_usd": hourly_price,
+            "estimated_run_cost": None,
+            "projected_1000_cost": projected_cost_by_prompt_count[1000],
+            "projected_10000_cost": projected_cost_by_prompt_count[10000],
+            "projected_40000_cost": projected_cost_by_prompt_count[40000],
+            "tokens_per_gpu_dollar": None,
+            "successful_requests_per_gpu_dollar": None,
             "throughput_multiplier_vs_rtx3070": multiplier,
             "status": status,
             "is_measured": False,

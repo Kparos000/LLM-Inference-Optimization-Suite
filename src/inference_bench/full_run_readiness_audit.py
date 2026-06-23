@@ -1226,8 +1226,9 @@ def build_full_run_readiness_audit(
             name="runpod_blocked_by_price_multiplier_artifact_sync",
             status="PASS",
             evidence=(
-                "RunPod remains blocked until hourly price, measured throughput multiplier, "
-                "and artifact sync/backup are configured"
+                "Final RunPod matrix claims remain blocked until measured throughput "
+                "multipliers, explicit target configuration, and artifact sync/backup "
+                "evidence are configured"
             ),
         )
     )
@@ -1236,7 +1237,10 @@ def build_full_run_readiness_audit(
             category="scaling",
             name="runpod_blocked_without_price",
             status="PASS",
-            evidence="RunPod readiness remains blocked when hourly prices are absent",
+            evidence=(
+                "RunPod price registry is configured; live execution still requires "
+                "an explicit target and final price verification"
+            ),
         )
     )
 

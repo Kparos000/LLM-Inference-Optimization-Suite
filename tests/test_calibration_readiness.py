@@ -11,7 +11,7 @@ from inference_bench.calibration_manifest import (
 from inference_bench.full_run_readiness_audit import build_full_run_readiness_audit
 
 
-def test_calibration_readiness_blocks_when_gpu_price_missing() -> None:
+def test_calibration_readiness_is_ready_when_price_and_run_safety_gates_pass() -> None:
     profile = load_runpod_calibration_profiles()["H100_SXM_CALIBRATION"]
     validation = validate_calibration_profile(profile)
     readiness = calibration_readiness_verdict(
@@ -24,9 +24,28 @@ def test_calibration_readiness_blocks_when_gpu_price_missing() -> None:
         backup_verification_dry_run_passed=True,
     )
 
+    assert validation["registered_hourly_price"] == 3.29
+    assert readiness["verdict"] == "READY_FOR_H100_CALIBRATION"
+    assert readiness["ready"] is True
+    assert cast(list[str], readiness["failed_checks"]) == []
+
+
+def test_calibration_readiness_still_blocks_without_backup_dry_run() -> None:
+    profile = load_runpod_calibration_profiles()["A100_SXM_CALIBRATION"]
+    validation = validate_calibration_profile(profile)
+    readiness = calibration_readiness_verdict(
+        profile=profile,
+        artifact_sync_enabled=True,
+        checkpoint_resume_enabled=True,
+        manifest_enabled=True,
+        runtime_profile_valid=bool(validation["runtime_profile_valid"]),
+        gpu_price_registered=bool(validation["gpu_price_registered"]),
+        backup_verification_dry_run_passed=False,
+    )
+
     assert readiness["verdict"] == "CALIBRATION_NOT_READY"
     assert readiness["ready"] is False
-    assert "gpu_price_registered" in cast(list[str], readiness["failed_checks"])
+    assert "backup_verification_dry_run_passed" in cast(list[str], readiness["failed_checks"])
 
 
 def test_calibration_readiness_can_emit_ready_verdict_with_all_gates() -> None:
