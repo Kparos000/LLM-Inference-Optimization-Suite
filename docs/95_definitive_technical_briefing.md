@@ -4233,3 +4233,21 @@ That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical
 reference for serious AI inference engineering rather than a collection of
 isolated model demos.
+
+## Controlled Final-Simulation Addendum
+
+The controlled final-experiment simulation preflight now exists as a safety-gated
+runner and report set. It builds the full 30-config, 15,000-request matrix for
+`model3_7b` self-hosted A100 vLLM/SGLang tracks and the `model6_gated` API track
+across mm0-mm4 memory modes and the requested concurrency levels.
+
+The live RunPod A100 pod did not proceed to the full request matrix because the
+required smoke gates were not ready: `model3_7b` was not being served through
+vLLM, SGLang was not installed/importable and was not registered as compatible
+with `model3_7b` on `a100_sxm_80gb`, and the gated API track lacked required
+credentials. MM4 was importable as a bounded LangGraph runner, but no MM4 matrix
+run was attempted because the required track smokes were blocked. No fallback
+from SGLang to vLLM or from mm4 to mm2 was used.
+
+The final 10,000-prompt experiment remains blocked until vLLM, SGLang, API, and
+MM4 smoke gates pass in the controlled matrix context.

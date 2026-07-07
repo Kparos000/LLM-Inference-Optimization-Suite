@@ -187,6 +187,14 @@ violations, 128 GPU telemetry samples, and local artifact sync verification.
 The measured run cost estimate is `$0.0572` at `$1.49/hr`; the 1,000-prompt
 A100 baseline is allowed as a separate explicit run.
 
+The controlled final-experiment simulation preflight built the full 30-config,
+15,000-request matrix but blocked before model/provider execution because the
+required smoke gates were not ready: `model3_7b` was not served through vLLM,
+SGLang was unavailable/incompatible on `a100_sxm_80gb`, and `model6_gated` API
+credentials were absent. No fallback engine or memory mode was used. The final
+10,000-prompt experiment is not allowed until the vLLM, SGLang, API, and MM4
+smokes pass.
+
 ## B1 Quality Gate
 
 - JSON validity: 93%, required 95%
