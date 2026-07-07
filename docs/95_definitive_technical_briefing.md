@@ -4243,12 +4243,12 @@ across mm0-mm4 memory modes and the requested concurrency levels.
 
 The live RunPod A100 pod did not proceed to the full request matrix because all
 required smoke gates were not ready: vLLM `model3_7b` is smoke-ready, SGLang is
-now registered as compatible with `model3_7b` on `a100_sxm_80gb` and the package
-is importable, but no SGLang server answered
-`http://localhost:30000/v1/models`; the gated API track also lacked required
-credentials. MM4 was importable as a bounded LangGraph runner, but no MM4 matrix
-run was attempted because the required track smokes were blocked. No fallback
-from SGLang to vLLM or from mm4 to mm2 was used.
+now registered as compatible with `model3_7b` on `a100_sxm_80gb`, the CUDA 13
+SGLang extension stack is repaired, and SGLang lists the model at
+`http://localhost:30000/v1/models`; the gated API track still lacks required
+credentials. MM4 is importable as a bounded LangGraph runner and its live
+50-row smoke completed, but no MM4 matrix run was attempted. No fallback from
+SGLang to vLLM or from mm4 to mm2 was used.
 
 The exact A100 SGLang command for the controlled simulation is
 `python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct

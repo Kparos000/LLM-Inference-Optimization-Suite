@@ -14,9 +14,9 @@ before any model/provider request:
 
 - vLLM `model3_7b`: smoke-ready because `/v1/models` at
   `http://localhost:8000/v1` listed `Qwen/Qwen2.5-7B-Instruct`.
-- SGLang `model3_7b`: runtime registry now allows SGLang for `model3_7b` on
-  `a100_sxm_80gb`, and the package is importable, but
-  `http://localhost:30000/v1/models` refused the health-check connection.
+- SGLang `model3_7b`: smoke-ready after repairing the CUDA 13 SGLang extension
+  stack; `http://localhost:30000/v1/models` listed
+  `Qwen/Qwen2.5-7B-Instruct`.
 - API `model6_gated`: blocked because `HF_TOKEN` and provider API credentials
   were absent.
 - MM4: bounded LangGraph runner is importable, but no MM4 matrix run was
@@ -32,8 +32,8 @@ before any model/provider request:
 ## Decision
 
 The final 10,000-prompt experiment is not allowed yet. The next step is to make
-the vLLM, SGLang, API, and MM4 smoke gates pass without fallback or skipped
-configs.
+the API smoke gate pass without fallback or skipped configs; vLLM, SGLang, and
+MM4 are smoke-ready.
 
 Exact SGLang startup command:
 

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 from types import ModuleType
+
+import pytest
 
 from inference_bench.agentic_comparison import build_memory_mode_row
 from inference_bench.agents.langgraph_mm4 import ModelGeneration
@@ -147,3 +150,45 @@ def test_comparison_keeps_unavailable_cost_explicit() -> None:
     assert row["token_count_source"] == "whitespace_normalized"
     assert row["cost_status"] == "unavailable_no_gpu_hourly_price"
     assert "total_cost_usd" in row["missing_metrics"]
+
+
+def test_mm4_comparison_tolerates_missing_historical_mm2_artifacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script()
+    monkeypatch.chdir(tmp_path)
+    Path("results/processed").mkdir(parents=True)
+
+    args = type(
+        "Args",
+        (),
+        {
+            "mm3_results_path": "missing-mm3.jsonl",
+            "mm3_eval_summary_path": "missing-mm3.csv",
+            "mm3_latency_path": "missing-mm3-latency.csv",
+            "comparison_report_path": "results/processed/comparison.json",
+            "comparison_summary_path": "results/processed/comparison.csv",
+        },
+    )()
+    module._write_comparison(
+        args=args,
+        mm4_rows=[
+            {
+                "success": True,
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "retrieval_rounds": 1,
+                "repair_attempts": 1,
+                "final_status": "answer",
+            }
+        ],
+        mm4_eval={"grounded_rate": 1.0, "evidence_match_rate": 1.0},
+        mm4_latency={"mean_e2e_latency_ms": 10.0},
+    )
+
+    report = json.loads(Path("results/processed/comparison.json").read_text(encoding="utf-8"))
+    statuses = {row["memory_mode"]: row["measurement_status"] for row in report["rows"]}
+    assert statuses["mm2_hybrid_top5"] == "missing_not_estimated"
+    assert statuses["mm3_compressed_hybrid_top5"] == "missing_not_estimated"
+    assert statuses["mm4_bounded_agentic"] == "measured"

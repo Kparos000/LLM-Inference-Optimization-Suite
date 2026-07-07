@@ -6,7 +6,6 @@ import argparse
 import csv
 import importlib.util
 import json
-import os
 import sys
 import time
 import urllib.error
@@ -21,6 +20,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from inference_bench.api_load_probe import load_probe_environment  # noqa: E402
 from inference_bench.artifact_sync import (  # noqa: E402
     ArtifactSyncConfig,
     build_artifact_specs,
@@ -29,6 +29,11 @@ from inference_bench.artifact_sync import (  # noqa: E402
 )
 from inference_bench.config import load_project_config  # noqa: E402
 from inference_bench.context_corpora import VERTICALS  # noqa: E402
+from inference_bench.post_run_automation import (  # noqa: E402
+    PostRunAutomationInputs,
+    build_post_run_automation_report,
+    write_post_run_automation_artifacts,
+)
 from inference_bench.run_manifest import (  # noqa: E402
     RunManifest,
     current_git_commit,
@@ -79,6 +84,10 @@ DEFAULT_COST_REPORT = "results/processed/controlled_final_simulation_cost_report
 DEFAULT_ARTIFACT_SYNC_REPORT = (
     "results/processed/controlled_final_simulation_artifact_sync_report.json"
 )
+DEFAULT_POST_RUN_AUTOMATION_REPORT = (
+    "results/processed/controlled_final_simulation_post_run_automation_report.json"
+)
+DEFAULT_PLOTTING_DATASET = "results/processed/controlled_final_simulation_plotting_dataset.csv"
 DEFAULT_BASE_URL = "http://localhost:8000/v1"
 DEFAULT_SGLANG_BASE_URL = "http://localhost:30000/v1"
 SGLANG_STARTUP_COMMAND = (
@@ -164,9 +173,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--slo-summary-path", default=DEFAULT_SLO_SUMMARY)
     parser.add_argument("--cost-report-path", default=DEFAULT_COST_REPORT)
     parser.add_argument("--artifact-sync-report-path", default=DEFAULT_ARTIFACT_SYNC_REPORT)
+    parser.add_argument(
+        "--post-run-automation-report-path",
+        default=DEFAULT_POST_RUN_AUTOMATION_REPORT,
+    )
+    parser.add_argument("--plotting-dataset-path", default=DEFAULT_PLOTTING_DATASET)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--sglang-base-url", default=DEFAULT_SGLANG_BASE_URL)
     parser.add_argument("--api-key", default="EMPTY")
+    parser.add_argument("--env-file", default=".env")
     parser.add_argument("--prompt-count-per-vertical", type=int, default=100)
     parser.add_argument("--traffic-profile", default=TRAFFIC_PROFILE)
     parser.add_argument("--gpu-id", default=GPU_ID)
@@ -459,10 +474,11 @@ def check_runtime_gate(args: argparse.Namespace) -> dict[str, Any]:
         )
 
     model6 = project_config.resolve_model_config(API_MODEL_ALIAS)
-    hf_token = os.environ.get("HF_TOKEN", "")
+    environment = load_probe_environment(env_path=ROOT / args.env_file)
+    hf_token = environment.get("HF_TOKEN", "")
     provider_keys = {
-        "OPENROUTER_API_KEY": bool(os.environ.get("OPENROUTER_API_KEY")),
-        "NOVITA_API_KEY": bool(os.environ.get("NOVITA_API_KEY")),
+        "OPENROUTER_API_KEY": bool(environment.get("OPENROUTER_API_KEY")),
+        "NOVITA_API_KEY": bool(environment.get("NOVITA_API_KEY")),
     }
     api_ready = bool(hf_token) and any(provider_keys.values())
     checks["api_model6_gated"].update(
@@ -560,6 +576,8 @@ def _artifact_specs(args: argparse.Namespace) -> list[Any]:
             args.slo_summary_path,
             args.cost_report_path,
             args.artifact_sync_report_path,
+            args.post_run_automation_report_path,
+            args.plotting_dataset_path,
         ],
     )
 
@@ -614,7 +632,12 @@ def _write_manifest(
             "gpu_telemetry": args.gpu_telemetry_path,
             "eval_report": args.eval_report_path,
             "slo_report": args.slo_report_path,
+            "post_run_automation_report": args.post_run_automation_report_path,
+            "plotting_dataset": args.plotting_dataset_path,
         },
+        baseline_or_optimized="baseline",
+        optimization_flags=(),
+        dataset_version="controlled_2000",
     )
     write_run_manifest(manifest, _repo_path(args.manifest_path))
 
@@ -714,6 +737,28 @@ def write_blocked_reports(
         ],
     }
     _write_json(args.cost_report_path, cost_report)
+    automation_report = build_post_run_automation_report(
+        PostRunAutomationInputs(
+            run_id=RUN_ID,
+            manifest_path=args.manifest_path,
+            eval_summary_path=args.eval_summary_path,
+            latency_summary_path=None,
+            telemetry_summary_path=None,
+            cost_report_path=args.cost_report_path,
+            comparison_paths=(
+                args.engine_comparison_path,
+                args.memory_comparison_path,
+                args.concurrency_comparison_path,
+                args.api_comparison_path,
+                args.slo_summary_path,
+            ),
+        )
+    )
+    write_post_run_automation_artifacts(
+        report=automation_report,
+        report_path=args.post_run_automation_report_path,
+        plotting_dataset_path=args.plotting_dataset_path,
+    )
     config = ArtifactSyncConfig(run_id=RUN_ID, backup_root=args.backup_root)
     sync = sync_artifacts(
         specs=_artifact_specs(args), config=config, event="blocked_preflight", repo_root=ROOT

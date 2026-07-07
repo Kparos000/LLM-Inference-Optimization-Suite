@@ -324,9 +324,19 @@ def _write_comparison(
     mm4_eval: dict[str, Any],
     mm4_latency: dict[str, Any],
 ) -> None:
-    mm2_rows = load_result_rows("results/raw/a1_remote_rtx3070_vllm_smoke_results.jsonl")
-    mm2_eval = _read_csv_first("results/processed/a1_remote_rtx3070_vllm_eval_summary.csv")
-    mm2_latency = _read_csv_first("results/processed/a1_remote_rtx3070_vllm_latency_summary.csv")
+    mm2_results_path = Path("results/raw/a1_remote_rtx3070_vllm_smoke_results.jsonl")
+    mm2_eval_path = Path("results/processed/a1_remote_rtx3070_vllm_eval_summary.csv")
+    mm2_latency_path = Path("results/processed/a1_remote_rtx3070_vllm_latency_summary.csv")
+    if mm2_results_path.exists() and mm2_eval_path.exists() and mm2_latency_path.exists():
+        mm2_rows = load_result_rows(mm2_results_path)
+        mm2_eval = _read_csv_first(mm2_eval_path)
+        mm2_latency = _read_csv_first(mm2_latency_path)
+        mm2_status = "measured"
+    else:
+        mm2_rows = []
+        mm2_eval = None
+        mm2_latency = None
+        mm2_status = "missing_not_estimated"
     if Path(args.mm3_results_path).exists():
         mm3_rows = load_result_rows(args.mm3_results_path)
         mm3_eval = _read_csv_first(args.mm3_eval_summary_path)
@@ -343,6 +353,7 @@ def _write_comparison(
             result_rows=mm2_rows,
             evaluation_summary=mm2_eval,
             latency_summary=mm2_latency,
+            measurement_status=mm2_status,
         ),
         build_memory_mode_row(
             memory_mode="mm3_compressed_hybrid_top5",

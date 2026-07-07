@@ -68,8 +68,44 @@ def test_production_run_manifest_writes_required_long_run_fields(tmp_path: Path)
     assert payload["traffic_profile"] == "offline_throughput"
     assert payload["expected_count"] == 20
     assert payload["artifact_paths"] == {"raw_jsonl": "results/raw/run-1.jsonl"}
+    assert payload["baseline_or_optimized"] == "baseline"
+    assert payload["optimization_flags"] == []
+    assert payload["dataset_version"] == "unknown"
     assert payload["dataset_workload_hash"] == hash_existing_paths([workload])
     assert file_sha256(workload)
+
+
+def test_run_manifest_records_optimization_metadata(tmp_path: Path) -> None:
+    now = utc_now()
+    manifest = RunManifest(
+        run_id="run-optimized",
+        timestamp_utc=now,
+        backend="openai_compatible_vllm",
+        model_alias="model3_7b",
+        model_id="Qwen/Qwen2.5-7B-Instruct",
+        memory_mode="mm3_compressed_hybrid_top5",
+        split="controlled_final",
+        ablation_mode="prompt_plus_metadata",
+        input_workload_path="matrix.jsonl",
+        output_path="results/raw/run.jsonl",
+        max_records=500,
+        git_commit="abc123",
+        command="cmd",
+        status="initialized",
+        start_time=now,
+        end_time=None,
+        error_count=0,
+        baseline_or_optimized="optimized",
+        optimization_flags=("prefix_cache", "compressed_context"),
+        dataset_version="controlled_2000",
+    )
+
+    path = write_run_manifest(manifest, tmp_path / "manifest.json")
+    payload = read_run_manifest(path)
+
+    assert payload["baseline_or_optimized"] == "optimized"
+    assert payload["optimization_flags"] == ["prefix_cache", "compressed_context"]
+    assert payload["dataset_version"] == "controlled_2000"
 
 
 def test_completed_manifest_cannot_hide_partial_run() -> None:

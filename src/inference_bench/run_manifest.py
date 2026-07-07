@@ -133,6 +133,9 @@ class RunManifest:
     failed_count: int | None = None
     expected_count: int | None = None
     artifact_paths: dict[str, str] | None = None
+    baseline_or_optimized: str = "baseline"
+    optimization_flags: tuple[str, ...] = ()
+    dataset_version: str = "unknown"
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -191,11 +194,21 @@ class RunManifest:
             "started_at",
             "updated_at",
             "completed_at",
+            "baseline_or_optimized",
+            "dataset_version",
         ):
             _validate_optional_non_empty_string(
                 getattr(self, field_name),
                 field_name,
             )
+        if self.baseline_or_optimized not in {"baseline", "optimized"}:
+            msg = "baseline_or_optimized must be baseline or optimized"
+            raise ValueError(msg)
+        if not isinstance(self.optimization_flags, tuple):
+            msg = "optimization_flags must be a tuple"
+            raise ValueError(msg)
+        for flag in self.optimization_flags:
+            _validate_non_empty_string(flag, "optimization_flags entry")
         for field_name in (
             "concurrency",
             "prompt_count",

@@ -39,7 +39,7 @@ Smoke status:
 | Track | Status | Reason |
 | --- | --- | --- |
 | vLLM `model3_7b` | smoke-ready | `/v1/models` at `http://localhost:8000/v1` listed `Qwen/Qwen2.5-7B-Instruct`. |
-| SGLang `model3_7b` | blocked | Runtime registry now allows SGLang for `model3_7b` on `a100_sxm_80gb`, and the `sglang` package is importable, but `/v1/models` at `http://localhost:30000/v1` refused the connection. |
+| SGLang `model3_7b` | smoke-ready | Runtime registry allows SGLang for `model3_7b` on `a100_sxm_80gb`, the CUDA 13 SGLang extension stack is repaired, and `/v1/models` at `http://localhost:30000/v1` listed `Qwen/Qwen2.5-7B-Instruct`. |
 | API `model6_gated` | blocked | `HF_TOKEN` and a provider API key were not present. |
 | MM4 | smoke-ready only | The bounded LangGraph mm4 runner is importable, but no full-matrix mm4 request ran because the required track smokes were blocked. |
 
@@ -71,11 +71,11 @@ These are generated artifacts and are not committed.
 
 ## Findings
 
-vLLM is smoke-ready for this block, but the full matrix did not run because
-SGLang and the API route are still blocked. SGLang did not run and was not
-silently replaced with vLLM. The API route did not run and did not report GPU
-telemetry or GPU hourly cost. MM4 did not run in the matrix and was not silently
-replaced by `mm2`.
+vLLM and SGLang are smoke-ready for this block, but the full matrix did not run
+because the API route is still blocked. SGLang did not run as a fallback for
+vLLM, and vLLM did not run as a fallback for SGLang. The API route did not run
+and did not report GPU telemetry or GPU hourly cost. MM4 did not run in the
+matrix and was not silently replaced by `mm2`.
 
 The exact A100 SGLang startup command for the controlled simulation is:
 
@@ -99,8 +99,9 @@ Before it can run:
 
 - keep `Qwen/Qwen2.5-7B-Instruct` serving through vLLM and pass the controlled
   smoke;
-- start SGLang for A100 SXM with the documented command and pass the
+- keep SGLang for A100 SXM on the repaired CUDA 13 wheel stack and pass the
   `/v1/models` health check plus controlled smoke;
 - provide validated `model6_gated` API credentials and pricing route, then pass
-  the 10-request API smoke;
-- run the MM4 smoke in the same controlled context if MM4 remains in the matrix.
+  the API smoke;
+- keep the MM4 smoke green in the same controlled context if MM4 remains in the
+  matrix.
