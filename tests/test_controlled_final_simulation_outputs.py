@@ -47,6 +47,27 @@ def test_controlled_final_simulation_report_records_blocked_smoke_without_fake_r
     assert report["api_route_ran"] is False
     assert report["mm4_ran"] is False
     assert report["final_10000_prompt_experiment_allowed"] is False
+    serving_commands = report["serving_commands"]
+    assert isinstance(serving_commands, dict)
+    assert serving_commands["sglang_model3_7b"].startswith(
+        "python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct"
+    )
+
+
+def test_controlled_final_simulation_report_records_sglang_health_check() -> None:
+    report = _report()
+    gate_report = report["gate_report"]
+    assert isinstance(gate_report, dict)
+    checks = gate_report["checks"]
+    assert isinstance(checks, dict)
+    sglang = checks["sglang_model3_7b"]
+
+    assert sglang["runtime_registry_allows_sglang"] is True
+    assert sglang["startup_command"].startswith("python -m sglang.launch_server")
+    assert sglang["health_check_url"] == "http://localhost:30000/v1/models"
+    health_check = sglang["health_check"]
+    assert isinstance(health_check, dict)
+    assert health_check["endpoint"] == "http://localhost:30000/v1/models"
 
 
 def test_controlled_final_simulation_cost_report_separates_api_and_gpu_costs() -> None:

@@ -71,3 +71,20 @@ def test_engine_compatibility_rows_include_runtime_metadata() -> None:
     assert model7_api["compatible"] is True
     assert model7_api["backend_type"] == "api_provider"
     assert model7_api["backend_route"] == "hf_inference_provider"
+
+
+def test_model3_7b_sglang_is_live_selectable_on_a100_sxm() -> None:
+    selection = select_runtime_for_model(
+        model_alias="model3_7b",
+        runtime="sglang",
+        hardware_type="a100_sxm_80gb",
+        backend_route="sglang_openai_compatible",
+        live_run=True,
+    )
+
+    assert selection.model_id == "Qwen/Qwen2.5-7B-Instruct"
+    assert selection.runtime == "sglang"
+    assert selection.engine == "sglang"
+    assert selection.backend_route == "sglang_openai_compatible"
+    assert selection.hardware_type == "a100_sxm_80gb"
+    assert selection.live_run_allowed is True

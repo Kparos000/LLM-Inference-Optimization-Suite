@@ -81,6 +81,17 @@ DEFAULT_ARTIFACT_SYNC_REPORT = (
 )
 DEFAULT_BASE_URL = "http://localhost:8000/v1"
 DEFAULT_SGLANG_BASE_URL = "http://localhost:30000/v1"
+SGLANG_STARTUP_COMMAND = (
+    "python -m sglang.launch_server "
+    "--model-path Qwen/Qwen2.5-7B-Instruct "
+    "--served-model-name Qwen/Qwen2.5-7B-Instruct "
+    "--host 0.0.0.0 "
+    "--port 30000 "
+    "--mem-fraction-static 0.90 "
+    "--context-length 4096 "
+    "--max-running-requests 32 "
+    "--chunked-prefill-size 8192"
+)
 
 
 @dataclass(frozen=True)
@@ -324,6 +335,10 @@ def _server_models(base_url: str, api_key: str, timeout_seconds: float = 5.0) ->
     )
 
 
+def _models_url(base_url: str) -> str:
+    return f"{base_url.rstrip('/')}/models"
+
+
 def check_runtime_gate(args: argparse.Namespace) -> dict[str, Any]:
     """Check runtime, server, API, and mm4 gates before any full run."""
 
@@ -333,11 +348,14 @@ def check_runtime_gate(args: argparse.Namespace) -> dict[str, Any]:
             "status": "NOT_CHECKED",
             "model_alias": SELF_HOSTED_MODEL_ALIAS,
             "model_id": SELF_HOSTED_MODEL_ID,
+            "health_check_url": _models_url(args.base_url),
         },
         "sglang_model3_7b": {
             "status": "NOT_CHECKED",
             "model_alias": SELF_HOSTED_MODEL_ALIAS,
             "model_id": SELF_HOSTED_MODEL_ID,
+            "startup_command": SGLANG_STARTUP_COMMAND,
+            "health_check_url": _models_url(args.sglang_base_url),
         },
         "api_model6_gated": {
             "status": "NOT_CHECKED",
@@ -380,30 +398,63 @@ def check_runtime_gate(args: argparse.Namespace) -> dict[str, Any]:
             backend_route="sglang_openai_compatible",
             live_run=True,
         )
+        package_available = _module_available("sglang")
         models = _server_models(args.sglang_base_url, args.api_key)
+        model_available = SELF_HOSTED_MODEL_ID in models
+        smoke_ready = package_available and model_available
         checks["sglang_model3_7b"].update(
             {
                 "runtime_selection": selection.to_dict(),
+                "runtime_registry_allows_sglang": True,
                 "server_models": models,
-                "python_package_available": _module_available("sglang"),
-                "status": (
-                    "SMOKE_READY"
-                    if _module_available("sglang") and SELF_HOSTED_MODEL_ID in models
-                    else "BLOCKED"
-                ),
+                "python_package_available": package_available,
+                "health_check": {
+                    "endpoint": _models_url(args.sglang_base_url),
+                    "passed": bool(models),
+                    "model_available": model_available,
+                },
+                "status": "SMOKE_READY" if smoke_ready else "BLOCKED",
                 "reason": (
                     "model available on SGLang server"
-                    if _module_available("sglang") and SELF_HOSTED_MODEL_ID in models
-                    else "SGLang package/server/model is not ready"
+                    if smoke_ready
+                    else (
+                        "SGLang package is importable, but /v1/models did not list "
+                        f"{SELF_HOSTED_MODEL_ID}. Start SGLang with: "
+                        f"{SGLANG_STARTUP_COMMAND}"
+                    )
                 ),
             }
         )
-    except (RuntimeError, ValueError, OSError, urllib.error.URLError) as exc:
+    except ValueError as exc:
         checks["sglang_model3_7b"].update(
             {
                 "status": "BLOCKED",
                 "python_package_available": _module_available("sglang"),
+                "runtime_registry_allows_sglang": False,
+                "health_check": {
+                    "endpoint": _models_url(args.sglang_base_url),
+                    "passed": False,
+                    "model_available": False,
+                },
                 "reason": str(exc),
+            }
+        )
+    except (RuntimeError, OSError, urllib.error.URLError) as exc:
+        checks["sglang_model3_7b"].update(
+            {
+                "status": "BLOCKED",
+                "python_package_available": _module_available("sglang"),
+                "runtime_registry_allows_sglang": True,
+                "health_check": {
+                    "endpoint": _models_url(args.sglang_base_url),
+                    "passed": False,
+                    "model_available": False,
+                },
+                "reason": (
+                    f"SGLang /v1/models health check failed at "
+                    f"{_models_url(args.sglang_base_url)}: {exc}. "
+                    f"Start SGLang with: {SGLANG_STARTUP_COMMAND}"
+                ),
             }
         )
 
@@ -469,17 +520,27 @@ def build_smoke_report(gates: dict[str, Any]) -> dict[str, Any]:
         "api_model6_gated": "api_model6_gated",
     }.items():
         check = checks[check_name]
+        gate_ready = check.get("status") == "SMOKE_READY"
         tracks[track] = {
             "attempted": False,
-            "status": "SMOKE_BLOCKED",
+            "status": "SMOKE_READY" if gate_ready else "SMOKE_BLOCKED",
             "reason": check.get("reason"),
             "gate_status": check.get("status"),
         }
+    all_ready = bool(gates["full_simulation_allowed"])
     return {
-        "status": "SMOKE_BLOCKED",
-        "reason": "One or more required smoke gates are not ready.",
+        "status": "SMOKE_READY" if all_ready else "SMOKE_BLOCKED",
+        "reason": (
+            "All required smoke gates are ready; full simulation still requires explicit "
+            "--run-full."
+            if all_ready
+            else "One or more required smoke gates are not ready."
+        ),
         "tracks": tracks,
-        "full_simulation_allowed": False,
+        "full_simulation_allowed": all_ready,
+        "serving_commands": {
+            "sglang_model3_7b": SGLANG_STARTUP_COMMAND,
+        },
     }
 
 
@@ -597,6 +658,9 @@ def write_blocked_reports(
         "matrix_summary": matrix_summary,
         "smoke_report": smoke_report,
         "gate_report": gates,
+        "serving_commands": {
+            "sglang_model3_7b": SGLANG_STARTUP_COMMAND,
+        },
         "configs_completed": 0,
         "configs_failed": len(configs),
         "total_requests_attempted": 0,

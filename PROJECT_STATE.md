@@ -189,11 +189,18 @@ A100 baseline is allowed as a separate explicit run.
 
 The controlled final-experiment simulation preflight built the full 30-config,
 15,000-request matrix but blocked before model/provider execution because the
-required smoke gates were not ready: `model3_7b` was not served through vLLM,
-SGLang was unavailable/incompatible on `a100_sxm_80gb`, and `model6_gated` API
-credentials were absent. No fallback engine or memory mode was used. The final
-10,000-prompt experiment is not allowed until the vLLM, SGLang, API, and MM4
-smokes pass.
+required smoke gates were not all ready: vLLM `model3_7b` is smoke-ready,
+SGLang is now registry-compatible on `a100_sxm_80gb` but no SGLang server
+answered `http://localhost:30000/v1/models`, and `model6_gated` API credentials
+were absent. No fallback engine or memory mode was used. The exact SGLang
+startup command is:
+
+```bash
+python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct --served-model-name Qwen/Qwen2.5-7B-Instruct --host 0.0.0.0 --port 30000 --mem-fraction-static 0.90 --context-length 4096 --max-running-requests 32 --chunked-prefill-size 8192
+```
+
+The final 10,000-prompt experiment is not allowed until the vLLM, SGLang, API,
+and MM4 smokes pass.
 
 ## B1 Quality Gate
 

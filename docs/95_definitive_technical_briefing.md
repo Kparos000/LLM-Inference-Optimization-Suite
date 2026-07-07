@@ -4241,13 +4241,21 @@ runner and report set. It builds the full 30-config, 15,000-request matrix for
 `model3_7b` self-hosted A100 vLLM/SGLang tracks and the `model6_gated` API track
 across mm0-mm4 memory modes and the requested concurrency levels.
 
-The live RunPod A100 pod did not proceed to the full request matrix because the
-required smoke gates were not ready: `model3_7b` was not being served through
-vLLM, SGLang was not installed/importable and was not registered as compatible
-with `model3_7b` on `a100_sxm_80gb`, and the gated API track lacked required
+The live RunPod A100 pod did not proceed to the full request matrix because all
+required smoke gates were not ready: vLLM `model3_7b` is smoke-ready, SGLang is
+now registered as compatible with `model3_7b` on `a100_sxm_80gb` and the package
+is importable, but no SGLang server answered
+`http://localhost:30000/v1/models`; the gated API track also lacked required
 credentials. MM4 was importable as a bounded LangGraph runner, but no MM4 matrix
 run was attempted because the required track smokes were blocked. No fallback
 from SGLang to vLLM or from mm4 to mm2 was used.
+
+The exact A100 SGLang command for the controlled simulation is
+`python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct
+--served-model-name Qwen/Qwen2.5-7B-Instruct --host 0.0.0.0 --port 30000
+--mem-fraction-static 0.90 --context-length 4096 --max-running-requests 32
+--chunked-prefill-size 8192`; the health check is
+`GET http://localhost:30000/v1/models`.
 
 The final 10,000-prompt experiment remains blocked until vLLM, SGLang, API, and
 MM4 smoke gates pass in the controlled matrix context.

@@ -35,3 +35,23 @@ def test_select_safe_profile_for_live_run() -> None:
     selected = select_serving_profile("remote_rtx3070_qwen3b_safe_v1", live_run=True)
 
     assert selected.profile_id == "remote_rtx3070_qwen3b_safe_v1"
+
+
+def test_a100_sxm_sglang_qwen7b_profile_validates() -> None:
+    profiles = load_serving_profiles()
+    profile = profiles["a100_sxm_qwen7b_sglang_final_sim_v1"]
+
+    assert profile.status == "ready"
+    assert profile.engine == "sglang"
+    assert profile.model_alias == "model3_7b"
+    assert profile.model_id == "Qwen/Qwen2.5-7B-Instruct"
+    assert profile.hardware == "a100_sxm_80gb"
+    assert profile.backend_type == "self_hosted_gpu"
+    assert profile.gpu_memory_utilization == 0.90
+    assert profile.max_model_len == 4096
+    assert profile.max_num_seqs == 32
+    assert profile.max_num_batched_tokens == 8192
+    assert profile.live_run_allowed is True
+    assert "python -m sglang.launch_server" in profile.notes
+    with pytest.raises(ValueError, match="only vLLM"):
+        profile.vllm_server_args()

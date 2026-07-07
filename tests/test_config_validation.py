@@ -24,7 +24,7 @@ def test_validate_config_cli_covers_production_config_files() -> None:
         "Models loaded: 10",
         "Model aliases loaded: 12",
         "Runtime engines loaded: 5",
-        "Serving profiles loaded: 2",
+        "Serving profiles loaded: 3",
         "Sequence length buckets loaded: 6 input, 6 output",
         "Traffic profiles loaded: 4",
         "Optimization negative-rule groups loaded: 8",

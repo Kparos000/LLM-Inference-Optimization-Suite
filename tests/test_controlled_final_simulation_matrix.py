@@ -41,6 +41,25 @@ def test_controlled_final_simulation_config_matrix_shape() -> None:
     }
 
 
+def test_controlled_final_simulation_documents_sglang_startup_command() -> None:
+    runner = _load_runner()
+
+    assert runner.SGLANG_STARTUP_COMMAND == (
+        "python -m sglang.launch_server "
+        "--model-path Qwen/Qwen2.5-7B-Instruct "
+        "--served-model-name Qwen/Qwen2.5-7B-Instruct "
+        "--host 0.0.0.0 "
+        "--port 30000 "
+        "--mem-fraction-static 0.90 "
+        "--context-length 4096 "
+        "--max-running-requests 32 "
+        "--chunked-prefill-size 8192"
+    )
+    assert runner._models_url(runner.DEFAULT_SGLANG_BASE_URL) == (
+        "http://localhost:30000/v1/models"
+    )
+
+
 def test_controlled_final_simulation_matrix_has_15000_rows() -> None:
     runner = _load_runner()
 

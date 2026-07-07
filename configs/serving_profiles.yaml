@@ -47,3 +47,28 @@ remote_rtx3070_qwen3b_safe_v1:
   max_serving_restarts: 0
   peak_vram_safe_threshold_mb: 7600
   notes: "Conservative RTX 3070 repair profile for B7R1: 0.78 could not allocate KV blocks on vLLM 0.23.0, while 0.82 with max_model_len 3584 loaded successfully and remains below the unstable B7 0.90 baseline."
+
+a100_sxm_qwen7b_sglang_final_sim_v1:
+  profile_id: a100_sxm_qwen7b_sglang_final_sim_v1
+  status: ready
+  engine: sglang
+  model_alias: model3_7b
+  model_id: Qwen/Qwen2.5-7B-Instruct
+  hardware: a100_sxm_80gb
+  backend_type: self_hosted_gpu
+  provider: self_hosted
+  gpu_memory_utilization: 0.90
+  max_model_len: 4096
+  max_num_seqs: 32
+  max_num_batched_tokens: 8192
+  enforce_eager: false
+  disable_custom_all_reduce: false
+  dtype: bfloat16
+  trust_remote_code: false
+  smoke_tested: false
+  live_run_allowed: true
+  health_check_every_n_requests: 10
+  restart_on_fatal_engine_error: false
+  max_serving_restarts: 0
+  peak_vram_safe_threshold_mb: 79000
+  notes: "A100 SXM SGLang OpenAI-compatible profile for controlled final simulation. Start with: python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct --served-model-name Qwen/Qwen2.5-7B-Instruct --host 0.0.0.0 --port 30000 --mem-fraction-static 0.90 --context-length 4096 --max-running-requests 32 --chunked-prefill-size 8192. Health check: GET http://localhost:30000/v1/models must list Qwen/Qwen2.5-7B-Instruct."

@@ -38,8 +38,8 @@ Smoke status:
 
 | Track | Status | Reason |
 | --- | --- | --- |
-| vLLM `model3_7b` | blocked | No local vLLM server was serving `Qwen/Qwen2.5-7B-Instruct` at `http://localhost:8000/v1`. |
-| SGLang `model3_7b` | blocked | `sglang` is not installed/importable, and the runtime registry does not allow SGLang for `model3_7b` on `a100_sxm_80gb`. |
+| vLLM `model3_7b` | smoke-ready | `/v1/models` at `http://localhost:8000/v1` listed `Qwen/Qwen2.5-7B-Instruct`. |
+| SGLang `model3_7b` | blocked | Runtime registry now allows SGLang for `model3_7b` on `a100_sxm_80gb`, and the `sglang` package is importable, but `/v1/models` at `http://localhost:30000/v1` refused the connection. |
 | API `model6_gated` | blocked | `HF_TOKEN` and a provider API key were not present. |
 | MM4 | smoke-ready only | The bounded LangGraph mm4 runner is importable, but no full-matrix mm4 request ran because the required track smokes were blocked. |
 
@@ -71,10 +71,20 @@ These are generated artifacts and are not committed.
 
 ## Findings
 
-vLLM did not run for this block because the required `model3_7b` server was not
-available. SGLang did not run and was not silently replaced with vLLM. The API
-route did not run and did not report GPU telemetry or GPU hourly cost. MM4 did
-not run in the matrix and was not silently replaced by `mm2`.
+vLLM is smoke-ready for this block, but the full matrix did not run because
+SGLang and the API route are still blocked. SGLang did not run and was not
+silently replaced with vLLM. The API route did not run and did not report GPU
+telemetry or GPU hourly cost. MM4 did not run in the matrix and was not silently
+replaced by `mm2`.
+
+The exact A100 SGLang startup command for the controlled simulation is:
+
+```bash
+python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct --served-model-name Qwen/Qwen2.5-7B-Instruct --host 0.0.0.0 --port 30000 --mem-fraction-static 0.90 --context-length 4096 --max-running-requests 32 --chunked-prefill-size 8192
+```
+
+The SGLang health check is `GET http://localhost:30000/v1/models`, and it must
+list `Qwen/Qwen2.5-7B-Instruct` before the SGLang track is smoke-ready.
 
 Because no config completed, engine comparisons, memory-mode comparisons,
 concurrency comparisons, API-vs-self-hosted comparisons, and SLO diagnosis are
@@ -87,9 +97,10 @@ The final 10,000-prompt experiment is not allowed yet.
 
 Before it can run:
 
-- serve `Qwen/Qwen2.5-7B-Instruct` through vLLM and pass the 10-request smoke;
-- install/configure SGLang for A100 SXM, register the compatible route, and pass
-  the 10-request smoke;
+- keep `Qwen/Qwen2.5-7B-Instruct` serving through vLLM and pass the controlled
+  smoke;
+- start SGLang for A100 SXM with the documented command and pass the
+  `/v1/models` health check plus controlled smoke;
 - provide validated `model6_gated` API credentials and pricing route, then pass
   the 10-request API smoke;
 - run the MM4 smoke in the same controlled context if MM4 remains in the matrix.

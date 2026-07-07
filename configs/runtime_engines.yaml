@@ -63,6 +63,7 @@ sglang:
     - self_hosted_gpu
     - remote_rtx3070
     - runpod_gpu
+    - a100_sxm_80gb
   notes: "OpenAI-compatible SGLang serving runtime retained for controlled backend comparison."
 
 api_provider_route:
