@@ -23,5 +23,10 @@ context-aligned generation-contract path instead of raw promoted prompts.
 
 ## Decision
 
-Full 10,000 rerun is now allowed as a separate explicit run. It was not
-executed in this repair block.
+The repaired full 10,000-request baseline ran after the repair gates passed. It
+completed 10,000/10,000 requests and 25/25 configs with zero request failures.
+SLO comparison reported zero failed SLO fields; aggregate raw-output evaluation
+reported 99.92% JSON validity, 81.41% generation-contract validity, 61.92%
+evidence match, 60.26% groundedness, and 97 safety findings. Artifact sync and
+backup verification passed. Controlled optimization can begin from this
+baseline.

@@ -28,6 +28,7 @@ RUNPOD_CALIBRATION_NOT_READY_PRICE_MISSING
 BENCHMARK_EXECUTION_READY
 API_LOAD_PROBE_ALLOWED
 DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
+CONTROLLED_FINAL_REPAIRED_BASELINE_COMPLETE
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -198,12 +199,9 @@ command used for the controlled simulation track is:
 python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct --served-model-name Qwen/Qwen2.5-7B-Instruct --host 0.0.0.0 --port 30000 --mem-fraction-static 0.90 --context-length 4096 --max-running-requests 32 --chunked-prefill-size 8192
 ```
 
-The baseline is operationally complete but not deployable. Overall JSON validity
-and generation-contract validity were 0.0%, evidence match and groundedness were
-3.97%, and all 25 configs failed the quality SLO groups. vLLM beat SGLang on
-self-hosted latency and throughput, self-hosted concurrency 16 beat concurrency
-32, API provider rows were faster than the self-hosted aggregate, artifact sync
-and backup verification passed, and measured total cost was `$0.873843`.
+The initial baseline was operationally complete but not deployable. Overall JSON
+validity and generation-contract validity were 0.0%, evidence match and
+groundedness were 3.97%, and all 25 configs failed the quality SLO groups.
 
 The controlled-final generation-contract repair replaced raw promoted prompt
 text with the B6/B7/A100 context-aligned prompt path. The repaired matrix now
@@ -219,8 +217,18 @@ artifact without weakening the evaluator. Targeted MM4 replay completed 11/11
 requests with zero safety violations. The repaired 500-row validation ran
 500/500 requests with 100.0% JSON, contract, and format validity, 73.2%
 evidence match/groundedness, zero safety violations, and MM4 at 92.0%
-evidence/groundedness. The full 10,000 rerun is now allowed as a separate
-explicit run.
+evidence/groundedness.
+
+The repaired full controlled-final baseline has now run on the same frozen
+25-config matrix. It completed 10,000/10,000 requests with zero request failures
+and 25/25 configs complete. The SLO comparison reported zero failed SLO fields.
+Aggregate raw-output evaluation reported 99.92% JSON validity, 81.41%
+generation-contract/format validity, 61.92% evidence match, 60.26%
+groundedness, and 97 safety findings. vLLM beat SGLang on self-hosted latency
+and throughput; self-hosted concurrency 16 beat concurrency 32; API provider
+rows had lower mean latency and higher throughput than the self-hosted aggregate.
+Artifact sync and backup verification passed with completeness score 1.0, and
+measured total cost was `$0.793868`.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -642,9 +650,10 @@ Result tracks are separated:
 
 ## Next Step
 
-The next independent track is the explicit controlled-final 10,000-request
-rerun using the repaired contract and MM4 safety boundary, preserving the
-frozen matrix and safety gates.
+The next independent track is controlled post-baseline optimization using the
+completed repaired 10,000-request baseline as the reference point. Candidate
+areas are final-answer contract normalization, safety wording, evidence
+selection, groundedness, and concurrency-32 self-hosted efficiency.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

@@ -2665,29 +2665,33 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
                 ),
             },
         )
-    full_repair_allowed = False
-    if args.allow_full_after_repair:
-        if repaired_smoke_report is None and _repo_path(args.repaired_25_replay_report).exists():
-            repaired_smoke_report = json.loads(
-                _repo_path(args.repaired_25_replay_report).read_text(encoding="utf-8")
-            )
-        if (
-            repaired_validation_report is None
-            and _repo_path(args.repaired_500_validation_report).exists()
-        ):
-            repaired_validation_report = json.loads(
-                _repo_path(args.repaired_500_validation_report).read_text(encoding="utf-8")
-            )
-        if targeted_mm4_report is None and _repo_path(args.mm4_safety_targeted_report).exists():
-            targeted_mm4_report = json.loads(
-                _repo_path(args.mm4_safety_targeted_report).read_text(encoding="utf-8")
-            )
-        full_repair_allowed = bool(
-            contract_preflight["passed"]
-            and (repaired_smoke_report or {}).get("passed_quality_gate")
-            and (targeted_mm4_report or {}).get("passed_quality_gate")
-            and (repaired_validation_report or {}).get("passed_quality_gate")
+    if repaired_smoke_report is None and _repo_path(args.repaired_25_replay_report).exists():
+        repaired_smoke_report = json.loads(
+            _repo_path(args.repaired_25_replay_report).read_text(encoding="utf-8")
         )
+    if (
+        repaired_validation_report is None
+        and _repo_path(args.repaired_500_validation_report).exists()
+    ):
+        repaired_validation_report = json.loads(
+            _repo_path(args.repaired_500_validation_report).read_text(encoding="utf-8")
+        )
+    if targeted_mm4_report is None and _repo_path(args.mm4_safety_targeted_report).exists():
+        targeted_mm4_report = json.loads(
+            _repo_path(args.mm4_safety_targeted_report).read_text(encoding="utf-8")
+        )
+    repair_ready_report = (
+        json.loads(_repo_path(args.repair_ready_report).read_text(encoding="utf-8"))
+        if _repo_path(args.repair_ready_report).exists()
+        else {}
+    )
+    full_repair_allowed = bool(
+        contract_preflight["passed"]
+        and (repaired_smoke_report or {}).get("passed_quality_gate")
+        and (targeted_mm4_report or {}).get("passed_quality_gate")
+        and (repaired_validation_report or {}).get("passed_quality_gate")
+        and (args.allow_full_after_repair or repair_ready_report.get("full_10000_rerun_allowed"))
+    )
     if args.run_full and not full_repair_allowed:
         gates["full_simulation_allowed"] = False
         smoke_report["status"] = "SMOKE_BLOCKED"

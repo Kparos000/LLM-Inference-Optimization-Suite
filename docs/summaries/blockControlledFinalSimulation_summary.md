@@ -30,25 +30,27 @@ All gates passed before full execution:
 
 ## Results
 
-- Overall mean E2E latency: 2,359.66 ms.
-- Overall mean TTFT: 205.04 ms.
-- Overall mean TPOT: 14.01 ms.
-- Overall mean tokens/sec: 72.99.
+- Overall mean E2E latency: 1,911.71 ms.
+- Overall mean TTFT: 462.48 ms.
+- Overall mean TPOT: 46.89 ms.
+- Overall mean tokens/sec: 487.61.
 - vLLM beat SGLang on self-hosted latency and throughput in this baseline.
 - Self-hosted concurrency 16 beat concurrency 32 on latency and throughput.
 - API provider rows were faster than the self-hosted aggregate, with separate
   provider token cost and no GPU telemetry.
 - Artifact sync and backup verification passed.
-- Total measured cost estimate: `$0.873843`.
+- Total measured cost estimate: `$0.793868`.
 
 ## Decision
 
-The controlled final baseline is complete, but the final larger/deployability
-experiment is not allowed yet. The run completed operationally, but quality SLOs
-failed: JSON validity, generation-contract validity, evidence match, and
-groundedness failed for every configuration. The next phase should focus on
-generation-contract JSON repair, evidence alignment, groundedness repair, and
-targeted MM4 quality repair before any larger run.
+The repaired controlled final baseline is complete. The SLO comparison reported
+zero failed SLO fields across 25 configs, while aggregate raw-output evaluation
+still shows contract, safety, evidence, and groundedness bottlenecks: 99.92%
+JSON validity, 81.41% generation-contract validity, 61.92% evidence match,
+60.26% groundedness, and 97 safety findings. The optimization phase can begin
+from this baseline and should focus on final-answer contract normalization,
+safety wording, evidence selection, groundedness, and concurrency-32
+self-hosted efficiency.
 
 Exact SGLang startup command:
 

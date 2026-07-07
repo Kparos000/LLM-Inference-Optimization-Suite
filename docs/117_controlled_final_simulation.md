@@ -57,27 +57,29 @@ The run completed all planned requests:
 | Requests failed | 0 |
 | Configs completed | 25 |
 | Configs failed | 0 |
-| Wall-clock runtime | 2,076.93 seconds |
-| A100 GPU cost estimate | `$0.859619` |
-| API token cost estimate | `$0.014224` |
-| Total measured cost estimate | `$0.873843` |
+| Wall-clock runtime | 1,834.33 seconds |
+| A100 GPU cost estimate | `$0.759211` |
+| API token cost estimate | `$0.034657` |
+| Total measured cost estimate | `$0.793868` |
 
 Quality summary:
 
 | Metric | Value |
 | --- | ---: |
 | Joined rate | 100.00% |
-| Format-valid rate | 100.00% |
-| JSON-valid rate | 0.00% |
-| Generation-contract-valid rate | 0.00% |
-| Evidence-match rate | 3.97% |
-| Grounded rate | 3.97% |
-| Safety violations | 12 |
+| JSON-valid rate | 99.92% |
+| Generation-contract-valid rate | 81.41% |
+| Format-valid rate | 81.41% |
+| Evidence-match rate | 61.92% |
+| Grounded rate | 60.26% |
+| Safety violations | 97 |
 | Truncations | 0 |
 
-The benchmark execution completed, but the baseline is not deployable because
-generation-contract JSON validity, evidence matching, and groundedness failed
-SLOs across every configuration.
+The repaired baseline completed operationally and the per-config SLO comparison
+reported zero failed SLOs across 25 configs. The aggregate raw-output evaluation
+still shows residual contract, safety, evidence, and groundedness findings, so
+the next phase should optimize against those measured bottlenecks before making
+deployability claims.
 
 ## Runtime Results
 
@@ -85,43 +87,45 @@ Overall runtime metrics:
 
 | Metric | Value |
 | --- | ---: |
-| Mean E2E latency | 2,359.66 ms |
-| P50 E2E latency | 2,497.38 ms |
-| P95 E2E latency | 2,859.67 ms |
-| P99 E2E latency | 3,149.24 ms |
-| Mean TTFT | 205.04 ms |
-| P95 TTFT | 863.86 ms |
-| P99 TTFT | 1,004.70 ms |
-| Mean TPOT | 14.01 ms |
-| Mean tokens/sec | 72.99 |
+| Mean E2E latency | 1,911.71 ms |
+| P50 E2E latency | 1,748.03 ms |
+| P95 E2E latency | 3,620.76 ms |
+| P99 E2E latency | 4,441.53 ms |
+| Mean TTFT | 462.48 ms |
+| P95 TTFT | 1,155.00 ms |
+| P99 TTFT | 1,754.86 ms |
+| Mean TPOT | 46.89 ms |
+| Mean tokens/sec | 487.61 |
 
 Engine comparison on the self-hosted track:
 
 | Engine | Mean latency | Mean tokens/sec | Result |
 | --- | ---: | ---: | --- |
-| vLLM | 2,427.63 ms | 73.51 | Latency and throughput winner |
-| SGLang | 2,535.34 ms | 69.79 | Slower in this baseline |
+| vLLM | 2,017.25 ms | 452.97 | Latency and throughput winner |
+| SGLang | 2,143.01 ms | 429.09 | Slower in this baseline |
 
 Concurrency comparison:
 
 | Track | Concurrency | Mean latency | Mean tokens/sec |
 | --- | ---: | ---: | ---: |
-| Self-hosted | 16 | 2,372.65 ms | 74.78 |
-| Self-hosted | 32 | 2,590.32 ms | 68.53 |
-| API provider | 4 | 1,872.36 ms | 78.32 |
+| Self-hosted | 16 | 1,758.40 ms | 492.60 |
+| Self-hosted | 32 | 2,401.87 ms | 389.45 |
+| API provider | 4 | 1,238.02 ms | 673.94 |
 
 Memory-mode latency ranking:
 
 | Rank | Memory mode | Mean latency | Mean tokens/sec |
 | ---: | --- | ---: | ---: |
-| 1 | `mm2_hybrid_top5` | 2,351.21 ms | 73.17 |
-| 2 | `mm1_dense_top5` | 2,352.28 ms | 73.20 |
-| 3 | `mm4_bounded_agentic` | 2,360.68 ms | 73.02 |
-| 4 | `mm3_compressed_hybrid_top5` | 2,362.79 ms | 72.80 |
-| 5 | `mm0_no_context` | 2,371.33 ms | 72.74 |
+| 1 | `mm0_no_context` | 903.64 ms | 481.15 |
+| 2 | `mm2_hybrid_top5` | 2,116.51 ms | 488.62 |
+| 3 | `mm3_compressed_hybrid_top5` | 2,145.13 ms | 485.81 |
+| 4 | `mm1_dense_top5` | 2,190.33 ms | 481.47 |
+| 5 | `mm4_bounded_agentic` | 2,202.94 ms | 501.00 |
 
-Quality did not meaningfully separate memory modes in this baseline; each
-memory-mode aggregate had 3.75% evidence match and groundedness.
+Per-config SLO rows did not meaningfully separate memory modes on quality; each
+memory-mode aggregate reported 95.25% evidence match, 94.25% groundedness, and
+99.0% generation-contract validity. The aggregate raw-output evaluator remains
+the stricter bottleneck signal for the next optimization phase.
 
 ## GPU Telemetry
 
@@ -130,14 +134,14 @@ rows did not report GPU telemetry.
 
 | Metric | Value |
 | --- | ---: |
-| Telemetry samples | 1,871 |
-| Mean GPU utilization | 48.60% |
+| Telemetry samples | 1,534 |
+| Mean GPU utilization | 50.92% |
 | Max GPU utilization | 100.00% |
-| Mean VRAM used | 69,569.63 MiB |
-| Max VRAM used | 70,065 MiB |
-| Mean power draw | 194.78 W |
-| Mean temperature | 41.67 C |
-| Max temperature | 60 C |
+| Mean VRAM used | 73,482.70 MiB |
+| Max VRAM used | 74,419 MiB |
+| Mean power draw | 225.21 W |
+| Mean temperature | 45.19 C |
+| Max temperature | 63 C |
 
 ## Reports
 
@@ -165,11 +169,11 @@ These are generated artifacts and are not committed.
 
 ## Decision
 
-The controlled final 10,000-request baseline is complete.
+The repaired controlled final 10,000-request baseline is complete. Artifact sync
+and backup verification passed with a 1.0 completeness score, 18 synced
+artifacts, and 19/19 backup verification checks passing.
 
-The follow-on generation-contract repair changed the runner input path so future
-controlled-final requests use the B6/B7/A100 context-aligned renderer instead of
-raw promoted prompts. The repaired contract preflight passed, and the repaired
-25-row replay improved JSON validity to 100.0% with zero safety violations, but
-contract validity reached only 84.0%. The final larger/deployability experiment
-is therefore still not allowed.
+The optimization phase can begin from this baseline. Recommended candidates are
+contract normalization at the final-answer boundary, safety-wording cleanup for
+final answers, groundedness/evidence selection, and a concurrency-32 self-hosted
+latency/throughput pass.

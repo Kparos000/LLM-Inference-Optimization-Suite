@@ -131,13 +131,28 @@ Generated reports:
 `results/processed/controlled_final_mm4_safety_targeted_replay_summary.csv`.
 `results/processed/controlled_final_repair_ready_report.json`.
 
-## Decision
+## Full Baseline Rerun
 
 The controlled-final runner now uses the repaired generation-contract path and
 the 25-row replay, targeted MM4 replay, and repaired 500-row validation gates
-all pass. Runtime smoke gates remain ready, and artifact sync/checkpoint/
-manifest support remains enabled. The full 10,000-request rerun is now allowed
-as a separate explicit run, but it was not executed in this repair block.
+all pass. Runtime smoke gates remained ready, and artifact sync/checkpoint/
+manifest support remained enabled. The repaired full 10,000-request baseline
+was executed as a separate explicit run.
 
-The next step is the explicit controlled-final 10,000-request rerun, preserving
-the frozen matrix and safety gates.
+| Metric | Result |
+| --- | ---: |
+| Requests completed | 10,000/10,000 |
+| Configs completed | 25/25 |
+| Request failures | 0 |
+| SLO failed fields | 0 |
+| Aggregate JSON validity | 99.92% |
+| Aggregate generation-contract validity | 81.41% |
+| Aggregate evidence match | 61.92% |
+| Aggregate groundedness | 60.26% |
+| Aggregate safety findings | 97 |
+| Total measured cost | `$0.793868` |
+
+Artifact sync and backup verification passed with no missing required
+artifacts. The next step is controlled optimization against the completed
+baseline, with attention on final-answer contract normalization, safety wording,
+evidence selection, groundedness, and concurrency-32 self-hosted efficiency.
