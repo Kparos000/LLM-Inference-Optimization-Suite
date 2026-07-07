@@ -15,12 +15,13 @@ context-aligned generation-contract path instead of raw promoted prompts.
 - Safety violations fell from 12 to 0.
 - Natural-language/no-JSON majority failure was eliminated.
 - 25-row replay gate: PASS.
+- MM4 safety targeted replay: completed 11/11 requests with zero safety
+  violations and 100.0% JSON/contract/format validity.
 - 500-row validation: ran 500/500 requests with 100.0% JSON/contract/format
-  validity, 72.8% evidence match, 72.8% groundedness, and one MM4 safety
-  violation.
+  validity, 73.2% evidence match, 73.2% groundedness, and zero safety
+  violations.
 
 ## Decision
 
-Full 10,000 rerun remains blocked because the 500-row validation gate requires
-zero safety violations. The next step is to inspect the single MM4 safety row
-without weakening the evaluator or SLOs.
+Full 10,000 rerun is now allowed as a separate explicit run. It was not
+executed in this repair block.

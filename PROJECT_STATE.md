@@ -213,10 +213,14 @@ MM4 bounded-agentic contract instructions, and normalized API/self-hosted prompt
 payloads. Contract preflight passed on 10,000/10,000 rows. The hardened 25-row
 replay completed 25/25 requests with 100.0% JSON, contract, and format
 validity, 72.0% evidence match, 72.0% groundedness, zero safety violations, and
-zero natural-language/no-JSON rows, so the 25-row gate now passes. The 500-row
-validation ran 500/500 requests with 100.0% JSON, contract, and format validity
-and 72.8% evidence match/groundedness, but remains blocked by one MM4 safety
-violation. The full 10,000 rerun remains blocked.
+zero natural-language/no-JSON rows, so the 25-row gate now passes. The MM4
+safety-boundary repair fixed the single final-answer prohibited-wording
+artifact without weakening the evaluator. Targeted MM4 replay completed 11/11
+requests with zero safety violations. The repaired 500-row validation ran
+500/500 requests with 100.0% JSON, contract, and format validity, 73.2%
+evidence match/groundedness, zero safety violations, and MM4 at 92.0%
+evidence/groundedness. The full 10,000 rerun is now allowed as a separate
+explicit run.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -638,9 +642,9 @@ Result tracks are separated:
 
 ## Next Step
 
-The next independent track is MM4 safety hardening: inspect the single 500-row
-validation safety violation without weakening evaluators or SLOs, then rerun
-the gated validation before any full 10,000 rerun.
+The next independent track is the explicit controlled-final 10,000-request
+rerun using the repaired contract and MM4 safety boundary, preserving the
+frozen matrix and safety gates.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

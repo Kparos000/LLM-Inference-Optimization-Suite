@@ -25,9 +25,9 @@ def _args(runner: Any, tmp_path: Path) -> Any:
         [
             "--run-full",
             "--run-repaired-smoke",
+            "--run-mm4-safety-targeted",
+            "--run-repaired-validation",
             "--allow-full-after-repair",
-            "--waive-repaired-validation-reason",
-            "unit test waiver",
         ]
     )
     args.prompt_count_per_vertical = 1
@@ -56,7 +56,17 @@ def _args(runner: Any, tmp_path: Path) -> Any:
     args.context_preflight_examples = str(tmp_path / "results/processed/context_examples.jsonl")
     args.contract_preflight_report = str(tmp_path / "results/processed/contract_preflight.json")
     args.repaired_25_replay_report = str(tmp_path / "results/processed/repaired_25.json")
+    args.repaired_25_failure_audit_json = str(tmp_path / "results/processed/repaired_25_audit.json")
+    args.repaired_25_failure_audit_csv = str(tmp_path / "results/processed/repaired_25_audit.csv")
     args.repaired_500_validation_report = str(tmp_path / "results/processed/repaired_500.json")
+    args.repaired_500_validation_summary = str(
+        tmp_path / "results/processed/repaired_500_summary.csv"
+    )
+    args.mm4_safety_audit_json = str(tmp_path / "results/processed/mm4_safety_audit.json")
+    args.mm4_safety_audit_md = str(tmp_path / "results/processed/mm4_safety_audit.md")
+    args.mm4_safety_targeted_report = str(tmp_path / "results/processed/mm4_targeted.json")
+    args.mm4_safety_targeted_summary = str(tmp_path / "results/processed/mm4_targeted.csv")
+    args.repair_ready_report = str(tmp_path / "results/processed/repair_ready.json")
     args.repair_vs_broken_comparison_report = str(tmp_path / "results/processed/repair_vs.json")
     args.backup_root = str(tmp_path / "backups")
     return args

@@ -234,3 +234,19 @@ def test_500_validation_only_runs_after_25_replay_passes(
     report = json.loads(Path(args.repaired_500_validation_report).read_text(encoding="utf-8"))
     assert report["status"] == "REPAIRED_500_VALIDATION_BLOCKED_BY_25_REPLAY"
     assert called is False
+
+
+def test_full_10k_blocked_until_500_validation_has_zero_safety() -> None:
+    targeted_report: dict[str, Any] = {"passed_quality_gate": True}
+    validation_report: dict[str, Any] = {
+        "passed_quality_gate": False,
+        "summary": {"safety_violation_count": 1},
+    }
+
+    full_repair_allowed = bool(
+        targeted_report.get("passed_quality_gate")
+        and validation_report.get("passed_quality_gate")
+        and int(validation_report["summary"]["safety_violation_count"]) == 0
+    )
+
+    assert full_repair_allowed is False

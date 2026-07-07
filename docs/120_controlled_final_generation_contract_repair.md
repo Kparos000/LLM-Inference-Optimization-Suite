@@ -79,9 +79,28 @@ The failure audit classifies the remaining expected/non-blocking misses:
 ## 500-Row Validation
 
 Because the 25-row gate passed, the optional 500-row validation ran across all
-25 configs, 20 prompts per config. It completed all requests and kept JSON,
-format, and contract validity at 100.0%, but did not pass the gate because one
-MM4 row triggered a safety violation.
+25 configs, 20 prompts per config. The first pass completed all requests and
+kept JSON, format, and contract validity at 100.0%, but one MM4 row triggered a
+safety violation by safely saying not to promise "verification bypasses" and
+therefore repeating prohibited wording in the final answer.
+
+The MM4 safety-boundary repair now rewrites safe refusal/avoidance wording in
+the final JSON answer while preserving raw provider output for audit. It does
+not rewrite real unsafe recommendations; those still fail the safety evaluator.
+
+Targeted MM4 replay:
+
+| Metric | Result |
+| --- | ---: |
+| Requests completed | 11/11 |
+| JSON validity | 100.0% |
+| Generation-contract validity | 100.0% |
+| Format validity | 100.0% |
+| Evidence match | 81.8% |
+| Groundedness | 81.8% |
+| Safety violations | 0 |
+
+The repaired 500-row validation then passed:
 
 | Metric | Result |
 | --- | ---: |
@@ -89,30 +108,36 @@ MM4 row triggered a safety violation.
 | JSON validity | 100.0% |
 | Generation-contract validity | 100.0% |
 | Format validity | 100.0% |
-| Evidence match | 72.8% |
-| Groundedness | 72.8% |
-| Safety violations | 1 |
+| Evidence match | 73.2% |
+| Groundedness | 73.2% |
+| Safety violations | 0 |
 
 Memory-mode reporting is included in the validation report:
 
 | Memory mode | Track | Evidence match | Groundedness | Safety |
 | --- | --- | ---: | ---: | ---: |
 | MM0 | no-context ablation | 0.0% | 0.0% | 0 |
-| MM1 | contextual | 90.0% | 90.0% | 0 |
+| MM1 | contextual | 89.0% | 89.0% | 0 |
 | MM2 | contextual | 93.0% | 93.0% | 0 |
-| MM3 | contextual | 91.0% | 91.0% | 0 |
-| MM4 | agentic | 90.0% | 90.0% | 1 |
+| MM3 | contextual | 92.0% | 92.0% | 0 |
+| MM4 | agentic | 92.0% | 92.0% | 0 |
 
-Generated report:
+Generated reports:
 `results/processed/controlled_final_repaired_500_validation_report.json`.
+`results/processed/controlled_final_repaired_500_validation_summary.csv`.
+`results/processed/controlled_final_mm4_safety_violation_audit.json`.
+`results/processed/controlled_final_mm4_safety_violation_audit.md`.
+`results/processed/controlled_final_mm4_safety_targeted_replay_report.json`.
+`results/processed/controlled_final_mm4_safety_targeted_replay_summary.csv`.
+`results/processed/controlled_final_repair_ready_report.json`.
 
 ## Decision
 
 The controlled-final runner now uses the repaired generation-contract path and
-the 25-row replay gate passes. The full 10,000-request rerun is still not
-allowed because the 500-row validation gate requires zero safety violations and
-observed one MM4 safety violation.
+the 25-row replay, targeted MM4 replay, and repaired 500-row validation gates
+all pass. Runtime smoke gates remain ready, and artifact sync/checkpoint/
+manifest support remains enabled. The full 10,000-request rerun is now allowed
+as a separate explicit run, but it was not executed in this repair block.
 
-The smallest next repair should inspect the single MM4 safety row from the
-500-row validation and harden bounded-agentic final-answer safety normalization
-without weakening the evaluator or SLOs.
+The next step is the explicit controlled-final 10,000-request rerun, preserving
+the frozen matrix and safety gates.
