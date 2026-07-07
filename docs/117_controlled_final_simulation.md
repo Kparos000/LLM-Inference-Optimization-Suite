@@ -167,8 +167,9 @@ These are generated artifacts and are not committed.
 
 The controlled final 10,000-request baseline is complete.
 
-The final larger/deployability experiment is not allowed yet. The next phase
-should optimize only after reviewing the failed SLOs. Recommended candidates
-are generation-contract JSON repair, prompt/output parsing repair, evidence
-selection alignment, context formatting for groundedness, and then a targeted
-MM4 bounded-agentic quality repair.
+The follow-on generation-contract repair changed the runner input path so future
+controlled-final requests use the B6/B7/A100 context-aligned renderer instead of
+raw promoted prompts. The repaired contract preflight passed, and the repaired
+25-row replay improved JSON validity to 100.0% with zero safety violations, but
+contract validity reached only 84.0%. The final larger/deployability experiment
+is therefore still not allowed.

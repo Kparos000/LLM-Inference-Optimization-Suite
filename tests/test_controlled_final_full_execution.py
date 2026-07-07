@@ -21,7 +21,15 @@ def _load_runner() -> Any:
 
 
 def _args(runner: Any, tmp_path: Path) -> Any:
-    args = runner.build_parser().parse_args(["--run-full"])
+    args = runner.build_parser().parse_args(
+        [
+            "--run-full",
+            "--run-repaired-smoke",
+            "--allow-full-after-repair",
+            "--waive-repaired-validation-reason",
+            "unit test waiver",
+        ]
+    )
     args.prompt_count_per_vertical = 1
     args.raw_results_path = str(tmp_path / "results/raw/results.jsonl")
     args.manifest_path = str(tmp_path / "results/raw/manifest.json")
@@ -42,6 +50,14 @@ def _args(runner: Any, tmp_path: Path) -> Any:
     args.artifact_sync_report_path = str(tmp_path / "results/processed/sync.json")
     args.post_run_automation_report_path = str(tmp_path / "results/processed/post.json")
     args.plotting_dataset_path = str(tmp_path / "results/processed/plotting.csv")
+    args.repaired_runner_input_path = str(tmp_path / "data/repaired_input.jsonl")
+    args.context_preflight_report = str(tmp_path / "results/processed/context.json")
+    args.context_preflight_summary = str(tmp_path / "results/processed/context.csv")
+    args.context_preflight_examples = str(tmp_path / "results/processed/context_examples.jsonl")
+    args.contract_preflight_report = str(tmp_path / "results/processed/contract_preflight.json")
+    args.repaired_25_replay_report = str(tmp_path / "results/processed/repaired_25.json")
+    args.repaired_500_validation_report = str(tmp_path / "results/processed/repaired_500.json")
+    args.repair_vs_broken_comparison_report = str(tmp_path / "results/processed/repair_vs.json")
     args.backup_root = str(tmp_path / "backups")
     return args
 
@@ -70,6 +86,52 @@ def _patch_small_success(monkeypatch: pytest.MonkeyPatch, runner: Any) -> None:
     monkeypatch.setattr(runner, "VERTICALS", ("airline",))
     monkeypatch.setattr(runner, "check_runtime_gate", lambda _args: _ready_gates())
     monkeypatch.setattr(runner, "_api_route", lambda _args: ("http://api", "key", "model", "api"))
+    prompt = "\n\n".join(
+        [
+            "SYSTEM:\nAnswer only from supplied evidence. Do not invent citations.",
+            "MEMORY MODE:\nmm2_hybrid_top5",
+            "\n".join(
+                [
+                    "RETRIEVED EVIDENCE:",
+                    "[EVIDENCE 1]\nevidence_id: E1\ntext: ok",
+                    "[EVIDENCE 2]\nevidence_id: E2\ntext: ok",
+                    "[EVIDENCE 3]\nevidence_id: E3\ntext: ok",
+                    "[EVIDENCE 4]\nevidence_id: E4\ntext: ok",
+                    "[EVIDENCE 5]\nevidence_id: E5\ntext: ok",
+                ]
+            ),
+            "USER QUESTION:\nWhat should support do?",
+            (
+                "OUTPUT CONTRACT:\nReturn exactly one JSON object with fields: "
+                "answer, evidence_ids, confidence, insufficient_evidence, citation_notes."
+            ),
+        ]
+    )
+    monkeypatch.setattr(
+        runner,
+        "build_repaired_base_input",
+        lambda _args: [
+            {
+                "vertical": "airline",
+                "prompt_id": "airline_scaleup_2000_0001",
+                "base_prompt": prompt,
+                "prompt": prompt,
+                "source_prompt_text": "raw",
+                "input_context": "E1",
+                "expected_evidence_ids": ["CA-POL-012", "CA-POL-013"],
+                "expected_status": "answer",
+                "expected_output_format": "generation_contract_json",
+                "citation_id_aliases": '{"E1":["CA-POL-012","CA-POL-013"]}',
+                "selected_context_ids": '["ctx1"]',
+                "context_alignment_status": "all",
+                "canonical_ids_exposed_to_model": "false",
+                "b5_planning_active": "true",
+                "b5_required_labels": "E1",
+                "traffic_profile": "online_low_latency",
+                "workload_id": "airline_scaleup_2000_0001",
+            }
+        ],
+    )
     monkeypatch.setattr(
         runner,
         "_chat_completion_request",
@@ -77,7 +139,7 @@ def _patch_small_success(monkeypatch: pytest.MonkeyPatch, runner: Any) -> None:
             json.dumps(
                 {
                     "answer": "ok",
-                    "evidence_ids": ["CA-POL-012", "CA-POL-013"],
+                    "evidence_ids": ["E1"],
                     "confidence": 0.9,
                     "insufficient_evidence": False,
                     "citation_notes": "ok",

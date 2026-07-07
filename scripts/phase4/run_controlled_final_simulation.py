@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import importlib.util
 import json
 import sys
@@ -35,9 +36,21 @@ from inference_bench.artifact_sync import (  # noqa: E402
     sync_artifacts,
     verify_backup,
 )
+from inference_bench.b6r6_research_ai_recovery import (  # noqa: E402
+    STRATEGY_D_ANSWER_SKELETON,
+    apply_research_ai_strategy_prompt,
+)
 from inference_bench.config import load_project_config  # noqa: E402
+from inference_bench.context_alignment_repair import (  # noqa: E402
+    build_b6_context_aligned_runner_input,
+)
 from inference_bench.context_corpora import VERTICALS  # noqa: E402
 from inference_bench.evaluator_contract import evaluate_generated_answers  # noqa: E402
+from inference_bench.generation_contract import (  # noqa: E402
+    GENERATION_CONTRACT_FIELDS,
+    GENERATION_CONTRACT_FORMAT,
+    render_generation_contract_prompt,
+)
 from inference_bench.gpu_telemetry import (  # noqa: E402
     GpuTelemetrySample,
     collect_gpu_sample,
@@ -119,6 +132,37 @@ DEFAULT_POST_RUN_AUTOMATION_REPORT = (
 )
 DEFAULT_PLOTTING_DATASET = "results/processed/controlled_final_simulation_plotting_dataset.csv"
 DEFAULT_CHECKPOINT = "results/raw/controlled_final_simulation_checkpoint.json"
+DEFAULT_SOURCE_WORKLOAD = (
+    "data/workloads/controlled_2000/prompt_plus_metadata/mm2_hybrid_top5.jsonl"
+)
+DEFAULT_SOURCE_OF_TRUTH_MANIFEST = (
+    "data/generated/context_engineering/retrieval_source_of_truth_manifest.json"
+)
+DEFAULT_CONTEXT_ROOT = "data/generated/context_engineering"
+DEFAULT_REPAIRED_RUNNER_INPUT = (
+    "data/generated/phase4/controlled_final_simulation_repaired_runner_input.jsonl"
+)
+DEFAULT_CONTEXT_PREFLIGHT_REPORT = (
+    "results/processed/controlled_final_repaired_context_preflight_report.json"
+)
+DEFAULT_CONTEXT_PREFLIGHT_SUMMARY = (
+    "results/processed/controlled_final_repaired_context_preflight_summary.csv"
+)
+DEFAULT_CONTEXT_PREFLIGHT_EXAMPLES = (
+    "results/processed/controlled_final_repaired_context_preflight_examples.jsonl"
+)
+DEFAULT_CONTRACT_PREFLIGHT_REPORT = (
+    "results/processed/controlled_final_contract_preflight_report.json"
+)
+DEFAULT_REPAIRED_25_REPLAY_REPORT = (
+    "results/processed/controlled_final_repaired_25_replay_report.json"
+)
+DEFAULT_REPAIRED_500_VALIDATION_REPORT = (
+    "results/processed/controlled_final_repaired_500_validation_report.json"
+)
+DEFAULT_REPAIR_VS_BROKEN_COMPARISON = (
+    "results/processed/controlled_final_repair_vs_broken_comparison.json"
+)
 DEFAULT_BASE_URL = "http://localhost:8000/v1"
 DEFAULT_SGLANG_BASE_URL = "http://localhost:30000/v1"
 SGLANG_STARTUP_COMMAND = (
@@ -215,6 +259,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--plotting-dataset-path", default=DEFAULT_PLOTTING_DATASET)
     parser.add_argument("--checkpoint-path", default=DEFAULT_CHECKPOINT)
+    parser.add_argument("--source-workload", default=DEFAULT_SOURCE_WORKLOAD)
+    parser.add_argument("--source-of-truth-manifest", default=DEFAULT_SOURCE_OF_TRUTH_MANIFEST)
+    parser.add_argument("--context-root", default=DEFAULT_CONTEXT_ROOT)
+    parser.add_argument("--repaired-runner-input-path", default=DEFAULT_REPAIRED_RUNNER_INPUT)
+    parser.add_argument("--context-preflight-report", default=DEFAULT_CONTEXT_PREFLIGHT_REPORT)
+    parser.add_argument("--context-preflight-summary", default=DEFAULT_CONTEXT_PREFLIGHT_SUMMARY)
+    parser.add_argument("--context-preflight-examples", default=DEFAULT_CONTEXT_PREFLIGHT_EXAMPLES)
+    parser.add_argument("--contract-preflight-report", default=DEFAULT_CONTRACT_PREFLIGHT_REPORT)
+    parser.add_argument("--repaired-25-replay-report", default=DEFAULT_REPAIRED_25_REPLAY_REPORT)
+    parser.add_argument(
+        "--repaired-500-validation-report",
+        default=DEFAULT_REPAIRED_500_VALIDATION_REPORT,
+    )
+    parser.add_argument(
+        "--repair-vs-broken-comparison-report",
+        default=DEFAULT_REPAIR_VS_BROKEN_COMPARISON,
+    )
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--sglang-base-url", default=DEFAULT_SGLANG_BASE_URL)
     parser.add_argument("--api-key", default="EMPTY")
@@ -231,6 +292,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-new-tokens", type=int, default=224)
     parser.add_argument("--timeout-seconds", type=float, default=240.0)
     parser.add_argument("--telemetry-interval-seconds", type=float, default=1.0)
+    parser.add_argument("--run-repaired-smoke", action="store_true")
+    parser.add_argument("--run-repaired-validation", action="store_true")
+    parser.add_argument("--allow-full-after-repair", action="store_true")
+    parser.add_argument("--waive-repaired-validation-reason", default="")
     parser.add_argument("--run-full", action="store_true")
     return parser
 
@@ -298,44 +363,193 @@ def _evidence_ids(prompt: dict[str, Any], gold: dict[str, Any] | None) -> list[s
     return []
 
 
-def _load_prompt_rows(dataset_root: str | Path, prompts_per_vertical: int) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    root = _repo_path(dataset_root)
-    for vertical in VERTICALS:
-        prompt_path = root / vertical / f"{vertical}_prompts_2000.jsonl"
-        gold_path = root / vertical / f"{vertical}_gold_2000.jsonl"
-        prompts = _read_jsonl(prompt_path)
-        gold_by_prompt = {str(row.get("prompt_id") or ""): row for row in _read_jsonl(gold_path)}
-        for prompt in prompts[:prompts_per_vertical]:
-            prompt_id = str(prompt.get("prompt_id") or "")
-            gold = gold_by_prompt.get(prompt_id)
-            rows.append(
-                {
-                    "vertical": vertical,
-                    "prompt_id": prompt_id,
-                    "prompt": _prompt_text(prompt),
-                    "input_context": "",
-                    "expected_evidence_ids": _evidence_ids(prompt, gold),
-                    "expected_status": prompt.get("expected_status")
-                    or (gold or {}).get("expected_status"),
-                    "traffic_profile": TRAFFIC_PROFILE,
-                }
+def _json_object(value: object) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str) or not value.strip():
+        return {}
+    parsed = json.loads(value)
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _json_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if item]
+    if not isinstance(value, str) or not value.strip():
+        return []
+    parsed = json.loads(value)
+    return [str(item) for item in parsed] if isinstance(parsed, list) else []
+
+
+def _question_from_contract_prompt(prompt: str) -> str:
+    marker = "\nUSER QUESTION:\n"
+    if marker not in prompt:
+        return prompt
+    tail = prompt.split(marker, maxsplit=1)[1]
+    return tail.split("\n\n", maxsplit=1)[0].strip()
+
+
+def _replace_memory_mode(prompt: str, memory_mode: str) -> str:
+    lines = prompt.splitlines()
+    for index, line in enumerate(lines[:-1]):
+        if line.strip() == "MEMORY MODE:":
+            lines[index + 1] = memory_mode
+            return "\n".join(lines)
+    return prompt
+
+
+def _insert_before_output_contract(prompt: str, addition: str) -> str:
+    marker = "\n\nOUTPUT CONTRACT:\n"
+    if marker in prompt:
+        return prompt.replace(marker, f"\n\n{addition}{marker}", 1)
+    marker = "\nOUTPUT CONTRACT:\n"
+    if marker in prompt:
+        return prompt.replace(marker, f"\n{addition}{marker}", 1)
+    return f"{prompt.rstrip()}\n\n{addition}"
+
+
+def _finance_repair_block(row: dict[str, Any]) -> str:
+    labels = str(row.get("b5_required_labels") or "E1,E2,E3,E4,E5")
+    return "\n".join(
+        [
+            "B6R5 FINANCE EVIDENCE SELECTION PREPLAN:",
+            "Resolve entity, metric, period, form, and section cues before answering.",
+            f"Eligible evidence labels: {labels}.",
+            "Cite only eligible E labels that directly support each finance claim.",
+            "Do not provide buy, sell, hold, price-target, or investment advice.",
+        ]
+    )
+
+
+def _mm4_contract_block() -> str:
+    return "\n".join(
+        [
+            "MM4 BOUNDED AGENTIC CONTRACT:",
+            "Use the bounded agentic workflow internally: classify, plan retrieval, "
+            "assemble context, generate, validate, repair once, then finalize.",
+            "No internet retrieval, arbitrary tools, hidden reasoning, or extra tool calls.",
+            "The final assistant response must still be exactly one five-field "
+            "generation-contract JSON object.",
+        ]
+    )
+
+
+def _render_prompt_for_memory_mode(base: dict[str, Any], memory_mode: str) -> tuple[str, str]:
+    prompt = str(base["prompt"])
+    question = _question_from_contract_prompt(prompt)
+    source_vertical = str(base.get("vertical") or "")
+    if memory_mode == "mm0_no_context":
+        rendered = render_generation_contract_prompt(
+            question=question,
+            context_records=[],
+            memory_mode=memory_mode,
+            include_citation_checklist=True,
+        )
+        repair_tags = ["contract_no_context"]
+        if source_vertical == "finance":
+            rendered = _insert_before_output_contract(rendered, _finance_repair_block(base))
+            repair_tags.append("b6r5_finance_evidence_selection_preplan")
+        if source_vertical == "research_ai":
+            rendered = apply_research_ai_strategy_prompt(
+                prompt=rendered,
+                strategy_id=STRATEGY_D_ANSWER_SKELETON,
+                required_labels=[],
             )
+            repair_tags.append("b6r6_research_ai_answer_skeleton")
+        return rendered, ";".join(repair_tags)
+
+    rendered = _replace_memory_mode(prompt, memory_mode)
+    repair_tags = ["b6_b7_a100_context_aligned_generation_contract"]
+    if source_vertical == "finance":
+        rendered = _insert_before_output_contract(rendered, _finance_repair_block(base))
+        repair_tags.append("b6r5_finance_evidence_selection_preplan")
+    if source_vertical == "research_ai":
+        labels = [
+            label.strip()
+            for label in str(base.get("b5_required_labels") or "E1,E2,E3,E4,E5").split(",")
+            if label.strip()
+        ]
+        rendered = apply_research_ai_strategy_prompt(
+            prompt=rendered,
+            strategy_id=STRATEGY_D_ANSWER_SKELETON,
+            required_labels=labels,
+        )
+        repair_tags.append("b6r6_research_ai_answer_skeleton")
+    if memory_mode == "mm4_bounded_agentic":
+        rendered = _insert_before_output_contract(rendered, _mm4_contract_block())
+        repair_tags.append("mm4_bounded_agentic_contract")
+    return rendered, ";".join(repair_tags)
+
+
+def build_repaired_base_input(args: argparse.Namespace) -> list[dict[str, Any]]:
+    """Build/load the repaired B6/B7/A100-style 400-row base input."""
+
+    build_b6_context_aligned_runner_input(
+        source_workload_path=_repo_path(args.source_workload),
+        source_of_truth_manifest_path=_repo_path(args.source_of_truth_manifest),
+        dataset_root=_repo_path(args.dataset_root),
+        context_root=_repo_path(args.context_root),
+        output_path=_repo_path(args.repaired_runner_input_path),
+        report_path=_repo_path(args.context_preflight_report),
+        summary_path=_repo_path(args.context_preflight_summary),
+        examples_path=_repo_path(args.context_preflight_examples),
+        prompts_per_vertical=args.prompt_count_per_vertical,
+    )
+    rows: list[dict[str, Any]] = []
+    for item in _read_jsonl(args.repaired_runner_input_path):
+        metadata = dict(item.get("metadata") or {})
+        source_prompt = _json_object(metadata.get("source_prompt_record"))
+        rows.append(
+            {
+                "vertical": metadata.get("vertical"),
+                "prompt_id": item["prompt_id"],
+                "base_prompt": item["prompt"],
+                "prompt": item["prompt"],
+                "source_prompt_text": _prompt_text(source_prompt),
+                "input_context": item["prompt"].split("USER QUESTION:", maxsplit=1)[0],
+                "expected_evidence_ids": _json_list(metadata.get("gold_evidence_ids")),
+                "expected_status": source_prompt.get("expected_status") or "answer",
+                "expected_output_format": GENERATION_CONTRACT_FORMAT,
+                "citation_id_aliases": metadata.get("citation_id_aliases") or "{}",
+                "selected_context_ids": metadata.get("selected_context_ids") or "[]",
+                "context_alignment_status": metadata.get("context_alignment_status"),
+                "canonical_ids_exposed_to_model": metadata.get(
+                    "canonical_ids_exposed_to_model", "false"
+                ),
+                "b5_planning_active": metadata.get("b5_planning_active"),
+                "b5_required_labels": metadata.get("b5_required_labels"),
+                "traffic_profile": TRAFFIC_PROFILE,
+                "workload_id": metadata.get("workload_id"),
+            }
+        )
     return rows
 
 
 def build_matrix_rows(
-    *, dataset_root: str | Path, prompts_per_vertical: int
+    *,
+    dataset_root: str | Path,
+    prompts_per_vertical: int,
+    args: argparse.Namespace | None = None,
 ) -> list[dict[str, Any]]:
     """Build the 10,000-request controlled simulation matrix."""
 
-    prompt_rows = _load_prompt_rows(dataset_root, prompts_per_vertical)
+    if args is None:
+        args = build_parser().parse_args([])
+        args.dataset_root = str(dataset_root)
+        args.prompt_count_per_vertical = prompts_per_vertical
+    prompt_rows = build_repaired_base_input(args)
     rows: list[dict[str, Any]] = []
     for spec in build_config_specs():
         for prompt in prompt_rows:
+            rendered_prompt, repair_tags = _render_prompt_for_memory_mode(prompt, spec.memory_mode)
             rows.append(
                 {
                     **prompt,
+                    "prompt": rendered_prompt,
+                    "prompt_hash": _prompt_hash(rendered_prompt),
+                    "memory_mode_prompt_renderer": "render_generation_contract_prompt",
+                    "contract_repair_tags": repair_tags,
+                    "message_payload_normalized": True,
                     "config_id": spec.config_id,
                     "model_alias": spec.model_alias,
                     "model_id": spec.model_id,
@@ -371,6 +585,201 @@ def summarize_matrix(rows: list[dict[str, Any]], prompts_per_vertical: int) -> d
         "vertical_counts": dict(sorted(vertical_counts.items())),
         "passed": len(rows) == expected_total and len(config_ids) == expected_config_count,
     }
+
+
+def _contains_any_expected_id(prompt: str, expected_ids: list[str]) -> bool:
+    lowered = prompt.lower()
+    return any(expected_id and expected_id.lower() in lowered for expected_id in expected_ids)
+
+
+def contract_preflight_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Validate repaired prompt construction before any inference."""
+
+    total = len(rows)
+    contract_rows = [
+        row
+        for row in rows
+        if "OUTPUT CONTRACT:" in str(row.get("prompt") or "")
+        and all(field in str(row.get("prompt") or "") for field in GENERATION_CONTRACT_FIELDS)
+        and row.get("expected_output_format") == GENERATION_CONTRACT_FORMAT
+    ]
+    contextual_rows = [
+        row
+        for row in rows
+        if row.get("memory_mode")
+        in {"mm1_dense_top5", "mm2_hybrid_top5", "mm3_compressed_hybrid_top5"}
+    ]
+    contextual_with_labels = [
+        row
+        for row in contextual_rows
+        if all(f"E{index}" in str(row.get("prompt") or "") for index in range(1, 6))
+    ]
+    finance_rows = [row for row in rows if row.get("vertical") == "finance"]
+    research_rows = [row for row in rows if row.get("vertical") == "research_ai"]
+    mm0_rows = [row for row in rows if row.get("memory_mode") == "mm0_no_context"]
+    mm4_rows = [row for row in rows if row.get("memory_mode") == "mm4_bounded_agentic"]
+    leakage_rows = [
+        row
+        for row in rows
+        if _contains_any_expected_id(str(row.get("prompt") or ""), row["expected_evidence_ids"])
+        or str(row.get("canonical_ids_exposed_to_model") or "").lower() == "true"
+    ]
+    checks = {
+        "all_rows_have_contract_instructions": len(contract_rows) == total,
+        "contextual_rows_have_visible_e_labels": len(contextual_with_labels)
+        == len(contextual_rows),
+        "mm0_has_contract_json_instruction": all(
+            "OUTPUT CONTRACT:" in str(row.get("prompt") or "") for row in mm0_rows
+        ),
+        "finance_rows_use_b6r5_repair": all(
+            "b6r5_finance_evidence_selection_preplan" in str(row.get("contract_repair_tags") or "")
+            for row in finance_rows
+        ),
+        "research_ai_rows_use_answer_skeleton": all(
+            "b6r6_research_ai_answer_skeleton" in str(row.get("contract_repair_tags") or "")
+            for row in research_rows
+        ),
+        "mm4_rows_use_bounded_agentic_contract": all(
+            "mm4_bounded_agentic_contract" in str(row.get("contract_repair_tags") or "")
+            and "MM4 BOUNDED AGENTIC CONTRACT" in str(row.get("prompt") or "")
+            for row in mm4_rows
+        ),
+        "api_vllm_sglang_payloads_normalized": all(
+            bool(row.get("message_payload_normalized")) for row in rows
+        ),
+        "no_canonical_or_gold_leakage": not leakage_rows,
+    }
+    passed = all(checks.values())
+    return {
+        "run_id": RUN_ID,
+        "status": "CONTRACT_PREFLIGHT_PASSED" if passed else "CONTRACT_PREFLIGHT_BLOCKED",
+        "passed": passed,
+        "row_count": total,
+        "checks": checks,
+        "contract_instruction_rate": len(contract_rows) / total if total else 0.0,
+        "contextual_e_label_rate": (
+            len(contextual_with_labels) / len(contextual_rows) if contextual_rows else 0.0
+        ),
+        "finance_row_count": len(finance_rows),
+        "research_ai_row_count": len(research_rows),
+        "mm0_row_count": len(mm0_rows),
+        "mm4_row_count": len(mm4_rows),
+        "leakage_row_count": len(leakage_rows),
+        "blocked_examples": [
+            {
+                "config_id": row.get("config_id"),
+                "prompt_id": row.get("prompt_id"),
+                "memory_mode": row.get("memory_mode"),
+                "vertical": row.get("vertical"),
+            }
+            for row in leakage_rows[:10]
+        ],
+    }
+
+
+def _evaluation_summary_for_rows(
+    *,
+    args: argparse.Namespace,
+    rows: list[dict[str, Any]],
+    report_path: str,
+    status: str,
+    baseline: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    generated = [result_row_to_generated_answer(row) for row in rows]
+    evaluation_rows = evaluate_generated_answers(generated, load_gold_records(args.dataset_root))
+    summary = build_summary_rows(
+        results_path=report_path,
+        result_rows=rows,
+        evaluation_rows=evaluation_rows,
+    )[0]
+    natural_language_no_json = sum(
+        bool(
+            bool(row.get("success"))
+            and str(row.get("generated_text") or row.get("output_text") or "").strip()
+            and not bool(evaluation.get("json_validity"))
+        )
+        for row, evaluation in zip(rows, evaluation_rows, strict=True)
+    )
+    payload = {
+        "run_id": RUN_ID,
+        "status": status,
+        "row_count": len(rows),
+        "request_success_count": sum(bool(row.get("success")) for row in rows),
+        "request_failure_count": sum(not bool(row.get("success")) for row in rows),
+        "summary": summary,
+        "natural_language_no_json_count": natural_language_no_json,
+        "baseline": baseline or {},
+    }
+    payload["passed_quality_gate"] = (
+        float(summary["json_valid_rate"]) >= 0.95
+        and float(summary["generation_contract_valid_rate"]) >= 0.95
+        and int(summary["safety_violation_count"]) == 0
+        and natural_language_no_json <= len(rows) // 2
+    )
+    return payload
+
+
+def select_repaired_smoke_rows(
+    rows: list[dict[str, Any]], *, limit: int = 25
+) -> list[dict[str, Any]]:
+    """Select one representative row per config while cycling verticals."""
+
+    selected: list[dict[str, Any]] = []
+    vertical_cycle = list(VERTICALS)
+    for index, config in enumerate(build_config_specs()):
+        vertical = vertical_cycle[index % len(vertical_cycle)]
+        match = next(
+            row
+            for row in rows
+            if row["config_id"] == config.config_id and row["vertical"] == vertical
+        )
+        selected.append(match)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def select_repaired_validation_rows(
+    rows: list[dict[str, Any]], *, prompts_per_config: int = 20
+) -> list[dict[str, Any]]:
+    """Select 20 prompts per config for the optional 500-row repaired validation."""
+
+    selected: list[dict[str, Any]] = []
+    for config in build_config_specs():
+        config_rows = [row for row in rows if row["config_id"] == config.config_id]
+        per_vertical = max(1, prompts_per_config // len(VERTICALS))
+        for vertical in VERTICALS:
+            selected.extend(
+                [row for row in config_rows if row["vertical"] == vertical][:per_vertical]
+            )
+    return selected[: prompts_per_config * len(build_config_specs())]
+
+
+def run_repaired_subset(
+    *,
+    args: argparse.Namespace,
+    rows: list[dict[str, Any]],
+    report_path: str,
+    status: str,
+) -> dict[str, Any]:
+    """Run a repaired subset without touching full raw 10k outputs."""
+
+    api_route = _api_route(args)
+    completed = [_execute_one_request(args=args, row=row, api_route=api_route) for row in rows]
+    report = _evaluation_summary_for_rows(
+        args=args,
+        rows=completed,
+        report_path=report_path,
+        status=status,
+        baseline={
+            "json_valid_rate": 0.0,
+            "generation_contract_valid_rate": 0.0,
+            "evidence_match_rate": 0.0397,
+            "grounded_rate": 0.0397,
+        },
+    )
+    _write_json(report_path, report)
+    return report
 
 
 def _module_available(name: str) -> bool:
@@ -619,6 +1028,10 @@ def build_smoke_report(gates: dict[str, Any]) -> dict[str, Any]:
 
 def _request_key(row: dict[str, Any]) -> str:
     return f"{row['config_id']}::{row['prompt_id']}"
+
+
+def _prompt_hash(prompt: object) -> str:
+    return hashlib.sha256(str(prompt or "").encode("utf-8")).hexdigest()
 
 
 def _append_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
@@ -1314,6 +1727,7 @@ def _blocked_rows(configs: list[ConfigSpec], reason: str) -> list[dict[str, Any]
             "reason": reason,
             "requests_attempted": 0,
             "requests_completed": 0,
+            "requests_failed": 0,
         }
         for config in configs
     ]
@@ -1347,6 +1761,8 @@ def write_blocked_reports(
         "configs_completed": 0,
         "configs_failed": len(configs),
         "total_requests_attempted": 0,
+        "total_requests_completed": 0,
+        "total_requests_failed": 0,
         "total_requests_planned": matrix_summary["row_count"],
         "vllm_ran": False,
         "sglang_ran": False,
@@ -1396,6 +1812,7 @@ def write_blocked_reports(
         "self_hosted_gpu_hourly_price_usd": args.hourly_price,
         "api_cost_usd": 0.0,
         "gpu_cost_usd": 0.0,
+        "total_cost_usd": 0.0,
         "cost_notes": [
             "No provider API call was made.",
             "No GPU inference request was made by this runner.",
@@ -1455,22 +1872,152 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
     matrix_rows = build_matrix_rows(
         dataset_root=args.dataset_root,
         prompts_per_vertical=args.prompt_count_per_vertical,
+        args=args,
     )
     _write_jsonl(args.matrix_path, matrix_rows)
     matrix_summary = summarize_matrix(matrix_rows, args.prompt_count_per_vertical)
+    contract_preflight = contract_preflight_report(matrix_rows)
+    _write_json(args.contract_preflight_report, contract_preflight)
     gates = check_runtime_gate(args)
     smoke_report = build_smoke_report(gates)
     if not matrix_summary["passed"]:
         gates["full_simulation_allowed"] = False
         smoke_report["status"] = "SMOKE_BLOCKED"
         smoke_report["reason"] = "Matrix cardinality validation failed."
+    if not contract_preflight["passed"]:
+        gates["full_simulation_allowed"] = False
+        smoke_report["status"] = "SMOKE_BLOCKED"
+        smoke_report["reason"] = "Contract preflight blocked full simulation."
+    repaired_smoke_report: dict[str, Any] | None = None
+    if args.run_repaired_smoke:
+        if not gates["full_simulation_allowed"]:
+            repaired_smoke_report = {
+                "run_id": RUN_ID,
+                "status": "REPAIRED_25_REPLAY_BLOCKED_BY_PREFLIGHT",
+                "passed_quality_gate": False,
+                "reason": smoke_report["reason"],
+            }
+            _write_json(args.repaired_25_replay_report, repaired_smoke_report)
+        else:
+            repaired_smoke_report = run_repaired_subset(
+                args=args,
+                rows=select_repaired_smoke_rows(matrix_rows),
+                report_path=args.repaired_25_replay_report,
+                status="REPAIRED_25_REPLAY_COMPLETE",
+            )
+    repaired_validation_report: dict[str, Any] | None = None
+    if args.run_repaired_validation:
+        if repaired_smoke_report is None and _repo_path(args.repaired_25_replay_report).exists():
+            repaired_smoke_report = json.loads(
+                _repo_path(args.repaired_25_replay_report).read_text(encoding="utf-8")
+            )
+        if not bool((repaired_smoke_report or {}).get("passed_quality_gate")):
+            repaired_validation_report = {
+                "run_id": RUN_ID,
+                "status": "REPAIRED_500_VALIDATION_BLOCKED_BY_25_REPLAY",
+                "passed_quality_gate": False,
+                "reason": "25-row repaired replay did not pass quality gate.",
+            }
+            _write_json(args.repaired_500_validation_report, repaired_validation_report)
+        else:
+            repaired_validation_report = run_repaired_subset(
+                args=args,
+                rows=select_repaired_validation_rows(matrix_rows),
+                report_path=args.repaired_500_validation_report,
+                status="REPAIRED_500_VALIDATION_COMPLETE",
+            )
+    if _repo_path(args.repair_vs_broken_comparison_report).parent.exists():
+        _write_json(
+            args.repair_vs_broken_comparison_report,
+            {
+                "run_id": RUN_ID,
+                "status": "REPAIR_COMPARISON_AVAILABLE",
+                "broken_10k_baseline": {
+                    "json_valid_rate": 0.0,
+                    "generation_contract_valid_rate": 0.0,
+                    "evidence_match_rate": 0.0397,
+                    "grounded_rate": 0.0397,
+                },
+                "repaired_25_replay": repaired_smoke_report
+                or (
+                    json.loads(
+                        _repo_path(args.repaired_25_replay_report).read_text(encoding="utf-8")
+                    )
+                    if _repo_path(args.repaired_25_replay_report).exists()
+                    else {}
+                ),
+                "repaired_500_validation": repaired_validation_report
+                or (
+                    json.loads(
+                        _repo_path(args.repaired_500_validation_report).read_text(encoding="utf-8")
+                    )
+                    if _repo_path(args.repaired_500_validation_report).exists()
+                    else {}
+                ),
+            },
+        )
+    full_repair_allowed = False
+    if args.allow_full_after_repair:
+        if repaired_smoke_report is None and _repo_path(args.repaired_25_replay_report).exists():
+            repaired_smoke_report = json.loads(
+                _repo_path(args.repaired_25_replay_report).read_text(encoding="utf-8")
+            )
+        if (
+            repaired_validation_report is None
+            and _repo_path(args.repaired_500_validation_report).exists()
+        ):
+            repaired_validation_report = json.loads(
+                _repo_path(args.repaired_500_validation_report).read_text(encoding="utf-8")
+            )
+        validation_passed_or_waived = bool(
+            (repaired_validation_report or {}).get("passed_quality_gate")
+        ) or bool(args.waive_repaired_validation_reason.strip())
+        full_repair_allowed = bool(
+            contract_preflight["passed"]
+            and (repaired_smoke_report or {}).get("passed_quality_gate")
+            and validation_passed_or_waived
+        )
+    if args.run_full and not full_repair_allowed:
+        gates["full_simulation_allowed"] = False
+        smoke_report["status"] = "SMOKE_BLOCKED"
+        smoke_report["reason"] = (
+            "Full 10k rerun is blocked until contract preflight, repaired 25-row replay, "
+            "and repaired 500-row validation or explicit waiver pass."
+        )
+    if (args.run_repaired_smoke or args.run_repaired_validation) and not args.run_full:
+        return {
+            "run_id": RUN_ID,
+            "status": "CONTROLLED_FINAL_REPAIR_GATES_COMPLETE",
+            "matrix_summary": matrix_summary,
+            "contract_preflight": contract_preflight,
+            "runtime_gate": smoke_report,
+            "repaired_25_replay": repaired_smoke_report
+            or (
+                json.loads(_repo_path(args.repaired_25_replay_report).read_text(encoding="utf-8"))
+                if _repo_path(args.repaired_25_replay_report).exists()
+                else {}
+            ),
+            "repaired_500_validation": repaired_validation_report
+            or (
+                json.loads(
+                    _repo_path(args.repaired_500_validation_report).read_text(encoding="utf-8")
+                )
+                if _repo_path(args.repaired_500_validation_report).exists()
+                else {}
+            ),
+            "full_10000_rerun_allowed": False,
+            "wall_seconds": time.perf_counter() - started,
+        }
     if args.run_full and gates["full_simulation_allowed"]:
         started_at = utc_now()
         existing_rows = _read_existing_result_rows(args.raw_results_path)
+        matrix_prompt_hashes = {_request_key(row): row.get("prompt_hash") for row in matrix_rows}
         deduped: dict[str, dict[str, Any]] = {}
         for row in existing_rows:
             if row.get("config_id") and row.get("prompt_id"):
-                deduped[_request_key(row)] = row
+                key = _request_key(row)
+                if row.get("prompt_hash") == matrix_prompt_hashes.get(key):
+                    deduped[key] = row
         rows = list(deduped.values())
         completed_keys = set(deduped)
         pending_keys = {_request_key(row) for row in matrix_rows} - completed_keys

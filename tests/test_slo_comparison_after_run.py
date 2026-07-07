@@ -12,6 +12,13 @@ def test_slo_report_records_safety_gate_status_and_verdicts() -> None:
         )
     )
 
+    if report["status"] == "SLO_COMPARISON_NOT_RUN_SAFETY_GATED":
+        assert report["deployability_verdict"] == "NOT_DEPLOYABLE_SIMULATION_BLOCKED"
+        assert report["benchmark_execution_verdict"] == "NOT_READY"
+        assert report["optimization_needed_verdict"] == "NOT_EVALUATED"
+        assert len(report["config_slo_results"]) == 25
+        return
+
     assert report["status"] == "SLO_COMPARISON_COMPLETE"
     assert report["deployability_verdict"] == "NOT_DEPLOYABLE_SLO_FAILURES"
     assert report["benchmark_execution_verdict"] == "COMPLETED"
@@ -28,6 +35,12 @@ def test_slo_summary_has_one_row_per_config_with_no_applied_optimizations() -> N
         rows = list(csv.DictReader(file))
 
     assert len(rows) == 25
+    if {row["status"] for row in rows} == {"NOT_RUN"}:
+        assert all(row["requests_attempted"] == "0" for row in rows)
+        assert all(row["requests_completed"] == "0" for row in rows)
+        assert all(row["recommended_optimization_candidates"] == "" for row in rows)
+        return
+
     assert {row["status"] for row in rows} == {"COMPLETED"}
     assert all(int(row["failed_slos"]) > 0 for row in rows)
     assert "generation_contract_prompt_repair" in {

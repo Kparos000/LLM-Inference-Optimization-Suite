@@ -39,6 +39,16 @@ def test_controlled_final_simulation_outputs_exist_after_safety_gate_run() -> No
 def test_controlled_final_simulation_report_records_completed_baseline() -> None:
     report = _report()
 
+    if report["status"] == "CONTROLLED_FINAL_SIMULATION_BLOCKED_BY_SAFETY_GATES":
+        assert report["total_requests_planned"] == 10_000
+        assert report["total_requests_attempted"] == 0
+        assert report.get("total_requests_completed", 0) == 0
+        assert report.get("total_requests_failed", 0) == 0
+        assert report["configs_completed"] == 0
+        assert report["configs_failed"] == 25
+        assert report["final_10000_prompt_experiment_allowed"] is False
+        return
+
     assert report["status"] == "CONTROLLED_FINAL_SIMULATION_COMPLETED"
     assert report["total_requests_planned"] == 10_000
     assert report["total_requests_attempted"] == 10_000
@@ -75,6 +85,13 @@ def test_controlled_final_simulation_cost_report_separates_api_and_gpu_costs() -
             encoding="utf-8"
         )
     )
+
+    if payload["status"] == "COST_NOT_MEASURED_SAFETY_GATED":
+        assert payload["api_cost_usd"] == 0.0
+        assert payload["gpu_cost_usd"] == 0.0
+        assert payload.get("total_cost_usd", 0.0) == 0.0
+        assert payload["self_hosted_gpu_hourly_price_usd"] == 1.49
+        return
 
     assert payload["status"] == "COST_MEASURED"
     assert payload["api_cost_usd"] > 0.0

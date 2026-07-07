@@ -205,6 +205,17 @@ self-hosted latency and throughput, self-hosted concurrency 16 beat concurrency
 32, API provider rows were faster than the self-hosted aggregate, artifact sync
 and backup verification passed, and measured total cost was `$0.873843`.
 
+The controlled-final generation-contract repair replaced raw promoted prompt
+text with the B6/B7/A100 context-aligned prompt path. The repaired matrix now
+uses `render_generation_contract_prompt`, E1-E5 evidence blocks for contextual
+modes, citation aliases, B6R5 Finance repair, B6R6 Research AI `answer_skeleton`,
+MM4 bounded-agentic contract instructions, and normalized API/self-hosted prompt
+payloads. Contract preflight passed on 10,000/10,000 rows. The repaired 25-row
+replay completed 25/25 requests with 100.0% JSON validity, 84.0% contract
+validity, 56.0% evidence match, 56.0% groundedness, zero safety violations, and
+zero natural-language/no-JSON rows. Because contract validity is still below
+the 95% smoke gate, the 500-row validation and full 10,000 rerun remain blocked.
+
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
 generic SGLang extension wheels with `sglang-kernel==0.4.4+cu130` and
@@ -625,10 +636,10 @@ Result tracks are separated:
 
 ## Next Step
 
-The next independent track is post-baseline optimization: generation-contract
-JSON repair, output parsing repair, evidence alignment, groundedness repair,
-and targeted MM4 bounded-agentic quality repair. A larger final/deployability
-experiment is not allowed until those failed SLOs are repaired.
+The next independent track is repaired-smoke hardening: inspect the remaining
+contract-invalid rows from the 25-row replay, normalize any Research AI or MM4
+schema mismatch to the five-field common generation contract, then rerun the
+25-row repaired gate before any 500-row validation or full 10,000 rerun.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

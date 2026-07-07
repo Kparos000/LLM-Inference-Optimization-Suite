@@ -46,6 +46,16 @@ Replay status: `REPLAY_COMPLETE`. Raw 10k results mutated: `False`.
 5. Route Finance through the selected B6R5 evidence-selection preplan and Research AI through B6R6 `answer_skeleton`.
 6. For MM4, either emit the same evaluator-facing contract row or add an adapter that normalizes agent state to that contract before evaluation.
 
+## Repair Follow-Up
+
+The controlled-final runner now uses the repaired context-aligned
+generation-contract path. Contract preflight passed on the 10,000-row repaired
+matrix, and the repaired 25-row replay eliminated the natural-language/no-JSON
+majority failure: JSON validity reached 100.0%, safety violations were zero,
+and evidence match/groundedness improved to 56.0%. The replay did not pass the
+95% contract gate because contract validity reached 84.0%, so the 500-row
+validation and full 10,000 rerun remain blocked.
+
 ## What Should Not Change
 
 - Do not weaken the evaluator.
