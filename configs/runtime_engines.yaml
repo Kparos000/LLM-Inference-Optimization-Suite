@@ -40,6 +40,7 @@ vllm:
     - self_hosted_gpu
     - remote_rtx3070
     - runpod_gpu
+    - a100_sxm_80gb
   notes: "OpenAI-compatible vLLM serving runtime for self-hosted GPU experiments."
 
 sglang:

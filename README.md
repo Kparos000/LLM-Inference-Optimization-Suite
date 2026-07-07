@@ -61,9 +61,10 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - Phase B6R6 locked the B6R4 Research AI 80% floor, replayed the 20 failed Research AI rows, and selected `answer_skeleton`. Targeted Research AI evidence match and groundedness recovered to 90%. The triggered full frozen 500-row run reached 98.2% JSON validity, 97.8% contract validity, 97.0% evidence match, 96.6% groundedness, zero safety violations, and 1.8% truncation. Finance reached 96% evidence/groundedness and Research AI reached 96%/94%. The readiness audit is now `READY` for benchmark execution and deployability.
 - Phase B7 ran the controlled 1,000-prompt `model2_3b` vLLM baseline at concurrency one with artifact sync, checkpoint/resume, manifest, and GPU telemetry enabled. Preflight passed with all required evidence present in E1-E5, but the live run was `B7_CONTROLLED_1000_BASELINE_BLOCKED`: vLLM failed at Finance prompt 17 with an EngineCore CUDA/CUBLAS fatal error, leaving 663 successful requests and 337 failed request rows.
 - Phase B7R1 repaired the B7 serving-stability blocker on the same frozen 1,000-row input. The stable profile uses vLLM on the remote RTX 3070 with `gpu_memory_utilization=0.82`, `max_model_len=3584`, `max_num_seqs=1`, `max_num_batched_tokens=3584`, eager execution, and custom all-reduce disabled. The rerun completed 1,000/1,000 requests with zero fatal engine errors, 98.5% JSON validity, 98.3% contract validity, 96.1% evidence match, 95.9% groundedness, zero safety violations, 1.2% truncation, and status `B7R1_STABILITY_READY`.
-- Phase 2A-R1/B/C registered observed RunPod console prices for 26 GPU types, ran the guarded live API load probe for priced API routes, and generated the A100 SXM calibration package. `model5_gated` and `model6_gated` passed the 10-prompt concurrency 1/2/4 probe with zero 429/5xx/timeouts; `model7_gated` remains skipped until complete API pricing is registered. No live RunPod calibration has run.
+- Phase 2A-R1/B/C registered observed RunPod console prices for 26 GPU types, ran the guarded live API load probe for priced API routes, and generated the A100 SXM calibration package. `model5_gated` and `model6_gated` passed the 10-prompt concurrency 1/2/4 probe with zero 429/5xx/timeouts; `model7_gated` remains skipped until complete API pricing is registered.
+- The live A100 SXM 200-prompt calibration ran on `NVIDIA A100-SXM4-80GB` with `model2_3b`, vLLM, `mm2_hybrid_top5`, and concurrency one. It completed 200/200 requests with 99.0% JSON validity, 98.5% contract validity, 97.5% evidence match, 97.0% groundedness, zero safety violations, 128 GPU telemetry samples, and local artifact sync verification. The measured run cost estimate is `$0.0572` at `$1.49/hr`; the 1,000-prompt A100 baseline is allowed as a separate explicit run.
 - Result tracks are explicitly separated: API provider runs (`model5`/`model6`/`model7` through OpenRouter, Novita, or HF provider routes) use API token cost and no provider GPU telemetry; self-hosted GPU runs (`model2`/`model3`/`model4` through Hugging Face local, vLLM, SGLang, or RunPod) use GPU telemetry/hourly infrastructure cost when configured and no API token price.
-- The next independent track can be the prepared A100 SXM RunPod calibration after an explicit `RUNPOD_SSH_HOST` target is configured. Concurrency sweep, SGLang comparison, mm4 comparison, RunPod execution, and 2,000/10,000-prompt benchmarks remain follow-on decisions after B7R1/Phase 2A review. Final RunPod cost claims still require price re-verification and measured throughput calibration.
+- The next independent track can be the explicit 1,000-prompt A100 SXM baseline or a follow-on review of A100 projections. Concurrency sweep, SGLang comparison, mm4 comparison, and 2,000/10,000-prompt benchmarks remain separate follow-on decisions. Final RunPod cost claims still require price re-verification before publication.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -192,6 +193,8 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - [Block B7R1 summary](docs/summaries/blockB7R1_vllm_cuda_stability_repair_summary.md)
 - [Phase 2A infrastructure readiness](docs/114_phase2a_infrastructure_readiness.md)
 - [A100 SXM RunPod calibration runbook](docs/115_a100_sxm_runpod_calibration_runbook.md)
+- [A100 SXM 200-prompt calibration](docs/116_a100_sxm_200_prompt_calibration.md)
+- [Block A100 SXM 200-prompt calibration summary](docs/summaries/blockA100SXM_200_prompt_calibration_summary.md)
 - [Block Phase 2A summary](docs/summaries/blockPhase2A_infrastructure_readiness_summary.md)
 - [Block Phase 2A-R1/B/C summary](docs/summaries/blockPhase2A_R1_B_C_infrastructure_api_runpod_prep_summary.md)
 - [Production runtime registry](docs/108_production_runtime_registry.md)
@@ -241,4 +244,3 @@ The default development model is:
 
 ```text
 Qwen/Qwen2.5-0.5B-Instruct
-

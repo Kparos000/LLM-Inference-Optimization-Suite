@@ -504,7 +504,10 @@ def summarize_api_probe_results(
         "provider_throttling_count": sum(
             _int(row.get("provider_throttling_count")) for row in rows
         ),
-        "total_api_cost_usd": sum(_float(row.get("total_cost_usd")) for row in rows),
+        "total_api_cost_usd": round(
+            sum(_float(row.get("total_cost_usd")) for row in rows),
+            12,
+        ),
         "streaming_stability_rate": (
             streaming_stable / request_count if request_count > 0 else 0.0
         ),

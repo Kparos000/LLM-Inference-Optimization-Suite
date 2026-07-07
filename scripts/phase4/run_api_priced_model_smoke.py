@@ -140,23 +140,25 @@ def main(argv: list[str] | None = None) -> int:
     if args.max_new_tokens <= 0 or args.max_new_tokens > 256:
         print("max-new-tokens must be between 1 and 256.", file=sys.stderr)
         return 1
-    input_path = _prepare_input(args)
-    workload_count = len(load_jsonl_workload(input_path))
     hf_token = os.environ.get("HF_TOKEN", "")
     token_check = check_hf_token(hf_token)
     if not token_check.available:
+        input_path = Path(args.input_path) if args.input_path else Path(args.runner_input_path)
         write_readiness_report(
             args.readiness_report,
             token_check=token_check,
             model_attempts=[],
             selected=None,
             workload_path=input_path,
-            workload_count=workload_count,
+            workload_count=0,
             execution_status="STOPPED",
             stop_reason="HF_TOKEN is missing or invalid",
         )
         print("API-priced smoke stopped: HF_TOKEN is missing or invalid.", file=sys.stderr)
         return 1
+
+    input_path = _prepare_input(args)
+    workload_count = len(load_jsonl_workload(input_path))
 
     config = load_project_config()
     selected, attempts = select_api_model(

@@ -178,9 +178,14 @@ claims. The guarded live API load probe ran on priced routes for
 `model5_gated` and `model6_gated` at concurrency 1/2/4 and passed with zero
 429s, 5xxs, timeouts, retries, or throttling. `model7_gated` remains skipped
 because complete API pricing is not registered. A100 SXM, H100 SXM, and L40S
-calibration profiles are price-ready; the A100 SXM 100/200-prompt package is
-prepared locally, but live RunPod calibration remains blocked until a
-`RUNPOD_SSH_HOST` target is explicitly configured.
+calibration profiles are price-ready. The live A100 SXM 200-prompt calibration
+ran on `NVIDIA A100-SXM4-80GB` with `model2_3b`, vLLM, `mm2_hybrid_top5`,
+concurrency one, artifact sync, checkpoint/resume, manifest, and GPU telemetry.
+It completed 200/200 requests with zero request failures, 99.0% JSON validity,
+98.5% contract validity, 97.5% evidence match, 97.0% groundedness, zero safety
+violations, 128 GPU telemetry samples, and local artifact sync verification.
+The measured run cost estimate is `$0.0572` at `$1.49/hr`; the 1,000-prompt
+A100 baseline is allowed as a separate explicit run.
 
 ## B1 Quality Gate
 
