@@ -68,6 +68,7 @@ def test_production_run_manifest_writes_required_long_run_fields(tmp_path: Path)
     assert payload["traffic_profile"] == "offline_throughput"
     assert payload["expected_count"] == 20
     assert payload["artifact_paths"] == {"raw_jsonl": "results/raw/run-1.jsonl"}
+    assert payload["run_type"] == "baseline"
     assert payload["baseline_or_optimized"] == "baseline"
     assert payload["optimization_flags"] == []
     assert payload["dataset_version"] == "unknown"
@@ -95,6 +96,7 @@ def test_run_manifest_records_optimization_metadata(tmp_path: Path) -> None:
         start_time=now,
         end_time=None,
         error_count=0,
+        run_type="optimized",
         baseline_or_optimized="optimized",
         optimization_flags=("prefix_cache", "compressed_context"),
         dataset_version="controlled_2000",
@@ -103,6 +105,7 @@ def test_run_manifest_records_optimization_metadata(tmp_path: Path) -> None:
     path = write_run_manifest(manifest, tmp_path / "manifest.json")
     payload = read_run_manifest(path)
 
+    assert payload["run_type"] == "optimized"
     assert payload["baseline_or_optimized"] == "optimized"
     assert payload["optimization_flags"] == ["prefix_cache", "compressed_context"]
     assert payload["dataset_version"] == "controlled_2000"
@@ -132,6 +135,32 @@ def test_completed_manifest_cannot_hide_partial_run() -> None:
             completed_count=10,
             failed_count=0,
             expected_count=20,
+        )
+
+
+def test_run_manifest_run_type_must_match_legacy_plotting_field() -> None:
+    now = utc_now()
+    with pytest.raises(ValueError, match="run_type and baseline_or_optimized must match"):
+        RunManifest(
+            run_id="run-1",
+            timestamp_utc=now,
+            backend="dry",
+            model_alias="model2_3b",
+            model_id="Qwen/Qwen2.5-3B-Instruct",
+            memory_mode="mm2_hybrid_top5",
+            split="smoke",
+            ablation_mode="prompt_plus_metadata",
+            input_workload_path="input.jsonl",
+            output_path="output.jsonl",
+            max_records=20,
+            git_commit="abc",
+            command="cmd",
+            status="initialized",
+            start_time=now,
+            end_time=None,
+            error_count=0,
+            run_type="optimized",
+            baseline_or_optimized="baseline",
         )
 
 

@@ -133,6 +133,7 @@ class RunManifest:
     failed_count: int | None = None
     expected_count: int | None = None
     artifact_paths: dict[str, str] | None = None
+    run_type: str = "baseline"
     baseline_or_optimized: str = "baseline"
     optimization_flags: tuple[str, ...] = ()
     dataset_version: str = "unknown"
@@ -194,6 +195,7 @@ class RunManifest:
             "started_at",
             "updated_at",
             "completed_at",
+            "run_type",
             "baseline_or_optimized",
             "dataset_version",
         ):
@@ -201,8 +203,14 @@ class RunManifest:
                 getattr(self, field_name),
                 field_name,
             )
+        if self.run_type not in {"baseline", "optimized"}:
+            msg = "run_type must be baseline or optimized"
+            raise ValueError(msg)
         if self.baseline_or_optimized not in {"baseline", "optimized"}:
             msg = "baseline_or_optimized must be baseline or optimized"
+            raise ValueError(msg)
+        if self.run_type != self.baseline_or_optimized:
+            msg = "run_type and baseline_or_optimized must match"
             raise ValueError(msg)
         if not isinstance(self.optimization_flags, tuple):
             msg = "optimization_flags must be a tuple"

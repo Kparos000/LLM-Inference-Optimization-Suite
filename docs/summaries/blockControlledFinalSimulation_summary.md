@@ -3,7 +3,7 @@
 ## What Ran
 
 - Added `scripts/phase4/run_controlled_final_simulation.py`.
-- Built the 30-config, 15,000-request controlled final-simulation matrix.
+- Built the final 25-config, 10,000-request controlled final-simulation matrix.
 - Ran safety-gate checks before any full-model/provider execution.
 - Wrote blocked-run evaluation, comparison, SLO, cost, manifest, and artifact-sync reports.
 
@@ -17,23 +17,23 @@ before any model/provider request:
 - SGLang `model3_7b`: smoke-ready after repairing the CUDA 13 SGLang extension
   stack; `http://localhost:30000/v1/models` listed
   `Qwen/Qwen2.5-7B-Instruct`.
-- API `model6_gated`: blocked because `HF_TOKEN` and provider API credentials
-  were absent.
+- API `model6_gated`: blocked because canonical credentials and supported
+  aliases were not visible to the runner.
 - MM4: bounded LangGraph runner is importable, but no MM4 matrix run was
   attempted because the required track smokes were blocked.
 
 ## Request Counts
 
-- Planned requests: 15,000.
+- Planned requests: 10,000.
 - Attempted requests: 0.
 - Completed configs: 0.
-- Not-run configs: 30.
+- Not-run configs: 25.
 
 ## Decision
 
-The final 10,000-prompt experiment is not allowed yet. The next step is to make
+The final 10,000-request experiment is not allowed yet. The next step is to make
 the API smoke gate pass without fallback or skipped configs; vLLM, SGLang, and
-MM4 are smoke-ready.
+MM4 have been smoke-ready when their local servers are running.
 
 Exact SGLang startup command:
 

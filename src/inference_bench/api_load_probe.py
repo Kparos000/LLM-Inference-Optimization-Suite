@@ -22,6 +22,25 @@ from inference_bench.runners.mock_runner import count_whitespace_tokens
 
 SUPPORTED_API_PROBE_MODELS = ("model5_gated", "model6_gated", "model7_gated")
 SUPPORTED_API_PROBE_CONCURRENCIES = (1, 2, 4, 8, 16)
+ENV_ALIASES = {
+    "HF_TOKEN": (
+        "HF_TOKEN",
+        "HUGGINGFACE_HUB_TOKEN",
+        "HUGGINGFACE_TOKEN",
+        "HF_API_TOKEN",
+        "HF_API_KEY",
+    ),
+    "OPENROUTER_API_KEY": (
+        "OPENROUTER_API_KEY",
+        "OPENROUTER_KEY",
+        "OPENROUTER_TOKEN",
+    ),
+    "NOVITA_API_KEY": (
+        "NOVITA_API_KEY",
+        "NOVITA_KEY",
+        "NOVITA_TOKEN",
+    ),
+}
 API_PROBE_VERDICTS = (
     "API_PROBE_PASSED",
     "API_PROBE_WARNING",
@@ -73,27 +92,44 @@ def _mean(values: list[float]) -> float | None:
     return statistics.fmean(values) if values else None
 
 
+def _canonicalize_environment_aliases(environment: dict[str, str]) -> dict[str, str]:
+    """Populate canonical credential names from supported aliases."""
+
+    loaded = dict(environment)
+    for canonical, aliases in ENV_ALIASES.items():
+        if loaded.get(canonical):
+            continue
+        for alias in aliases:
+            value = loaded.get(alias)
+            if value:
+                loaded[canonical] = value
+                break
+    return loaded
+
+
 def load_probe_environment(
     *,
     env_path: str | Path = ".env",
     base_environment: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
-    """Load environment variables plus simple KEY=VALUE entries from .env."""
+    """Load environment variables, .env entries, and supported credential aliases."""
 
     loaded = dict(base_environment or os.environ)
     path = Path(env_path)
     if not path.exists():
-        return loaded
+        return _canonicalize_environment_aliases(loaded)
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
+        if line.startswith("export "):
+            line = line.removeprefix("export ").strip()
         key, value = line.split("=", 1)
         key = key.strip()
         cleaned = value.strip().strip('"').strip("'")
         if key and cleaned and key not in loaded:
             loaded[key] = cleaned
-    return loaded
+    return _canonicalize_environment_aliases(loaded)
 
 
 @dataclass(frozen=True)

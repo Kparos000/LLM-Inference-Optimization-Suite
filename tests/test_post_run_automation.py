@@ -49,7 +49,8 @@ def test_post_run_automation_builds_slo_and_plotting_rows(tmp_path: Path) -> Non
     )
     eval_summary = tmp_path / "eval.csv"
     eval_summary.write_text(
-        "json_valid_rate,grounded_rate,evidence_match_rate\n1.0,0.95,0.96\n",
+        "json_valid_rate,generation_contract_valid_rate,grounded_rate,evidence_match_rate\n"
+        "1.0,0.99,0.95,0.96\n",
         encoding="utf-8",
     )
     latency_summary = tmp_path / "latency.csv"
@@ -76,7 +77,13 @@ def test_post_run_automation_builds_slo_and_plotting_rows(tmp_path: Path) -> Non
     assert report["manifest"]["dataset_version"] == "controlled_2000"
     assert report["slo_status_counts"]["PASS"] >= 6
     assert "baseline_vs_optimized" in report["plotting_datasets"]
-    assert {row["metric_name"] for row in rows} >= {"ttft_ms", "groundedness", "cost"}
+    assert {row["metric_name"] for row in rows} >= {
+        "ttft_ms",
+        "groundedness",
+        "cost",
+        "temperature",
+        "contract_validity",
+    }
 
 
 def test_post_run_automation_writes_artifacts(tmp_path: Path) -> None:

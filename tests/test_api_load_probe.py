@@ -102,6 +102,28 @@ def test_probe_environment_loads_dotenv_without_overwriting_process_values(tmp_p
     assert loaded["EXISTING"] == "from-env"
 
 
+def test_probe_environment_canonicalizes_supported_credential_aliases(
+    tmp_path: Path,
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "export HUGGINGFACE_HUB_TOKEN=file-hf",
+                "OPENROUTER_KEY=file-openrouter",
+                "NOVITA_TOKEN=file-novita",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_probe_environment(env_path=env_file, base_environment={})
+
+    assert loaded["HF_TOKEN"] == "file-hf"
+    assert loaded["OPENROUTER_API_KEY"] == "file-openrouter"
+    assert loaded["NOVITA_API_KEY"] == "file-novita"
+
+
 def test_live_probe_skips_without_required_provider_keys(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -14,7 +14,7 @@ def _report() -> dict[str, object]:
 
 def test_controlled_final_simulation_outputs_exist_after_safety_gate_run() -> None:
     expected = [
-        "data/generated/phase4/controlled_final_simulation_100_per_vertical_matrix.jsonl",
+        "data/generated/phase4/controlled_final_simulation_80_per_vertical_matrix.jsonl",
         "results/raw/controlled_final_simulation_results.jsonl",
         "results/raw/controlled_final_simulation_manifest.json",
         "results/raw/controlled_final_simulation_gpu_telemetry.jsonl",
@@ -24,6 +24,8 @@ def test_controlled_final_simulation_outputs_exist_after_safety_gate_run() -> No
         "results/processed/controlled_final_simulation_memory_mode_comparison.csv",
         "results/processed/controlled_final_simulation_concurrency_comparison.csv",
         "results/processed/controlled_final_simulation_api_track_comparison.csv",
+        "results/processed/controlled_final_simulation_api_vs_self_hosted_comparison.csv",
+        "results/processed/controlled_final_simulation_model_comparison.csv",
         "results/processed/controlled_final_simulation_slo_report.json",
         "results/processed/controlled_final_simulation_slo_summary.csv",
         "results/processed/controlled_final_simulation_cost_report.json",
@@ -38,10 +40,10 @@ def test_controlled_final_simulation_report_records_blocked_smoke_without_fake_r
     report = _report()
 
     assert report["status"] == "CONTROLLED_FINAL_SIMULATION_BLOCKED_BY_SAFETY_GATES"
-    assert report["total_requests_planned"] == 15_000
+    assert report["total_requests_planned"] == 10_000
     assert report["total_requests_attempted"] == 0
     assert report["configs_completed"] == 0
-    assert report["configs_failed"] == 30
+    assert report["configs_failed"] == 25
     assert report["vllm_ran"] is False
     assert report["sglang_ran"] is False
     assert report["api_route_ran"] is False

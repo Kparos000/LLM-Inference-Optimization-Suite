@@ -20,7 +20,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from inference_bench.api_load_probe import load_probe_environment  # noqa: E402
+from inference_bench.api_load_probe import ENV_ALIASES, load_probe_environment  # noqa: E402
 from inference_bench.artifact_sync import (  # noqa: E402
     ArtifactSyncConfig,
     build_artifact_specs,
@@ -60,10 +60,10 @@ MEMORY_MODES = (
 )
 SELF_HOSTED_ENGINES = ("vllm", "sglang")
 SELF_HOSTED_CONCURRENCY = (16, 32)
-API_CONCURRENCY = (4, 8)
-DEFAULT_PROMPTS_PER_VERTICAL = 100
+API_CONCURRENCY = (4,)
+DEFAULT_PROMPTS_PER_VERTICAL = 80
 DEFAULT_MATRIX_PATH = (
-    "data/generated/phase4/controlled_final_simulation_100_per_vertical_matrix.jsonl"
+    "data/generated/phase4/controlled_final_simulation_80_per_vertical_matrix.jsonl"
 )
 DEFAULT_RAW_RESULTS = "results/raw/controlled_final_simulation_results.jsonl"
 DEFAULT_MANIFEST = "results/raw/controlled_final_simulation_manifest.json"
@@ -78,6 +78,10 @@ DEFAULT_CONCURRENCY_COMPARISON = (
     "results/processed/controlled_final_simulation_concurrency_comparison.csv"
 )
 DEFAULT_API_COMPARISON = "results/processed/controlled_final_simulation_api_track_comparison.csv"
+DEFAULT_API_VS_SELF_HOSTED_COMPARISON = (
+    "results/processed/controlled_final_simulation_api_vs_self_hosted_comparison.csv"
+)
+DEFAULT_MODEL_COMPARISON = "results/processed/controlled_final_simulation_model_comparison.csv"
 DEFAULT_SLO_REPORT = "results/processed/controlled_final_simulation_slo_report.json"
 DEFAULT_SLO_SUMMARY = "results/processed/controlled_final_simulation_slo_summary.csv"
 DEFAULT_COST_REPORT = "results/processed/controlled_final_simulation_cost_report.json"
@@ -169,6 +173,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--memory-comparison-path", default=DEFAULT_MEMORY_COMPARISON)
     parser.add_argument("--concurrency-comparison-path", default=DEFAULT_CONCURRENCY_COMPARISON)
     parser.add_argument("--api-comparison-path", default=DEFAULT_API_COMPARISON)
+    parser.add_argument(
+        "--api-vs-self-hosted-comparison-path",
+        default=DEFAULT_API_VS_SELF_HOSTED_COMPARISON,
+    )
+    parser.add_argument("--model-comparison-path", default=DEFAULT_MODEL_COMPARISON)
     parser.add_argument("--slo-report-path", default=DEFAULT_SLO_REPORT)
     parser.add_argument("--slo-summary-path", default=DEFAULT_SLO_SUMMARY)
     parser.add_argument("--cost-report-path", default=DEFAULT_COST_REPORT)
@@ -182,7 +191,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sglang-base-url", default=DEFAULT_SGLANG_BASE_URL)
     parser.add_argument("--api-key", default="EMPTY")
     parser.add_argument("--env-file", default=".env")
-    parser.add_argument("--prompt-count-per-vertical", type=int, default=100)
+    parser.add_argument(
+        "--prompt-count-per-vertical",
+        type=int,
+        default=DEFAULT_PROMPTS_PER_VERTICAL,
+    )
     parser.add_argument("--traffic-profile", default=TRAFFIC_PROFILE)
     parser.add_argument("--gpu-id", default=GPU_ID)
     parser.add_argument("--hourly-price", type=float, default=1.49)
@@ -192,7 +205,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def build_config_specs() -> list[ConfigSpec]:
-    """Return the frozen self-hosted and API config matrix."""
+    """Return the frozen 10,000-request self-hosted and API config matrix."""
 
     specs: list[ConfigSpec] = []
     for engine in SELF_HOSTED_ENGINES:
@@ -283,7 +296,7 @@ def _load_prompt_rows(dataset_root: str | Path, prompts_per_vertical: int) -> li
 def build_matrix_rows(
     *, dataset_root: str | Path, prompts_per_vertical: int
 ) -> list[dict[str, Any]]:
-    """Build the 15,000-request controlled simulation matrix."""
+    """Build the 10,000-request controlled simulation matrix."""
 
     prompt_rows = _load_prompt_rows(dataset_root, prompts_per_vertical)
     rows: list[dict[str, Any]] = []
@@ -310,7 +323,7 @@ def summarize_matrix(rows: list[dict[str, Any]], prompts_per_vertical: int) -> d
 
     config_ids = {str(row["config_id"]) for row in rows}
     vertical_counts = Counter(str(row["vertical"]) for row in rows)
-    expected_config_count = 30
+    expected_config_count = 25
     expected_prompt_rows = prompts_per_vertical * len(VERTICALS)
     expected_total = expected_config_count * expected_prompt_rows
     return {
@@ -352,6 +365,13 @@ def _server_models(base_url: str, api_key: str, timeout_seconds: float = 5.0) ->
 
 def _models_url(base_url: str) -> str:
     return f"{base_url.rstrip('/')}/models"
+
+
+def _credential_presence(environment: dict[str, str]) -> dict[str, dict[str, bool]]:
+    return {
+        canonical: {alias: bool(environment.get(alias)) for alias in aliases}
+        for canonical, aliases in ENV_ALIASES.items()
+    }
 
 
 def check_runtime_gate(args: argparse.Namespace) -> dict[str, Any]:
@@ -487,6 +507,12 @@ def check_runtime_gate(args: argparse.Namespace) -> dict[str, Any]:
             "requires_license_acceptance": model6.requires_license_acceptance,
             "hf_token_present": bool(hf_token),
             "provider_keys_present": provider_keys,
+            "credential_alias_presence": _credential_presence(environment),
+            "credential_sources_checked": [
+                "process_environment",
+                str((ROOT / args.env_file).resolve()),
+                "supported_aliases",
+            ],
             "status": "SMOKE_READY" if api_ready else "BLOCKED",
             "reason": (
                 "HF token and provider key present"
@@ -572,6 +598,8 @@ def _artifact_specs(args: argparse.Namespace) -> list[Any]:
             args.memory_comparison_path,
             args.concurrency_comparison_path,
             args.api_comparison_path,
+            args.api_vs_self_hosted_comparison_path,
+            args.model_comparison_path,
             args.slo_report_path,
             args.slo_summary_path,
             args.cost_report_path,
@@ -593,7 +621,7 @@ def _write_manifest(
         model_alias="model3_7b+model6_gated",
         model_id=f"{SELF_HOSTED_MODEL_ID}+{API_MODEL_ID}",
         memory_mode="mm0-mm4",
-        split="controlled_final_simulation_100_per_vertical",
+        split="controlled_final_simulation_80_per_vertical",
         ablation_mode="prompt_plus_metadata",
         input_workload_path=args.matrix_path,
         output_path=args.raw_results_path,
@@ -631,10 +659,16 @@ def _write_manifest(
             "manifest": args.manifest_path,
             "gpu_telemetry": args.gpu_telemetry_path,
             "eval_report": args.eval_report_path,
+            "engine_comparison": args.engine_comparison_path,
+            "memory_comparison": args.memory_comparison_path,
+            "concurrency_comparison": args.concurrency_comparison_path,
+            "api_vs_self_hosted_comparison": args.api_vs_self_hosted_comparison_path,
+            "model_comparison": args.model_comparison_path,
             "slo_report": args.slo_report_path,
             "post_run_automation_report": args.post_run_automation_report_path,
             "plotting_dataset": args.plotting_dataset_path,
         },
+        run_type="baseline",
         baseline_or_optimized="baseline",
         optimization_flags=(),
         dataset_version="controlled_2000",
@@ -696,13 +730,18 @@ def write_blocked_reports(
     }
     _write_json(args.eval_report_path, eval_report)
     _write_csv(args.eval_summary_path, blocked_rows)
-    _write_csv(args.engine_comparison_path, blocked_rows)
+    _write_csv(
+        args.engine_comparison_path,
+        [row for row in blocked_rows if row["model_alias"] == SELF_HOSTED_MODEL_ALIAS],
+    )
     _write_csv(args.memory_comparison_path, blocked_rows)
     _write_csv(args.concurrency_comparison_path, blocked_rows)
     _write_csv(
         args.api_comparison_path,
         [row for row in blocked_rows if row["model_alias"] == API_MODEL_ALIAS],
     )
+    _write_csv(args.api_vs_self_hosted_comparison_path, blocked_rows)
+    _write_csv(args.model_comparison_path, blocked_rows)
     slo_rows = [
         {
             **row,
@@ -750,6 +789,8 @@ def write_blocked_reports(
                 args.memory_comparison_path,
                 args.concurrency_comparison_path,
                 args.api_comparison_path,
+                args.api_vs_self_hosted_comparison_path,
+                args.model_comparison_path,
                 args.slo_summary_path,
             ),
         )
@@ -779,7 +820,7 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
     """Build matrix, run safety gates, and write reports."""
 
     if args.prompt_count_per_vertical != DEFAULT_PROMPTS_PER_VERTICAL:
-        msg = "controlled final simulation is locked to 100 prompts per vertical"
+        msg = "controlled final simulation is locked to 80 prompts per vertical"
         raise ValueError(msg)
     if args.gpu_id != GPU_ID:
         msg = "controlled final simulation is locked to A100 SXM 80GB"
@@ -799,7 +840,7 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
         smoke_report["reason"] = "Matrix cardinality validation failed."
     if args.run_full and gates["full_simulation_allowed"]:
         msg = (
-            "Full 15,000-request execution is intentionally not implemented in this "
+            "Full 10,000-request execution is intentionally not implemented in this "
             "safety-gate runner until all smoke tracks are available."
         )
         raise RuntimeError(msg)

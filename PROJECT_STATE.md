@@ -187,18 +187,19 @@ violations, 128 GPU telemetry samples, and local artifact sync verification.
 The measured run cost estimate is `$0.0572` at `$1.49/hr`; the 1,000-prompt
 A100 baseline is allowed as a separate explicit run.
 
-The controlled final-experiment simulation preflight built the full 30-config,
-15,000-request matrix but blocked before model/provider execution because the
-API smoke gate is not ready: vLLM `model3_7b`, SGLang `model3_7b`, and MM4 are
-smoke-ready, but `model6_gated` API credentials were absent. No fallback engine
-or memory mode was used. The exact SGLang startup command is:
+The controlled final-experiment simulation preflight now builds the final
+25-config, 10,000-request matrix: 8,000 self-hosted A100 requests across
+vLLM/SGLang, five memory modes, and concurrency 16/32, plus 2,000 API-provider
+requests for `model6_gated` across five memory modes at concurrency 4. It blocks
+before model/provider execution unless the vLLM, SGLang, API, and MM4 smoke gates
+are all ready. The exact SGLang startup command is:
 
 ```bash
 python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct --served-model-name Qwen/Qwen2.5-7B-Instruct --host 0.0.0.0 --port 30000 --mem-fraction-static 0.90 --context-length 4096 --max-running-requests 32 --chunked-prefill-size 8192
 ```
 
-The final 10,000-prompt experiment is not allowed until the vLLM, SGLang, API,
-and MM4 smokes pass.
+The final 10,000-request experiment is not allowed until the vLLM, SGLang, API,
+and MM4 smokes pass in the current runner context.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -208,9 +209,10 @@ generic SGLang extension wheels with `sglang-kernel==0.4.4+cu130` and
 SGLang also passed co-resident `/v1/models` smoke checks on the A100. The MM4
 live smoke completed 50/50 rows with traces, metrics, manifest, latency, agent
 summary, and comparison artifacts. The controlled runner now loads API
-credentials through `.env` plus process environment, but the live shell still
-lacks `HF_TOKEN` and provider API credentials, so the API gate remains the exact
-blocking reason.
+credentials through `.env` plus process environment and canonicalizes supported
+aliases such as `HUGGINGFACE_HUB_TOKEN`, `OPENROUTER_KEY`, and `NOVITA_TOKEN`.
+The live process namespace still lacks canonical API credentials and supported
+aliases, so the API gate remains the exact blocking reason.
 
 ## B1 Quality Gate
 

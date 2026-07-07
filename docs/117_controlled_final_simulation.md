@@ -6,9 +6,10 @@ This block ran the controlled final-experiment simulation safety gate on the
 RunPod A100 SXM pod. It did not apply optimizations and did not weaken SLOs,
 evaluators, or gold data.
 
-The requested matrix was frozen as:
+The requested matrix is now frozen as the final 10,000-request controlled
+simulation:
 
-- Dataset: five verticals, 100 prompts per vertical.
+- Dataset: five verticals, 80 prompts per vertical per configuration.
 - Self-hosted GPU track: `model3_7b` / `Qwen/Qwen2.5-7B-Instruct` on A100 SXM.
 - Self-hosted engines: vLLM and SGLang.
 - Self-hosted memory modes: `mm0_no_context`, `mm1_dense_top5`,
@@ -17,21 +18,21 @@ The requested matrix was frozen as:
 - API track: `model6_gated` / Llama 3.1 8B API route.
 - API memory modes: `mm0_no_context`, `mm1_dense_top5`, `mm2_hybrid_top5`,
   `mm3_compressed_hybrid_top5`, `mm4_bounded_agentic`.
-- API concurrency: 4 and 8.
+- API concurrency: 4.
 
 Matrix cardinality:
 
 | Track | Configs | Requests/config | Planned requests |
 | --- | ---: | ---: | ---: |
-| Self-hosted GPU | 20 | 500 | 10,000 |
-| API provider | 10 | 500 | 5,000 |
-| Total | 30 | 500 | 15,000 |
+| Self-hosted GPU | 20 | 400 | 8,000 |
+| API provider | 5 | 400 | 2,000 |
+| Total | 25 | 400 | 10,000 |
 
 ## Safety Gate Result
 
 The matrix preflight passed and wrote
-`data/generated/phase4/controlled_final_simulation_100_per_vertical_matrix.jsonl`
-with 15,000 planned request rows. The full simulation did not run because the
+`data/generated/phase4/controlled_final_simulation_80_per_vertical_matrix.jsonl`
+with 10,000 planned request rows. The full simulation did not run because the
 required smoke gates did not pass.
 
 Smoke status:
@@ -40,14 +41,14 @@ Smoke status:
 | --- | --- | --- |
 | vLLM `model3_7b` | smoke-ready | `/v1/models` at `http://localhost:8000/v1` listed `Qwen/Qwen2.5-7B-Instruct`. |
 | SGLang `model3_7b` | smoke-ready | Runtime registry allows SGLang for `model3_7b` on `a100_sxm_80gb`, the CUDA 13 SGLang extension stack is repaired, and `/v1/models` at `http://localhost:30000/v1` listed `Qwen/Qwen2.5-7B-Instruct`. |
-| API `model6_gated` | blocked | `HF_TOKEN` and a provider API key were not present. |
+| API `model6_gated` | blocked | `HF_TOKEN` or supported aliases and a provider API key or supported aliases were not visible to the runner. |
 | MM4 | smoke-ready only | The bounded LangGraph mm4 runner is importable, but no full-matrix mm4 request ran because the required track smokes were blocked. |
 
 Requests attempted: 0.
 
 Configs completed: 0.
 
-Configs failed/not run: 30.
+Configs failed/not run: 25.
 
 ## Reports
 
@@ -62,6 +63,8 @@ The safety-gated run wrote the requested report files:
 - `results/processed/controlled_final_simulation_memory_mode_comparison.csv`
 - `results/processed/controlled_final_simulation_concurrency_comparison.csv`
 - `results/processed/controlled_final_simulation_api_track_comparison.csv`
+- `results/processed/controlled_final_simulation_api_vs_self_hosted_comparison.csv`
+- `results/processed/controlled_final_simulation_model_comparison.csv`
 - `results/processed/controlled_final_simulation_slo_report.json`
 - `results/processed/controlled_final_simulation_slo_summary.csv`
 - `results/processed/controlled_final_simulation_cost_report.json`
@@ -94,6 +97,9 @@ data.
 ## Decision
 
 The final 10,000-prompt experiment is not allowed yet.
+
+The runner now canonicalizes supported credential aliases such as
+`HUGGINGFACE_HUB_TOKEN`, `HF_API_TOKEN`, `OPENROUTER_KEY`, and `NOVITA_TOKEN`.
 
 Before it can run:
 

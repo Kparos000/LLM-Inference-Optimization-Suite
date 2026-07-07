@@ -4237,18 +4237,19 @@ isolated model demos.
 ## Controlled Final-Simulation Addendum
 
 The controlled final-experiment simulation preflight now exists as a safety-gated
-runner and report set. It builds the full 30-config, 15,000-request matrix for
-`model3_7b` self-hosted A100 vLLM/SGLang tracks and the `model6_gated` API track
-across mm0-mm4 memory modes and the requested concurrency levels.
+runner and report set. It builds the final 25-config, 10,000-request matrix:
+8,000 self-hosted A100 requests for `model3_7b` across vLLM/SGLang, mm0-mm4, and
+concurrency 16/32, plus 2,000 API-provider requests for `model6_gated` across
+mm0-mm4 at concurrency 4.
 
 The live RunPod A100 pod did not proceed to the full request matrix because all
-required smoke gates were not ready: vLLM `model3_7b` is smoke-ready, SGLang is
-now registered as compatible with `model3_7b` on `a100_sxm_80gb`, the CUDA 13
-SGLang extension stack is repaired, and SGLang lists the model at
-`http://localhost:30000/v1/models`; the gated API track still lacks required
-credentials. MM4 is importable as a bounded LangGraph runner and its live
-50-row smoke completed, but no MM4 matrix run was attempted. No fallback from
-SGLang to vLLM or from mm4 to mm2 was used.
+required smoke gates were not ready. vLLM and SGLang have both passed local
+`/v1/models` smoke checks for `model3_7b` when their servers are running, SGLang
+is registered as compatible with `model3_7b` on `a100_sxm_80gb`, and the CUDA 13
+SGLang extension stack is repaired. The gated API track still lacks visible
+canonical credentials or supported aliases. MM4 is importable as a bounded
+LangGraph runner and its live 50-row smoke completed, but no MM4 matrix run was
+attempted. No fallback from SGLang to vLLM or from mm4 to mm2 was used.
 
 The exact A100 SGLang command for the controlled simulation is
 `python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct
@@ -4257,5 +4258,5 @@ The exact A100 SGLang command for the controlled simulation is
 --chunked-prefill-size 8192`; the health check is
 `GET http://localhost:30000/v1/models`.
 
-The final 10,000-prompt experiment remains blocked until vLLM, SGLang, API, and
+The final 10,000-request experiment remains blocked until vLLM, SGLang, API, and
 MM4 smoke gates pass in the controlled matrix context.

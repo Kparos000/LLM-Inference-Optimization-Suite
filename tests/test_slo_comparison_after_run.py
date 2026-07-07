@@ -16,7 +16,7 @@ def test_slo_report_records_safety_gate_status_and_verdicts() -> None:
     assert report["deployability_verdict"] == "NOT_DEPLOYABLE_SIMULATION_BLOCKED"
     assert report["benchmark_execution_verdict"] == "NOT_READY"
     assert report["optimization_needed_verdict"] == "NOT_EVALUATED"
-    assert len(report["config_slo_results"]) == 30
+    assert len(report["config_slo_results"]) == 25
 
 
 def test_slo_summary_has_one_row_per_config_with_no_applied_optimizations() -> None:
@@ -27,7 +27,7 @@ def test_slo_summary_has_one_row_per_config_with_no_applied_optimizations() -> N
     ) as file:
         rows = list(csv.DictReader(file))
 
-    assert len(rows) == 30
+    assert len(rows) == 25
     assert {row["status"] for row in rows} == {"NOT_RUN"}
     assert {row["bottleneck_category"] for row in rows} == {"safety_gate"}
     assert {row["recommended_optimization_candidates"] for row in rows} == {""}

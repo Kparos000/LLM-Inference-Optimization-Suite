@@ -44,10 +44,14 @@ also verified co-resident with lower smoke-only memory reservations. Both
 ## API Track
 
 The controlled runner now loads credentials through the same `.env` plus process
-environment path used by the API load-probe tooling. In the live shell used for
-this pass, `HF_TOKEN`, `OPENROUTER_API_KEY`, and `NOVITA_API_KEY` were absent
-from both process environment and `.env`, so the API gate correctly remains
-blocked.
+environment path used by the API load-probe tooling, then canonicalizes supported
+aliases. Supported aliases include `HUGGINGFACE_HUB_TOKEN`, `HUGGINGFACE_TOKEN`,
+`HF_API_TOKEN`, `HF_API_KEY`, `OPENROUTER_KEY`, `OPENROUTER_TOKEN`,
+`NOVITA_KEY`, and `NOVITA_TOKEN`.
+
+In the live shell used for this pass, no canonical API credential or supported
+alias was visible in process environment, `.env`, shell startup files, or
+`/etc/environment`, so the API gate correctly remains blocked.
 
 No secrets were committed.
 
@@ -75,6 +79,7 @@ Live MM4 summary:
 
 Run manifests now carry the required future-run metadata:
 
+- `run_type`
 - `baseline_or_optimized`
 - `optimization_flags`
 - `dataset_version`
@@ -82,7 +87,7 @@ Run manifests now carry the required future-run metadata:
 Post-run automation now builds:
 
 - metric-level PASS/WARNING/FAIL/NOT_AVAILABLE rows for latency, throughput,
-  resource, cost, and quality metrics;
+  resource, cost, temperature, and quality metrics;
 - comparison-report availability metadata;
 - plotting-ready long-form datasets for baseline-vs-optimized, engine, model,
   memory-mode, concurrency, GPU, cost, latency, and throughput plots.
@@ -96,5 +101,5 @@ Smoke-only controlled final safety gate:
 - MM4: `SMOKE_READY`
 - API `model6_gated`: `BLOCKED`
 
-The full controlled simulation remains blocked because API credentials are not
-visible to the runner environment.
+The full controlled simulation remains blocked because API credentials or
+supported aliases are not visible to the runner environment.

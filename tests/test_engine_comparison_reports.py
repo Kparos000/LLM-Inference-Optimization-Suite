@@ -26,8 +26,8 @@ def test_memory_and_concurrency_comparison_reports_cover_full_matrix() -> None:
         "results/processed/controlled_final_simulation_concurrency_comparison.csv"
     )
 
-    assert len(memory_rows) == 30
-    assert len(concurrency_rows) == 30
+    assert len(memory_rows) == 25
+    assert len(concurrency_rows) == 25
     assert {row["memory_mode"] for row in memory_rows} == {
         "mm0_no_context",
         "mm1_dense_top5",
@@ -35,13 +35,24 @@ def test_memory_and_concurrency_comparison_reports_cover_full_matrix() -> None:
         "mm3_compressed_hybrid_top5",
         "mm4_bounded_agentic",
     }
-    assert {row["concurrency"] for row in concurrency_rows} == {"4", "8", "16", "32"}
+    assert {row["concurrency"] for row in concurrency_rows} == {"4", "16", "32"}
 
 
 def test_api_track_comparison_contains_no_gpu_telemetry_columns() -> None:
     rows = _rows("results/processed/controlled_final_simulation_api_track_comparison.csv")
 
-    assert len(rows) == 10
+    assert len(rows) == 5
     assert {row["model_alias"] for row in rows} == {"model6_gated"}
     assert "gpu_utilization" not in rows[0]
     assert "gpu_hourly_cost" not in rows[0]
+
+
+def test_api_vs_self_hosted_and_model_comparison_reports_cover_final_matrix() -> None:
+    api_vs_self_hosted = _rows(
+        "results/processed/controlled_final_simulation_api_vs_self_hosted_comparison.csv"
+    )
+    model_rows = _rows("results/processed/controlled_final_simulation_model_comparison.csv")
+
+    assert len(api_vs_self_hosted) == 25
+    assert len(model_rows) == 25
+    assert {row["model_alias"] for row in model_rows} == {"model3_7b", "model6_gated"}

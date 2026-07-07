@@ -19,8 +19,10 @@ AUTOMATION_METRICS = (
     "gpu_utilization",
     "vram",
     "power",
+    "temperature",
     "cost",
     "json_validity",
+    "contract_validity",
     "groundedness",
     "evidence_match",
 )
@@ -32,6 +34,7 @@ SLO_TARGET_MAP = {
     "gpu_utilization": ("resource_slo", "gpu_utilization_min_pct", "min", 1.0),
     "vram": ("resource_slo", "gpu_memory_peak_gb_max", "max", 1024.0),
     "json_validity": ("quality_slo", "format_validity_min", "min", 1.0),
+    "contract_validity": ("quality_slo", "format_validity_min", "min", 1.0),
     "groundedness": ("quality_slo", "groundedness_min", "min", 1.0),
     "evidence_match": ("quality_slo", "evidence_match_min", "min", 1.0),
 }
@@ -150,12 +153,18 @@ def _metric_rows(
         "power": _optional_float(
             telemetry_summary.get("mean_power_draw_watts") or telemetry_summary.get("power_watts")
         ),
+        "temperature": _optional_float(
+            telemetry_summary.get("mean_gpu_temperature_c")
+            or telemetry_summary.get("gpu_temperature_c")
+            or telemetry_summary.get("temperature_c")
+        ),
         "cost": _optional_float(
             cost_report.get("total_cost_usd")
             or cost_report.get("gpu_cost_usd")
             or cost_report.get("api_cost_usd")
         ),
         "json_validity": _optional_float(eval_summary.get("json_valid_rate")),
+        "contract_validity": _optional_float(eval_summary.get("generation_contract_valid_rate")),
         "groundedness": _optional_float(eval_summary.get("grounded_rate")),
         "evidence_match": _optional_float(eval_summary.get("evidence_match_rate")),
     }
@@ -237,9 +246,13 @@ def build_post_run_automation_report(inputs: PostRunAutomationInputs) -> dict[st
             "gpu_utilization",
             "vram",
             "power",
+            "temperature",
+            "ttft",
+            "tpot",
             "cost",
             "latency",
             "throughput",
+            "slo_comparison",
         ],
     }
 
