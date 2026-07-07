@@ -417,6 +417,9 @@ def generation_contract_instruction(*, include_citation_checklist: bool = False)
         f"Required fields: {', '.join(GENERATION_CONTRACT_FIELDS)}.",
         "Use these exact JSON types: answer string, evidence_ids array of strings, "
         "confidence number, insufficient_evidence boolean, citation_notes string.",
+        "The evidence_ids field is mandatory for every response, even when it is an empty array.",
+        "Each evidence_ids item must be one visible short label from the evidence blocks: "
+        "E1, E2, E3, E4, or E5.",
         "Keep answer at or below 40 words and citation_notes at or below 30 words.",
         "Use only evidence_id labels shown in the retrieved evidence blocks, such as E1.",
         "For an answer, evidence_ids must contain at least one supporting provided label.",

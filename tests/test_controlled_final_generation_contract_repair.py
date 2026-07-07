@@ -154,3 +154,78 @@ def test_api_and_self_hosted_payloads_use_same_contract_prompt(monkeypatch: Any)
     assert api["message_payload_normalized"] is True
     assert vllm["message_payload_normalized"] is True
     assert sglang["message_payload_normalized"] is True
+
+
+def test_contract_normalization_maps_aliases_to_visible_evidence_labels() -> None:
+    runner = _load_runner()
+    row = {
+        "success": True,
+        "memory_mode": "mm2_hybrid_top5",
+        "citation_id_aliases": '{"E1":["DOC-1"],"E2":["DOC-2"]}',
+        "generated_text": (
+            '{"answer":"Use the policy.","evidence_ids":["DOC-1"],'
+            '"confidence":"0.8","insufficient_evidence":false,'
+            '"citation_notes":"DOC-1 supports the policy."}'
+        ),
+    }
+
+    normalized = runner.normalize_generation_contract_output(row)
+    payload = runner.parse_generation_contract(
+        normalized["generated_text"],
+        allowed_evidence_ids=["E1", "E2"],
+    ).parsed_payload
+
+    assert normalized["contract_normalization_applied"] is True
+    assert payload["evidence_ids"] == ["E1"]
+    assert payload["confidence"] == 0.8
+
+
+def test_mm0_contract_normalization_forces_empty_evidence() -> None:
+    runner = _load_runner()
+    row = {
+        "success": True,
+        "memory_mode": "mm0_no_context",
+        "citation_id_aliases": '{"E1":["DOC-1"]}',
+        "generated_text": (
+            '{"answer":"Unsupported answer.","evidence_ids":["E1"],'
+            '"confidence":0.7,"insufficient_evidence":false,'
+            '"citation_notes":"E1 support."}'
+        ),
+    }
+
+    normalized = runner.normalize_generation_contract_output(row)
+    payload = runner.parse_generation_contract(normalized["generated_text"]).parsed_payload
+
+    assert payload["answer"] == ""
+    assert payload["evidence_ids"] == []
+    assert payload["insufficient_evidence"] is True
+    assert normalized["final_status"] == "insufficient_evidence"
+
+
+def test_mm4_and_api_schema_outputs_normalize_to_final_contract() -> None:
+    runner = _load_runner()
+    for engine, backend_type in [
+        ("vllm", "self_hosted_gpu"),
+        ("sglang", "self_hosted_gpu"),
+        ("api_provider_route", "api_provider"),
+    ]:
+        row = {
+            "success": True,
+            "engine": engine,
+            "backend_type": backend_type,
+            "memory_mode": "mm4_bounded_agentic",
+            "citation_id_aliases": '{"E1":["DOC-1"]}',
+            "generated_text": (
+                '{"final_answer":"Agent result","citation_id":"DOC-1",'
+                '"confidence":0.9,"notes":"DOC-1 supports it."}'
+            ),
+        }
+
+        normalized = runner.normalize_generation_contract_output(row)
+        parsed = runner.parse_generation_contract(
+            normalized["generated_text"],
+            allowed_evidence_ids=["E1"],
+        )
+
+        assert parsed.contract_valid is True
+        assert parsed.contract.evidence_ids == ["E1"]

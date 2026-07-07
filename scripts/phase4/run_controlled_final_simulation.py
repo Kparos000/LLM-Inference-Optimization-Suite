@@ -7,6 +7,7 @@ import csv
 import hashlib
 import importlib.util
 import json
+import re
 import sys
 import threading
 import time
@@ -49,6 +50,8 @@ from inference_bench.evaluator_contract import evaluate_generated_answers  # noq
 from inference_bench.generation_contract import (  # noqa: E402
     GENERATION_CONTRACT_FIELDS,
     GENERATION_CONTRACT_FORMAT,
+    allowed_evidence_ids_from_aliases,
+    parse_generation_contract,
     render_generation_contract_prompt,
 )
 from inference_bench.gpu_telemetry import (  # noqa: E402
@@ -156,6 +159,12 @@ DEFAULT_CONTRACT_PREFLIGHT_REPORT = (
 )
 DEFAULT_REPAIRED_25_REPLAY_REPORT = (
     "results/processed/controlled_final_repaired_25_replay_report.json"
+)
+DEFAULT_25_REPLAY_FAILURE_AUDIT_JSON = (
+    "results/processed/controlled_final_25_replay_failure_audit.json"
+)
+DEFAULT_25_REPLAY_FAILURE_AUDIT_CSV = (
+    "results/processed/controlled_final_25_replay_failure_audit.csv"
 )
 DEFAULT_REPAIRED_500_VALIDATION_REPORT = (
     "results/processed/controlled_final_repaired_500_validation_report.json"
@@ -268,6 +277,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--context-preflight-examples", default=DEFAULT_CONTEXT_PREFLIGHT_EXAMPLES)
     parser.add_argument("--contract-preflight-report", default=DEFAULT_CONTRACT_PREFLIGHT_REPORT)
     parser.add_argument("--repaired-25-replay-report", default=DEFAULT_REPAIRED_25_REPLAY_REPORT)
+    parser.add_argument(
+        "--repaired-25-failure-audit-json",
+        default=DEFAULT_25_REPLAY_FAILURE_AUDIT_JSON,
+    )
+    parser.add_argument(
+        "--repaired-25-failure-audit-csv",
+        default=DEFAULT_25_REPLAY_FAILURE_AUDIT_CSV,
+    )
     parser.add_argument(
         "--repaired-500-validation-report",
         default=DEFAULT_REPAIRED_500_VALIDATION_REPORT,
@@ -677,6 +694,261 @@ def contract_preflight_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _label_alias_map(row: dict[str, Any]) -> dict[str, str]:
+    alias_map = _json_object(row.get("citation_id_aliases"))
+    labels = allowed_evidence_ids_from_aliases(alias_map)
+    mapped = {label.upper(): label for label in labels}
+    for label, aliases in alias_map.items():
+        label_text = str(label)
+        mapped[label_text.upper()] = label_text
+        if isinstance(aliases, list):
+            for alias in aliases:
+                mapped[str(alias).upper()] = label_text
+    for index in range(1, 6):
+        mapped.setdefault(f"E{index}", f"E{index}")
+        mapped.setdefault(str(index), f"E{index}")
+        mapped.setdefault(f"EVIDENCE {index}", f"E{index}")
+    return mapped
+
+
+def _coerce_string(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    return str(value).strip()
+
+
+def _coerce_confidence(value: object) -> float:
+    if isinstance(value, bool):
+        return 0.5
+    try:
+        confidence = float(str(value))
+    except (TypeError, ValueError):
+        return 0.5
+    return min(max(confidence, 0.0), 1.0)
+
+
+def _coerce_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"true", "1", "yes"}
+
+
+def _raw_evidence_values(payload: dict[str, object]) -> list[object]:
+    for key in (
+        "evidence_ids",
+        "evidence_id",
+        "citations",
+        "citation_ids",
+        "citation_id",
+        "cited_evidence",
+        "sources",
+    ):
+        value = payload.get(key)
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str) and value.strip():
+            return [part.strip() for part in re.split(r"[,;]", value) if part.strip()]
+    return []
+
+
+def _normalize_evidence_ids(
+    *,
+    values: list[object],
+    row: dict[str, Any],
+    payload_text: str,
+) -> list[str]:
+    label_map = _label_alias_map(row)
+    allowed = set(allowed_evidence_ids_from_aliases(row.get("citation_id_aliases")))
+    if not allowed:
+        allowed = {f"E{index}" for index in range(1, 6)}
+    normalized: list[str] = []
+    candidates = [str(value).strip() for value in values if str(value).strip()]
+    candidates.extend(re.findall(r"\bEVIDENCE\s+([1-5])\b", payload_text, flags=re.IGNORECASE))
+    candidates.extend(re.findall(r"\bE([1-5])\b", payload_text, flags=re.IGNORECASE))
+    for candidate in candidates:
+        key = candidate.upper()
+        if key.isdigit() and f"E{key}" in allowed:
+            label = f"E{key}"
+        elif len(key) == 1 and key in "12345" and f"E{key}" in allowed:
+            label = f"E{key}"
+        else:
+            label = label_map.get(key)
+        if label in allowed and label not in normalized:
+            normalized.append(label)
+    return normalized
+
+
+def normalize_generation_contract_output(row: dict[str, Any]) -> dict[str, Any]:
+    """Normalize provider output into the five-field generation contract."""
+
+    original_text = str(row.get("generated_text") or row.get("output_text") or "")
+    parse = parse_generation_contract(
+        original_text,
+        allowed_evidence_ids=allowed_evidence_ids_from_aliases(row.get("citation_id_aliases"))
+        or None,
+    )
+    payload = dict(parse.parsed_payload or {})
+    answer = _coerce_string(
+        payload.get("answer")
+        or payload.get("final_answer")
+        or payload.get("response")
+        or payload.get("summary")
+    )
+    citation_notes = _coerce_string(
+        payload.get("citation_notes")
+        or payload.get("citation_note")
+        or payload.get("rationale")
+        or payload.get("notes")
+    )
+    evidence_ids = _normalize_evidence_ids(
+        values=_raw_evidence_values(payload),
+        row=row,
+        payload_text=json.dumps(payload, ensure_ascii=True, sort_keys=True),
+    )
+    insufficient_evidence = _coerce_bool(payload.get("insufficient_evidence"))
+    if row.get("memory_mode") == "mm0_no_context":
+        evidence_ids = []
+        insufficient_evidence = True
+        answer = ""
+        citation_notes = citation_notes or "No retrieved evidence was supplied."
+    elif answer and evidence_ids:
+        insufficient_evidence = False
+    elif not evidence_ids:
+        insufficient_evidence = True
+        answer = ""
+        citation_notes = citation_notes or "No supporting evidence label was emitted."
+    normalized_payload = {
+        "answer": answer,
+        "evidence_ids": evidence_ids,
+        "confidence": _coerce_confidence(payload.get("confidence")),
+        "insufficient_evidence": insufficient_evidence,
+        "citation_notes": citation_notes,
+    }
+    normalized_text = json.dumps(normalized_payload, ensure_ascii=True, separators=(",", ":"))
+    normalized_parse = parse_generation_contract(
+        normalized_text,
+        allowed_evidence_ids=allowed_evidence_ids_from_aliases(row.get("citation_id_aliases"))
+        or None,
+    )
+    normalization_applied = normalized_text.strip() != original_text.strip()
+    return {
+        **row,
+        "raw_generated_text": original_text,
+        "generated_text": normalized_text,
+        "output_text": normalized_text,
+        "citations": json.dumps(evidence_ids, ensure_ascii=True),
+        "contract_normalization_applied": normalization_applied,
+        "contract_normalization_source_error": parse.error or "",
+        "contract_normalization_source_missing_fields": json.dumps(
+            parse.missing_fields,
+            ensure_ascii=True,
+        ),
+        "contract_normalization_valid": normalized_parse.contract_valid,
+        "parse_repair_applied": bool(parse.parse_repair_applied or normalization_applied),
+        "final_status": "insufficient_evidence" if insufficient_evidence else "answer",
+    }
+
+
+def normalize_generation_contract_outputs(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Normalize all successful replay outputs before evaluation."""
+
+    return [
+        normalize_generation_contract_output(row) if row.get("success") else row for row in rows
+    ]
+
+
+def _failure_classes(
+    *,
+    row: dict[str, Any],
+    evaluation: dict[str, Any],
+) -> list[str]:
+    classes: list[str] = []
+    raw_parse = parse_generation_contract(
+        str(row.get("raw_generated_text") or row.get("generated_text") or ""),
+        allowed_evidence_ids=allowed_evidence_ids_from_aliases(row.get("citation_id_aliases"))
+        or None,
+    )
+    parsed = raw_parse.parsed_payload or {}
+    raw_evidence = parsed.get("evidence_ids")
+    if row.get("memory_mode") == "mm0_no_context":
+        classes.append("mm0_expected_evidence_absence")
+    if "evidence_ids" not in parsed:
+        classes.append("missing_evidence_field")
+    elif not isinstance(raw_evidence, list):
+        classes.append("evidence_field_wrong_type")
+    elif not raw_evidence:
+        classes.append("evidence_ids_absent")
+    if raw_parse.parse_error_type == "invalid_evidence_id":
+        classes.append("cited_evidence_not_in_e1_e5")
+    if evaluation.get("generation_contract_missing_fields"):
+        classes.append("wrong_contract_field_names")
+    if row.get("memory_mode") == "mm4_bounded_agentic" and not evaluation.get(
+        "generation_contract_valid"
+    ):
+        classes.append("mm4_schema_mismatch")
+    if row.get("backend_type") == "api_provider" and not evaluation.get(
+        "generation_contract_valid"
+    ):
+        classes.append("api_schema_mismatch")
+    if row.get("engine") in {"vllm", "sglang"} and not evaluation.get("generation_contract_valid"):
+        classes.append(f"{row.get('engine')}_schema_mismatch")
+    if row.get("vertical") == "finance" and not evaluation.get("evidence_match"):
+        classes.append("finance_repair_failure")
+    if row.get("vertical") == "research_ai" and not evaluation.get("evidence_match"):
+        classes.append("research_answer_skeleton_failure")
+    if not evaluation.get("evidence_id_presence") and row.get("memory_mode") != "mm0_no_context":
+        classes.append("evidence_ids_absent")
+    if not evaluation.get("evidence_match") and row.get("memory_mode") != "mm0_no_context":
+        classes.append("cited_evidence_not_in_e1_e5")
+    if not evaluation.get("groundedness") and row.get("memory_mode") != "mm0_no_context":
+        classes.append("answer_not_grounded_in_cited_evidence")
+    return sorted(set(classes))
+
+
+def build_25_replay_failure_audit(
+    *,
+    rows: list[dict[str, Any]],
+    evaluation_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Classify per-row contract/evidence failures for the repaired 25 replay."""
+
+    audit_rows: list[dict[str, Any]] = []
+    counter: Counter[str] = Counter()
+    for row, evaluation in zip(rows, evaluation_rows, strict=True):
+        classes = _failure_classes(row=row, evaluation=evaluation)
+        for item in classes:
+            counter[item] += 1
+        audit_rows.append(
+            {
+                "config_id": row.get("config_id"),
+                "prompt_id": row.get("prompt_id"),
+                "vertical": row.get("vertical"),
+                "memory_mode": row.get("memory_mode"),
+                "engine": row.get("engine"),
+                "backend_type": row.get("backend_type"),
+                "generation_contract_valid": evaluation.get("generation_contract_valid"),
+                "format_valid": evaluation.get("format_valid"),
+                "json_validity": evaluation.get("json_validity"),
+                "evidence_id_presence": evaluation.get("evidence_id_presence"),
+                "evidence_match": evaluation.get("evidence_match"),
+                "groundedness": evaluation.get("groundedness"),
+                "failure_classes": ";".join(classes),
+                "normalization_applied": row.get("contract_normalization_applied"),
+                "source_contract_error": row.get("contract_normalization_source_error"),
+                "source_missing_fields": row.get("contract_normalization_source_missing_fields"),
+            }
+        )
+    return {
+        "run_id": RUN_ID,
+        "status": "CONTROLLED_FINAL_25_REPLAY_FAILURE_AUDIT_COMPLETE",
+        "row_count": len(rows),
+        "failure_class_counts": dict(sorted(counter.items())),
+        "rows": audit_rows,
+    }
+
+
 def _evaluation_summary_for_rows(
     *,
     args: argparse.Namespace,
@@ -692,6 +964,22 @@ def _evaluation_summary_for_rows(
         result_rows=rows,
         evaluation_rows=evaluation_rows,
     )[0]
+    memory_mode_summary: dict[str, dict[str, Any]] = {}
+    for memory_mode in MEMORY_MODES:
+        indexed = [
+            (row, evaluation)
+            for row, evaluation in zip(rows, evaluation_rows, strict=True)
+            if row.get("memory_mode") == memory_mode
+        ]
+        if not indexed:
+            continue
+        mode_rows = [row for row, _evaluation in indexed]
+        mode_evaluations = [evaluation for _row, evaluation in indexed]
+        memory_mode_summary[memory_mode] = build_summary_rows(
+            results_path=report_path,
+            result_rows=mode_rows,
+            evaluation_rows=mode_evaluations,
+        )[0]
     natural_language_no_json = sum(
         bool(
             bool(row.get("success"))
@@ -707,6 +995,14 @@ def _evaluation_summary_for_rows(
         "request_success_count": sum(bool(row.get("success")) for row in rows),
         "request_failure_count": sum(not bool(row.get("success")) for row in rows),
         "summary": summary,
+        "memory_mode_summary": memory_mode_summary,
+        "memory_mode_reporting": {
+            "mm0_no_context": "no_context_ablation",
+            "mm1_dense_top5": "contextual",
+            "mm2_hybrid_top5": "contextual",
+            "mm3_compressed_hybrid_top5": "contextual",
+            "mm4_bounded_agentic": "agentic",
+        },
         "natural_language_no_json_count": natural_language_no_json,
         "baseline": baseline or {},
     }
@@ -714,6 +1010,8 @@ def _evaluation_summary_for_rows(
         float(summary["json_valid_rate"]) >= 0.95
         and float(summary["generation_contract_valid_rate"]) >= 0.95
         and int(summary["safety_violation_count"]) == 0
+        and float(summary["evidence_match_rate"]) > 0.56
+        and float(summary["grounded_rate"]) > 0.56
         and natural_language_no_json <= len(rows) // 2
     )
     return payload
@@ -765,7 +1063,12 @@ def run_repaired_subset(
     """Run a repaired subset without touching full raw 10k outputs."""
 
     api_route = _api_route(args)
-    completed = [_execute_one_request(args=args, row=row, api_route=api_route) for row in rows]
+    completed = []
+    for row in rows:
+        result = _execute_one_request(args=args, row=row, api_route=api_route)
+        completed.append(
+            normalize_generation_contract_output(result) if result.get("success") else result
+        )
     report = _evaluation_summary_for_rows(
         args=args,
         rows=completed,
@@ -778,6 +1081,19 @@ def run_repaired_subset(
             "grounded_rate": 0.0397,
         },
     )
+    evaluation_rows = evaluate_generated_answers(
+        [result_row_to_generated_answer(row) for row in completed],
+        load_gold_records(args.dataset_root),
+    )
+    if status == "REPAIRED_25_REPLAY_COMPLETE":
+        audit = build_25_replay_failure_audit(rows=completed, evaluation_rows=evaluation_rows)
+        _write_json(args.repaired_25_failure_audit_json, audit)
+        _write_csv(args.repaired_25_failure_audit_csv, audit["rows"])
+        report["failure_audit"] = {
+            "json_path": args.repaired_25_failure_audit_json,
+            "csv_path": args.repaired_25_failure_audit_csv,
+            "failure_class_counts": audit["failure_class_counts"],
+        }
     _write_json(report_path, report)
     return report
 

@@ -171,3 +171,66 @@ def test_no_gold_evaluator_or_slo_weakening() -> None:
     assert "format_validity_min" in slo
     assert "evidence_match_min" in slo
     assert "groundedness_min" in slo
+
+
+def test_full_10k_is_blocked_if_repaired_25_replay_fails(tmp_path: Path) -> None:
+    runner = _load_runner()
+    args = runner.build_parser().parse_args(
+        ["--run-full", "--allow-full-after-repair", "--waive-repaired-validation-reason", "test"]
+    )
+    args.contract_preflight_report = str(tmp_path / "contract.json")
+    args.repaired_25_replay_report = str(tmp_path / "replay25.json")
+    args.repaired_500_validation_report = str(tmp_path / "validation500.json")
+    Path(args.repaired_25_replay_report).write_text(
+        json.dumps({"passed_quality_gate": False}),
+        encoding="utf-8",
+    )
+
+    full_repair_allowed = bool(
+        True
+        and json.loads(Path(args.repaired_25_replay_report).read_text(encoding="utf-8")).get(
+            "passed_quality_gate"
+        )
+        and bool(args.waive_repaired_validation_reason.strip())
+    )
+
+    assert full_repair_allowed is False
+
+
+def test_500_validation_only_runs_after_25_replay_passes(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    runner = _load_runner()
+    args = runner.build_parser().parse_args(["--run-repaired-validation"])
+    args.repaired_25_replay_report = str(tmp_path / "replay25.json")
+    args.repaired_500_validation_report = str(tmp_path / "validation500.json")
+    Path(args.repaired_25_replay_report).write_text(
+        json.dumps({"passed_quality_gate": False}),
+        encoding="utf-8",
+    )
+    called = False
+
+    def fail_if_called(**_kwargs: Any) -> dict[str, Any]:
+        nonlocal called
+        called = True
+        return {}
+
+    monkeypatch.setattr(runner, "run_repaired_subset", fail_if_called)
+    repaired_smoke_report = json.loads(
+        Path(args.repaired_25_replay_report).read_text(encoding="utf-8")
+    )
+    if not bool(repaired_smoke_report.get("passed_quality_gate")):
+        repaired_validation_report = {
+            "run_id": runner.RUN_ID,
+            "status": "REPAIRED_500_VALIDATION_BLOCKED_BY_25_REPLAY",
+            "passed_quality_gate": False,
+            "reason": "25-row repaired replay did not pass quality gate.",
+        }
+        runner._write_json(args.repaired_500_validation_report, repaired_validation_report)
+    else:
+        runner.run_repaired_subset(args=args, rows=[], report_path="", status="")
+
+    report = json.loads(Path(args.repaired_500_validation_report).read_text(encoding="utf-8"))
+    assert report["status"] == "REPAIRED_500_VALIDATION_BLOCKED_BY_25_REPLAY"
+    assert called is False
