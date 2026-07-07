@@ -2,38 +2,53 @@
 
 ## What Ran
 
-- Added `scripts/phase4/run_controlled_final_simulation.py`.
-- Built the final 25-config, 10,000-request controlled final-simulation matrix.
-- Ran safety-gate checks before any full-model/provider execution.
-- Wrote blocked-run evaluation, comparison, SLO, cost, manifest, and artifact-sync reports.
+- Implemented the real `--run-full` execution path for
+  `scripts/phase4/run_controlled_final_simulation.py`.
+- Ran the final 25-config, 10,000-request controlled final-simulation baseline.
+- Kept the frozen matrix unchanged and did not apply optimizations.
+- Captured raw results, processed evaluation reports, SLO comparison, engine,
+  memory-mode, concurrency, API-vs-self-hosted, model, cost, artifact-sync, GPU
+  telemetry, and plotting-ready reports.
 
 ## Outcome
 
-The full controlled simulation did not run. The safety gates blocked execution
-before any model/provider request:
+All gates passed before full execution:
 
-- vLLM `model3_7b`: smoke-ready because `/v1/models` at
-  `http://localhost:8000/v1` listed `Qwen/Qwen2.5-7B-Instruct`.
-- SGLang `model3_7b`: smoke-ready after repairing the CUDA 13 SGLang extension
-  stack; `http://localhost:30000/v1/models` listed
-  `Qwen/Qwen2.5-7B-Instruct`.
-- API `model6_gated`: blocked because canonical credentials and supported
-  aliases were not visible to the runner.
-- MM4: bounded LangGraph runner is importable, but no MM4 matrix run was
-  attempted because the required track smokes were blocked.
+- vLLM `model3_7b`: smoke-ready at `http://localhost:8000/v1`.
+- SGLang `model3_7b`: smoke-ready at `http://localhost:30000/v1`.
+- API `model6_gated`: smoke-ready with `.env` credentials.
+- MM4: bounded LangGraph runner smoke-ready.
 
 ## Request Counts
 
 - Planned requests: 10,000.
-- Attempted requests: 0.
-- Completed configs: 0.
-- Not-run configs: 25.
+- Attempted requests: 10,000.
+- Completed requests: 10,000.
+- Failed requests: 0.
+- Completed configs: 25.
+- Failed configs: 0.
+
+## Results
+
+- Overall mean E2E latency: 2,359.66 ms.
+- Overall mean TTFT: 205.04 ms.
+- Overall mean TPOT: 14.01 ms.
+- Overall mean tokens/sec: 72.99.
+- vLLM beat SGLang on self-hosted latency and throughput in this baseline.
+- Self-hosted concurrency 16 beat concurrency 32 on latency and throughput.
+- API provider rows were faster than the self-hosted aggregate, with separate
+  provider token cost and no GPU telemetry.
+- Artifact sync and backup verification passed.
+- Total measured cost estimate: `$0.873843`.
 
 ## Decision
 
-The final 10,000-request experiment is not allowed yet. The next step is to make
-the API smoke gate pass without fallback or skipped configs; vLLM, SGLang, and
-MM4 have been smoke-ready when their local servers are running.
+The controlled final baseline is complete, but the final larger/deployability
+experiment is not allowed yet. The run completed operationally, but quality SLOs
+failed: JSON validity, generation-contract validity, evidence match, and
+groundedness failed for every configuration. The next phase should focus on
+generation-contract JSON repair, evidence alignment, groundedness repair, and
+targeted MM4 quality repair before any larger run.
 
 Exact SGLang startup command:
 

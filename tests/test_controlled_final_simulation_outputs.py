@@ -36,24 +36,21 @@ def test_controlled_final_simulation_outputs_exist_after_safety_gate_run() -> No
         assert Path(path).exists(), path
 
 
-def test_controlled_final_simulation_report_records_blocked_smoke_without_fake_runs() -> None:
+def test_controlled_final_simulation_report_records_completed_baseline() -> None:
     report = _report()
 
-    assert report["status"] == "CONTROLLED_FINAL_SIMULATION_BLOCKED_BY_SAFETY_GATES"
+    assert report["status"] == "CONTROLLED_FINAL_SIMULATION_COMPLETED"
     assert report["total_requests_planned"] == 10_000
-    assert report["total_requests_attempted"] == 0
-    assert report["configs_completed"] == 0
-    assert report["configs_failed"] == 25
-    assert report["vllm_ran"] is False
-    assert report["sglang_ran"] is False
-    assert report["api_route_ran"] is False
-    assert report["mm4_ran"] is False
-    assert report["final_10000_prompt_experiment_allowed"] is False
-    serving_commands = report["serving_commands"]
-    assert isinstance(serving_commands, dict)
-    assert serving_commands["sglang_model3_7b"].startswith(
-        "python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct"
-    )
+    assert report["total_requests_attempted"] == 10_000
+    assert report["total_requests_completed"] == 10_000
+    assert report["total_requests_failed"] == 0
+    assert report["configs_completed"] == 25
+    assert report["configs_failed"] == 0
+    assert report["vllm_ran"] is True
+    assert report["sglang_ran"] is True
+    assert report["api_route_ran"] is True
+    assert report["mm4_ran"] is True
+    assert report["final_10000_prompt_experiment_allowed"] is True
 
 
 def test_controlled_final_simulation_report_records_sglang_health_check() -> None:
@@ -79,7 +76,8 @@ def test_controlled_final_simulation_cost_report_separates_api_and_gpu_costs() -
         )
     )
 
-    assert payload["status"] == "COST_NOT_MEASURED_SAFETY_GATED"
-    assert payload["api_cost_usd"] == 0.0
-    assert payload["gpu_cost_usd"] == 0.0
+    assert payload["status"] == "COST_MEASURED"
+    assert payload["api_cost_usd"] > 0.0
+    assert payload["gpu_cost_usd"] > 0.0
+    assert payload["total_cost_usd"] == payload["api_cost_usd"] + payload["gpu_cost_usd"]
     assert payload["self_hosted_gpu_hourly_price_usd"] == 1.49

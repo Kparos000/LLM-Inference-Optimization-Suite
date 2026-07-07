@@ -187,19 +187,23 @@ violations, 128 GPU telemetry samples, and local artifact sync verification.
 The measured run cost estimate is `$0.0572` at `$1.49/hr`; the 1,000-prompt
 A100 baseline is allowed as a separate explicit run.
 
-The controlled final-experiment simulation preflight now builds the final
-25-config, 10,000-request matrix: 8,000 self-hosted A100 requests across
-vLLM/SGLang, five memory modes, and concurrency 16/32, plus 2,000 API-provider
-requests for `model6_gated` across five memory modes at concurrency 4. It blocks
-before model/provider execution unless the vLLM, SGLang, API, and MM4 smoke gates
-are all ready. The exact SGLang startup command is:
+The controlled final 10,000-request baseline completed on the frozen 25-config
+matrix: 8,000 self-hosted A100 requests across vLLM/SGLang, five memory modes,
+and concurrency 16/32, plus 2,000 API-provider requests for `model6_gated`
+across five memory modes at concurrency 4. It completed 10,000/10,000 requests
+with zero request failures and 25/25 configs complete. The exact SGLang startup
+command used for the controlled simulation track is:
 
 ```bash
 python -m sglang.launch_server --model-path Qwen/Qwen2.5-7B-Instruct --served-model-name Qwen/Qwen2.5-7B-Instruct --host 0.0.0.0 --port 30000 --mem-fraction-static 0.90 --context-length 4096 --max-running-requests 32 --chunked-prefill-size 8192
 ```
 
-The final 10,000-request experiment is not allowed until the vLLM, SGLang, API,
-and MM4 smokes pass in the current runner context.
+The baseline is operationally complete but not deployable. Overall JSON validity
+and generation-contract validity were 0.0%, evidence match and groundedness were
+3.97%, and all 25 configs failed the quality SLO groups. vLLM beat SGLang on
+self-hosted latency and throughput, self-hosted concurrency 16 beat concurrency
+32, API provider rows were faster than the self-hosted aggregate, artifact sync
+and backup verification passed, and measured total cost was `$0.873843`.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -621,10 +625,10 @@ Result tracks are separated:
 
 ## Next Step
 
-The next independent track can be an API provider load probe. Concurrency 2/4,
-SGLang, mm4, RunPod, 2,000-prompt, and 10,000-prompt runs remain follow-on
-decisions after B7R1 review. RunPod cost claims remain blocked until reviewed
-hourly price and throughput multiplier inputs are configured.
+The next independent track is post-baseline optimization: generation-contract
+JSON repair, output parsing repair, evidence alignment, groundedness repair,
+and targeted MM4 bounded-agentic quality repair. A larger final/deployability
+experiment is not allowed until those failed SLOs are repaired.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

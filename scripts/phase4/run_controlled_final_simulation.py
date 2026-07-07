@@ -7,11 +7,14 @@ import csv
 import importlib.util
 import json
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 from typing import Any, cast
 
@@ -21,6 +24,11 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from inference_bench.api_load_probe import ENV_ALIASES, load_probe_environment  # noqa: E402
+from inference_bench.api_pricing import (  # noqa: E402
+    estimate_api_cost_from_pricing,
+    resolve_api_pricing,
+)
+from inference_bench.api_routes import api_key_for_route, resolve_api_provider_route  # noqa: E402
 from inference_bench.artifact_sync import (  # noqa: E402
     ArtifactSyncConfig,
     build_artifact_specs,
@@ -29,6 +37,12 @@ from inference_bench.artifact_sync import (  # noqa: E402
 )
 from inference_bench.config import load_project_config  # noqa: E402
 from inference_bench.context_corpora import VERTICALS  # noqa: E402
+from inference_bench.evaluator_contract import evaluate_generated_answers  # noqa: E402
+from inference_bench.gpu_telemetry import (  # noqa: E402
+    GpuTelemetrySample,
+    collect_gpu_sample,
+    summarize_gpu_telemetry,
+)
 from inference_bench.post_run_automation import (  # noqa: E402
     PostRunAutomationInputs,
     build_post_run_automation_report,
@@ -41,7 +55,19 @@ from inference_bench.run_manifest import (  # noqa: E402
     utc_now,
     write_run_manifest,
 )
+from inference_bench.runners.mock_runner import count_whitespace_tokens  # noqa: E402
 from inference_bench.runtime_registry import select_runtime_for_model  # noqa: E402
+
+PHASE4 = Path(__file__).resolve().parent
+if str(PHASE4) not in sys.path:
+    sys.path.insert(0, str(PHASE4))
+
+from evaluate_generation_outputs import (  # noqa: E402
+    build_summary_rows,
+    load_gold_records,
+    result_row_to_generated_answer,
+)
+from run_remote_vllm_smoke import latency_summary_rows  # noqa: E402
 
 RUN_ID = "controlled_final_simulation"
 SELF_HOSTED_MODEL_ALIAS = "model3_7b"
@@ -92,6 +118,7 @@ DEFAULT_POST_RUN_AUTOMATION_REPORT = (
     "results/processed/controlled_final_simulation_post_run_automation_report.json"
 )
 DEFAULT_PLOTTING_DATASET = "results/processed/controlled_final_simulation_plotting_dataset.csv"
+DEFAULT_CHECKPOINT = "results/raw/controlled_final_simulation_checkpoint.json"
 DEFAULT_BASE_URL = "http://localhost:8000/v1"
 DEFAULT_SGLANG_BASE_URL = "http://localhost:30000/v1"
 SGLANG_STARTUP_COMMAND = (
@@ -187,6 +214,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_POST_RUN_AUTOMATION_REPORT,
     )
     parser.add_argument("--plotting-dataset-path", default=DEFAULT_PLOTTING_DATASET)
+    parser.add_argument("--checkpoint-path", default=DEFAULT_CHECKPOINT)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--sglang-base-url", default=DEFAULT_SGLANG_BASE_URL)
     parser.add_argument("--api-key", default="EMPTY")
@@ -200,6 +228,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gpu-id", default=GPU_ID)
     parser.add_argument("--hourly-price", type=float, default=1.49)
     parser.add_argument("--backup-root", default="backups")
+    parser.add_argument("--max-new-tokens", type=int, default=224)
+    parser.add_argument("--timeout-seconds", type=float, default=240.0)
+    parser.add_argument("--telemetry-interval-seconds", type=float, default=1.0)
     parser.add_argument("--run-full", action="store_true")
     return parser
 
@@ -586,6 +617,591 @@ def build_smoke_report(gates: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _request_key(row: dict[str, Any]) -> str:
+    return f"{row['config_id']}::{row['prompt_id']}"
+
+
+def _append_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
+    output = _repo_path(path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("a", encoding="utf-8", newline="\n") as file:
+        for row in rows:
+            file.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def _read_existing_result_rows(path: str | Path) -> list[dict[str, Any]]:
+    output = _repo_path(path)
+    if not output.exists():
+        return []
+    return _read_jsonl(output)
+
+
+def _read_existing_completed_timing(path: str | Path) -> dict[str, Any]:
+    report_path = _repo_path(path)
+    if not report_path.exists():
+        return {}
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    if report.get("status") != "CONTROLLED_FINAL_SIMULATION_COMPLETED":
+        return {}
+    wall_seconds = report.get("wall_seconds")
+    if not isinstance(wall_seconds, int | float):
+        cost_report = report.get("cost_report")
+        if isinstance(cost_report, dict):
+            wall_seconds = cost_report.get("wall_seconds")
+    if not isinstance(wall_seconds, int | float):
+        return {}
+    return {
+        "started_at": report.get("started_at_utc"),
+        "completed_at": report.get("completed_at_utc"),
+        "wall_seconds": float(wall_seconds),
+    }
+
+
+def _write_checkpoint(path: str | Path, rows: list[dict[str, Any]], *, status: str) -> None:
+    completed_keys = sorted({_request_key(row) for row in rows})
+    payload = {
+        "run_id": RUN_ID,
+        "status": status,
+        "completed_request_keys": completed_keys,
+        "row_count": len(rows),
+        "success_count": sum(bool(row.get("success")) for row in rows),
+        "failure_count": sum(not bool(row.get("success")) for row in rows),
+        "updated_at_utc": utc_now(),
+    }
+    _write_json(path, payload)
+
+
+def _chat_completion_request(
+    *,
+    base_url: str,
+    api_key: str,
+    model: str,
+    prompt: str,
+    max_tokens: int,
+    timeout_seconds: float,
+) -> tuple[str, float | None, float]:
+    openai = cast(Any, import_module("openai"))
+    client = openai.OpenAI(api_key=api_key, base_url=base_url, timeout=timeout_seconds)
+    start = time.perf_counter()
+    first_token: float | None = None
+    chunks: list[str] = []
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_tokens,
+        temperature=0.0,
+        stream=True,
+    )
+    for chunk in response:
+        choices = getattr(chunk, "choices", None)
+        if not choices:
+            continue
+        delta = getattr(choices[0], "delta", None)
+        content = getattr(delta, "content", None)
+        if isinstance(content, str) and content:
+            if first_token is None:
+                first_token = time.perf_counter()
+            chunks.append(content)
+    end = time.perf_counter()
+    return "".join(chunks), first_token - start if first_token is not None else None, end - start
+
+
+def _api_route(args: argparse.Namespace) -> tuple[str, str, str, str]:
+    project = load_project_config()
+    model = project.resolve_model_config(API_MODEL_ALIAS)
+    pricing = resolve_api_pricing(API_MODEL_ALIAS)
+    route = resolve_api_provider_route(model=model, pricing=pricing)
+    environment = load_probe_environment(env_path=ROOT / args.env_file)
+    api_key = api_key_for_route(route, environment)
+    return route.base_url, api_key, route.provider_model_id, route.provider
+
+
+def _execute_one_request(
+    *,
+    args: argparse.Namespace,
+    row: dict[str, Any],
+    api_route: tuple[str, str, str, str] | None,
+) -> dict[str, Any]:
+    started = time.perf_counter()
+    generated_text = ""
+    input_tokens = count_whitespace_tokens(str(row["prompt"]))
+    output_tokens = 0
+    base_url = args.base_url
+    api_key = args.api_key
+    model_id = str(row["model_id"])
+    provider = "self_hosted"
+    if row["engine"] == "sglang":
+        base_url = args.sglang_base_url
+    if row["backend_type"] == "api_provider":
+        if api_route is None:
+            msg = "API route was not resolved"
+            raise RuntimeError(msg)
+        base_url, api_key, model_id, provider = api_route
+    try:
+        generated_text, ttft_seconds, elapsed_seconds = _chat_completion_request(
+            base_url=base_url,
+            api_key=api_key,
+            model=model_id,
+            prompt=str(row["prompt"]),
+            max_tokens=args.max_new_tokens,
+            timeout_seconds=args.timeout_seconds,
+        )
+        output_tokens = count_whitespace_tokens(generated_text)
+        ttft_ms = ttft_seconds * 1000.0 if ttft_seconds is not None else None
+        e2e_ms = elapsed_seconds * 1000.0
+        tpot_ms = (
+            max(e2e_ms - (ttft_ms or 0.0), 0.0) / max(output_tokens, 1) if output_tokens else None
+        )
+        total_tokens = input_tokens + output_tokens
+        total_cost_usd = 0.0
+        if row["backend_type"] == "api_provider":
+            pricing = resolve_api_pricing(API_MODEL_ALIAS)
+            cost = estimate_api_cost_from_pricing(
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                pricing=pricing,
+            )
+            total_cost_usd = float(cost["total_api_cost_usd"])
+        return {
+            **row,
+            "request_id": _request_key(row),
+            "run_id": RUN_ID,
+            "provider": provider,
+            "success": True,
+            "generated_text": generated_text,
+            "output_text": generated_text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+            "ttft_ms": ttft_ms,
+            "tpot_ms": tpot_ms,
+            "end_to_end_latency_ms": e2e_ms,
+            "latency_ms": e2e_ms,
+            "throughput_tokens_per_second": (
+                total_tokens / elapsed_seconds if elapsed_seconds > 0 else None
+            ),
+            "requests_per_second": 1.0 / elapsed_seconds if elapsed_seconds > 0 else None,
+            "total_cost_usd": total_cost_usd,
+            "error_message": "",
+            "failure_reason": "",
+            "final_status": "answer",
+        }
+    except Exception as exc:  # noqa: BLE001
+        elapsed_seconds = time.perf_counter() - started
+        return {
+            **row,
+            "request_id": _request_key(row),
+            "run_id": RUN_ID,
+            "provider": provider,
+            "success": False,
+            "generated_text": generated_text,
+            "output_text": generated_text,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "ttft_ms": None,
+            "tpot_ms": None,
+            "end_to_end_latency_ms": elapsed_seconds * 1000.0,
+            "latency_ms": elapsed_seconds * 1000.0,
+            "throughput_tokens_per_second": 0.0,
+            "requests_per_second": 0.0,
+            "total_cost_usd": 0.0,
+            "error_message": f"{type(exc).__name__}: {exc}",
+            "failure_reason": f"{type(exc).__name__}: {exc}",
+            "final_status": "failed_validation",
+        }
+
+
+def _telemetry_loop(
+    *,
+    path: Path,
+    stop_event: threading.Event,
+    interval_seconds: float,
+    errors: list[str],
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    while not stop_event.is_set():
+        try:
+            samples = collect_gpu_sample()
+            with path.open("a", encoding="utf-8", newline="\n") as file:
+                for sample in samples:
+                    file.write(
+                        json.dumps(sample.to_dict(), ensure_ascii=True, sort_keys=True) + "\n"
+                    )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{type(exc).__name__}: {exc}")
+        stop_event.wait(interval_seconds)
+
+
+def _read_gpu_samples(path: str | Path) -> list[GpuTelemetrySample]:
+    samples: list[GpuTelemetrySample] = []
+    output = _repo_path(path)
+    if not output.exists():
+        return samples
+    for row in _read_jsonl(output):
+        if "gpu_name" not in row:
+            continue
+        samples.append(
+            GpuTelemetrySample(
+                timestamp=str(row["timestamp"]),
+                gpu_name=str(row["gpu_name"]),
+                utilization_gpu_percent=float(row["utilization_gpu_percent"]),
+                memory_used_mb=float(row["memory_used_mb"]),
+                memory_total_mb=float(row["memory_total_mb"]),
+                power_draw_w=float(row["power_draw_w"]),
+                temperature_c=float(row["temperature_c"]),
+                process_info=str(row.get("process_info") or ""),
+            )
+        )
+    return samples
+
+
+def _run_config(
+    *,
+    args: argparse.Namespace,
+    config: ConfigSpec,
+    rows: list[dict[str, Any]],
+    completed_keys: set[str],
+    api_route: tuple[str, str, str, str] | None,
+) -> list[dict[str, Any]]:
+    pending = [row for row in rows if _request_key(row) not in completed_keys]
+    if not pending:
+        return []
+    print(
+        f"running config_id={config.config_id} requests={len(pending)} "
+        f"engine={config.engine} memory_mode={config.memory_mode} concurrency={config.concurrency}",
+        flush=True,
+    )
+    completed: list[dict[str, Any]] = []
+    with ThreadPoolExecutor(max_workers=config.concurrency) as executor:
+        futures = [
+            executor.submit(_execute_one_request, args=args, row=row, api_route=api_route)
+            for row in pending
+        ]
+        for future in as_completed(futures):
+            completed.append(future.result())
+    completed.sort(key=lambda item: str(item["request_id"]))
+    return completed
+
+
+def _float_values(rows: list[dict[str, Any]], key: str) -> list[float]:
+    values: list[float] = []
+    for row in rows:
+        value = row.get(key)
+        if value in (None, ""):
+            continue
+        try:
+            values.append(float(str(value)))
+        except ValueError:
+            continue
+    return values
+
+
+def _mean(values: list[float]) -> float | None:
+    return sum(values) / len(values) if values else None
+
+
+def _config_summary_rows(
+    *,
+    configs: list[ConfigSpec],
+    rows: list[dict[str, Any]],
+    evaluation_rows: list[dict[str, Any]],
+    expected_per_config: int,
+) -> list[dict[str, Any]]:
+    eval_by_prompt = {str(row["prompt_id"]): row for row in evaluation_rows}
+    summaries: list[dict[str, Any]] = []
+    for config in configs:
+        config_rows = [row for row in rows if row.get("config_id") == config.config_id]
+        success_rows = [row for row in config_rows if bool(row.get("success"))]
+        config_eval = [
+            eval_by_prompt[str(row["prompt_id"])]
+            for row in config_rows
+            if str(row.get("prompt_id")) in eval_by_prompt
+        ]
+        total = len(config_eval)
+        summary = {
+            "config_id": config.config_id,
+            "model_alias": config.model_alias,
+            "model_id": config.model_id,
+            "backend_type": config.backend_type,
+            "engine": config.engine,
+            "runtime": config.runtime,
+            "memory_mode": config.memory_mode,
+            "concurrency": config.concurrency,
+            "status": "COMPLETED" if len(config_rows) == expected_per_config else "PARTIAL",
+            "requests_attempted": len(config_rows),
+            "requests_completed": len(success_rows),
+            "requests_failed": len(config_rows) - len(success_rows),
+            "mean_ttft_ms": _mean(_float_values(success_rows, "ttft_ms")),
+            "mean_tpot_ms": _mean(_float_values(success_rows, "tpot_ms")),
+            "mean_e2e_latency_ms": _mean(_float_values(success_rows, "end_to_end_latency_ms")),
+            "mean_total_tokens_per_second": _mean(
+                _float_values(success_rows, "throughput_tokens_per_second")
+            ),
+            "total_input_tokens": sum(int(row.get("input_tokens") or 0) for row in config_rows),
+            "total_output_tokens": sum(int(row.get("output_tokens") or 0) for row in config_rows),
+            "total_cost_usd": sum(float(row.get("total_cost_usd") or 0.0) for row in config_rows),
+            "json_valid_rate": (
+                sum(bool(row.get("json_validity")) for row in config_eval) / total
+                if total
+                else None
+            ),
+            "generation_contract_valid_rate": (
+                sum(bool(row.get("generation_contract_valid")) for row in config_eval) / total
+                if total
+                else None
+            ),
+            "evidence_match_rate": (
+                sum(bool(row.get("evidence_match")) for row in config_eval) / total
+                if total
+                else None
+            ),
+            "grounded_rate": (
+                sum(bool(row.get("groundedness")) for row in config_eval) / total if total else None
+            ),
+            "safety_violation_count": (
+                sum(bool(row.get("safety_violation")) for row in config_eval) if total else None
+            ),
+        }
+        if config.backend_type == "self_hosted_gpu":
+            summary["gpu_telemetry_scope"] = "self_hosted_gpu"
+        else:
+            summary["gpu_telemetry_scope"] = "not_applicable_api_provider"
+        summaries.append(summary)
+    return summaries
+
+
+def _status_against_min(value: object, target: float) -> str:
+    if value in (None, ""):
+        return "NOT_AVAILABLE"
+    observed = float(value)
+    if observed >= target:
+        return "PASS"
+    if observed >= target * 0.9:
+        return "WARNING"
+    return "FAIL"
+
+
+def _status_against_max(value: object, target: float) -> str:
+    if value in (None, ""):
+        return "NOT_AVAILABLE"
+    observed = float(value)
+    if observed <= target:
+        return "PASS"
+    if observed <= target * 1.1:
+        return "WARNING"
+    return "FAIL"
+
+
+def _slo_rows(config_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in config_rows:
+        checks = {
+            "ttft": _status_against_max(row.get("mean_ttft_ms"), 1000.0),
+            "tpot": _status_against_max(row.get("mean_tpot_ms"), 100.0),
+            "latency": _status_against_max(row.get("mean_e2e_latency_ms"), 10000.0),
+            "throughput": _status_against_min(row.get("mean_total_tokens_per_second"), 20.0),
+            "json_validity": _status_against_min(row.get("json_valid_rate"), 0.95),
+            "contract_validity": _status_against_min(
+                row.get("generation_contract_valid_rate"), 0.95
+            ),
+            "evidence_match": _status_against_min(row.get("evidence_match_rate"), 0.9),
+            "groundedness": _status_against_min(row.get("grounded_rate"), 0.95),
+        }
+        failed = [name for name, status in checks.items() if status == "FAIL"]
+        warnings = [name for name, status in checks.items() if status == "WARNING"]
+        candidates = []
+        if any(name in failed for name in ("ttft", "tpot", "latency", "throughput")):
+            candidates.append("serving_profile_tuning")
+        if any(name in failed for name in ("json_validity", "contract_validity")):
+            candidates.append("generation_contract_prompt_repair")
+        if any(name in failed for name in ("evidence_match", "groundedness")):
+            candidates.append("retrieval_or_context_selection_repair")
+        rows.append(
+            {
+                **row,
+                "passed_slos": sum(status == "PASS" for status in checks.values()),
+                "warning_slos": len(warnings),
+                "failed_slos": len(failed),
+                "failed_metric_family": ";".join(failed) if failed else "",
+                "bottleneck_category": ";".join(failed or warnings) if (failed or warnings) else "",
+                "recommended_optimization_candidates": ";".join(candidates),
+                **{f"slo_{name}": status for name, status in checks.items()},
+            }
+        )
+    return rows
+
+
+def _write_completed_reports(
+    args: argparse.Namespace,
+    *,
+    matrix_summary: dict[str, Any],
+    gates: dict[str, Any],
+    smoke_report: dict[str, Any],
+    rows: list[dict[str, Any]],
+    started_at: str,
+    completed_at: str,
+    wall_seconds: float,
+    telemetry_errors: list[str],
+) -> dict[str, Any]:
+    generated = [result_row_to_generated_answer(row) for row in rows]
+    evaluation_rows = evaluate_generated_answers(generated, load_gold_records(args.dataset_root))
+    eval_summary = build_summary_rows(
+        results_path=args.raw_results_path,
+        result_rows=rows,
+        evaluation_rows=evaluation_rows,
+    )[0]
+    latency = latency_summary_rows(rows)[0]
+    configs = build_config_specs()
+    config_rows = _config_summary_rows(
+        configs=configs,
+        rows=rows,
+        evaluation_rows=evaluation_rows,
+        expected_per_config=int(matrix_summary["prompt_count_per_config"]),
+    )
+    slo_rows = _slo_rows(config_rows)
+    gpu_samples = _read_gpu_samples(args.gpu_telemetry_path)
+    gpu_summary = summarize_gpu_telemetry(
+        gpu_samples,
+        interval_seconds=args.telemetry_interval_seconds,
+        requested_duration_seconds=wall_seconds,
+    )
+    gpu_cost = (wall_seconds / 3600.0) * args.hourly_price
+    api_cost = sum(
+        float(row.get("total_cost_usd") or 0.0)
+        for row in rows
+        if row.get("backend_type") == "api_provider"
+    )
+    cost_report = {
+        "run_id": RUN_ID,
+        "status": "COST_MEASURED",
+        "wall_seconds": wall_seconds,
+        "self_hosted_gpu_hourly_price_usd": args.hourly_price,
+        "gpu_cost_usd": gpu_cost,
+        "api_cost_usd": api_cost,
+        "total_cost_usd": gpu_cost + api_cost,
+        "self_hosted_request_count": sum(
+            1 for row in rows if row.get("backend_type") == "self_hosted_gpu"
+        ),
+        "api_request_count": sum(1 for row in rows if row.get("backend_type") == "api_provider"),
+    }
+    _write_csv(args.eval_summary_path, [eval_summary])
+    _write_csv(
+        args.engine_comparison_path,
+        [row for row in config_rows if row["model_alias"] == SELF_HOSTED_MODEL_ALIAS],
+    )
+    _write_csv(args.memory_comparison_path, config_rows)
+    _write_csv(args.concurrency_comparison_path, config_rows)
+    _write_csv(
+        args.api_comparison_path,
+        [row for row in config_rows if row["model_alias"] == API_MODEL_ALIAS],
+    )
+    _write_csv(args.api_vs_self_hosted_comparison_path, config_rows)
+    _write_csv(args.model_comparison_path, config_rows)
+    _write_csv(args.slo_summary_path, slo_rows)
+    _write_json(
+        args.slo_report_path,
+        {
+            "run_id": RUN_ID,
+            "status": "SLO_COMPARISON_COMPLETE",
+            "deployability_verdict": (
+                "DEPLOYABLE_BASELINE"
+                if all(int(row["failed_slos"]) == 0 for row in slo_rows)
+                else "NOT_DEPLOYABLE_SLO_FAILURES"
+            ),
+            "benchmark_execution_verdict": "COMPLETED",
+            "optimization_needed_verdict": (
+                "OPTIMIZATION_NEEDED"
+                if any(int(row["failed_slos"]) > 0 for row in slo_rows)
+                else "NO_OPTIMIZATION_REQUIRED"
+            ),
+            "config_slo_results": slo_rows,
+            "gate_report": gates,
+        },
+    )
+    _write_json(args.cost_report_path, cost_report)
+    eval_report = {
+        "run_id": RUN_ID,
+        "status": "CONTROLLED_FINAL_SIMULATION_COMPLETED",
+        "started_at_utc": started_at,
+        "completed_at_utc": completed_at,
+        "matrix_summary": matrix_summary,
+        "smoke_report": smoke_report,
+        "gate_report": gates,
+        "summary": eval_summary,
+        "latency_summary": latency,
+        "gpu_summary": gpu_summary,
+        "telemetry_errors": telemetry_errors,
+        "cost_report": cost_report,
+        "config_summaries": config_rows,
+        "slo_status_counts": dict(Counter(str(row["failed_slos"]) for row in slo_rows)),
+        "configs_completed": sum(row["status"] == "COMPLETED" for row in config_rows),
+        "configs_failed": sum(row["requests_failed"] > 0 for row in config_rows),
+        "total_requests_attempted": len(rows),
+        "total_requests_completed": sum(bool(row.get("success")) for row in rows),
+        "total_requests_failed": sum(not bool(row.get("success")) for row in rows),
+        "total_requests_planned": matrix_summary["row_count"],
+        "vllm_ran": any(row.get("engine") == "vllm" for row in rows),
+        "sglang_ran": any(row.get("engine") == "sglang" for row in rows),
+        "api_route_ran": any(row.get("backend_type") == "api_provider" for row in rows),
+        "mm4_ran": any(row.get("memory_mode") == "mm4_bounded_agentic" for row in rows),
+        "final_10000_prompt_experiment_allowed": True,
+        "wall_seconds": wall_seconds,
+    }
+    _write_json(args.eval_report_path, eval_report)
+    _write_manifest(
+        args,
+        status="completed" if len(rows) == matrix_summary["row_count"] else "partial",
+        matrix_summary=matrix_summary,
+        rows=rows,
+        started_at=started_at,
+        completed_at=completed_at,
+    )
+    automation_report = build_post_run_automation_report(
+        PostRunAutomationInputs(
+            run_id=RUN_ID,
+            manifest_path=args.manifest_path,
+            eval_summary_path=args.eval_summary_path,
+            latency_summary_path=args.eval_summary_path,
+            telemetry_summary_path=None,
+            cost_report_path=args.cost_report_path,
+            comparison_paths=(
+                args.engine_comparison_path,
+                args.memory_comparison_path,
+                args.concurrency_comparison_path,
+                args.api_comparison_path,
+                args.api_vs_self_hosted_comparison_path,
+                args.model_comparison_path,
+                args.slo_summary_path,
+            ),
+        )
+    )
+    write_post_run_automation_artifacts(
+        report=automation_report,
+        report_path=args.post_run_automation_report_path,
+        plotting_dataset_path=args.plotting_dataset_path,
+    )
+    config = ArtifactSyncConfig(run_id=RUN_ID, backup_root=args.backup_root)
+    sync = sync_artifacts(
+        specs=_artifact_specs(args), config=config, event="completed", repo_root=ROOT
+    )
+    verification = verify_backup(specs=_artifact_specs(args), config=config, repo_root=ROOT)
+    _write_json(
+        args.artifact_sync_report_path,
+        {
+            "run_id": RUN_ID,
+            "artifact_sync_enabled": True,
+            "sync": sync,
+            "verification": verification,
+            "success": bool(verification.get("passed")),
+        },
+    )
+    return eval_report
+
+
 def _artifact_specs(args: argparse.Namespace) -> list[Any]:
     return build_artifact_specs(
         raw_jsonl=args.raw_results_path,
@@ -607,13 +1223,23 @@ def _artifact_specs(args: argparse.Namespace) -> list[Any]:
             args.post_run_automation_report_path,
             args.plotting_dataset_path,
         ],
+        logs=[args.checkpoint_path],
     )
 
 
 def _write_manifest(
-    args: argparse.Namespace, *, status: str, matrix_summary: dict[str, Any]
+    args: argparse.Namespace,
+    *,
+    status: str,
+    matrix_summary: dict[str, Any],
+    rows: list[dict[str, Any]] | None = None,
+    started_at: str | None = None,
+    completed_at: str | None = None,
 ) -> None:
     now = utc_now()
+    observed_rows = rows or []
+    start_time = started_at or now
+    end_time = completed_at or now
     manifest = RunManifest(
         run_id=RUN_ID,
         timestamp_utc=now,
@@ -629,9 +1255,9 @@ def _write_manifest(
         git_commit=current_git_commit(ROOT),
         command=" ".join(sys.argv),
         status=status,
-        start_time=now,
-        end_time=now,
-        error_count=0,
+        start_time=start_time,
+        end_time=end_time,
+        error_count=sum(not bool(row.get("success")) for row in observed_rows),
         telemetry_path=args.gpu_telemetry_path,
         config_id=RUN_ID,
         vertical="all",
@@ -647,11 +1273,11 @@ def _write_manifest(
         config_hash=hash_existing_paths(
             ["configs/runtime_engines.yaml", "configs/slo_targets.yaml"]
         ),
-        started_at=now,
+        started_at=start_time,
         updated_at=now,
-        completed_at=now,
-        completed_count=0,
-        failed_count=0,
+        completed_at=end_time,
+        completed_count=sum(bool(row.get("success")) for row in observed_rows),
+        failed_count=sum(not bool(row.get("success")) for row in observed_rows),
         expected_count=int(matrix_summary["row_count"]),
         artifact_paths={
             "matrix": args.matrix_path,
@@ -839,11 +1465,104 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
         smoke_report["status"] = "SMOKE_BLOCKED"
         smoke_report["reason"] = "Matrix cardinality validation failed."
     if args.run_full and gates["full_simulation_allowed"]:
-        msg = (
-            "Full 10,000-request execution is intentionally not implemented in this "
-            "safety-gate runner until all smoke tracks are available."
+        started_at = utc_now()
+        existing_rows = _read_existing_result_rows(args.raw_results_path)
+        deduped: dict[str, dict[str, Any]] = {}
+        for row in existing_rows:
+            if row.get("config_id") and row.get("prompt_id"):
+                deduped[_request_key(row)] = row
+        rows = list(deduped.values())
+        completed_keys = set(deduped)
+        pending_keys = {_request_key(row) for row in matrix_rows} - completed_keys
+        existing_timing = _read_existing_completed_timing(args.eval_report_path)
+        if not rows:
+            _write_jsonl(args.raw_results_path, [])
+            _repo_path(args.gpu_telemetry_path).parent.mkdir(parents=True, exist_ok=True)
+            _repo_path(args.gpu_telemetry_path).write_text("", encoding="utf-8")
+            if _repo_path(args.checkpoint_path).exists():
+                _repo_path(args.checkpoint_path).unlink()
+        if not pending_keys and len(rows) == matrix_summary["row_count"]:
+            completed_at = str(existing_timing.get("completed_at") or utc_now())
+            started_at = str(existing_timing.get("started_at") or completed_at)
+            wall_seconds = float(
+                existing_timing.get("wall_seconds") or (time.perf_counter() - started)
+            )
+            _write_checkpoint(args.checkpoint_path, rows, status="completed")
+            return _write_completed_reports(
+                args,
+                matrix_summary=matrix_summary,
+                gates=gates,
+                smoke_report=smoke_report,
+                rows=rows,
+                started_at=started_at,
+                completed_at=completed_at,
+                wall_seconds=wall_seconds,
+                telemetry_errors=[],
+            )
+        _write_manifest(
+            args,
+            status="running",
+            matrix_summary=matrix_summary,
+            rows=rows,
+            started_at=started_at,
+            completed_at=None,
         )
-        raise RuntimeError(msg)
+        api_route = _api_route(args)
+        telemetry_errors: list[str] = []
+        stop_event = threading.Event()
+        telemetry_thread = threading.Thread(
+            target=_telemetry_loop,
+            kwargs={
+                "path": _repo_path(args.gpu_telemetry_path),
+                "stop_event": stop_event,
+                "interval_seconds": args.telemetry_interval_seconds,
+                "errors": telemetry_errors,
+            },
+            daemon=True,
+        )
+        telemetry_thread.start()
+        try:
+            for config in build_config_specs():
+                config_matrix_rows = [
+                    row for row in matrix_rows if row["config_id"] == config.config_id
+                ]
+                new_rows = _run_config(
+                    args=args,
+                    config=config,
+                    rows=config_matrix_rows,
+                    completed_keys=completed_keys,
+                    api_route=api_route,
+                )
+                if new_rows:
+                    _append_jsonl(args.raw_results_path, new_rows)
+                    rows.extend(new_rows)
+                    completed_keys.update(_request_key(row) for row in new_rows)
+                    _write_checkpoint(args.checkpoint_path, rows, status="running")
+                    _write_manifest(
+                        args,
+                        status="running",
+                        matrix_summary=matrix_summary,
+                        rows=rows,
+                        started_at=started_at,
+                        completed_at=None,
+                    )
+        finally:
+            stop_event.set()
+            telemetry_thread.join(timeout=max(args.telemetry_interval_seconds * 2.0, 2.0))
+        completed_at = utc_now()
+        _write_checkpoint(args.checkpoint_path, rows, status="completed")
+        report = _write_completed_reports(
+            args,
+            matrix_summary=matrix_summary,
+            gates=gates,
+            smoke_report=smoke_report,
+            rows=rows,
+            started_at=started_at,
+            completed_at=completed_at,
+            wall_seconds=time.perf_counter() - started,
+            telemetry_errors=telemetry_errors,
+        )
+        return report
     report = write_blocked_reports(
         args,
         matrix_summary=matrix_summary,
