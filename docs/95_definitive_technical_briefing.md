@@ -3629,6 +3629,8 @@ leakage and ambiguity. The final promoted validation uses non-leaking
   clean rerun of the same 1,000-row input.
 - Phase 2A infrastructure readiness framework for RunPod pricing, API load
   probes, and RunPod calibration manifests.
+- A100 SXM 200-prompt calibration, controlled-final 10,000-request baseline,
+  fixed SLO re-score, and Phase 2 optimization diagnosis.
 
 ## Current Block State
 
@@ -3663,6 +3665,14 @@ and passed the full frozen 500-row gate. Phase B7 then ran the controlled
 1,000-prompt `model2_3b` baseline with manifest, checkpoint/resume, artifact
 sync, and GPU telemetry enabled. B7 preflight passed, but the live run was
 blocked by a vLLM EngineCore CUDA/CUBLAS fatal error at Finance prompt 17.
+The repaired controlled-final baseline later completed 10,000/10,000 requests
+on the frozen 25-config A100 matrix. Runtime and cost SLOs passed, but the fixed
+SLO re-score marks quality and safety as failed and deployability as
+`NOT_DEPLOYABLE_SLO_FAILURES`. Phase 2 optimization diagnosis ran without new
+inference and identified Research AI as the dominant contract/groundedness
+blocker and Healthcare Admin as the dominant safety blocker. The selected
+before/after rerun plan contains eight non-MM0 configs covering API model6,
+SGLang MM2/MM3, MM4, and concurrency comparison.
 Phase B7R1 isolated that serving failure, adjusted the vLLM serving profile,
 and completed the same frozen 1,000-row input cleanly. Phase 2A then added the
 infrastructure readiness framework for RunPod pricing, API load probes, and
@@ -3933,12 +3943,12 @@ calibration package, and kept live RunPod calibration blocked because no
 
 ## Next Engineering Milestone
 
-Run the next independent, explicitly authorized API provider load probe using
-the Phase 2A framework while preserving API and self-hosted GPU result-track
-separation. Treat concurrency 2/4, SGLang, mm4, RunPod, 2,000-prompt, and
-10,000-prompt runs as separate follow-on decisions after B7R1 and Phase 2A
-review. Keep RunPod cost and calibration claims blocked until reviewed hourly
-price and throughput multiplier inputs are configured.
+Run the explicitly authorized targeted before/after optimization rerun from
+`results/processed/phase2_before_after_rerun_plan.json`. Do not run a full
+10,000-request rerun until the targeted repair set shows quality and safety
+improvement. Keep MM0 as a no-context ablation, preserve vLLM/SGLang and
+API/self-hosted result-track separation, and do not weaken SLOs, evaluators,
+gold data, or retrieval.
 
 # 23. What An AI Inference Engineer Should Understand
 

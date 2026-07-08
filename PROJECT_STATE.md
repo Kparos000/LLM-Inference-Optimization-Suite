@@ -29,6 +29,7 @@ BENCHMARK_EXECUTION_READY
 API_LOAD_PROBE_ALLOWED
 DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
 CONTROLLED_FINAL_REPAIRED_BASELINE_OPERATIONAL_NOT_DEPLOYABLE
+PHASE2_OPTIMIZATION_DIAGNOSIS_READY
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -233,6 +234,19 @@ match, 60.26% groundedness, and 97 safety findings. Contextual modes excluding
 MM0 reached 74.1% evidence match and 72.025% groundedness, still below SLO.
 Artifact sync and backup verification passed with completeness score 1.0, and
 measured total cost was `$0.793868`.
+
+Phase 2 optimization diagnosis ran without new inference and without changing
+SLOs, evaluators, gold data, or retrieval. It classified failures by config,
+vertical, engine/runtime, memory mode, concurrency, API/self-hosted track, MM0
+ablation, and MM4 agentic workflow. Research AI is the dominant
+contract/groundedness blocker: 11.40% contract validity, 15.85% evidence match,
+and 7.75% groundedness. Healthcare Admin is the dominant safety blocker with 86
+of the 97 safety findings. Deterministic bottleneck counts are led by
+generation-contract failure and prompt/context formatting issues in 24 configs,
+groundedness failure in 20 configs, evidence-selection failure in 19 configs,
+and safety-wording failure in 15 configs. The selected before/after rerun plan
+contains eight non-MM0 configs covering API model6, SGLang MM2/MM3, MM4, and
+concurrency comparison.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -654,12 +668,13 @@ Result tracks are separated:
 
 ## Next Step
 
-The next independent track is controlled post-baseline optimization using the
-completed repaired 10,000-request baseline as the reference point. A final/main
-10,000 rerun is not needed before optimization because the run is operationally
-valid and the fixed SLO re-score works from existing outputs. Candidate areas
-are final-answer contract normalization, safety wording, evidence selection,
-groundedness, and concurrency-32 self-hosted efficiency.
+The next independent track is the explicit targeted before/after optimization
+rerun using the eight selected Phase 2 configs. A final/main 10,000 rerun is not
+needed before optimization because the run is operationally valid, the fixed SLO
+re-score works from existing outputs, and the diagnosis selected a smaller
+high-value rerun set. Candidate areas are final-answer contract normalization,
+safety wording, evidence selection, groundedness, MM4 final-answer guarding, and
+concurrency-32 self-hosted efficiency.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
