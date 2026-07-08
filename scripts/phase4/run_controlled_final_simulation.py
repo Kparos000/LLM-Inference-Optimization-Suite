@@ -7,6 +7,7 @@ import csv
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import sys
 import threading
@@ -87,7 +88,7 @@ from evaluate_generation_outputs import (  # noqa: E402
 )
 from run_remote_vllm_smoke import latency_summary_rows  # noqa: E402
 
-RUN_ID = "controlled_final_simulation"
+RUN_ID = os.environ.get("INFERENCE_BENCH_RUN_ID", "controlled_final_simulation")
 SELF_HOSTED_MODEL_ALIAS = "model3_7b"
 SELF_HOSTED_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 API_MODEL_ALIAS = "model6_gated"

@@ -1,0 +1,391 @@
+{
+  "artifact_sync_enabled": true,
+  "run_id": "main_inference_v1",
+  "success": true,
+  "sync": {
+    "backup_root": "backups",
+    "event": "completed",
+    "missing_optional": [
+      "results/processed/main_inference_v1_slo_report_fixed.json",
+      "results/processed/main_inference_v1_slo_summary_fixed.csv",
+      "results/processed/main_inference_v1_verdict_fixed.json"
+    ],
+    "missing_required": [],
+    "provider": "local",
+    "run_id": "main_inference_v1",
+    "success": true,
+    "synced_artifacts": [
+      {
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_results.jsonl",
+        "category": "raw_jsonl",
+        "sha256": "8a35c9e60e6bb575e75637a46986071972139df34c75c59d79e657846e80cdc9",
+        "size_bytes": 184950488,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/raw/main_inference_v1_results.jsonl"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_manifest.json",
+        "category": "manifest",
+        "sha256": "6844e6cdd03582b0a06c44e68ad1be2bfa40c43e5f5d36e502e72d56d1a5f53d",
+        "size_bytes": 6302,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/raw/main_inference_v1_manifest.json"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_gpu_telemetry.jsonl",
+        "category": "telemetry",
+        "sha256": "32944e189d0f326fda092fe3a5f3865b0c36bcf10caba697a449b1050d65a3bf",
+        "size_bytes": 489487,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/raw/main_inference_v1_gpu_telemetry.jsonl"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_eval_report.json",
+        "category": "processed_report",
+        "sha256": "a2ab299356891941070460d55e364818f28a6ed9e8c0acb6ca96e68e97045e65",
+        "size_bytes": 34222,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_eval_report.json"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_eval_summary.csv",
+        "category": "processed_report",
+        "sha256": "c5c9ad9089ed0e2178a96212d79b0c83ce7e49d01237c4ab38f9069931b40af2",
+        "size_bytes": 844,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_eval_summary.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_engine_comparison.csv",
+        "category": "processed_report",
+        "sha256": "d928b57ac75ebe4a5cf613c7ed1589342836e2547f5c15e5e4b3d27bd0be4da9",
+        "size_bytes": 6109,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_engine_comparison.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_memory_comparison.csv",
+        "category": "processed_report",
+        "sha256": "2e933957fb04a4f8ca862b23ddf9849a6bee167ca0a8f7b2dc8e081f1b60fd0e",
+        "size_bytes": 7871,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_memory_comparison.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_concurrency_comparison.csv",
+        "category": "processed_report",
+        "sha256": "2e933957fb04a4f8ca862b23ddf9849a6bee167ca0a8f7b2dc8e081f1b60fd0e",
+        "size_bytes": 7871,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_concurrency_comparison.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_api_comparison.csv",
+        "category": "processed_report",
+        "sha256": "98c67671012b8e28b44b56e689fd155a3db5b744eaf0e16b8c15afa3a6d96e9f",
+        "size_bytes": 2160,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_api_comparison.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_api_vs_self_hosted_comparison.csv",
+        "category": "processed_report",
+        "sha256": "2e933957fb04a4f8ca862b23ddf9849a6bee167ca0a8f7b2dc8e081f1b60fd0e",
+        "size_bytes": 7871,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_api_vs_self_hosted_comparison.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_model_comparison.csv",
+        "category": "processed_report",
+        "sha256": "2e933957fb04a4f8ca862b23ddf9849a6bee167ca0a8f7b2dc8e081f1b60fd0e",
+        "size_bytes": 7871,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_model_comparison.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_slo_report.json",
+        "category": "processed_report",
+        "sha256": "079edc02cdf90eb8f7c3ebceb75901dc1d5de048a8d6fa267e247cf2c2dc7c99",
+        "size_bytes": 51623,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_slo_report.json"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_slo_summary.csv",
+        "category": "processed_report",
+        "sha256": "6669d0f9091f7f01af2a653772e81e7bfd487fc5937ed8e7087c96afbd13c71b",
+        "size_bytes": 14692,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_slo_summary.csv"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_cost_report.json",
+        "category": "processed_report",
+        "sha256": "cdf8669ef44eae72a485f5d0915b5ef86db1b038e15e445c70c5fcb86c7dc195",
+        "size_bytes": 331,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_cost_report.json"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_artifact_sync_report.json",
+        "category": "processed_report",
+        "sha256": "5a319281c689e7c8b150394f3518f30dc29f069105e354653c5757565afd0d9a",
+        "size_bytes": 15995,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_artifact_sync_report.json"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_post_run_automation_report.json",
+        "category": "processed_report",
+        "sha256": "37bccddd0193a8e89f2e0b7a4caa547ff1d60835fcc5ddee5fab93243df47e5e",
+        "size_bytes": 4805,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_post_run_automation_report.json"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_plotting_dataset.jsonl",
+        "category": "processed_report",
+        "sha256": "431e9c444745304edcfc17d158f87d52fe979d01f8647f40c40b64e2af697968",
+        "size_bytes": 2118,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_plotting_dataset.jsonl"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_progress.jsonl",
+        "category": "processed_report",
+        "sha256": "01f38776700a89be920fc29b0a7970f5f3d9649ee26dc67510416028a268919b",
+        "size_bytes": 64277,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/main_inference_v1_progress.jsonl"
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_checkpoint.json",
+        "category": "log",
+        "sha256": "093b2dae553f809706ab597b1657d39b4d90841170363a8e43e9577515d90499",
+        "size_bytes": 884221,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/raw/main_inference_v1_checkpoint.json"
+      }
+    ],
+    "synced_at": "2026-07-08T16:16:40.621599+00:00"
+  },
+  "verification": {
+    "backup_completeness_score": 1.0,
+    "backup_root": "backups",
+    "check_count": 23,
+    "checks": [
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_results.jsonl",
+        "hash_ok": true,
+        "name": "raw_jsonl:results/raw/main_inference_v1_results.jsonl",
+        "passed": true,
+        "required": true,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_manifest.json",
+        "hash_ok": true,
+        "name": "manifest:results/raw/main_inference_v1_manifest.json",
+        "passed": true,
+        "required": true,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_gpu_telemetry.jsonl",
+        "hash_ok": true,
+        "name": "telemetry:results/raw/main_inference_v1_gpu_telemetry.jsonl",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_eval_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_eval_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_eval_summary.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_eval_summary.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_engine_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_engine_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_memory_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_memory_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_concurrency_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_concurrency_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_api_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_api_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_api_vs_self_hosted_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_api_vs_self_hosted_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_model_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_model_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_slo_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_slo_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_slo_summary.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_slo_summary.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": false,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_slo_report_fixed.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_slo_report_fixed.json",
+        "passed": true,
+        "required": false,
+        "size_ok": false,
+        "source_exists": false
+      },
+      {
+        "backup_exists": false,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_slo_summary_fixed.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_slo_summary_fixed.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": false,
+        "source_exists": false
+      },
+      {
+        "backup_exists": false,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_verdict_fixed.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_verdict_fixed.json",
+        "passed": true,
+        "required": false,
+        "size_ok": false,
+        "source_exists": false
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_cost_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_cost_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_artifact_sync_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_artifact_sync_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_post_run_automation_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_post_run_automation_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_plotting_dataset.jsonl",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_plotting_dataset.jsonl",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/processed/main_inference_v1_progress.jsonl",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/main_inference_v1_progress.jsonl",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_checkpoint.json",
+        "hash_ok": true,
+        "name": "log:results/raw/main_inference_v1_checkpoint.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_path": "backups/main_inference_v1/results/raw/main_inference_v1_manifest.json",
+        "name": "manifest_status_matches_completed_rows",
+        "passed": true,
+        "required": true
+      }
+    ],
+    "passed": true,
+    "passed_count": 23,
+    "run_id": "main_inference_v1",
+    "verified_at": "2026-07-08T16:16:41.945118+00:00"
+  }
+}

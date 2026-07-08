@@ -65,6 +65,24 @@ that normalized wording artifact while preserving raw output for audit. The
 frozen Baseline_V1 archive itself remains the not-deployable pre-repair
 reference baseline.
 
+Main_Inference_V1 has now completed as the official before-optimization
+experiment and is archived under `experiments/main/main_inference_v1/`. It ran
+the same 25-config, 10,000-request repaired-quality matrix with 10,000/10,000
+requests completed and zero request failures. Runtime and cost SLOs passed, but
+quality and safety SLOs failed, so deployability is
+`NOT_DEPLOYABLE_SLO_FAILURES`. Optimization may begin from this measured
+before-optimization result.
+
+The measured Main_Inference_V1 result is:
+
+- Runtime: 1,900.585 seconds.
+- Total cost: `$0.821325`.
+- JSON validity: 99.93%.
+- Contract validity: 81.58%.
+- Evidence match: 62.26%.
+- Groundedness: 60.77%.
+- Safety findings: 96.
+
 # 1. Project Overview
 
 ## What The Project Is
@@ -3746,6 +3764,9 @@ BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
 MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
 BASELINE_V1_FINAL_SAFETY_RISK_REPAIRED
 MAIN_INFERENCE_V1_ALLOWED_BY_FINAL_SAFETY_REPAIR
+MAIN_INFERENCE_V1_COMPLETED
+MAIN_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
+OPTIMIZATION_READY_AFTER_MAIN_INFERENCE_V1
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
@@ -3984,12 +4005,13 @@ calibration package, and kept live RunPod calibration blocked because no
 
 ## Next Engineering Milestone
 
-Run Main_Inference_V1 as an explicit full 10,000-request experiment using the
-repaired quality path. Do not overwrite `experiments/baseline_v1/`; write the
-new experiment under a separate `experiments/main/` versioned folder. Keep MM0
-as a no-context ablation, preserve vLLM/SGLang and API/self-hosted result-track
-separation, keep the final safety-risk repair active, and do not weaken SLOs,
-evaluators, gold data, or retrieval.
+Run Optimized_Inference_V1 as the next independent track, using
+`experiments/main/main_inference_v1/` as the official before-optimization
+reference. Keep MM0 as a no-context ablation, preserve vLLM/SGLang and
+API/self-hosted result-track separation, keep the final safety-risk repair
+active, and do not weaken SLOs, evaluators, gold data, or retrieval. Change one
+reviewed optimization factor at a time so the before/after comparison remains
+auditable.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -4333,7 +4355,17 @@ neighboring Healthcare Admin SGLang MM4 c32 rows reached 100.00%
 JSON/contract/evidence/groundedness and zero safety findings. Broader replay
 over 2,200 rows, including the selected 1,600 repair rows plus vLLM comparison
 configs, also reached 100.00% JSON/contract/evidence/groundedness and zero
-safety findings. Main_Inference_V1 is allowed as a separate explicit run.
+safety findings.
+
+Main_Inference_V1 then ran as the separate explicit before-optimization
+experiment and is archived under `experiments/main/main_inference_v1/`. It
+completed 10,000/10,000 requests with zero request failures across the 25-config
+matrix. Runtime was 1,900.585 seconds and total cost was `$0.821325`, including
+`$0.786631` GPU cost and `$0.034694` API cost. JSON validity was 99.93%,
+contract validity was 81.58%, evidence match was 62.26%, groundedness was
+60.77%, and safety findings were 96. Runtime and cost SLOs passed; quality and
+safety SLOs failed. Deployability is `NOT_DEPLOYABLE_SLO_FAILURES`, and
+optimization may begin from this official before-optimization reference.
 
 ## Official Baseline V1 Addendum
 
@@ -4361,8 +4393,9 @@ cost fields where configured. It also copies the targeted repair validation
 evidence showing that contract validity improved from 84.13% to 100.00%,
 evidence match from 79.63% to 100.00%, groundedness from 76.19% to 100.00%,
 and safety findings from 14 to 1 on the selected 1,600-request set. That
-targeted repair gate passed, so Main_Inference_V1 is allowed as a separate
-explicit run. The final safety-risk repair is archived at
+targeted repair gate authorized Main_Inference_V1 as a separate explicit run,
+which has now completed and is archived under `experiments/main/main_inference_v1/`.
+The final safety-risk repair is archived at
 `experiments/baseline/baseline_v1_quality_repair_v1/final_safety_risk_repair/`.
 It closes the remaining SGLang MM4 c32 Healthcare Admin wording artifact with
 zero safety findings in targeted and broader replay.

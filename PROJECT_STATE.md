@@ -1,6 +1,6 @@
 # Project State
 
-Status as of June 23, 2026.
+Status as of July 8, 2026.
 
 ## Current Decision
 
@@ -37,6 +37,9 @@ BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
 MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
 BASELINE_V1_FINAL_SAFETY_RISK_REPAIRED
 MAIN_INFERENCE_V1_ALLOWED_BY_FINAL_SAFETY_REPAIR
+MAIN_INFERENCE_V1_COMPLETED
+MAIN_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
+OPTIMIZATION_READY_AFTER_MAIN_INFERENCE_V1
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -304,6 +307,18 @@ repairs are sufficient to begin Main_Inference_V1 as a separate explicit run.
 The final safety-risk repair is archived under
 `experiments/baseline/baseline_v1_quality_repair_v1/final_safety_risk_repair/`.
 The frozen Baseline_V1 archive remains not deployable by SLO.
+
+Main_Inference_V1 completed as the official before-optimization experiment
+under `experiments/main/main_inference_v1/`. It ran the 25-config,
+10,000-request repaired-quality matrix across A100 self-hosted vLLM/SGLang
+tracks and the API `model6_gated` track. The run completed 10,000/10,000
+requests with zero request failures and 25/25 configs complete. Runtime was
+1,900.585 seconds, total cost was `$0.821325`, JSON validity was 99.93%,
+contract validity was 81.58%, evidence match was 62.26%, groundedness was
+60.77%, and safety findings were 96. Runtime and cost SLOs passed; quality and
+safety SLOs failed. The deployability verdict is
+`NOT_DEPLOYABLE_SLO_FAILURES`, and optimization may begin from this official
+before-optimization result.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -725,13 +740,13 @@ Result tracks are separated:
 
 ## Next Step
 
-The next independent track is Main_Inference_V1 as an explicit full
-10,000-request run using the repaired quality path. Do not overwrite
-`experiments/baseline_v1/`; use a separate `experiments/main/` versioned folder.
-The previously monitored SGLang MM4 c32 Healthcare Admin safety wording risk is
-closed by the archived final safety repair. Preserve all checkpoint/resume,
-progress logging, artifact sync, manifest, telemetry, backup verification
-controls, and the unchanged strict safety evaluator.
+Main_Inference_V1 is complete and remains not deployable by repository SLOs.
+The next independent track is `Optimized_Inference_V1`: use
+`experiments/main/main_inference_v1/` as the official before-optimization
+reference, preserve the strict evaluator, SLO targets, gold data, retrieval,
+checkpoint/resume, progress logging, artifact sync, manifest, telemetry, and
+backup verification controls, and change only one reviewed optimization factor
+at a time.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

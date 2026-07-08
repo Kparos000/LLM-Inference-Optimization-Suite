@@ -1,0 +1,11 @@
+{
+  "api_cost_usd": 0.034693769999999916,
+  "api_request_count": 2000,
+  "gpu_cost_usd": 0.7866309993556254,
+  "run_id": "main_inference_v1",
+  "self_hosted_gpu_hourly_price_usd": 1.49,
+  "self_hosted_request_count": 8000,
+  "status": "COST_MEASURED",
+  "total_cost_usd": 0.8213247693556254,
+  "wall_seconds": 1900.5849648860749
+}

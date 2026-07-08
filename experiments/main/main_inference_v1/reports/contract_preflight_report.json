@@ -1,0 +1,24 @@
+{
+  "blocked_examples": [],
+  "checks": {
+    "all_rows_have_contract_instructions": true,
+    "api_vllm_sglang_payloads_normalized": true,
+    "contextual_rows_have_visible_e_labels": true,
+    "finance_rows_use_b6r5_repair": true,
+    "mm0_has_contract_json_instruction": true,
+    "mm4_rows_use_bounded_agentic_contract": true,
+    "no_canonical_or_gold_leakage": true,
+    "research_ai_rows_use_answer_skeleton": true
+  },
+  "contextual_e_label_rate": 1.0,
+  "contract_instruction_rate": 1.0,
+  "finance_row_count": 2000,
+  "leakage_row_count": 0,
+  "mm0_row_count": 2000,
+  "mm4_row_count": 2000,
+  "passed": true,
+  "research_ai_row_count": 2000,
+  "row_count": 10000,
+  "run_id": "main_inference_v1",
+  "status": "CONTRACT_PREFLIGHT_PASSED"
+}
