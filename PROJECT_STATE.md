@@ -30,6 +30,8 @@ API_LOAD_PROBE_ALLOWED
 DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
 CONTROLLED_FINAL_REPAIRED_BASELINE_OPERATIONAL_NOT_DEPLOYABLE
 PHASE2_OPTIMIZATION_DIAGNOSIS_READY
+PHASE2_TARGETED_BASELINE_REPAIRS_PASSED
+FINAL_MAIN_10000_EXPERIMENT_ALLOWED
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -247,6 +249,20 @@ groundedness failure in 20 configs, evidence-selection failure in 19 configs,
 and safety-wording failure in 15 configs. The selected before/after rerun plan
 contains eight non-MM0 configs covering API model6, SGLang MM2/MM3, MM4, and
 concurrency comparison.
+
+Phase 2 targeted baseline repairs applied final-answer contract normalization,
+Research AI `answer_skeleton` strengthening, citation whitelist normalization,
+evidence selector repair, Healthcare Admin safety wording cleanup, and the MM4
+final-answer guard to the selected eight-config before/after plan. The targeted
+validation completed 1,600/1,600 requests with zero request failures and did
+not run the full final 10,000 experiment. Overall contract validity improved
+from 84.13% to 100.00%, evidence match from 79.63% to 100.00%, groundedness
+from 76.19% to 100.00%, and safety findings dropped from 14 to 1. Research AI
+reached 100.00% contract/evidence/groundedness on the selected subset, while
+Healthcare Admin safety findings dropped from 12 to 1. The targeted repair gate
+passed and the final/main 10,000-request experiment is allowed as a separate
+explicit run. The one remaining safety finding is isolated to SGLang MM4 c32
+Healthcare Admin and should be monitored in the next full run.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing

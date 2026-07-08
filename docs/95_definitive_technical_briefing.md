@@ -4238,6 +4238,10 @@ assumptions:
 - the Phase 2A framework is retained with observed-price provenance, API-probe
   evidence, and an explicit live-RunPod block until a configured target and
   final price verification exist.
+- the Phase 2 targeted baseline repair is retained because it repaired the
+  selected Research AI quality and Healthcare Admin safety blockers before any
+  final/main 10,000-request experiment, while preserving one remaining SGLang
+  MM4 Healthcare Admin safety finding as a monitored risk rather than hiding it.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical
@@ -4268,5 +4272,15 @@ The exact A100 SGLang command for the controlled simulation is
 --chunked-prefill-size 8192`; the health check is
 `GET http://localhost:30000/v1/models`.
 
-The final 10,000-request experiment remains blocked until vLLM, SGLang, API, and
-MM4 smoke gates pass in the controlled matrix context.
+The repaired controlled-final baseline subsequently completed 10,000/10,000
+requests operationally, but fixed SLO scoring found it was not deployable:
+quality and safety SLOs failed even though runtime and cost SLOs passed.
+Phase 2 diagnosis selected an eight-config targeted rerun plan. The targeted
+baseline repair pass completed 1,600/1,600 selected requests with zero request
+failures. Contract validity improved from 84.13% to 100.00%, evidence match
+from 79.63% to 100.00%, groundedness from 76.19% to 100.00%, and safety
+findings dropped from 14 to 1. Research AI reached 100.00%
+contract/evidence/groundedness on the selected subset; Healthcare Admin safety
+findings dropped from 12 to 1. The targeted gate passed, so the final/main
+10,000-request experiment is allowed as a separate explicit run. The remaining
+SGLang MM4 c32 Healthcare Admin safety finding should be monitored in that run.
