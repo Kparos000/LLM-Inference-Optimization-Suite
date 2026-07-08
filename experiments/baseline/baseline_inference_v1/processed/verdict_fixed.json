@@ -12,7 +12,7 @@
   ],
   "overall_deployability_verdict": "NOT_DEPLOYABLE_SLO_FAILURES",
   "quality_slo_verdict": "FAIL",
-  "run_id": "main_inference_v1",
+  "run_id": "baseline_inference_v1",
   "runtime_slo_verdict": "PASS",
   "safety_slo_verdict": "FAIL",
   "status": "CONTROLLED_FINAL_SLO_RESCORED"

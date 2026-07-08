@@ -2,31 +2,31 @@
   "comparison_reports": [
     {
       "available": true,
-      "path": "results/processed/main_inference_v1_engine_comparison.csv"
+      "path": "results/processed/baseline_inference_v1_engine_comparison.csv"
     },
     {
       "available": true,
-      "path": "results/processed/main_inference_v1_memory_comparison.csv"
+      "path": "results/processed/baseline_inference_v1_memory_comparison.csv"
     },
     {
       "available": true,
-      "path": "results/processed/main_inference_v1_concurrency_comparison.csv"
+      "path": "results/processed/baseline_inference_v1_concurrency_comparison.csv"
     },
     {
       "available": true,
-      "path": "results/processed/main_inference_v1_api_comparison.csv"
+      "path": "results/processed/baseline_inference_v1_api_comparison.csv"
     },
     {
       "available": true,
-      "path": "results/processed/main_inference_v1_api_vs_self_hosted_comparison.csv"
+      "path": "results/processed/baseline_inference_v1_api_vs_self_hosted_comparison.csv"
     },
     {
       "available": true,
-      "path": "results/processed/main_inference_v1_model_comparison.csv"
+      "path": "results/processed/baseline_inference_v1_model_comparison.csv"
     },
     {
       "available": true,
-      "path": "results/processed/main_inference_v1_slo_summary.csv"
+      "path": "results/processed/baseline_inference_v1_slo_summary.csv"
     }
   ],
   "generated_at_utc": "2026-07-08T16:16:37.572458+00:00",
@@ -41,7 +41,7 @@
     "model_alias": "model3_7b+model6_gated",
     "optimization_flags": [],
     "prompt_count": 10000,
-    "run_id": "main_inference_v1",
+    "run_id": "baseline_inference_v1",
     "traffic_profile": "online_low_latency",
     "vertical": "all"
   },
@@ -62,7 +62,7 @@
     "throughput",
     "slo_comparison"
   ],
-  "run_id": "main_inference_v1",
+  "run_id": "baseline_inference_v1",
   "slo_metric_rows": [
     {
       "direction": "max",

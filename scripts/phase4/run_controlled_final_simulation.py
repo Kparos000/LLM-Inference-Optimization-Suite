@@ -107,6 +107,7 @@ SELF_HOSTED_ENGINES = ("vllm", "sglang")
 SELF_HOSTED_CONCURRENCY = (16, 32)
 API_CONCURRENCY = (4,)
 DEFAULT_PROMPTS_PER_VERTICAL = 80
+OFFICIAL_MAIN_PROMPTS_PER_VERTICAL = 2000
 DEFAULT_MATRIX_PATH = (
     "data/generated/phase4/controlled_final_simulation_80_per_vertical_matrix.jsonl"
 )
@@ -384,7 +385,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def build_config_specs() -> list[ConfigSpec]:
-    """Return the frozen 10,000-request self-hosted and API config matrix."""
+    """Return the frozen 25-config self-hosted and API config matrix."""
 
     specs: list[ConfigSpec] = []
     for engine in SELF_HOSTED_ENGINES:
@@ -565,7 +566,7 @@ def _render_prompt_for_memory_mode(base: dict[str, Any], memory_mode: str) -> tu
 
 
 def build_repaired_base_input(args: argparse.Namespace) -> list[dict[str, Any]]:
-    """Build/load the repaired B6/B7/A100-style 400-row base input."""
+    """Build/load the repaired B6/B7/A100-style base input."""
 
     build_b6_context_aligned_runner_input(
         source_workload_path=_repo_path(args.source_workload),
@@ -614,7 +615,7 @@ def build_matrix_rows(
     prompts_per_vertical: int,
     args: argparse.Namespace | None = None,
 ) -> list[dict[str, Any]]:
-    """Build the 10,000-request controlled simulation matrix."""
+    """Build the controlled final/Main Inference matrix."""
 
     if args is None:
         args = build_parser().parse_args([])
@@ -3011,8 +3012,13 @@ def write_blocked_reports(
 def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
     """Build matrix, run safety gates, and write reports."""
 
-    if args.prompt_count_per_vertical != DEFAULT_PROMPTS_PER_VERTICAL:
-        msg = "controlled final simulation is locked to 80 prompts per vertical"
+    allowed_prompt_counts = {DEFAULT_PROMPTS_PER_VERTICAL, OFFICIAL_MAIN_PROMPTS_PER_VERTICAL}
+    if args.prompt_count_per_vertical not in allowed_prompt_counts:
+        msg = (
+            "controlled final simulation is locked to either 80 prompts per vertical "
+            "for Baseline_Inference_V1 validation or 2000 prompts per vertical for "
+            "official Main_Inference_V1"
+        )
         raise ValueError(msg)
     if args.gpu_id != GPU_ID:
         msg = "controlled final simulation is locked to A100 SXM 80GB"

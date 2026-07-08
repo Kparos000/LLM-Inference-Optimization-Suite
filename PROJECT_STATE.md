@@ -37,9 +37,10 @@ BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
 MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
 BASELINE_V1_FINAL_SAFETY_RISK_REPAIRED
 MAIN_INFERENCE_V1_ALLOWED_BY_FINAL_SAFETY_REPAIR
-MAIN_INFERENCE_V1_COMPLETED
-MAIN_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
-OPTIMIZATION_READY_AFTER_MAIN_INFERENCE_V1
+BASELINE_INFERENCE_V1_COMPLETED
+BASELINE_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
+MAIN_INFERENCE_V1_PENDING_250000_REQUESTS
+OPTIMIZATION_BLOCKED_UNTIL_MAIN_INFERENCE_V1_COMPLETES
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -308,17 +309,21 @@ The final safety-risk repair is archived under
 `experiments/baseline/baseline_v1_quality_repair_v1/final_safety_risk_repair/`.
 The frozen Baseline_V1 archive remains not deployable by SLO.
 
-Main_Inference_V1 completed as the official before-optimization experiment
-under `experiments/main/main_inference_v1/`. It ran the 25-config,
-10,000-request repaired-quality matrix across A100 self-hosted vLLM/SGLang
-tracks and the API `model6_gated` track. The run completed 10,000/10,000
-requests with zero request failures and 25/25 configs complete. Runtime was
-1,900.585 seconds, total cost was `$0.821325`, JSON validity was 99.93%,
-contract validity was 81.58%, evidence match was 62.26%, groundedness was
-60.77%, and safety findings were 96. Runtime and cost SLOs passed; quality and
-safety SLOs failed. The deployability verdict is
-`NOT_DEPLOYABLE_SLO_FAILURES`, and optimization may begin from this official
-before-optimization result.
+The run previously named Main_Inference_V1 has been corrected to
+Baseline_Inference_V1 and archived under
+`experiments/baseline/baseline_inference_v1/`. It ran the 25-config validation
+matrix across A100 self-hosted vLLM/SGLang tracks and the API `model6_gated`
+track with 400 requests per config, 80 prompts per vertical per config, and
+10,000 total requests. The run completed 10,000/10,000 requests with zero
+request failures and 25/25 configs complete. Runtime was 1,900.585 seconds,
+total cost was `$0.821325`, JSON validity was 99.93%, contract validity was
+81.58%, evidence match was 62.26%, groundedness was 60.77%, and safety
+findings were 96. Runtime and cost SLOs passed; quality and safety SLOs failed.
+The deployability verdict is `NOT_DEPLOYABLE_SLO_FAILURES`.
+
+This is not the official Main_Inference_V1 before-optimization experiment. The
+official Main_Inference_V1 remains pending and must run 25 configs x 10,000
+prompts/config = 250,000 total requests.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -740,13 +745,13 @@ Result tracks are separated:
 
 ## Next Step
 
-Main_Inference_V1 is complete and remains not deployable by repository SLOs.
-The next independent track is `Optimized_Inference_V1`: use
-`experiments/main/main_inference_v1/` as the official before-optimization
-reference, preserve the strict evaluator, SLO targets, gold data, retrieval,
+Baseline_Inference_V1 is complete and remains not deployable by repository
+SLOs. The next independent track is the corrected official `Main_Inference_V1`:
+run 25 configs x 10,000 prompts/config = 250,000 total requests, then use that
+official run as the before-optimization reference for `Optimized_Inference_V1`.
+Preserve the strict evaluator, SLO targets, gold data, retrieval,
 checkpoint/resume, progress logging, artifact sync, manifest, telemetry, and
-backup verification controls, and change only one reviewed optimization factor
-at a time.
+backup verification controls.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

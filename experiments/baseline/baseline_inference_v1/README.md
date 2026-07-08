@@ -1,16 +1,24 @@
-# Main_Inference_V1 Archive
+# Baseline_Inference_V1 Archive
 
-Status: official before-optimization experiment completed on July 8, 2026.
+Status: completed validation/baseline run from July 8, 2026.
 
 This archive records the committed metadata and processed evidence for
-`Main_Inference_V1`. It does not commit raw full results, telemetry, backups, or
-temporary checkpoints. Checksums for those local artifacts are preserved in
+`Baseline_Inference_V1`. This run was originally mislabeled as
+`Main_Inference_V1`, but it was not the official Main_Inference run because it
+covered 10,000 total requests across the 25-config matrix rather than 10,000
+prompts per configuration.
+
+It does not commit raw full results, telemetry, backups, or temporary
+checkpoints. Checksums for those local artifacts are preserved in
 `checksums/SHA256SUMS`.
 
 ## Run
 
-- Run ID: `main_inference_v1`
-- Matrix: 25 configs, 10,000 requests
+- Run ID: `baseline_inference_v1`
+- Matrix: 25 configs, 400 requests per config, 10,000 total requests
+- Prompt sample: 80 prompts per vertical per config
+- Scope: validation/baseline run, not the official 250,000-request
+  `Main_Inference_V1`
 - Self-hosted track: `model3_7b` / Qwen2.5-7B-Instruct on A100 SXM 80GB,
   vLLM and SGLang, mm0-mm4, concurrency 16 and 32
 - API track: `model6_gated` / Llama 3.1 8B through API provider route, mm0-mm4,
@@ -46,6 +54,7 @@ temporary checkpoints. Checksums for those local artifacts are preserved in
 - Safety SLO: `FAIL`
 - Deployability: `NOT_DEPLOYABLE_SLO_FAILURES`
 
-This is the official before-optimization measurement. Optimization work may
-begin from this result, targeting contract validity, evidence match, format
-validity, groundedness, and safety.
+This is preserved as a completed 25-config validation/baseline run. The
+official `Main_Inference_V1` remains pending and must run 25 configs x 10,000
+prompts/config = 250,000 total requests before `Optimized_Inference_V1` can use
+it as the before-optimization reference.

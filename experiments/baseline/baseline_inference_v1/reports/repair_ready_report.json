@@ -2,7 +2,7 @@
   "artifact_sync_checkpoint_manifest_enabled": true,
   "full_10000_rerun_allowed": true,
   "repaired_500_validation_passed": true,
-  "run_id": "main_inference_v1",
+  "run_id": "baseline_inference_v1",
   "runtime_smokes_ready": true,
   "status": "CONTROLLED_FINAL_REPAIR_READY",
   "targeted_mm4_replay_passed": true

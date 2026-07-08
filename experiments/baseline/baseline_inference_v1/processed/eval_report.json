@@ -684,7 +684,7 @@
     "api_cost_usd": 0.034693769999999916,
     "api_request_count": 2000,
     "gpu_cost_usd": 0.7866309993556254,
-    "run_id": "main_inference_v1",
+    "run_id": "baseline_inference_v1",
     "self_hosted_gpu_hourly_price_usd": 1.49,
     "self_hosted_request_count": 8000,
     "status": "COST_MEASURED",
@@ -885,7 +885,7 @@
     }
   },
   "mm4_ran": true,
-  "run_id": "main_inference_v1",
+  "run_id": "baseline_inference_v1",
   "sglang_ran": true,
   "slo_status_counts": {
     "1": 5,
@@ -950,7 +950,7 @@
     "memory_modes": "mm0_no_context;mm1_dense_top5;mm2_hybrid_top5;mm3_compressed_hybrid_top5;mm4_bounded_agentic",
     "parse_repair_count": 0,
     "parse_repair_rate": 0.0,
-    "results_path": "results/raw/main_inference_v1_results.jsonl",
+    "results_path": "results/raw/baseline_inference_v1_results.jsonl",
     "retry_rate": 0.0,
     "retry_row_count": 0,
     "row_count": 10000,

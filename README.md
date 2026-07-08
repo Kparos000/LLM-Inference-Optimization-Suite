@@ -71,9 +71,17 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The final monitored Baseline_V1 repair risk was isolated to `self_hosted_model3_7b_sglang_mm4_bounded_agentic_c32` / `healthcare_admin_scaleup_2000_0027`: safe administrative boundary wording repeated the prohibited phrase `medical advice`. The final-answer boundary repair rewrites only normalized refusal/boundary wording, preserves raw output for audit, and leaves the evaluator, SLOs, gold data, and MM4 intact. Targeted replay covered the exact row plus 39 neighboring Healthcare Admin SGLang MM4 c32 rows with 100.00% JSON/contract validity, 100.00% evidence/groundedness, and zero safety findings. Broader deterministic replay covered 2,200 rows including the 1,600 selected repair rows plus vLLM comparison configs, SGLang, MM4, c32, Healthcare Admin, Research AI, and API `model6_gated`; it reached 100.00% JSON/contract validity, 100.00% evidence/groundedness, and zero safety findings.
 - Official baseline v1 completed the frozen 25-config, 10,000-request matrix on RunPod A100 SXM 80GB and is frozen under `experiments/baseline_v1/`. It completed 10,000/10,000 requests with zero failures. Runtime and cost SLOs passed, but quality and safety SLOs failed, so deployability remains `NOT_DEPLOYABLE_SLO_FAILURES`. This archive is the reference baseline for all later optimization comparisons.
 - Baseline_V1 quality repair evidence is versioned separately under `experiments/baseline/baseline_v1_quality_repair_v1/`. It preserves the frozen baseline, adds an explicit target/result/difference SLO scorecard from repository SLOs, copies the targeted 1,600-request repair validation, and archives the final safety-risk repair under `final_safety_risk_repair/`. The frozen Baseline_V1 archive itself remains unchanged and not deployable by SLO.
-- Main_Inference_V1 completed as the official before-optimization experiment and is archived under `experiments/main/main_inference_v1/`. It completed 10,000/10,000 requests with zero request failures. Runtime and cost SLOs passed, but quality and safety SLOs failed; deployability is `NOT_DEPLOYABLE_SLO_FAILURES`.
+- The run previously labeled `Main_Inference_V1` has been corrected to
+  `Baseline_Inference_V1` and archived under
+  `experiments/baseline/baseline_inference_v1/`. It completed the 25-config
+  validation/baseline matrix with 400 requests per config, 10,000 total
+  requests, zero request failures, runtime and cost SLO passes, and quality and
+  safety SLO failures. It is not the official Main_Inference run.
 - Result tracks are explicitly separated: API provider runs (`model5`/`model6`/`model7` through OpenRouter, Novita, or HF provider routes) use API token cost and no provider GPU telemetry; self-hosted GPU runs (`model2`/`model3`/`model4` through Hugging Face local, vLLM, SGLang, or RunPod) use GPU telemetry/hourly infrastructure cost when configured and no API token price.
-- The next independent track is Optimized_Inference_V1, using Main_Inference_V1 as the official before-optimization reference.
+- The official `Main_Inference_V1` remains pending. Its correct matrix is
+  25 configs x 10,000 prompts/config = 250,000 total requests. Only after that
+  run is complete should `Optimized_Inference_V1` use it as the official
+  before-optimization reference.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation

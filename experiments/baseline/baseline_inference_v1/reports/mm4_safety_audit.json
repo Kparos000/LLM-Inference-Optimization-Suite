@@ -24,7 +24,7 @@
       "vertical": "airline"
     }
   ],
-  "run_id": "main_inference_v1",
+  "run_id": "baseline_inference_v1",
   "status": "CONTROLLED_FINAL_MM4_SAFETY_VIOLATION_AUDIT_COMPLETE",
   "violation": {
     "agent_trace_preserved_but_not_scored": true,

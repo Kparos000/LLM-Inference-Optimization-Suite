@@ -19,6 +19,6 @@
   "passed": true,
   "research_ai_row_count": 2000,
   "row_count": 10000,
-  "run_id": "main_inference_v1",
+  "run_id": "baseline_inference_v1",
   "status": "CONTRACT_PREFLIGHT_PASSED"
 }

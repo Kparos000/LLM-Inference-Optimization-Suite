@@ -65,15 +65,19 @@ that normalized wording artifact while preserving raw output for audit. The
 frozen Baseline_V1 archive itself remains the not-deployable pre-repair
 reference baseline.
 
-Main_Inference_V1 has now completed as the official before-optimization
-experiment and is archived under `experiments/main/main_inference_v1/`. It ran
-the same 25-config, 10,000-request repaired-quality matrix with 10,000/10,000
-requests completed and zero request failures. Runtime and cost SLOs passed, but
-quality and safety SLOs failed, so deployability is
-`NOT_DEPLOYABLE_SLO_FAILURES`. Optimization may begin from this measured
-before-optimization result.
+The run previously named Main_Inference_V1 has been corrected to
+Baseline_Inference_V1 and archived under
+`experiments/baseline/baseline_inference_v1/`. It ran the same 25-config
+validation matrix with 400 requests per config, 80 prompts per vertical per
+config, and 10,000 total requests. It completed 10,000/10,000 requests with
+zero request failures. Runtime and cost SLOs passed, but quality and safety
+SLOs failed, so deployability is `NOT_DEPLOYABLE_SLO_FAILURES`.
 
-The measured Main_Inference_V1 result is:
+The official Main_Inference_V1 remains pending. Its correct matrix is
+25 configs x 10,000 prompts/config = 250,000 total requests. Optimized
+Inference work should wait for that official before-optimization reference.
+
+The measured Baseline_Inference_V1 result is:
 
 - Runtime: 1,900.585 seconds.
 - Total cost: `$0.821325`.
@@ -3764,9 +3768,10 @@ BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
 MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
 BASELINE_V1_FINAL_SAFETY_RISK_REPAIRED
 MAIN_INFERENCE_V1_ALLOWED_BY_FINAL_SAFETY_REPAIR
-MAIN_INFERENCE_V1_COMPLETED
-MAIN_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
-OPTIMIZATION_READY_AFTER_MAIN_INFERENCE_V1
+BASELINE_INFERENCE_V1_COMPLETED
+BASELINE_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
+MAIN_INFERENCE_V1_PENDING_250000_REQUESTS
+OPTIMIZATION_BLOCKED_UNTIL_MAIN_INFERENCE_V1_COMPLETES
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
@@ -4005,13 +4010,15 @@ calibration package, and kept live RunPod calibration blocked because no
 
 ## Next Engineering Milestone
 
-Run Optimized_Inference_V1 as the next independent track, using
-`experiments/main/main_inference_v1/` as the official before-optimization
-reference. Keep MM0 as a no-context ablation, preserve vLLM/SGLang and
-API/self-hosted result-track separation, keep the final safety-risk repair
-active, and do not weaken SLOs, evaluators, gold data, or retrieval. Change one
-reviewed optimization factor at a time so the before/after comparison remains
-auditable.
+Run the corrected official Main_Inference_V1 as the next independent track:
+25 configs x 10,000 prompts/config = 250,000 total requests. Use
+Baseline_Inference_V1 only as the completed 10,000-total-request validation
+run. After official Main_Inference_V1 completes, use it as the
+before-optimization reference for Optimized_Inference_V1. Keep MM0 as a
+no-context ablation, preserve vLLM/SGLang and API/self-hosted result-track
+separation, keep the final safety-risk repair active, and do not weaken SLOs,
+evaluators, gold data, or retrieval. Change one reviewed optimization factor at
+a time so the before/after comparison remains auditable.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -4357,15 +4364,20 @@ over 2,200 rows, including the selected 1,600 repair rows plus vLLM comparison
 configs, also reached 100.00% JSON/contract/evidence/groundedness and zero
 safety findings.
 
-Main_Inference_V1 then ran as the separate explicit before-optimization
-experiment and is archived under `experiments/main/main_inference_v1/`. It
-completed 10,000/10,000 requests with zero request failures across the 25-config
-matrix. Runtime was 1,900.585 seconds and total cost was `$0.821325`, including
-`$0.786631` GPU cost and `$0.034694` API cost. JSON validity was 99.93%,
-contract validity was 81.58%, evidence match was 62.26%, groundedness was
-60.77%, and safety findings were 96. Runtime and cost SLOs passed; quality and
-safety SLOs failed. Deployability is `NOT_DEPLOYABLE_SLO_FAILURES`, and
-optimization may begin from this official before-optimization reference.
+The run originally labeled Main_Inference_V1 was corrected to
+Baseline_Inference_V1 and is archived under
+`experiments/baseline/baseline_inference_v1/`. It completed 10,000/10,000
+requests with zero request failures across the 25-config matrix, using 400
+requests per config and 80 prompts per vertical per config. Runtime was
+1,900.585 seconds and total cost was `$0.821325`, including `$0.786631` GPU
+cost and `$0.034694` API cost. JSON validity was 99.93%, contract validity was
+81.58%, evidence match was 62.26%, groundedness was 60.77%, and safety findings
+were 96. Runtime and cost SLOs passed; quality and safety SLOs failed.
+Deployability is `NOT_DEPLOYABLE_SLO_FAILURES`.
+
+This run is not the official Main_Inference_V1 before-optimization reference.
+The official Main_Inference_V1 remains pending and must run 25 configs x 10,000
+prompts/config = 250,000 total requests.
 
 ## Official Baseline V1 Addendum
 
@@ -4393,8 +4405,10 @@ cost fields where configured. It also copies the targeted repair validation
 evidence showing that contract validity improved from 84.13% to 100.00%,
 evidence match from 79.63% to 100.00%, groundedness from 76.19% to 100.00%,
 and safety findings from 14 to 1 on the selected 1,600-request set. That
-targeted repair gate authorized Main_Inference_V1 as a separate explicit run,
-which has now completed and is archived under `experiments/main/main_inference_v1/`.
+targeted repair gate authorized Main_Inference_V1 as a separate explicit run.
+The 10,000-total-request validation run that followed is now classified as
+Baseline_Inference_V1 under `experiments/baseline/baseline_inference_v1/`; the
+official 250,000-request Main_Inference_V1 remains pending.
 The final safety-risk repair is archived at
 `experiments/baseline/baseline_v1_quality_repair_v1/final_safety_risk_repair/`.
 It closes the remaining SGLang MM4 c32 Healthcare Admin wording artifact with

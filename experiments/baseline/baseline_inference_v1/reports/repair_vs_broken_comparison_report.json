@@ -13,7 +13,7 @@
       "json_valid_rate": 0.0
     },
     "failure_audit": {
-      "csv_path": "results/processed/main_inference_v1_repaired_25_failure_audit.csv",
+      "csv_path": "results/processed/baseline_inference_v1_repaired_25_failure_audit.csv",
       "failure_class_counts": {
         "answer_not_grounded_in_cited_evidence": 2,
         "cited_evidence_not_in_e1_e5": 2,
@@ -21,7 +21,7 @@
         "missing_evidence_field": 4,
         "mm0_expected_evidence_absence": 5
       },
-      "json_path": "results/processed/main_inference_v1_repaired_25_failure_audit.json"
+      "json_path": "results/processed/baseline_inference_v1_repaired_25_failure_audit.json"
     },
     "memory_mode_reporting": {
       "mm0_no_context": "no_context_ablation",
@@ -51,7 +51,7 @@
         "memory_modes": "mm0_no_context",
         "parse_repair_count": 5,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_25_replay_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_25_replay_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 5,
@@ -81,7 +81,7 @@
         "memory_modes": "mm1_dense_top5",
         "parse_repair_count": 5,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_25_replay_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_25_replay_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 5,
@@ -111,7 +111,7 @@
         "memory_modes": "mm2_hybrid_top5",
         "parse_repair_count": 5,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_25_replay_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_25_replay_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 5,
@@ -141,7 +141,7 @@
         "memory_modes": "mm3_compressed_hybrid_top5",
         "parse_repair_count": 5,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_25_replay_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_25_replay_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 5,
@@ -171,7 +171,7 @@
         "memory_modes": "mm4_bounded_agentic",
         "parse_repair_count": 5,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_25_replay_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_25_replay_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 5,
@@ -187,7 +187,7 @@
     "request_failure_count": 0,
     "request_success_count": 25,
     "row_count": 25,
-    "run_id": "main_inference_v1",
+    "run_id": "baseline_inference_v1",
     "status": "REPAIRED_25_REPLAY_COMPLETE",
     "summary": {
       "contract_retry_count": 0,
@@ -209,7 +209,7 @@
       "memory_modes": "mm0_no_context;mm1_dense_top5;mm2_hybrid_top5;mm3_compressed_hybrid_top5;mm4_bounded_agentic",
       "parse_repair_count": 25,
       "parse_repair_rate": 1.0,
-      "results_path": "results/processed/main_inference_v1_repaired_25_replay_report.json",
+      "results_path": "results/processed/baseline_inference_v1_repaired_25_replay_report.json",
       "retry_rate": 0.0,
       "retry_row_count": 0,
       "row_count": 25,
@@ -255,7 +255,7 @@
         "memory_modes": "mm0_no_context",
         "parse_repair_count": 100,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_500_validation_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_500_validation_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 100,
@@ -285,7 +285,7 @@
         "memory_modes": "mm1_dense_top5",
         "parse_repair_count": 99,
         "parse_repair_rate": 0.99,
-        "results_path": "results/processed/main_inference_v1_repaired_500_validation_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_500_validation_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 100,
@@ -315,7 +315,7 @@
         "memory_modes": "mm2_hybrid_top5",
         "parse_repair_count": 100,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_500_validation_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_500_validation_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 100,
@@ -345,7 +345,7 @@
         "memory_modes": "mm3_compressed_hybrid_top5",
         "parse_repair_count": 100,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_repaired_500_validation_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_500_validation_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 100,
@@ -375,7 +375,7 @@
         "memory_modes": "mm4_bounded_agentic",
         "parse_repair_count": 71,
         "parse_repair_rate": 0.71,
-        "results_path": "results/processed/main_inference_v1_repaired_500_validation_report.json",
+        "results_path": "results/processed/baseline_inference_v1_repaired_500_validation_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 100,
@@ -387,8 +387,8 @@
       }
     },
     "mm4_safety_audit": {
-      "json_path": "results/processed/main_inference_v1_mm4_safety_audit.json",
-      "markdown_path": "results/processed/main_inference_v1_mm4_safety_audit.md",
+      "json_path": "results/processed/baseline_inference_v1_mm4_safety_audit.json",
+      "markdown_path": "results/processed/baseline_inference_v1_mm4_safety_audit.md",
       "violation_count": 0
     },
     "natural_language_no_json_count": 0,
@@ -396,7 +396,7 @@
     "request_failure_count": 0,
     "request_success_count": 500,
     "row_count": 500,
-    "run_id": "main_inference_v1",
+    "run_id": "baseline_inference_v1",
     "status": "REPAIRED_500_VALIDATION_COMPLETE",
     "summary": {
       "contract_retry_count": 0,
@@ -418,7 +418,7 @@
       "memory_modes": "mm0_no_context;mm1_dense_top5;mm2_hybrid_top5;mm3_compressed_hybrid_top5;mm4_bounded_agentic",
       "parse_repair_count": 470,
       "parse_repair_rate": 0.94,
-      "results_path": "results/processed/main_inference_v1_repaired_500_validation_report.json",
+      "results_path": "results/processed/baseline_inference_v1_repaired_500_validation_report.json",
       "retry_rate": 0.0,
       "retry_row_count": 0,
       "row_count": 500,
@@ -429,7 +429,7 @@
       "verticals": "airline;finance;healthcare_admin;research_ai;retail"
     }
   },
-  "run_id": "main_inference_v1",
+  "run_id": "baseline_inference_v1",
   "status": "REPAIR_COMPARISON_AVAILABLE",
   "targeted_mm4_safety_replay": {
     "baseline": {
@@ -466,7 +466,7 @@
         "memory_modes": "mm4_bounded_agentic",
         "parse_repair_count": 11,
         "parse_repair_rate": 1.0,
-        "results_path": "results/processed/main_inference_v1_mm4_safety_targeted_report.json",
+        "results_path": "results/processed/baseline_inference_v1_mm4_safety_targeted_report.json",
         "retry_rate": 0.0,
         "retry_row_count": 0,
         "row_count": 11,
@@ -482,7 +482,7 @@
     "request_failure_count": 0,
     "request_success_count": 11,
     "row_count": 11,
-    "run_id": "main_inference_v1",
+    "run_id": "baseline_inference_v1",
     "status": "MM4_SAFETY_TARGETED_REPLAY_COMPLETE",
     "summary": {
       "contract_retry_count": 0,
@@ -504,7 +504,7 @@
       "memory_modes": "mm4_bounded_agentic",
       "parse_repair_count": 11,
       "parse_repair_rate": 1.0,
-      "results_path": "results/processed/main_inference_v1_mm4_safety_targeted_report.json",
+      "results_path": "results/processed/baseline_inference_v1_mm4_safety_targeted_report.json",
       "retry_rate": 0.0,
       "retry_row_count": 0,
       "row_count": 11,
