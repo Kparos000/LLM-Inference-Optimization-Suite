@@ -2804,7 +2804,10 @@ def _write_manifest(
         model_alias="model3_7b+model6_gated",
         model_id=f"{SELF_HOSTED_MODEL_ID}+{API_MODEL_ID}",
         memory_mode="mm0-mm4",
-        split="controlled_final_simulation_80_per_vertical",
+        split=(
+            "controlled_final_simulation_"
+            f"{matrix_summary['prompts_per_vertical_per_config']}_per_vertical"
+        ),
         ablation_mode="prompt_plus_metadata",
         input_workload_path=args.matrix_path,
         output_path=args.raw_results_path,
