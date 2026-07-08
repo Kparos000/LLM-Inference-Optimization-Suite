@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from importlib import import_module
@@ -370,6 +371,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-new-tokens", type=int, default=224)
     parser.add_argument("--timeout-seconds", type=float, default=240.0)
     parser.add_argument("--telemetry-interval-seconds", type=float, default=1.0)
+    parser.add_argument("--api-rate-limit-retries", type=int, default=3)
+    parser.add_argument("--api-rate-limit-wait-seconds", type=float, default=600.0)
     parser.add_argument("--run-repaired-smoke", action="store_true")
     parser.add_argument("--run-repaired-validation", action="store_true")
     parser.add_argument("--run-mm4-safety-targeted", action="store_true")
@@ -1868,6 +1871,27 @@ def _chat_completion_request(
     return "".join(chunks), first_token - start if first_token is not None else None, end - start
 
 
+def _exception_status_code(exc: BaseException) -> int | None:
+    status_code = getattr(exc, "status_code", None)
+    if isinstance(status_code, int):
+        return status_code
+    response = getattr(exc, "response", None)
+    response_status = getattr(response, "status_code", None)
+    if isinstance(response_status, int):
+        return response_status
+    code = getattr(exc, "code", None)
+    if isinstance(code, int):
+        return code
+    return None
+
+
+def _is_api_rate_limit_exception(exc: BaseException) -> bool:
+    if _exception_status_code(exc) == 429:
+        return True
+    text = f"{type(exc).__name__}: {exc}".lower()
+    return "rate limit" in text or "ratelimit" in text or "throttl" in text
+
+
 def _api_route(args: argparse.Namespace) -> tuple[str, str, str, str]:
     project = load_project_config()
     model = project.resolve_model_config(API_MODEL_ALIAS)
@@ -1892,6 +1916,7 @@ def _execute_one_request(
     api_key = args.api_key
     model_id = str(row["model_id"])
     provider = "self_hosted"
+    api_rate_limit_retries = 0
     if row["engine"] == "sglang":
         base_url = args.sglang_base_url
     if row["backend_type"] == "api_provider":
@@ -1900,14 +1925,33 @@ def _execute_one_request(
             raise RuntimeError(msg)
         base_url, api_key, model_id, provider = api_route
     try:
-        generated_text, ttft_seconds, elapsed_seconds = _chat_completion_request(
-            base_url=base_url,
-            api_key=api_key,
-            model=model_id,
-            prompt=str(row["prompt"]),
-            max_tokens=args.max_new_tokens,
-            timeout_seconds=args.timeout_seconds,
-        )
+        attempts = 0
+        while True:
+            try:
+                generated_text, ttft_seconds, elapsed_seconds = _chat_completion_request(
+                    base_url=base_url,
+                    api_key=api_key,
+                    model=model_id,
+                    prompt=str(row["prompt"]),
+                    max_tokens=args.max_new_tokens,
+                    timeout_seconds=args.timeout_seconds,
+                )
+                break
+            except Exception as exc:  # noqa: BLE001
+                if row["backend_type"] != "api_provider" or not _is_api_rate_limit_exception(exc):
+                    raise
+                attempts += 1
+                api_rate_limit_retries = attempts
+                if attempts > args.api_rate_limit_retries:
+                    raise
+                print(
+                    "api_rate_limit_retry "
+                    f"request_id={_request_key(row)} attempt={attempts}/"
+                    f"{args.api_rate_limit_retries} wait_s="
+                    f"{args.api_rate_limit_wait_seconds:.1f}",
+                    flush=True,
+                )
+                time.sleep(args.api_rate_limit_wait_seconds)
         output_tokens = count_whitespace_tokens(generated_text)
         ttft_ms = ttft_seconds * 1000.0 if ttft_seconds is not None else None
         e2e_ms = elapsed_seconds * 1000.0
@@ -1947,9 +1991,11 @@ def _execute_one_request(
             "error_message": "",
             "failure_reason": "",
             "final_status": "answer",
+            "api_rate_limit_retries": api_rate_limit_retries,
         }
     except Exception as exc:  # noqa: BLE001
         elapsed_seconds = time.perf_counter() - started
+        rate_limited = row["backend_type"] == "api_provider" and _is_api_rate_limit_exception(exc)
         return {
             **row,
             "request_id": _request_key(row),
@@ -1970,7 +2016,10 @@ def _execute_one_request(
             "total_cost_usd": 0.0,
             "error_message": f"{type(exc).__name__}: {exc}",
             "failure_reason": f"{type(exc).__name__}: {exc}",
-            "final_status": "failed_validation",
+            "final_status": "api_rate_limit_retry_exhausted"
+            if rate_limited
+            else "failed_validation",
+            "api_rate_limit_retries": api_rate_limit_retries,
         }
 
 
@@ -2026,6 +2075,7 @@ def _run_config(
     completed_keys: set[str],
     api_route: tuple[str, str, str, str] | None,
     progress: ProgressState | None = None,
+    flush_completed: Callable[[list[dict[str, Any]]], None] | None = None,
 ) -> list[dict[str, Any]]:
     pending = [row for row in rows if _request_key(row) not in completed_keys]
     if not pending:
@@ -2036,6 +2086,7 @@ def _run_config(
         flush=True,
     )
     completed: list[dict[str, Any]] = []
+    buffered: list[dict[str, Any]] = []
     with ThreadPoolExecutor(max_workers=config.concurrency) as executor:
         futures = [
             executor.submit(_execute_one_request, args=args, row=row, api_route=api_route)
@@ -2043,7 +2094,7 @@ def _run_config(
         ]
         for future in as_completed(futures):
             result = future.result()
-            completed.append(result)
+            buffered.append(result)
             if progress is not None:
                 _record_progress(
                     progress=progress,
@@ -2051,7 +2102,12 @@ def _run_config(
                     result=result,
                     force=progress.completed_requests + 1 == progress.total_requests,
                 )
-    completed.sort(key=lambda item: str(item["request_id"]))
+            if flush_completed is not None and len(buffered) >= 100:
+                buffered.sort(key=lambda item: str(item["request_id"]))
+                flush_completed(buffered)
+                buffered = []
+    buffered.sort(key=lambda item: str(item["request_id"]))
+    completed.extend(buffered)
     return completed
 
 
@@ -3282,6 +3338,23 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
         )
         telemetry_thread.start()
         try:
+
+            def flush_completed_batch(new_rows: list[dict[str, Any]]) -> None:
+                if not new_rows:
+                    return
+                _append_jsonl(args.raw_results_path, new_rows)
+                rows.extend(new_rows)
+                completed_keys.update(_request_key(row) for row in new_rows)
+                _write_checkpoint(args.checkpoint_path, rows, status="running")
+                _write_manifest(
+                    args,
+                    status="running",
+                    matrix_summary=matrix_summary,
+                    rows=rows,
+                    started_at=started_at,
+                    completed_at=None,
+                )
+
             for config in build_config_specs():
                 config_matrix_rows = [
                     row for row in matrix_rows if row["config_id"] == config.config_id
@@ -3293,20 +3366,9 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
                     completed_keys=completed_keys,
                     api_route=api_route,
                     progress=progress,
+                    flush_completed=flush_completed_batch,
                 )
-                if new_rows:
-                    _append_jsonl(args.raw_results_path, new_rows)
-                    rows.extend(new_rows)
-                    completed_keys.update(_request_key(row) for row in new_rows)
-                    _write_checkpoint(args.checkpoint_path, rows, status="running")
-                    _write_manifest(
-                        args,
-                        status="running",
-                        matrix_summary=matrix_summary,
-                        rows=rows,
-                        started_at=started_at,
-                        completed_at=None,
-                    )
+                flush_completed_batch(new_rows)
         finally:
             stop_event.set()
             telemetry_thread.join(timeout=max(args.telemetry_interval_seconds * 2.0, 2.0))

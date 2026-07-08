@@ -256,3 +256,118 @@ def test_api_track_excludes_gpu_telemetry_scope_and_self_hosted_includes_it(
 
     assert "not_applicable_api_provider" in api_rows
     assert "self_hosted_gpu" in engine_rows
+
+
+def test_api_rate_limit_retries_once_without_losing_request(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = _load_runner()
+    args = _args(runner, tmp_path)
+    args.api_rate_limit_retries = 1
+    args.api_rate_limit_wait_seconds = 0.01
+    sleeps: list[float] = []
+    calls = {"count": 0}
+
+    class RateLimitError(RuntimeError):
+        status_code = 429
+
+    def flaky_chat(**_kwargs: Any) -> tuple[str, float, float]:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise RateLimitError("provider rate limit")
+        return (
+            json.dumps(
+                {
+                    "answer": "ok",
+                    "evidence_ids": ["E1"],
+                    "confidence": 0.9,
+                    "insufficient_evidence": False,
+                    "citation_notes": "ok",
+                }
+            ),
+            0.01,
+            0.02,
+        )
+
+    monkeypatch.setattr(runner, "_chat_completion_request", flaky_chat)
+    monkeypatch.setattr(runner.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    row = {
+        "prompt": "question",
+        "prompt_id": "api_1",
+        "prompt_hash": "hash",
+        "config_id": "api_config",
+        "model_id": "provider/model",
+        "backend_type": "api_provider",
+        "engine": "api_provider_route",
+        "vertical": "airline",
+    }
+
+    result = runner._execute_one_request(
+        args=args,
+        row=row,
+        api_route=("http://api", "secret-key", "provider/model", "openrouter"),
+    )
+
+    assert result["success"] is True
+    assert result["api_rate_limit_retries"] == 1
+    assert sleeps == [0.01]
+    assert calls["count"] == 2
+    assert "secret-key" not in str(result)
+
+
+def test_run_config_flushes_completed_batches_every_100(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = _load_runner()
+    args = _args(runner, tmp_path)
+    config = runner.ConfigSpec(
+        config_id="flush_config",
+        model_alias="model3_7b",
+        model_id="model",
+        backend_type="self_hosted_gpu",
+        engine="vllm",
+        runtime="vllm",
+        memory_mode="mm2_hybrid_top5",
+        concurrency=16,
+    )
+    rows = [
+        {
+            "prompt": "question",
+            "prompt_id": f"p_{index:03d}",
+            "prompt_hash": f"h_{index:03d}",
+            "config_id": "flush_config",
+            "model_id": "model",
+            "backend_type": "self_hosted_gpu",
+            "engine": "vllm",
+            "vertical": "airline",
+        }
+        for index in range(205)
+    ]
+
+    def execute(**kwargs: Any) -> dict[str, Any]:
+        row = kwargs["row"]
+        return {
+            **row,
+            "request_id": runner._request_key(row),
+            "run_id": runner.RUN_ID,
+            "success": True,
+        }
+
+    flushed_sizes: list[int] = []
+    monkeypatch.setattr(runner, "_execute_one_request", execute)
+
+    leftovers = runner._run_config(
+        args=args,
+        config=config,
+        rows=rows,
+        completed_keys=set(),
+        api_route=None,
+        progress=None,
+        flush_completed=lambda batch: flushed_sizes.append(len(batch)),
+    )
+
+    assert flushed_sizes == [100, 100]
+    assert len(leftovers) == 5
