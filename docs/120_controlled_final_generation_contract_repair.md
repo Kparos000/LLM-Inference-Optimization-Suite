@@ -152,7 +152,16 @@ was executed as a separate explicit run.
 | Aggregate safety findings | 97 |
 | Total measured cost | `$0.793868` |
 
+The first post-run SLO report incorrectly marked the baseline as deployable. The
+SLO audit fixed three issues: per-config quality was keyed only by reused
+`prompt_id`, aggregate quality was not allowed to fail deployability, and safety
+findings were not a failing SLO family. The fixed re-score reports benchmark
+execution `COMPLETED`, runtime SLO `PASS`, cost SLO `PASS`, quality SLO `FAIL`,
+safety SLO `FAIL`, and overall deployability `NOT_DEPLOYABLE_SLO_FAILURES`.
+
 Artifact sync and backup verification passed with no missing required
-artifacts. The next step is controlled optimization against the completed
-baseline, with attention on final-answer contract normalization, safety wording,
-evidence selection, groundedness, and concurrency-32 self-hosted efficiency.
+artifacts. No final/main 10,000 rerun is needed before optimization because the
+completed baseline can be re-scored from existing outputs. The next step is
+controlled optimization against the completed baseline, with attention on
+final-answer contract normalization, safety wording, evidence selection,
+groundedness, and concurrency-32 self-hosted efficiency.

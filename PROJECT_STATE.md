@@ -28,7 +28,7 @@ RUNPOD_CALIBRATION_NOT_READY_PRICE_MISSING
 BENCHMARK_EXECUTION_READY
 API_LOAD_PROBE_ALLOWED
 DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
-CONTROLLED_FINAL_REPAIRED_BASELINE_COMPLETE
+CONTROLLED_FINAL_REPAIRED_BASELINE_OPERATIONAL_NOT_DEPLOYABLE
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -221,12 +221,16 @@ evidence/groundedness.
 
 The repaired full controlled-final baseline has now run on the same frozen
 25-config matrix. It completed 10,000/10,000 requests with zero request failures
-and 25/25 configs complete. The SLO comparison reported zero failed SLO fields.
-Aggregate raw-output evaluation reported 99.92% JSON validity, 81.41%
-generation-contract/format validity, 61.92% evidence match, 60.26%
-groundedness, and 97 safety findings. vLLM beat SGLang on self-hosted latency
-and throughput; self-hosted concurrency 16 beat concurrency 32; API provider
-rows had lower mean latency and higher throughput than the self-hosted aggregate.
+and 25/25 configs complete. A follow-up SLO audit found the first SLO report was
+not trustworthy: per-config quality was keyed only by `prompt_id`, even though
+the matrix reuses prompt IDs across configs, aggregate quality was ignored for
+deployability, and safety findings were not a failing SLO family. The fixed
+re-score keeps benchmark execution `COMPLETED`, runtime SLO `PASS`, and cost SLO
+`PASS`, but sets quality SLO `FAIL`, safety SLO `FAIL`, and deployability
+`NOT_DEPLOYABLE_SLO_FAILURES`. Aggregate raw-output evaluation reported 99.92%
+JSON validity, 81.41% generation-contract/format validity, 61.92% evidence
+match, 60.26% groundedness, and 97 safety findings. Contextual modes excluding
+MM0 reached 74.1% evidence match and 72.025% groundedness, still below SLO.
 Artifact sync and backup verification passed with completeness score 1.0, and
 measured total cost was `$0.793868`.
 
@@ -651,9 +655,11 @@ Result tracks are separated:
 ## Next Step
 
 The next independent track is controlled post-baseline optimization using the
-completed repaired 10,000-request baseline as the reference point. Candidate
-areas are final-answer contract normalization, safety wording, evidence
-selection, groundedness, and concurrency-32 self-hosted efficiency.
+completed repaired 10,000-request baseline as the reference point. A final/main
+10,000 rerun is not needed before optimization because the run is operationally
+valid and the fixed SLO re-score works from existing outputs. Candidate areas
+are final-answer contract normalization, safety wording, evidence selection,
+groundedness, and concurrency-32 self-hosted efficiency.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

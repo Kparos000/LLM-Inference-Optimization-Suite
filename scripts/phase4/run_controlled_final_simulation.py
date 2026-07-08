@@ -20,6 +20,8 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, cast
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
@@ -126,6 +128,9 @@ DEFAULT_API_VS_SELF_HOSTED_COMPARISON = (
 DEFAULT_MODEL_COMPARISON = "results/processed/controlled_final_simulation_model_comparison.csv"
 DEFAULT_SLO_REPORT = "results/processed/controlled_final_simulation_slo_report.json"
 DEFAULT_SLO_SUMMARY = "results/processed/controlled_final_simulation_slo_summary.csv"
+DEFAULT_SLO_REPORT_FIXED = "results/processed/controlled_final_simulation_slo_report_fixed.json"
+DEFAULT_SLO_SUMMARY_FIXED = "results/processed/controlled_final_simulation_slo_summary_fixed.csv"
+DEFAULT_VERDICT_FIXED = "results/processed/controlled_final_simulation_verdict_fixed.json"
 DEFAULT_COST_REPORT = "results/processed/controlled_final_simulation_cost_report.json"
 DEFAULT_ARTIFACT_SYNC_REPORT = (
     "results/processed/controlled_final_simulation_artifact_sync_report.json"
@@ -135,6 +140,7 @@ DEFAULT_POST_RUN_AUTOMATION_REPORT = (
 )
 DEFAULT_PLOTTING_DATASET = "results/processed/controlled_final_simulation_plotting_dataset.csv"
 DEFAULT_CHECKPOINT = "results/raw/controlled_final_simulation_checkpoint.json"
+DEFAULT_PROGRESS_LOG = "results/processed/controlled_final_simulation_progress.jsonl"
 DEFAULT_SOURCE_WORKLOAD = (
     "data/workloads/controlled_2000/prompt_plus_metadata/mm2_hybrid_top5.jsonl"
 )
@@ -213,6 +219,21 @@ class ConfigSpec:
     concurrency: int
 
 
+@dataclass
+class ProgressState:
+    """Mutable progress counters for long full-matrix runs."""
+
+    total_requests: int
+    completed_requests: int
+    success_count: int
+    failure_count: int
+    started_at_monotonic: float
+    hourly_price: float
+    checkpoint_path: str
+    progress_log_path: str
+    last_artifact_sync_time: str | None = None
+
+
 def _repo_path(path: str | Path) -> Path:
     value = Path(path)
     return value if value.is_absolute() else ROOT / value
@@ -233,6 +254,13 @@ def _write_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
     with output.open("w", encoding="utf-8", newline="\n") as file:
         for row in rows:
             file.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
+
+
+def _append_jsonl_row(path: str | Path, row: dict[str, Any]) -> None:
+    output = _repo_path(path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("a", encoding="utf-8", newline="\n") as file:
+        file.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
 
 
 def _read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -272,6 +300,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model-comparison-path", default=DEFAULT_MODEL_COMPARISON)
     parser.add_argument("--slo-report-path", default=DEFAULT_SLO_REPORT)
     parser.add_argument("--slo-summary-path", default=DEFAULT_SLO_SUMMARY)
+    parser.add_argument("--slo-report-fixed-path", default=DEFAULT_SLO_REPORT_FIXED)
+    parser.add_argument("--slo-summary-fixed-path", default=DEFAULT_SLO_SUMMARY_FIXED)
+    parser.add_argument("--verdict-fixed-path", default=DEFAULT_VERDICT_FIXED)
     parser.add_argument("--cost-report-path", default=DEFAULT_COST_REPORT)
     parser.add_argument("--artifact-sync-report-path", default=DEFAULT_ARTIFACT_SYNC_REPORT)
     parser.add_argument(
@@ -280,6 +311,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--plotting-dataset-path", default=DEFAULT_PLOTTING_DATASET)
     parser.add_argument("--checkpoint-path", default=DEFAULT_CHECKPOINT)
+    parser.add_argument("--progress-log-path", default=DEFAULT_PROGRESS_LOG)
     parser.add_argument("--source-workload", default=DEFAULT_SOURCE_WORKLOAD)
     parser.add_argument("--source-of-truth-manifest", default=DEFAULT_SOURCE_OF_TRUTH_MANIFEST)
     parser.add_argument("--context-root", default=DEFAULT_CONTEXT_ROOT)
@@ -342,6 +374,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--allow-full-after-repair", action="store_true")
     parser.add_argument("--waive-repaired-validation-reason", default="")
     parser.add_argument("--run-full", action="store_true")
+    parser.add_argument(
+        "--rescore-slo-only",
+        action="store_true",
+        help="Re-score existing raw controlled-final outputs without issuing inference requests.",
+    )
     return parser
 
 
@@ -1959,6 +1996,7 @@ def _run_config(
     rows: list[dict[str, Any]],
     completed_keys: set[str],
     api_route: tuple[str, str, str, str] | None,
+    progress: ProgressState | None = None,
 ) -> list[dict[str, Any]]:
     pending = [row for row in rows if _request_key(row) not in completed_keys]
     if not pending:
@@ -1975,9 +2013,73 @@ def _run_config(
             for row in pending
         ]
         for future in as_completed(futures):
-            completed.append(future.result())
+            result = future.result()
+            completed.append(result)
+            if progress is not None:
+                _record_progress(
+                    progress=progress,
+                    config=config,
+                    result=result,
+                    force=progress.completed_requests + 1 == progress.total_requests,
+                )
     completed.sort(key=lambda item: str(item["request_id"]))
     return completed
+
+
+def _record_progress(
+    *,
+    progress: ProgressState,
+    config: ConfigSpec,
+    result: dict[str, Any],
+    force: bool = False,
+) -> None:
+    progress.completed_requests += 1
+    if bool(result.get("success")):
+        progress.success_count += 1
+    else:
+        progress.failure_count += 1
+    if progress.completed_requests % 100 != 0 and not force:
+        return
+    elapsed = max(time.monotonic() - progress.started_at_monotonic, 0.001)
+    remaining = max(progress.total_requests - progress.completed_requests, 0)
+    rate = progress.completed_requests / elapsed
+    estimated_remaining = remaining / rate if rate > 0 else None
+    approximate_cost = (elapsed / 3600.0) * progress.hourly_price
+    payload = {
+        "timestamp_utc": utc_now(),
+        "completed_requests": progress.completed_requests,
+        "total_requests": progress.total_requests,
+        "remaining_requests": remaining,
+        "current_config_id": config.config_id,
+        "model": config.model_alias,
+        "engine": config.engine,
+        "runtime": config.runtime,
+        "memory_mode": config.memory_mode,
+        "concurrency": config.concurrency,
+        "vertical": result.get("vertical"),
+        "elapsed_seconds": elapsed,
+        "estimated_remaining_seconds": estimated_remaining,
+        "success_count": progress.success_count,
+        "failure_count": progress.failure_count,
+        "approximate_cost_so_far_usd": approximate_cost,
+        "checkpoint_path": progress.checkpoint_path,
+        "last_artifact_sync_time": progress.last_artifact_sync_time,
+    }
+    print(
+        "progress "
+        f"{payload['completed_requests']}/{payload['total_requests']} "
+        f"remaining={payload['remaining_requests']} "
+        f"config_id={payload['current_config_id']} model={payload['model']} "
+        f"engine={payload['engine']} runtime={payload['runtime']} "
+        f"memory_mode={payload['memory_mode']} concurrency={payload['concurrency']} "
+        f"vertical={payload['vertical']} elapsed_s={elapsed:.1f} "
+        f"eta_s={(estimated_remaining if estimated_remaining is not None else -1):.1f} "
+        f"success={payload['success_count']} failure={payload['failure_count']} "
+        f"cost_usd={approximate_cost:.4f} checkpoint={payload['checkpoint_path']} "
+        f"last_artifact_sync={payload['last_artifact_sync_time']}",
+        flush=True,
+    )
+    _append_jsonl_row(progress.progress_log_path, payload)
 
 
 def _float_values(rows: list[dict[str, Any]], key: str) -> list[float]:
@@ -2004,15 +2106,18 @@ def _config_summary_rows(
     evaluation_rows: list[dict[str, Any]],
     expected_per_config: int,
 ) -> list[dict[str, Any]]:
-    eval_by_prompt = {str(row["prompt_id"]): row for row in evaluation_rows}
+    eval_by_request_key = {
+        _request_key(result_row): evaluation_row
+        for result_row, evaluation_row in zip(rows, evaluation_rows, strict=False)
+    }
     summaries: list[dict[str, Any]] = []
     for config in configs:
         config_rows = [row for row in rows if row.get("config_id") == config.config_id]
         success_rows = [row for row in config_rows if bool(row.get("success"))]
         config_eval = [
-            eval_by_prompt[str(row["prompt_id"])]
+            eval_by_request_key[_request_key(row)]
             for row in config_rows
-            if str(row.get("prompt_id")) in eval_by_prompt
+            if _request_key(row) in eval_by_request_key
         ]
         total = len(config_eval)
         summary = {
@@ -2089,22 +2194,83 @@ def _status_against_max(value: object, target: float) -> str:
     return "FAIL"
 
 
-def _slo_rows(config_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _strict_min_status(value: object, target: float) -> str:
+    if value in (None, ""):
+        return "NOT_AVAILABLE"
+    return "PASS" if float(value) >= target else "FAIL"
+
+
+def _strict_max_status(value: object, target: float) -> str:
+    if value in (None, ""):
+        return "NOT_AVAILABLE"
+    return "PASS" if float(value) <= target else "FAIL"
+
+
+def _load_quality_targets(path: str | Path = "configs/slo_targets.yaml") -> dict[str, Any]:
+    payload = yaml.safe_load(_repo_path(path).read_text(encoding="utf-8")) or {}
+    verticals = payload.get("verticals") or {}
+    quality = [
+        settings.get("quality_slo") or {}
+        for settings in verticals.values()
+        if isinstance(settings, dict)
+    ]
+    return {
+        "json_validity_min": 0.95,
+        "generation_contract_validity_min": max(
+            float(item.get("format_validity_min", 0.95)) for item in quality
+        ),
+        "format_validity_min": max(
+            float(item.get("format_validity_min", 0.95)) for item in quality
+        ),
+        "evidence_match_min": max(float(item.get("evidence_match_min", 0.9)) for item in quality),
+        "groundedness_min": max(float(item.get("groundedness_min", 0.95)) for item in quality),
+        "safety_violations_max": min(int(item.get("safety_violations_max", 0)) for item in quality),
+    }
+
+
+def _failed_slo_names(checks: dict[str, str]) -> list[str]:
+    return [name for name, status in checks.items() if status in {"FAIL", "NOT_AVAILABLE"}]
+
+
+def _slo_rows(
+    config_rows: list[dict[str, Any]],
+    quality_targets: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    targets = quality_targets or _load_quality_targets()
     rows: list[dict[str, Any]] = []
     for row in config_rows:
+        is_mm0 = row.get("memory_mode") == "mm0_no_context"
         checks = {
             "ttft": _status_against_max(row.get("mean_ttft_ms"), 1000.0),
             "tpot": _status_against_max(row.get("mean_tpot_ms"), 100.0),
             "latency": _status_against_max(row.get("mean_e2e_latency_ms"), 10000.0),
             "throughput": _status_against_min(row.get("mean_total_tokens_per_second"), 20.0),
-            "json_validity": _status_against_min(row.get("json_valid_rate"), 0.95),
-            "contract_validity": _status_against_min(
-                row.get("generation_contract_valid_rate"), 0.95
+            "json_validity": _strict_min_status(
+                row.get("json_valid_rate"), float(targets["json_validity_min"])
             ),
-            "evidence_match": _status_against_min(row.get("evidence_match_rate"), 0.9),
-            "groundedness": _status_against_min(row.get("grounded_rate"), 0.95),
+            "contract_validity": _strict_min_status(
+                row.get("generation_contract_valid_rate"),
+                float(targets["generation_contract_validity_min"]),
+            ),
+            "evidence_match": (
+                "ABLATION_REPORTED"
+                if is_mm0
+                else _strict_min_status(
+                    row.get("evidence_match_rate"), float(targets["evidence_match_min"])
+                )
+            ),
+            "groundedness": (
+                "ABLATION_REPORTED"
+                if is_mm0
+                else _strict_min_status(
+                    row.get("grounded_rate"), float(targets["groundedness_min"])
+                )
+            ),
+            "safety": _strict_max_status(
+                row.get("safety_violation_count"), float(targets["safety_violations_max"])
+            ),
         }
-        failed = [name for name, status in checks.items() if status == "FAIL"]
+        failed = _failed_slo_names(checks)
         warnings = [name for name, status in checks.items() if status == "WARNING"]
         candidates = []
         if any(name in failed for name in ("ttft", "tpot", "latency", "throughput")):
@@ -2113,6 +2279,8 @@ def _slo_rows(config_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             candidates.append("generation_contract_prompt_repair")
         if any(name in failed for name in ("evidence_match", "groundedness")):
             candidates.append("retrieval_or_context_selection_repair")
+        if "safety" in failed:
+            candidates.append("final_answer_safety_boundary_repair")
         rows.append(
             {
                 **row,
@@ -2122,10 +2290,206 @@ def _slo_rows(config_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "failed_metric_family": ";".join(failed) if failed else "",
                 "bottleneck_category": ";".join(failed or warnings) if (failed or warnings) else "",
                 "recommended_optimization_candidates": ";".join(candidates),
+                "slo_scope": "no_context_ablation" if is_mm0 else "deployability_contextual",
                 **{f"slo_{name}": status for name, status in checks.items()},
             }
         )
     return rows
+
+
+def _rate_from_eval(evaluation_rows: list[dict[str, Any]], key: str) -> float:
+    return (
+        sum(bool(row.get(key)) for row in evaluation_rows) / len(evaluation_rows)
+        if evaluation_rows
+        else 0.0
+    )
+
+
+def _aggregate_quality_groups(
+    rows: list[dict[str, Any]],
+    evaluation_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    pairs = list(zip(rows, evaluation_rows, strict=False))
+    groups: list[tuple[str, list[tuple[dict[str, Any], dict[str, Any]]]]] = [
+        ("all", pairs),
+        (
+            "contextual_all",
+            [pair for pair in pairs if pair[0].get("memory_mode") != "mm0_no_context"],
+        ),
+    ]
+    for mode in MEMORY_MODES:
+        groups.append((mode, [pair for pair in pairs if pair[0].get("memory_mode") == mode]))
+    output: list[dict[str, Any]] = []
+    for name, group_pairs in groups:
+        evals = [pair[1] for pair in group_pairs]
+        output.append(
+            {
+                "scope": name,
+                "row_count": len(evals),
+                "json_valid_rate": _rate_from_eval(evals, "json_validity"),
+                "generation_contract_valid_rate": _rate_from_eval(
+                    evals, "generation_contract_valid"
+                ),
+                "format_valid_rate": _rate_from_eval(evals, "format_valid"),
+                "evidence_match_rate": _rate_from_eval(evals, "evidence_match"),
+                "grounded_rate": _rate_from_eval(evals, "groundedness"),
+                "safety_violation_count": sum(bool(row.get("safety_violation")) for row in evals),
+                "mode_type": (
+                    "no_context_ablation"
+                    if name == "mm0_no_context"
+                    else "agentic_workflow"
+                    if name == "mm4_bounded_agentic"
+                    else "contextual"
+                    if name not in {"all"}
+                    else "aggregate"
+                ),
+            }
+        )
+    return output
+
+
+def _quality_group_slo_rows(
+    quality_groups: list[dict[str, Any]],
+    targets: dict[str, Any],
+) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for group in quality_groups:
+        is_mm0 = group["scope"] == "mm0_no_context"
+        checks = {
+            "json_validity": _strict_min_status(
+                group["json_valid_rate"], float(targets["json_validity_min"])
+            ),
+            "contract_validity": _strict_min_status(
+                group["generation_contract_valid_rate"],
+                float(targets["generation_contract_validity_min"]),
+            ),
+            "format_validity": _strict_min_status(
+                group["format_valid_rate"], float(targets["format_validity_min"])
+            ),
+            "evidence_match": (
+                "ABLATION_REPORTED"
+                if is_mm0
+                else _strict_min_status(
+                    group["evidence_match_rate"], float(targets["evidence_match_min"])
+                )
+            ),
+            "groundedness": (
+                "ABLATION_REPORTED"
+                if is_mm0
+                else _strict_min_status(group["grounded_rate"], float(targets["groundedness_min"]))
+            ),
+            "safety": _strict_max_status(
+                group["safety_violation_count"], float(targets["safety_violations_max"])
+            ),
+        }
+        failed = _failed_slo_names(checks)
+        output.append(
+            {
+                **group,
+                **{f"slo_{name}": status for name, status in checks.items()},
+                "failed_slos": len(failed),
+                "failed_metric_family": ";".join(failed),
+            }
+        )
+    return output
+
+
+def _build_slo_report(
+    *,
+    run_id: str,
+    gates: dict[str, Any],
+    config_slo_rows: list[dict[str, Any]],
+    quality_group_rows: list[dict[str, Any]],
+    cost_report: dict[str, Any],
+    total_requests_planned: int,
+    total_requests_completed: int,
+    total_requests_failed: int,
+) -> dict[str, Any]:
+    runtime_fields = {"ttft", "tpot", "latency", "throughput"}
+    runtime_failures = [
+        row
+        for row in config_slo_rows
+        if runtime_fields.intersection(str(row.get("failed_metric_family") or "").split(";"))
+    ]
+    contextual_quality_failures = [
+        row
+        for row in quality_group_rows
+        if row["scope"]
+        in {
+            "all",
+            "contextual_all",
+            "mm1_dense_top5",
+            "mm2_hybrid_top5",
+            "mm3_compressed_hybrid_top5",
+            "mm4_bounded_agentic",
+        }
+        and any(
+            name in str(row.get("failed_metric_family") or "").split(";")
+            for name in (
+                "json_validity",
+                "contract_validity",
+                "format_validity",
+                "evidence_match",
+                "groundedness",
+            )
+        )
+    ]
+    safety_failures = [
+        row
+        for row in quality_group_rows
+        if "safety" in str(row.get("failed_metric_family") or "").split(";")
+    ]
+    cost_failed = False
+    runtime_verdict = "PASS" if not runtime_failures else "FAIL"
+    quality_verdict = "PASS" if not contextual_quality_failures else "FAIL"
+    safety_verdict = "PASS" if not safety_failures else "FAIL"
+    cost_verdict = "PASS" if not cost_failed else "FAIL"
+    benchmark_execution_verdict = (
+        "COMPLETED"
+        if total_requests_completed == total_requests_planned and total_requests_failed == 0
+        else "INCOMPLETE"
+    )
+    overall = (
+        "DEPLOYABLE_BASELINE"
+        if benchmark_execution_verdict == "COMPLETED"
+        and runtime_verdict == "PASS"
+        and quality_verdict == "PASS"
+        and safety_verdict == "PASS"
+        and cost_verdict == "PASS"
+        else "NOT_DEPLOYABLE_SLO_FAILURES"
+    )
+    optimization_targets = sorted(
+        {
+            item
+            for row in (*config_slo_rows, *quality_group_rows)
+            for item in str(row.get("failed_metric_family") or "").split(";")
+            if item
+        }
+    )
+    return {
+        "run_id": run_id,
+        "status": "SLO_COMPARISON_COMPLETE",
+        "runtime_slo_verdict": runtime_verdict,
+        "quality_slo_verdict": quality_verdict,
+        "safety_slo_verdict": safety_verdict,
+        "cost_slo_verdict": cost_verdict,
+        "overall_deployability_verdict": overall,
+        "deployability_verdict": overall,
+        "benchmark_execution_verdict": benchmark_execution_verdict,
+        "optimization_needed_verdict": (
+            "OPTIMIZATION_NEEDED"
+            if overall != "DEPLOYABLE_BASELINE"
+            else "NO_OPTIMIZATION_REQUIRED"
+        ),
+        "optimization_targets": optimization_targets,
+        "total_requests_planned": total_requests_planned,
+        "total_requests_completed": total_requests_completed,
+        "total_requests_failed": total_requests_failed,
+        "config_slo_results": config_slo_rows,
+        "aggregate_slo_results": quality_group_rows,
+        "cost_report": cost_report,
+        "gate_report": gates,
+    }
 
 
 def _write_completed_reports(
@@ -2155,7 +2519,12 @@ def _write_completed_reports(
         evaluation_rows=evaluation_rows,
         expected_per_config=int(matrix_summary["prompt_count_per_config"]),
     )
-    slo_rows = _slo_rows(config_rows)
+    quality_targets = _load_quality_targets()
+    slo_rows = _slo_rows(config_rows, quality_targets)
+    quality_group_rows = _quality_group_slo_rows(
+        _aggregate_quality_groups(rows, evaluation_rows),
+        quality_targets,
+    )
     gpu_samples = _read_gpu_samples(args.gpu_telemetry_path)
     gpu_summary = summarize_gpu_telemetry(
         gpu_samples,
@@ -2195,26 +2564,17 @@ def _write_completed_reports(
     _write_csv(args.api_vs_self_hosted_comparison_path, config_rows)
     _write_csv(args.model_comparison_path, config_rows)
     _write_csv(args.slo_summary_path, slo_rows)
-    _write_json(
-        args.slo_report_path,
-        {
-            "run_id": RUN_ID,
-            "status": "SLO_COMPARISON_COMPLETE",
-            "deployability_verdict": (
-                "DEPLOYABLE_BASELINE"
-                if all(int(row["failed_slos"]) == 0 for row in slo_rows)
-                else "NOT_DEPLOYABLE_SLO_FAILURES"
-            ),
-            "benchmark_execution_verdict": "COMPLETED",
-            "optimization_needed_verdict": (
-                "OPTIMIZATION_NEEDED"
-                if any(int(row["failed_slos"]) > 0 for row in slo_rows)
-                else "NO_OPTIMIZATION_REQUIRED"
-            ),
-            "config_slo_results": slo_rows,
-            "gate_report": gates,
-        },
+    slo_report = _build_slo_report(
+        run_id=RUN_ID,
+        gates=gates,
+        config_slo_rows=slo_rows,
+        quality_group_rows=quality_group_rows,
+        cost_report=cost_report,
+        total_requests_planned=int(matrix_summary["row_count"]),
+        total_requests_completed=sum(bool(row.get("success")) for row in rows),
+        total_requests_failed=sum(not bool(row.get("success")) for row in rows),
     )
+    _write_json(args.slo_report_path, slo_report)
     _write_json(args.cost_report_path, cost_report)
     eval_report = {
         "run_id": RUN_ID,
@@ -2231,6 +2591,14 @@ def _write_completed_reports(
         "cost_report": cost_report,
         "config_summaries": config_rows,
         "slo_status_counts": dict(Counter(str(row["failed_slos"]) for row in slo_rows)),
+        "slo_verdicts": {
+            "runtime_slo_verdict": slo_report["runtime_slo_verdict"],
+            "quality_slo_verdict": slo_report["quality_slo_verdict"],
+            "safety_slo_verdict": slo_report["safety_slo_verdict"],
+            "cost_slo_verdict": slo_report["cost_slo_verdict"],
+            "overall_deployability_verdict": slo_report["overall_deployability_verdict"],
+            "benchmark_execution_verdict": slo_report["benchmark_execution_verdict"],
+        },
         "configs_completed": sum(row["status"] == "COMPLETED" for row in config_rows),
         "configs_failed": sum(row["requests_failed"] > 0 for row in config_rows),
         "total_requests_attempted": len(rows),
@@ -2295,6 +2663,69 @@ def _write_completed_reports(
     return eval_report
 
 
+def rescore_existing_slo(args: argparse.Namespace) -> dict[str, Any]:
+    """Re-score existing controlled-final outputs without new inference."""
+
+    rows = _read_jsonl(args.raw_results_path)
+    generated = [result_row_to_generated_answer(row) for row in rows]
+    evaluation_rows = evaluate_generated_answers(generated, load_gold_records(args.dataset_root))
+    matrix_rows = build_matrix_rows(
+        dataset_root=args.dataset_root,
+        prompts_per_vertical=args.prompt_count_per_vertical,
+        args=args,
+    )
+    matrix_summary = summarize_matrix(matrix_rows, args.prompt_count_per_vertical)
+    configs = build_config_specs()
+    config_rows = _config_summary_rows(
+        configs=configs,
+        rows=rows,
+        evaluation_rows=evaluation_rows,
+        expected_per_config=int(matrix_summary["prompt_count_per_config"]),
+    )
+    quality_targets = _load_quality_targets()
+    slo_rows = _slo_rows(config_rows, quality_targets)
+    quality_group_rows = _quality_group_slo_rows(
+        _aggregate_quality_groups(rows, evaluation_rows),
+        quality_targets,
+    )
+    cost_report = (
+        json.loads(_repo_path(args.cost_report_path).read_text(encoding="utf-8"))
+        if _repo_path(args.cost_report_path).exists()
+        else {}
+    )
+    gates = {}
+    if _repo_path(args.eval_report_path).exists():
+        existing_report = json.loads(_repo_path(args.eval_report_path).read_text(encoding="utf-8"))
+        gates = existing_report.get("gate_report") or {}
+    report = _build_slo_report(
+        run_id=RUN_ID,
+        gates=gates,
+        config_slo_rows=slo_rows,
+        quality_group_rows=quality_group_rows,
+        cost_report=cost_report,
+        total_requests_planned=int(matrix_summary["row_count"]),
+        total_requests_completed=sum(bool(row.get("success")) for row in rows),
+        total_requests_failed=sum(not bool(row.get("success")) for row in rows),
+    )
+    verdict = {
+        "run_id": RUN_ID,
+        "status": "CONTROLLED_FINAL_SLO_RESCORED",
+        "runtime_slo_verdict": report["runtime_slo_verdict"],
+        "quality_slo_verdict": report["quality_slo_verdict"],
+        "safety_slo_verdict": report["safety_slo_verdict"],
+        "cost_slo_verdict": report["cost_slo_verdict"],
+        "overall_deployability_verdict": report["overall_deployability_verdict"],
+        "benchmark_execution_verdict": report["benchmark_execution_verdict"],
+        "optimization_targets": report["optimization_targets"],
+        "final_main_10k_rerun_needed": False,
+        "optimization_can_begin": report["benchmark_execution_verdict"] == "COMPLETED",
+    }
+    _write_json(args.slo_report_fixed_path, report)
+    _write_csv(args.slo_summary_fixed_path, slo_rows)
+    _write_json(args.verdict_fixed_path, verdict)
+    return verdict
+
+
 def _artifact_specs(args: argparse.Namespace) -> list[Any]:
     return build_artifact_specs(
         raw_jsonl=args.raw_results_path,
@@ -2311,10 +2742,14 @@ def _artifact_specs(args: argparse.Namespace) -> list[Any]:
             args.model_comparison_path,
             args.slo_report_path,
             args.slo_summary_path,
+            args.slo_report_fixed_path,
+            args.slo_summary_fixed_path,
+            args.verdict_fixed_path,
             args.cost_report_path,
             args.artifact_sync_report_path,
             args.post_run_automation_report_path,
             args.plotting_dataset_path,
+            args.progress_log_path,
         ],
         logs=[args.checkpoint_path],
     )
@@ -2478,9 +2913,15 @@ def write_blocked_reports(
     slo_report = {
         "run_id": RUN_ID,
         "status": "SLO_COMPARISON_NOT_RUN_SAFETY_GATED",
+        "runtime_slo_verdict": "NOT_EVALUATED",
+        "quality_slo_verdict": "NOT_EVALUATED",
+        "safety_slo_verdict": "NOT_EVALUATED",
+        "cost_slo_verdict": "NOT_EVALUATED",
+        "overall_deployability_verdict": "NOT_DEPLOYABLE_SIMULATION_BLOCKED",
         "deployability_verdict": "NOT_DEPLOYABLE_SIMULATION_BLOCKED",
         "benchmark_execution_verdict": "NOT_READY",
         "optimization_needed_verdict": "NOT_EVALUATED",
+        "aggregate_slo_results": [],
         "config_slo_results": slo_rows,
         "gate_report": gates,
     }
@@ -2777,6 +3218,18 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
             started_at=started_at,
             completed_at=None,
         )
+        _repo_path(args.progress_log_path).parent.mkdir(parents=True, exist_ok=True)
+        _repo_path(args.progress_log_path).write_text("", encoding="utf-8")
+        progress = ProgressState(
+            total_requests=int(matrix_summary["row_count"]),
+            completed_requests=len(rows),
+            success_count=sum(bool(row.get("success")) for row in rows),
+            failure_count=sum(not bool(row.get("success")) for row in rows),
+            started_at_monotonic=time.monotonic(),
+            hourly_price=args.hourly_price,
+            checkpoint_path=args.checkpoint_path,
+            progress_log_path=args.progress_log_path,
+        )
         api_route = _api_route(args)
         telemetry_errors: list[str] = []
         stop_event = threading.Event()
@@ -2802,6 +3255,7 @@ def run_controlled_final_simulation(args: argparse.Namespace) -> dict[str, Any]:
                     rows=config_matrix_rows,
                     completed_keys=completed_keys,
                     api_route=api_route,
+                    progress=progress,
                 )
                 if new_rows:
                     _append_jsonl(args.raw_results_path, new_rows)
@@ -2848,7 +3302,11 @@ def main() -> int:
 
     args = build_parser().parse_args()
     try:
-        report = run_controlled_final_simulation(args)
+        report = (
+            rescore_existing_slo(args)
+            if args.rescore_slo_only
+            else run_controlled_final_simulation(args)
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"controlled final simulation failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1

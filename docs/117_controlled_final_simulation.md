@@ -75,11 +75,19 @@ Quality summary:
 | Safety violations | 97 |
 | Truncations | 0 |
 
-The repaired baseline completed operationally and the per-config SLO comparison
-reported zero failed SLOs across 25 configs. The aggregate raw-output evaluation
-still shows residual contract, safety, evidence, and groundedness findings, so
-the next phase should optimize against those measured bottlenecks before making
-deployability claims.
+The repaired baseline completed operationally. A post-run SLO audit found the
+first SLO report was incorrect: it keyed per-config quality by reused
+`prompt_id`, ignored aggregate quality for deployability, and did not fail
+deployability on safety findings. The fixed re-score keeps benchmark execution
+`COMPLETED`, runtime SLO `PASS`, and cost SLO `PASS`, but sets quality SLO
+`FAIL`, safety SLO `FAIL`, and overall deployability
+`NOT_DEPLOYABLE_SLO_FAILURES`.
+
+Fixed SLO outputs:
+
+- `results/processed/controlled_final_simulation_slo_report_fixed.json`
+- `results/processed/controlled_final_simulation_slo_summary_fixed.csv`
+- `results/processed/controlled_final_simulation_verdict_fixed.json`
 
 ## Runtime Results
 
@@ -122,10 +130,10 @@ Memory-mode latency ranking:
 | 4 | `mm1_dense_top5` | 2,190.33 ms | 481.47 |
 | 5 | `mm4_bounded_agentic` | 2,202.94 ms | 501.00 |
 
-Per-config SLO rows did not meaningfully separate memory modes on quality; each
-memory-mode aggregate reported 95.25% evidence match, 94.25% groundedness, and
-99.0% generation-contract validity. The aggregate raw-output evaluator remains
-the stricter bottleneck signal for the next optimization phase.
+The fixed SLO re-score separates MM0 as a no-context ablation and MM4 as the
+agentic workflow. Contextual modes excluding MM0 reached 74.10% evidence match,
+72.03% groundedness, 81.85% contract/format validity, and 97 safety findings,
+so contextual quality and safety fail deployability.
 
 ## GPU Telemetry
 
@@ -169,11 +177,14 @@ These are generated artifacts and are not committed.
 
 ## Decision
 
-The repaired controlled final 10,000-request baseline is complete. Artifact sync
-and backup verification passed with a 1.0 completeness score, 18 synced
-artifacts, and 19/19 backup verification checks passing.
+The repaired controlled final 10,000-request baseline is operationally complete
+but not deployable. Artifact sync and backup verification passed with a 1.0
+completeness score, 18 synced artifacts, and 19/19 backup verification checks
+passing.
 
-The optimization phase can begin from this baseline. Recommended candidates are
-contract normalization at the final-answer boundary, safety-wording cleanup for
-final answers, groundedness/evidence selection, and a concurrency-32 self-hosted
+No final/main 10,000 rerun is needed before optimization because the completed
+baseline can be re-scored from existing outputs. The optimization phase can
+begin from the fixed SLO verdict. Recommended candidates are contract
+normalization at the final-answer boundary, safety-wording cleanup for final
+answers, groundedness/evidence selection, and a concurrency-32 self-hosted
 latency/throughput pass.

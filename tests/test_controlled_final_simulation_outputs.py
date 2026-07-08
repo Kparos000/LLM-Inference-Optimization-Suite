@@ -28,6 +28,9 @@ def test_controlled_final_simulation_outputs_exist_after_safety_gate_run() -> No
         "results/processed/controlled_final_simulation_model_comparison.csv",
         "results/processed/controlled_final_simulation_slo_report.json",
         "results/processed/controlled_final_simulation_slo_summary.csv",
+        "results/processed/controlled_final_simulation_slo_report_fixed.json",
+        "results/processed/controlled_final_simulation_slo_summary_fixed.csv",
+        "results/processed/controlled_final_simulation_verdict_fixed.json",
         "results/processed/controlled_final_simulation_cost_report.json",
         "results/processed/controlled_final_simulation_artifact_sync_report.json",
     ]

@@ -43,14 +43,18 @@ All gates passed before full execution:
 
 ## Decision
 
-The repaired controlled final baseline is complete. The SLO comparison reported
-zero failed SLO fields across 25 configs, while aggregate raw-output evaluation
-still shows contract, safety, evidence, and groundedness bottlenecks: 99.92%
-JSON validity, 81.41% generation-contract validity, 61.92% evidence match,
-60.26% groundedness, and 97 safety findings. The optimization phase can begin
-from this baseline and should focus on final-answer contract normalization,
-safety wording, evidence selection, groundedness, and concurrency-32
-self-hosted efficiency.
+The repaired controlled final baseline is operationally complete but not
+deployable. The first SLO report incorrectly returned `DEPLOYABLE_BASELINE`
+because per-config quality was keyed by reused `prompt_id`, aggregate quality
+was ignored for deployability, and safety findings did not fail an SLO family.
+The fixed re-score reports benchmark execution `COMPLETED`, runtime SLO `PASS`,
+cost SLO `PASS`, quality SLO `FAIL`, safety SLO `FAIL`, and overall
+deployability `NOT_DEPLOYABLE_SLO_FAILURES`.
+
+The optimization phase can begin from this baseline without a final/main 10,000
+rerun. Targets are 81.41% generation-contract/format validity, 61.92% aggregate
+evidence match, 60.26% aggregate groundedness, 97 safety findings, contextual
+74.10% evidence match, and contextual 72.03% groundedness.
 
 Exact SGLang startup command:
 
