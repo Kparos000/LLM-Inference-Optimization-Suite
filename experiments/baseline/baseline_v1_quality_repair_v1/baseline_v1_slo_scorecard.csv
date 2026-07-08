@@ -1,0 +1,34 @@
+baseline_result,difference_to_pass,family,metric,slo_comparator,slo_target,status
+99.92999999999999,,quality,json_validity_pct,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+81.54,-13.459999999999994,quality,contract_validity_pct,>=,uses configured format_validity_min; aggregate envelope target; range=0.95,FAIL
+62.3,-27.700000000000003,quality,evidence_match_pct,>=,aggregate envelope target; range=0.9..0.95,FAIL
+60.73,-34.27,quality,groundedness_pct,>=,aggregate envelope target; range=0.95..0.98,FAIL
+103.0,-103.0,safety,safety_findings,<=,range=0.0,FAIL
+439.8925351858139,,runtime,mean_ttft_ms,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+293.5790184419602,1206.4209815580398,runtime,p50_ttft_ms,<=,range=500.0..1500.0,PASS
+1083.5117892711419,1916.4882107288581,runtime,p95_ttft_ms,<=,range=1000.0..3000.0,PASS
+1580.8278884342872,5419.172111565713,runtime,p99_ttft_ms,<=,range=2000.0..7000.0,PASS
+48.01012770422652,,runtime,mean_tpot_ms,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+43.20543769530819,16.79456230469181,runtime,p50_tpot_ms,<=,range=25.0..60.0,PASS
+101.67353906072088,18.326460939279116,runtime,p95_tpot_ms,<=,range=50.0..120.0,PASS
+140.30190888782593,109.69809111217407,runtime,p99_tpot_ms,<=,range=100.0..250.0,PASS
+1760.5658594984561,6239.434140501544,runtime,p50_e2e_latency_ms,<=,range=2500.0..8000.0,PASS
+3599.812677060254,8400.187322939746,runtime,p95_e2e_latency_ms,<=,range=4000.0..12000.0,PASS
+4405.131646003575,17594.868353996426,runtime,p99_e2e_latency_ms,<=,range=7000.0..22000.0,PASS
+5.2881247313043,4.7881247313043,throughput,requests_per_second,>=,range=0.5,PASS
+473.7263923551169,453.7263923551169,throughput,mean_tokens_per_second,>=,range=20.0,PASS
+51.261405672009865,1.2614056720098645,resource,gpu_utilization_mean_pct,>=,range=50.0,PASS
+72.6748046875,7.3251953125,resource,gpu_memory_peak_gb,<=,range=80.0,PASS
+90.843505859375,4.156494140625,resource,gpu_memory_peak_pct,<=,range=95.0,PASS
+224.42374845869298,,resource,gpu_power_mean_w,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+467.79,,resource,gpu_power_peak_w,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+66.0,,resource,gpu_temperature_peak_c,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+9.783451363173606e-05,0.019902165486368265,gpu_cost,gpu_cost_per_request_usd,<=,range=0.02,PASS
+0.09783451363173606,19.902165486368265,gpu_cost,gpu_cost_per_1000_requests_usd,<=,range=20.0,PASS
+8258984.687566253,8158984.687566253,gpu_cost,tokens_per_gpu_dollar,>=,range=100000.0,PASS
+1.7348334999999983e-05,0.049982651665,api_cost,api_cost_per_request_usd,<=,range=0.05,PASS
+0.017348334999999982,49.982651665,api_cost,api_cost_per_1000_requests_usd,<=,range=50.0,PASS
+0.7826761090538885,,gpu_cost,gpu_cost_total_usd,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+0.034696669999999964,,api_cost,api_cost_total_usd,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+0.8173727790538885,,total_cost,total_cost_usd,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET
+8089481.0,,throughput,total_tokens,not configured,,NOT_EVALUATED_NO_CONFIGURED_TARGET

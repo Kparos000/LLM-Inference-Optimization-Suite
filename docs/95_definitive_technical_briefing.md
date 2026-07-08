@@ -1,6 +1,6 @@
 # Definitive Technical Briefing
 
-Status: authoritative repository reference as of June 16, 2026
+Status: authoritative repository reference as of July 8, 2026
 
 Repository: `LLM-Inference-Optimization-Suite`
 
@@ -32,6 +32,33 @@ Labels used throughout:
 
 There is no checked-in `AGENTS.md`. Repository-specific operating rules are
 therefore derived from the README, project configuration, tests, and docs.
+
+## Current Snapshot
+
+The project has a frozen official baseline archive at
+`experiments/baseline_v1/`, tagged `baseline-v1.0` at commit
+`1654043c1a95967c7b7e80b5b421d5166164c9cc`. The baseline completed the full
+25-config, 10,000-request RunPod A100 SXM matrix with 10,000/10,000 requests
+completed and zero request failures. Runtime and cost SLOs passed; quality and
+safety SLOs failed, so deployability is `NOT_DEPLOYABLE_SLO_FAILURES`.
+
+The measured baseline result is:
+
+- Runtime: 1,891.030 seconds.
+- Total cost: `$0.817373`.
+- JSON validity: 99.93%.
+- Contract validity: 81.54%.
+- Evidence match: 62.30%.
+- Groundedness: 60.73%.
+- Safety findings: 103.
+
+Baseline_V1 quality-repair evidence is now versioned separately at
+`experiments/baseline/baseline_v1_quality_repair_v1/`. That package preserves
+the frozen baseline unchanged, adds a repository-SLO scorecard with target,
+observed value, difference, and status, and copies the targeted 1,600-request
+repair validation. The targeted repair validation passed and allows
+Main_Inference_V1 as a separate explicit run. The frozen Baseline_V1 archive
+itself remains the not-deployable pre-repair reference baseline.
 
 # 1. Project Overview
 
@@ -3705,6 +3732,13 @@ RUNPOD_CALIBRATION_NOT_READY_PRICE_MISSING
 BENCHMARK_EXECUTION_READY
 API_LOAD_PROBE_ALLOWED
 DEPLOYABILITY_READY_FOR_CONTROLLED_NEXT_STEP
+CONTROLLED_FINAL_REPAIRED_BASELINE_OPERATIONAL_NOT_DEPLOYABLE
+PHASE2_OPTIMIZATION_DIAGNOSIS_READY
+PHASE2_TARGETED_BASELINE_REPAIRS_PASSED
+FINAL_MAIN_10000_EXPERIMENT_ALLOWED
+OFFICIAL_BASELINE_V1_FROZEN
+BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
+MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
@@ -3943,12 +3977,12 @@ calibration package, and kept live RunPod calibration blocked because no
 
 ## Next Engineering Milestone
 
-Run the explicitly authorized targeted before/after optimization rerun from
-`results/processed/phase2_before_after_rerun_plan.json`. Do not run a full
-10,000-request rerun until the targeted repair set shows quality and safety
-improvement. Keep MM0 as a no-context ablation, preserve vLLM/SGLang and
-API/self-hosted result-track separation, and do not weaken SLOs, evaluators,
-gold data, or retrieval.
+Run Main_Inference_V1 as an explicit full 10,000-request experiment using the
+repaired quality path. Do not overwrite `experiments/baseline_v1/`; write the
+new experiment under a separate `experiments/main/` versioned folder. Keep MM0
+as a no-context ablation, preserve vLLM/SGLang and API/self-hosted result-track
+separation, monitor the remaining SGLang MM4 c32 Healthcare Admin safety risk,
+and do not weaken SLOs, evaluators, gold data, or retrieval.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -4301,3 +4335,16 @@ SLOs failed. The deployability verdict is `NOT_DEPLOYABLE_SLO_FAILURES`.
 This frozen archive is the reference point for subsequent optimization
 experiments. Optimization should improve quality and safety while preserving the
 runtime and cost SLO passes.
+
+The Baseline_V1 quality-repair package is
+`experiments/baseline/baseline_v1_quality_repair_v1/`. It does not overwrite
+the frozen archive. It records the repository-SLO scorecard requested for the
+baseline, including target, observed value, difference, and status for
+quality, safety, runtime, throughput, resource, API cost, GPU cost, and total
+cost fields where configured. It also copies the targeted repair validation
+evidence showing that contract validity improved from 84.13% to 100.00%,
+evidence match from 79.63% to 100.00%, groundedness from 76.19% to 100.00%,
+and safety findings from 14 to 1 on the selected 1,600-request set. That
+targeted repair gate passed, so Main_Inference_V1 is allowed as a separate
+explicit run. The one remaining SGLang MM4 c32 Healthcare Admin safety finding
+should be monitored in that run.

@@ -1,0 +1,54 @@
+{
+  "rows": [
+    {
+      "after": 100.0,
+      "before": 100.0,
+      "delta": 0.0,
+      "difference_to_pass_after": null,
+      "metric": "json_validity_pct",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status_after": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "after": 100.0,
+      "before": 84.125,
+      "delta": 15.875,
+      "difference_to_pass_after": 5.0,
+      "metric": "contract_validity_pct",
+      "slo_comparator": ">=",
+      "slo_target": 95.0,
+      "status_after": "PASS"
+    },
+    {
+      "after": 100.0,
+      "before": 79.625,
+      "delta": 20.375,
+      "difference_to_pass_after": 10.0,
+      "metric": "evidence_match_pct",
+      "slo_comparator": ">=",
+      "slo_target": 90.0,
+      "status_after": "PASS"
+    },
+    {
+      "after": 100.0,
+      "before": 76.1875,
+      "delta": 23.8125,
+      "difference_to_pass_after": 5.0,
+      "metric": "groundedness_pct",
+      "slo_comparator": ">=",
+      "slo_target": 95.0,
+      "status_after": "PASS"
+    },
+    {
+      "after": 1.0,
+      "before": 14.0,
+      "delta": -13.0,
+      "difference_to_pass_after": -1.0,
+      "metric": "safety_findings",
+      "slo_comparator": "<=",
+      "slo_target": 0.0,
+      "status_after": "FAIL"
+    }
+  ]
+}

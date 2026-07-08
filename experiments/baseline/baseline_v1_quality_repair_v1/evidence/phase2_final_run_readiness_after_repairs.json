@@ -1,0 +1,18 @@
+{
+  "final_main_10000_experiment_allowed": true,
+  "full_10000_not_run_in_this_phase": true,
+  "reason": "Targeted repair gate passed; final/main 10,000 can be explicitly authorized next.",
+  "run_id": "phase2_targeted_baseline_repairs",
+  "status": "PHASE2_FINAL_RUN_READINESS_AFTER_REPAIRS",
+  "success_gate": {
+    "healthcare_safety_reduced_materially": true,
+    "json_contract_remain_high": true,
+    "passed": true,
+    "research_ai_contract_improved_materially": true,
+    "research_ai_evidence_improved_materially": true,
+    "research_ai_groundedness_improved_materially": true,
+    "runtime_cost_not_severely_regressed": true,
+    "safety_not_worse": true
+  },
+  "targeted_repair_success": true
+}

@@ -33,6 +33,8 @@ PHASE2_OPTIMIZATION_DIAGNOSIS_READY
 PHASE2_TARGETED_BASELINE_REPAIRS_PASSED
 FINAL_MAIN_10000_EXPERIMENT_ALLOWED
 OFFICIAL_BASELINE_V1_FROZEN
+BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
+MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -274,6 +276,15 @@ safety findings 103. Runtime and cost SLOs passed, while quality and safety
 SLOs failed; deployability is `NOT_DEPLOYABLE_SLO_FAILURES`. The immutable
 baseline archive is `experiments/baseline_v1/` with metadata and SHA256
 checksums.
+
+Baseline_V1 quality-repair evidence is packaged separately under
+`experiments/baseline/baseline_v1_quality_repair_v1/` without overwriting the
+frozen archive. The package contains an explicit repository-SLO scorecard with
+target, observed value, difference, and status for quality, safety, runtime,
+throughput, resource, and cost metrics, plus copied evidence from the targeted
+1,600-request repair validation. The validation pass confirms the known quality
+repairs are sufficient to begin Main_Inference_V1 as a separate explicit run,
+while the frozen Baseline_V1 archive remains not deployable by SLO.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -695,13 +706,12 @@ Result tracks are separated:
 
 ## Next Step
 
-The next independent track is the explicit targeted before/after optimization
-rerun using the eight selected Phase 2 configs. A final/main 10,000 rerun is not
-needed before optimization because the run is operationally valid, the fixed SLO
-re-score works from existing outputs, and the diagnosis selected a smaller
-high-value rerun set. Candidate areas are final-answer contract normalization,
-safety wording, evidence selection, groundedness, MM4 final-answer guarding, and
-concurrency-32 self-hosted efficiency.
+The next independent track is Main_Inference_V1 as an explicit full
+10,000-request run using the repaired quality path. Do not overwrite
+`experiments/baseline_v1/`; use a separate `experiments/main/` versioned folder.
+Monitor the one remaining SGLang MM4 c32 Healthcare Admin safety finding from
+the targeted repair validation, and preserve all checkpoint/resume, progress
+logging, artifact sync, manifest, telemetry, and backup verification controls.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

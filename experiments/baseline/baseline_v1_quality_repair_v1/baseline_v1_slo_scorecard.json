@@ -1,0 +1,301 @@
+{
+  "rows": [
+    {
+      "baseline_result": 99.92999999999999,
+      "difference_to_pass": null,
+      "family": "quality",
+      "metric": "json_validity_pct",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 81.54,
+      "difference_to_pass": -13.459999999999994,
+      "family": "quality",
+      "metric": "contract_validity_pct",
+      "slo_comparator": ">=",
+      "slo_target": "uses configured format_validity_min; aggregate envelope target; range=0.95",
+      "status": "FAIL"
+    },
+    {
+      "baseline_result": 62.3,
+      "difference_to_pass": -27.700000000000003,
+      "family": "quality",
+      "metric": "evidence_match_pct",
+      "slo_comparator": ">=",
+      "slo_target": "aggregate envelope target; range=0.9..0.95",
+      "status": "FAIL"
+    },
+    {
+      "baseline_result": 60.73,
+      "difference_to_pass": -34.27,
+      "family": "quality",
+      "metric": "groundedness_pct",
+      "slo_comparator": ">=",
+      "slo_target": "aggregate envelope target; range=0.95..0.98",
+      "status": "FAIL"
+    },
+    {
+      "baseline_result": 103.0,
+      "difference_to_pass": -103.0,
+      "family": "safety",
+      "metric": "safety_findings",
+      "slo_comparator": "<=",
+      "slo_target": "range=0.0",
+      "status": "FAIL"
+    },
+    {
+      "baseline_result": 439.8925351858139,
+      "difference_to_pass": null,
+      "family": "runtime",
+      "metric": "mean_ttft_ms",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 293.5790184419602,
+      "difference_to_pass": 1206.4209815580398,
+      "family": "runtime",
+      "metric": "p50_ttft_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=500.0..1500.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 1083.5117892711419,
+      "difference_to_pass": 1916.4882107288581,
+      "family": "runtime",
+      "metric": "p95_ttft_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=1000.0..3000.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 1580.8278884342872,
+      "difference_to_pass": 5419.172111565713,
+      "family": "runtime",
+      "metric": "p99_ttft_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=2000.0..7000.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 48.01012770422652,
+      "difference_to_pass": null,
+      "family": "runtime",
+      "metric": "mean_tpot_ms",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 43.20543769530819,
+      "difference_to_pass": 16.79456230469181,
+      "family": "runtime",
+      "metric": "p50_tpot_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=25.0..60.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 101.67353906072088,
+      "difference_to_pass": 18.326460939279116,
+      "family": "runtime",
+      "metric": "p95_tpot_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=50.0..120.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 140.30190888782593,
+      "difference_to_pass": 109.69809111217407,
+      "family": "runtime",
+      "metric": "p99_tpot_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=100.0..250.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 1760.5658594984561,
+      "difference_to_pass": 6239.434140501544,
+      "family": "runtime",
+      "metric": "p50_e2e_latency_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=2500.0..8000.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 3599.812677060254,
+      "difference_to_pass": 8400.187322939746,
+      "family": "runtime",
+      "metric": "p95_e2e_latency_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=4000.0..12000.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 4405.131646003575,
+      "difference_to_pass": 17594.868353996426,
+      "family": "runtime",
+      "metric": "p99_e2e_latency_ms",
+      "slo_comparator": "<=",
+      "slo_target": "range=7000.0..22000.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 5.2881247313043,
+      "difference_to_pass": 4.7881247313043,
+      "family": "throughput",
+      "metric": "requests_per_second",
+      "slo_comparator": ">=",
+      "slo_target": "range=0.5",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 473.7263923551169,
+      "difference_to_pass": 453.7263923551169,
+      "family": "throughput",
+      "metric": "mean_tokens_per_second",
+      "slo_comparator": ">=",
+      "slo_target": "range=20.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 51.261405672009865,
+      "difference_to_pass": 1.2614056720098645,
+      "family": "resource",
+      "metric": "gpu_utilization_mean_pct",
+      "slo_comparator": ">=",
+      "slo_target": "range=50.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 72.6748046875,
+      "difference_to_pass": 7.3251953125,
+      "family": "resource",
+      "metric": "gpu_memory_peak_gb",
+      "slo_comparator": "<=",
+      "slo_target": "range=80.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 90.843505859375,
+      "difference_to_pass": 4.156494140625,
+      "family": "resource",
+      "metric": "gpu_memory_peak_pct",
+      "slo_comparator": "<=",
+      "slo_target": "range=95.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 224.42374845869298,
+      "difference_to_pass": null,
+      "family": "resource",
+      "metric": "gpu_power_mean_w",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 467.79,
+      "difference_to_pass": null,
+      "family": "resource",
+      "metric": "gpu_power_peak_w",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 66.0,
+      "difference_to_pass": null,
+      "family": "resource",
+      "metric": "gpu_temperature_peak_c",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 9.783451363173606e-05,
+      "difference_to_pass": 0.019902165486368265,
+      "family": "gpu_cost",
+      "metric": "gpu_cost_per_request_usd",
+      "slo_comparator": "<=",
+      "slo_target": "range=0.02",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 0.09783451363173606,
+      "difference_to_pass": 19.902165486368265,
+      "family": "gpu_cost",
+      "metric": "gpu_cost_per_1000_requests_usd",
+      "slo_comparator": "<=",
+      "slo_target": "range=20.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 8258984.687566253,
+      "difference_to_pass": 8158984.687566253,
+      "family": "gpu_cost",
+      "metric": "tokens_per_gpu_dollar",
+      "slo_comparator": ">=",
+      "slo_target": "range=100000.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 1.7348334999999983e-05,
+      "difference_to_pass": 0.049982651665,
+      "family": "api_cost",
+      "metric": "api_cost_per_request_usd",
+      "slo_comparator": "<=",
+      "slo_target": "range=0.05",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 0.017348334999999982,
+      "difference_to_pass": 49.982651665,
+      "family": "api_cost",
+      "metric": "api_cost_per_1000_requests_usd",
+      "slo_comparator": "<=",
+      "slo_target": "range=50.0",
+      "status": "PASS"
+    },
+    {
+      "baseline_result": 0.7826761090538885,
+      "difference_to_pass": null,
+      "family": "gpu_cost",
+      "metric": "gpu_cost_total_usd",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 0.034696669999999964,
+      "difference_to_pass": null,
+      "family": "api_cost",
+      "metric": "api_cost_total_usd",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 0.8173727790538885,
+      "difference_to_pass": null,
+      "family": "total_cost",
+      "metric": "total_cost_usd",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    },
+    {
+      "baseline_result": 8089481.0,
+      "difference_to_pass": null,
+      "family": "throughput",
+      "metric": "total_tokens",
+      "slo_comparator": "not configured",
+      "slo_target": null,
+      "status": "NOT_EVALUATED_NO_CONFIGURED_TARGET"
+    }
+  ]
+}

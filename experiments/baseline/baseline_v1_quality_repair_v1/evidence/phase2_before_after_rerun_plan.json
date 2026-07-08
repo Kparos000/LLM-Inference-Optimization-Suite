@@ -1,0 +1,41 @@
+{
+  "baseline_artifacts": {
+    "fixed_slo_report": "results/processed/controlled_final_simulation_slo_report_fixed.json",
+    "fixed_slo_summary": "results/processed/controlled_final_simulation_slo_summary_fixed.csv",
+    "raw_results": "results/raw/controlled_final_simulation_results.jsonl"
+  },
+  "candidate_config_ids": [
+    "api_model6_gated_api_provider_route_mm2_hybrid_top5_c4",
+    "api_model6_gated_api_provider_route_mm3_compressed_hybrid_top5_c4",
+    "self_hosted_model3_7b_sglang_mm2_hybrid_top5_c16",
+    "self_hosted_model3_7b_sglang_mm2_hybrid_top5_c32",
+    "api_model6_gated_api_provider_route_mm4_bounded_agentic_c4",
+    "self_hosted_model3_7b_sglang_mm4_bounded_agentic_c32",
+    "self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c32",
+    "self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c16"
+  ],
+  "do_not_modify_gold_or_evaluators": true,
+  "do_not_rerun_full_10000_yet": true,
+  "planned_optimizations": [
+    "api_prompt_contract_normalization",
+    "citation_whitelist",
+    "context_compression",
+    "engine_switch",
+    "evidence_selector_repair",
+    "final_answer_contract_normalization",
+    "lower_concurrency",
+    "max_token_adjustment",
+    "mm4_final_answer_guard",
+    "prefix_cache",
+    "safety_wording_cleanup",
+    "stronger_model_escalation"
+  ],
+  "run_id": "controlled_final_simulation",
+  "status": "PHASE2_BEFORE_AFTER_RERUN_PLAN_READY",
+  "success_gate": {
+    "overall_deployability_verdict": "DEPLOYABLE_BASELINE",
+    "quality_slo_verdict": "PASS",
+    "runtime_slo_verdict": "PASS",
+    "safety_slo_verdict": "PASS"
+  }
+}
