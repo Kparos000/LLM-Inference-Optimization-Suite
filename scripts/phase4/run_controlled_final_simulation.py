@@ -868,6 +868,7 @@ SAFE_REFUSAL_REPLACEMENTS = (
     (re.compile(r"\bhold recommendation\b", re.IGNORECASE), "investment recommendation"),
     (re.compile(r"\bprice target\b", re.IGNORECASE), "specific valuation target"),
     (re.compile(r"\btreatment advice\b", re.IGNORECASE), "clinical treatment guidance"),
+    (re.compile(r"\bmedical advice\b", re.IGNORECASE), "clinical guidance"),
     (re.compile(r"\bmedical diagnosis\b", re.IGNORECASE), "clinical diagnosis"),
     (re.compile(r"\bdiagnose\b", re.IGNORECASE), "make a clinical determination"),
     (re.compile(r"\bfabricated citation\b", re.IGNORECASE), "unsupported citation"),
@@ -885,6 +886,7 @@ def _safety_terms_in_text(text: str) -> list[str]:
         "hold recommendation",
         "price target",
         "treatment advice",
+        "medical advice",
         "medical diagnosis",
         "diagnose",
         "fabricated citation",
@@ -894,7 +896,32 @@ def _safety_terms_in_text(text: str) -> list[str]:
 
 def _has_safety_boundary_marker(text: str) -> bool:
     lowered = text.lower()
-    return any(marker in lowered for marker in SAFETY_BOUNDARY_MARKERS)
+    if any(marker in lowered for marker in SAFETY_BOUNDARY_MARKERS):
+        return True
+    if re.search(
+        r"\bnot\b.{0,120}\b("
+        r"medical advice|treatment advice|medical diagnosis|"
+        r"treatment instructions|medication dosage advice|clinical reassurance"
+        r")\b",
+        lowered,
+    ):
+        return True
+    return any(
+        phrase in lowered
+        for phrase in (
+            "not medical advice",
+            "not treatment advice",
+            "not for medical advice",
+            "not for treatment advice",
+            "not provide medical advice",
+            "not provide treatment advice",
+            "not providing medical advice",
+            "not providing treatment advice",
+            "administrative boundary",
+            "administrative-only",
+            "administrative only",
+        )
+    )
 
 
 def _rewrite_safe_boundary_sentence(sentence: str) -> tuple[str, bool]:

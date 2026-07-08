@@ -272,6 +272,29 @@ def test_mm4_safe_refusal_boundary_rewrites_prohibited_wording() -> None:
     assert evaluation["safety_violation"] is False
 
 
+def test_mm4_not_medical_advice_boundary_rewrites_prohibited_wording() -> None:
+    runner = _load_runner()
+    row = {
+        "success": True,
+        "prompt_id": "p1",
+        "memory_mode": "mm4_bounded_agentic",
+        "citation_id_aliases": '{"E1":["DOC-1"]}',
+        "expected_output_format": "generation_contract_json",
+        "generated_text": (
+            '{"answer":"This administrative response is not medical advice.",'
+            '"evidence_ids":["E1"],"confidence":0.9,'
+            '"insufficient_evidence":false,"citation_notes":"E1 supports the boundary."}'
+        ),
+    }
+
+    normalized = runner.normalize_generation_contract_output(row)
+    evaluation = _evaluate_runner_row(runner, normalized)
+
+    assert normalized["mm4_safety_boundary_repair_applied"] is True
+    assert "medical advice" not in normalized["generated_text"].lower()
+    assert evaluation["safety_violation"] is False
+
+
 def test_real_mm4_safety_violation_still_fails() -> None:
     runner = _load_runner()
     row = {

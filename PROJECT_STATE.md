@@ -35,6 +35,8 @@ FINAL_MAIN_10000_EXPERIMENT_ALLOWED
 OFFICIAL_BASELINE_V1_FROZEN
 BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
 MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
+BASELINE_V1_FINAL_SAFETY_RISK_REPAIRED
+MAIN_INFERENCE_V1_ALLOWED_BY_FINAL_SAFETY_REPAIR
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -264,8 +266,23 @@ from 76.19% to 100.00%, and safety findings dropped from 14 to 1. Research AI
 reached 100.00% contract/evidence/groundedness on the selected subset, while
 Healthcare Admin safety findings dropped from 12 to 1. The targeted repair gate
 passed and the final/main 10,000-request experiment is allowed as a separate
-explicit run. The one remaining safety finding is isolated to SGLang MM4 c32
-Healthcare Admin and should be monitored in the next full run.
+explicit run. The remaining monitored safety finding was isolated to
+`self_hosted_model3_7b_sglang_mm4_bounded_agentic_c32` /
+`healthcare_admin_scaleup_2000_0027`: safe administrative boundary wording
+repeated the prohibited phrase `medical advice`, and no real unsafe clinical
+advice was present.
+
+The final Baseline_V1 safety-risk repair keeps the evaluator, SLO targets,
+gold data, and MM4 workflow unchanged. It rewrites only normalized final-answer
+boundary wording while preserving raw output for audit. Targeted replay over
+the exact row plus 39 neighboring Healthcare Admin SGLang MM4 c32 rows reached
+100.00% JSON validity, 100.00% contract validity, 100.00% evidence match,
+100.00% groundedness, and zero safety findings. The broader deterministic
+replay covered 2,200 rows: the selected 1,600 repair rows plus vLLM comparison
+configs, including SGLang, MM4, c32, Healthcare Admin, Research AI, and API
+`model6_gated`. It also reached 100.00% JSON/contract validity,
+100.00% evidence/groundedness, and zero safety findings. Main_Inference_V1 is
+allowed as a separate explicit run.
 
 Official baseline v1 completed the frozen 25-config, 10,000-request matrix on
 RunPod A100 SXM 80GB. It completed 10,000/10,000 requests with zero request
@@ -283,8 +300,10 @@ frozen archive. The package contains an explicit repository-SLO scorecard with
 target, observed value, difference, and status for quality, safety, runtime,
 throughput, resource, and cost metrics, plus copied evidence from the targeted
 1,600-request repair validation. The validation pass confirms the known quality
-repairs are sufficient to begin Main_Inference_V1 as a separate explicit run,
-while the frozen Baseline_V1 archive remains not deployable by SLO.
+repairs are sufficient to begin Main_Inference_V1 as a separate explicit run.
+The final safety-risk repair is archived under
+`experiments/baseline/baseline_v1_quality_repair_v1/final_safety_risk_repair/`.
+The frozen Baseline_V1 archive remains not deployable by SLO.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
@@ -709,9 +728,10 @@ Result tracks are separated:
 The next independent track is Main_Inference_V1 as an explicit full
 10,000-request run using the repaired quality path. Do not overwrite
 `experiments/baseline_v1/`; use a separate `experiments/main/` versioned folder.
-Monitor the one remaining SGLang MM4 c32 Healthcare Admin safety finding from
-the targeted repair validation, and preserve all checkpoint/resume, progress
-logging, artifact sync, manifest, telemetry, and backup verification controls.
+The previously monitored SGLang MM4 c32 Healthcare Admin safety wording risk is
+closed by the archived final safety repair. Preserve all checkpoint/resume,
+progress logging, artifact sync, manifest, telemetry, backup verification
+controls, and the unchanged strict safety evaluator.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See

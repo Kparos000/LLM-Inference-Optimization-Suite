@@ -1,0 +1,115 @@
+{
+  "broader_validation": {
+    "after_summary": {
+      "evidence_match_rate": 1.0,
+      "failure_count": 0,
+      "format_valid_rate": 1.0,
+      "generation_contract_valid_rate": 1.0,
+      "grounded_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "mean_e2e_latency_ms": 2326.332020690368,
+      "request_count": 2200,
+      "safety_violation_count": 0,
+      "success_count": 2200,
+      "total_cost_usd": 0.011793679999999992
+    },
+    "baseline_plan_row_count": 1600,
+    "before_summary": {
+      "evidence_match_rate": 0.77,
+      "failure_count": 0,
+      "format_valid_rate": 0.83,
+      "generation_contract_valid_rate": 0.83,
+      "grounded_rate": 0.745,
+      "json_valid_rate": 0.9990909090909091,
+      "mean_e2e_latency_ms": 2326.332020690368,
+      "request_count": 2200,
+      "safety_violation_count": 18,
+      "success_count": 2200,
+      "total_cost_usd": 0.011793679999999992
+    },
+    "coverage": {
+      "config_ids": [
+        "api_model6_gated_api_provider_route_mm2_hybrid_top5_c4",
+        "api_model6_gated_api_provider_route_mm3_compressed_hybrid_top5_c4",
+        "api_model6_gated_api_provider_route_mm4_bounded_agentic_c4",
+        "self_hosted_model3_7b_sglang_mm2_hybrid_top5_c16",
+        "self_hosted_model3_7b_sglang_mm2_hybrid_top5_c32",
+        "self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c16",
+        "self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c32",
+        "self_hosted_model3_7b_sglang_mm4_bounded_agentic_c32",
+        "self_hosted_model3_7b_vllm_mm2_hybrid_top5_c32",
+        "self_hosted_model3_7b_vllm_mm3_compressed_hybrid_top5_c32",
+        "self_hosted_model3_7b_vllm_mm4_bounded_agentic_c32"
+      ],
+      "covers_api_model6": true,
+      "covers_c32": true,
+      "covers_healthcare_admin": true,
+      "covers_mm4": true,
+      "covers_research_ai": true,
+      "covers_sglang": true,
+      "covers_vllm_comparison": true
+    },
+    "row_count": 2200,
+    "vllm_comparison_row_count": 600
+  },
+  "main_inference_v1_not_run": true,
+  "no_evaluator_slo_or_gold_weakening": true,
+  "previous_repaired_validation_after_summary": {
+    "estimated_self_hosted_gpu_cost_usd": 0.38059510258503265,
+    "evidence_match_rate": 1.0,
+    "failure_count": 0,
+    "format_valid_rate": 1.0,
+    "generation_contract_valid_rate": 1.0,
+    "grounded_rate": 1.0,
+    "json_valid_rate": 1.0,
+    "mean_e2e_latency_ms": 1052.6224212965462,
+    "request_count": 1600,
+    "safety_violation_count": 1,
+    "self_hosted_request_count": 1000,
+    "success_count": 1600,
+    "total_cost_usd": 0.013068629999999993,
+    "total_estimated_cost_usd": 0.3936637325850326,
+    "wall_seconds": 1927.6556915768888
+  },
+  "run_id": "baseline_v1_final_safety_risk_repair",
+  "status": "BASELINE_V1_FINAL_SAFETY_REPLAY_COMPLETE",
+  "targeted_replay": {
+    "after_summary": {
+      "evidence_match_rate": 1.0,
+      "failure_count": 0,
+      "format_valid_rate": 1.0,
+      "generation_contract_valid_rate": 1.0,
+      "grounded_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "mean_e2e_latency_ms": 2240.523409564048,
+      "request_count": 40,
+      "safety_violation_count": 0,
+      "success_count": 40,
+      "total_cost_usd": 0.0
+    },
+    "before_summary": {
+      "evidence_match_rate": 0.825,
+      "failure_count": 0,
+      "format_valid_rate": 1.0,
+      "generation_contract_valid_rate": 1.0,
+      "grounded_rate": 0.825,
+      "json_valid_rate": 1.0,
+      "mean_e2e_latency_ms": 2240.523409564048,
+      "request_count": 40,
+      "safety_violation_count": 1,
+      "success_count": 40,
+      "total_cost_usd": 0.0
+    },
+    "config_id": "self_hosted_model3_7b_sglang_mm4_bounded_agentic_c32",
+    "gate": {
+      "contract_validity_100": true,
+      "evidence_not_materially_regressed": true,
+      "groundedness_not_materially_regressed": true,
+      "json_validity_100": true,
+      "safety_findings_zero": true
+    },
+    "neighboring_rows_included": 39,
+    "row_count": 40,
+    "vertical": "healthcare_admin"
+  }
+}

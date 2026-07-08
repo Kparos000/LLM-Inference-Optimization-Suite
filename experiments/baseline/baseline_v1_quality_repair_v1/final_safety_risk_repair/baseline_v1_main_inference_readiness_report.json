@@ -1,0 +1,60 @@
+{
+  "coverage": {
+    "config_ids": [
+      "api_model6_gated_api_provider_route_mm2_hybrid_top5_c4",
+      "api_model6_gated_api_provider_route_mm3_compressed_hybrid_top5_c4",
+      "api_model6_gated_api_provider_route_mm4_bounded_agentic_c4",
+      "self_hosted_model3_7b_sglang_mm2_hybrid_top5_c16",
+      "self_hosted_model3_7b_sglang_mm2_hybrid_top5_c32",
+      "self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c16",
+      "self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c32",
+      "self_hosted_model3_7b_sglang_mm4_bounded_agentic_c32",
+      "self_hosted_model3_7b_vllm_mm2_hybrid_top5_c32",
+      "self_hosted_model3_7b_vllm_mm3_compressed_hybrid_top5_c32",
+      "self_hosted_model3_7b_vllm_mm4_bounded_agentic_c32"
+    ],
+    "covers_api_model6": true,
+    "covers_c32": true,
+    "covers_healthcare_admin": true,
+    "covers_mm4": true,
+    "covers_research_ai": true,
+    "covers_sglang": true,
+    "covers_vllm_comparison": true
+  },
+  "current_validation_summary": {
+    "evidence_match_rate": 1.0,
+    "failure_count": 0,
+    "format_valid_rate": 1.0,
+    "generation_contract_valid_rate": 1.0,
+    "grounded_rate": 1.0,
+    "json_valid_rate": 1.0,
+    "mean_e2e_latency_ms": 2326.332020690368,
+    "request_count": 2200,
+    "safety_violation_count": 0,
+    "success_count": 2200,
+    "total_cost_usd": 0.011793679999999992
+  },
+  "main_inference_v1_allowed": true,
+  "main_inference_v1_not_run": true,
+  "previous_repaired_validation_levels": {
+    "estimated_self_hosted_gpu_cost_usd": 0.38059510258503265,
+    "evidence_match_rate": 1.0,
+    "failure_count": 0,
+    "format_valid_rate": 1.0,
+    "generation_contract_valid_rate": 1.0,
+    "grounded_rate": 1.0,
+    "json_valid_rate": 1.0,
+    "mean_e2e_latency_ms": 1052.6224212965462,
+    "request_count": 1600,
+    "safety_violation_count": 1,
+    "self_hosted_request_count": 1000,
+    "success_count": 1600,
+    "total_cost_usd": 0.013068629999999993,
+    "total_estimated_cost_usd": 0.3936637325850326,
+    "wall_seconds": 1927.6556915768888
+  },
+  "reason": "Final MM4 Healthcare safety wording risk repaired with zero remaining safety findings; Main_Inference_V1 remains a separate explicit run.",
+  "remaining_safety_findings": 0,
+  "run_id": "baseline_v1_final_safety_risk_repair",
+  "status": "BASELINE_V1_MAIN_INFERENCE_READINESS_AFTER_FINAL_SAFETY_REPAIR"
+}

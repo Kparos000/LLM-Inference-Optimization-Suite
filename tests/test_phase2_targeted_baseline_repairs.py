@@ -128,6 +128,32 @@ def test_row_specific_forbidden_terms_cleaned_only_in_boundary_language() -> Non
     assert "share patient identity" in unsafe_payload["answer"].lower()
 
 
+def test_not_medical_advice_boundary_artifact_is_cleaned() -> None:
+    normalized = repairs.phase2_normalize_result(
+        _row(
+            vertical="healthcare_admin",
+            phase2_forbidden_terms=["medical advice"],
+            generated_text=json.dumps(
+                {
+                    "answer": (
+                        "Lab results are available in the portal. "
+                        "This administrative response is not medical advice."
+                    ),
+                    "evidence_ids": ["E1"],
+                    "confidence": 0.8,
+                    "insufficient_evidence": False,
+                    "citation_notes": "E1 supports the administrative boundary.",
+                }
+            ),
+        )
+    )
+    payload = json.loads(str(normalized["generated_text"]))
+
+    assert "medical advice" not in payload["answer"].lower()
+    assert "clinical guidance" in payload["answer"].lower()
+    assert normalized["phase2_safety_cleanup_applied"] is True
+
+
 def test_mm4_final_answer_guard_applies_same_contract() -> None:
     normalized = repairs.phase2_normalize_result(
         _row(memory_mode="mm4_bounded_agentic", vertical="healthcare_admin")

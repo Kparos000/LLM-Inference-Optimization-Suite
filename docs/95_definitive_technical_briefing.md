@@ -57,8 +57,13 @@ Baseline_V1 quality-repair evidence is now versioned separately at
 the frozen baseline unchanged, adds a repository-SLO scorecard with target,
 observed value, difference, and status, and copies the targeted 1,600-request
 repair validation. The targeted repair validation passed and allows
-Main_Inference_V1 as a separate explicit run. The frozen Baseline_V1 archive
-itself remains the not-deployable pre-repair reference baseline.
+Main_Inference_V1 as a separate explicit run. The final monitored safety risk
+is archived under `final_safety_risk_repair/`: the SGLang MM4 c32 Healthcare
+Admin row `healthcare_admin_scaleup_2000_0027` repeated prohibited boundary
+wording without giving unsafe advice. Final-answer boundary repair now removes
+that normalized wording artifact while preserving raw output for audit. The
+frozen Baseline_V1 archive itself remains the not-deployable pre-repair
+reference baseline.
 
 # 1. Project Overview
 
@@ -3739,6 +3744,8 @@ FINAL_MAIN_10000_EXPERIMENT_ALLOWED
 OFFICIAL_BASELINE_V1_FROZEN
 BASELINE_V1_QUALITY_REPAIR_VALIDATION_COMPLETE
 MAIN_INFERENCE_V1_ALLOWED_BY_TARGETED_REPAIR
+BASELINE_V1_FINAL_SAFETY_RISK_REPAIRED
+MAIN_INFERENCE_V1_ALLOWED_BY_FINAL_SAFETY_REPAIR
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
@@ -3981,8 +3988,8 @@ Run Main_Inference_V1 as an explicit full 10,000-request experiment using the
 repaired quality path. Do not overwrite `experiments/baseline_v1/`; write the
 new experiment under a separate `experiments/main/` versioned folder. Keep MM0
 as a no-context ablation, preserve vLLM/SGLang and API/self-hosted result-track
-separation, monitor the remaining SGLang MM4 c32 Healthcare Admin safety risk,
-and do not weaken SLOs, evaluators, gold data, or retrieval.
+separation, keep the final safety-risk repair active, and do not weaken SLOs,
+evaluators, gold data, or retrieval.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -4274,8 +4281,11 @@ assumptions:
   final price verification exist.
 - the Phase 2 targeted baseline repair is retained because it repaired the
   selected Research AI quality and Healthcare Admin safety blockers before any
-  final/main 10,000-request experiment, while preserving one remaining SGLang
-  MM4 Healthcare Admin safety finding as a monitored risk rather than hiding it.
+  final/main 10,000-request experiment.
+- the final Baseline_V1 safety-risk repair is retained because it isolated the
+  remaining SGLang MM4 c32 Healthcare Admin finding to safe boundary wording,
+  repaired only the normalized final answer, preserved raw output for audit,
+  and left the evaluator, SLOs, gold data, and MM4 unchanged.
 
 That combination of measurement discipline, typed contracts, vertical data,
 operational safety, and explicit limitations makes the suite a practical
@@ -4315,9 +4325,15 @@ failures. Contract validity improved from 84.13% to 100.00%, evidence match
 from 79.63% to 100.00%, groundedness from 76.19% to 100.00%, and safety
 findings dropped from 14 to 1. Research AI reached 100.00%
 contract/evidence/groundedness on the selected subset; Healthcare Admin safety
-findings dropped from 12 to 1. The targeted gate passed, so the final/main
-10,000-request experiment is allowed as a separate explicit run. The remaining
-SGLang MM4 c32 Healthcare Admin safety finding should be monitored in that run.
+findings dropped from 12 to 1. The targeted gate passed. The final monitored
+SGLang MM4 c32 Healthcare Admin safety finding was then isolated to
+`healthcare_admin_scaleup_2000_0027`, where safe administrative boundary wording
+repeated `medical advice`. Final safety replay over the exact row plus 39
+neighboring Healthcare Admin SGLang MM4 c32 rows reached 100.00%
+JSON/contract/evidence/groundedness and zero safety findings. Broader replay
+over 2,200 rows, including the selected 1,600 repair rows plus vLLM comparison
+configs, also reached 100.00% JSON/contract/evidence/groundedness and zero
+safety findings. Main_Inference_V1 is allowed as a separate explicit run.
 
 ## Official Baseline V1 Addendum
 
@@ -4346,5 +4362,7 @@ evidence showing that contract validity improved from 84.13% to 100.00%,
 evidence match from 79.63% to 100.00%, groundedness from 76.19% to 100.00%,
 and safety findings from 14 to 1 on the selected 1,600-request set. That
 targeted repair gate passed, so Main_Inference_V1 is allowed as a separate
-explicit run. The one remaining SGLang MM4 c32 Healthcare Admin safety finding
-should be monitored in that run.
+explicit run. The final safety-risk repair is archived at
+`experiments/baseline/baseline_v1_quality_repair_v1/final_safety_risk_repair/`.
+It closes the remaining SGLang MM4 c32 Healthcare Admin wording artifact with
+zero safety findings in targeted and broader replay.
