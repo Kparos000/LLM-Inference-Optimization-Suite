@@ -1,0 +1,385 @@
+{
+  "artifact_sync_enabled": true,
+  "run_id": "controlled_final_simulation",
+  "success": true,
+  "sync": {
+    "backup_root": "backups",
+    "event": "completed",
+    "missing_optional": [
+      "results/processed/final_10000_baseline_v1_slo_report_fixed.json",
+      "results/processed/final_10000_baseline_v1_slo_summary_fixed.csv",
+      "results/processed/final_10000_baseline_v1_verdict_fixed.json",
+      "results/processed/final_10000_baseline_v1_artifact_sync_report.json"
+    ],
+    "missing_required": [],
+    "provider": "local",
+    "run_id": "controlled_final_simulation",
+    "success": true,
+    "synced_artifacts": [
+      {
+        "backup_path": "backups/controlled_final_simulation/results/raw/final_10000_baseline_v1_results.jsonl",
+        "category": "raw_jsonl",
+        "sha256": "90839f03577b4b3f2fe11195487b410fb639c9a9edcccb946b943e2bb8c948e9",
+        "size_bytes": 185052085,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/raw/final_10000_baseline_v1_results.jsonl"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/raw/final_10000_baseline_v1_manifest.json",
+        "category": "manifest",
+        "sha256": "f64b9efa242e2487e384ef88c621f9cab76a009c76911e197b24340ab3333742",
+        "size_bytes": 5028,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/raw/final_10000_baseline_v1_manifest.json"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/raw/final_10000_baseline_v1_gpu_telemetry.jsonl",
+        "category": "telemetry",
+        "sha256": "8a4287f640b8d66ed40939eb6d575dd8a31316888c8ac996a35da4ccaacee78f",
+        "size_bytes": 480679,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/raw/final_10000_baseline_v1_gpu_telemetry.jsonl"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_eval_report.json",
+        "category": "processed_report",
+        "sha256": "488515b14c7092492b96918f7b826429ee0c4966a0d8c9b51e28b6f32d1940f7",
+        "size_bytes": 34275,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_eval_report.json"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_eval_summary.csv",
+        "category": "processed_report",
+        "sha256": "ae255931370930da9c800831c49d7644cc18b51b433657154a0dfc60b2442921",
+        "size_bytes": 850,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_eval_summary.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_engine_comparison.csv",
+        "category": "processed_report",
+        "sha256": "4a6c2ef35d5e53cf5aaca4d7b76bc14a4fe42d421b449a25e7227f2620c88e0d",
+        "size_bytes": 6115,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_engine_comparison.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_memory_mode_comparison.csv",
+        "category": "processed_report",
+        "sha256": "712333bde1ab0de3b553653b5c9ccc49162b505b9c44d17b821356719d5a26d2",
+        "size_bytes": 7892,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_memory_mode_comparison.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_concurrency_comparison.csv",
+        "category": "processed_report",
+        "sha256": "712333bde1ab0de3b553653b5c9ccc49162b505b9c44d17b821356719d5a26d2",
+        "size_bytes": 7892,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_concurrency_comparison.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_api_track_comparison.csv",
+        "category": "processed_report",
+        "sha256": "06fe6909a4a3758b8a82cf5065451173a8f7df5bd576469ac398c8d63f3d150a",
+        "size_bytes": 2175,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_api_track_comparison.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_api_vs_self_hosted_comparison.csv",
+        "category": "processed_report",
+        "sha256": "712333bde1ab0de3b553653b5c9ccc49162b505b9c44d17b821356719d5a26d2",
+        "size_bytes": 7892,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_api_vs_self_hosted_comparison.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_model_comparison.csv",
+        "category": "processed_report",
+        "sha256": "712333bde1ab0de3b553653b5c9ccc49162b505b9c44d17b821356719d5a26d2",
+        "size_bytes": 7892,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_model_comparison.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_slo_report.json",
+        "category": "processed_report",
+        "sha256": "137f9b56e63d2bcfef359bdbd9e76576b02c286ece484bfe85c96d4489bb416f",
+        "size_bytes": 51664,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_slo_report.json"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_slo_summary.csv",
+        "category": "processed_report",
+        "sha256": "ccde97d3bd80320076088dbe8132ac5dc86b17a3fd2915144d951ef1b8630127",
+        "size_bytes": 14713,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_slo_summary.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_cost_report.json",
+        "category": "processed_report",
+        "sha256": "e5ae2c2033156b3f60af0745ad5ff2a9463fa7cbd1da2ce0da49a5c40034fc4b",
+        "size_bytes": 341,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_cost_report.json"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_post_run_automation_report.json",
+        "category": "processed_report",
+        "sha256": "f24d96e30c4e06a052d8efffed339687071047a7a6d76b33828929a4b1be3248",
+        "size_bytes": 4877,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_post_run_automation_report.json"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_plotting_dataset.csv",
+        "category": "processed_report",
+        "sha256": "3ad1e135ac4f135186ea7ff15f368846963cfa8bd7b4e2691feba288d5b37f71",
+        "size_bytes": 2247,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_baseline_v1_plotting_dataset.csv"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_progress.jsonl",
+        "category": "processed_report",
+        "sha256": "79d2bb4efc8eff72da0c6189756a85381689820ca560e49fc17fbb8a7416e7e2",
+        "size_bytes": 65701,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/processed/final_10000_progress.jsonl"
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/checkpoints/final_10000_baseline_v1_checkpoint.json",
+        "category": "log",
+        "sha256": "268c94a21bc37e8619d94dd8d47b5572082a7a4089bc44343e7d51f7fddc1ce3",
+        "size_bytes": 884231,
+        "source_path": "/workspace/LLM-Inference-Optimization-Suite/results/checkpoints/final_10000_baseline_v1_checkpoint.json"
+      }
+    ],
+    "synced_at": "2026-07-08T07:19:09.022579+00:00"
+  },
+  "verification": {
+    "backup_completeness_score": 1.0,
+    "backup_root": "backups",
+    "check_count": 23,
+    "checks": [
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/raw/final_10000_baseline_v1_results.jsonl",
+        "hash_ok": true,
+        "name": "raw_jsonl:results/raw/final_10000_baseline_v1_results.jsonl",
+        "passed": true,
+        "required": true,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/raw/final_10000_baseline_v1_manifest.json",
+        "hash_ok": true,
+        "name": "manifest:results/raw/final_10000_baseline_v1_manifest.json",
+        "passed": true,
+        "required": true,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/raw/final_10000_baseline_v1_gpu_telemetry.jsonl",
+        "hash_ok": true,
+        "name": "telemetry:results/raw/final_10000_baseline_v1_gpu_telemetry.jsonl",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_eval_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_eval_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_eval_summary.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_eval_summary.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_engine_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_engine_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_memory_mode_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_memory_mode_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_concurrency_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_concurrency_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_api_track_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_api_track_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_api_vs_self_hosted_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_api_vs_self_hosted_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_model_comparison.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_model_comparison.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_slo_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_slo_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_slo_summary.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_slo_summary.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": false,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_slo_report_fixed.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_slo_report_fixed.json",
+        "passed": true,
+        "required": false,
+        "size_ok": false,
+        "source_exists": false
+      },
+      {
+        "backup_exists": false,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_slo_summary_fixed.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_slo_summary_fixed.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": false,
+        "source_exists": false
+      },
+      {
+        "backup_exists": false,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_verdict_fixed.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_verdict_fixed.json",
+        "passed": true,
+        "required": false,
+        "size_ok": false,
+        "source_exists": false
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_cost_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_cost_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": false,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_artifact_sync_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_artifact_sync_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": false,
+        "source_exists": false
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_post_run_automation_report.json",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_post_run_automation_report.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_baseline_v1_plotting_dataset.csv",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_baseline_v1_plotting_dataset.csv",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/processed/final_10000_progress.jsonl",
+        "hash_ok": true,
+        "name": "processed_report:results/processed/final_10000_progress.jsonl",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_exists": true,
+        "backup_path": "backups/controlled_final_simulation/results/checkpoints/final_10000_baseline_v1_checkpoint.json",
+        "hash_ok": true,
+        "name": "log:results/checkpoints/final_10000_baseline_v1_checkpoint.json",
+        "passed": true,
+        "required": false,
+        "size_ok": true,
+        "source_exists": true
+      },
+      {
+        "backup_path": "backups/controlled_final_simulation/results/raw/final_10000_baseline_v1_manifest.json",
+        "name": "manifest_status_matches_completed_rows",
+        "passed": true,
+        "required": true
+      }
+    ],
+    "passed": true,
+    "passed_count": 23,
+    "run_id": "controlled_final_simulation",
+    "verified_at": "2026-07-08T07:19:10.298046+00:00"
+  }
+}

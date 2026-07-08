@@ -1,0 +1,85 @@
+{
+  "cost_report": {
+    "api_cost_usd": 0.034696669999999964,
+    "api_request_count": 2000,
+    "gpu_cost_usd": 0.7826761090538885,
+    "run_id": "controlled_final_simulation",
+    "self_hosted_gpu_hourly_price_usd": 1.49,
+    "self_hosted_request_count": 8000,
+    "status": "COST_MEASURED",
+    "total_cost_usd": 0.8173727790538885,
+    "wall_seconds": 1891.0295252308715
+  },
+  "gpu_summary": {
+    "generated_at_utc": "2026-07-08T07:19:05.370481+00:00",
+    "gpu_names": [
+      "NVIDIA A100-SXM4-80GB"
+    ],
+    "max_memory_used_mb": 74419.0,
+    "max_temperature_c": 66.0,
+    "max_utilization_gpu_percent": 100.0,
+    "mean_power_draw_w": 224.42374845869298,
+    "mean_utilization_gpu_percent": 51.261405672009865,
+    "memory_total_mb": {
+      "max": 81920.0,
+      "mean": 81920.0,
+      "min": 81920.0
+    },
+    "memory_used_mb": {
+      "max": 74419.0,
+      "mean": 73999.0382244143,
+      "min": 73998.0
+    },
+    "power_draw_w": {
+      "max": 467.79,
+      "mean": 224.42374845869298,
+      "min": 69.37
+    },
+    "process_info_observed": [
+      "39258, VLLM::EngineCore, 38650 | 41015, sglang::scheduler, 35332"
+    ],
+    "process_names": [
+      "VLLM::EngineCore",
+      "sglang::scheduler"
+    ],
+    "requested_duration_seconds": 1891.0295252308715,
+    "sample_count": 1622,
+    "sample_end_timestamp": "2026/07/08 07:19:02.935",
+    "sample_start_timestamp": "2026/07/08 06:48:37.653",
+    "sampling_interval_seconds": 1.0,
+    "temperature_c": {
+      "max": 66.0,
+      "mean": 46.611590628853264,
+      "min": 30.0
+    },
+    "utilization_gpu_percent": {
+      "max": 100.0,
+      "mean": 51.261405672009865,
+      "min": 0.0
+    }
+  },
+  "latency_summary": {
+    "mean_e2e_latency_ms": 1914.6157434799052,
+    "mean_total_tokens_per_second": 473.7263923551169,
+    "mean_tpot_ms": 48.01012770422652,
+    "mean_ttft_ms": 439.8925351858139,
+    "p50_e2e_latency_ms": 1760.5658594984561,
+    "p50_tpot_ms": 43.20543769530819,
+    "p50_ttft_ms": 293.5790184419602,
+    "p95_e2e_latency_ms": 3599.812677060254,
+    "p95_tpot_ms": 101.67353906072088,
+    "p95_ttft_ms": 1083.5117892711419,
+    "p99_e2e_latency_ms": 4405.131646003575,
+    "p99_tpot_ms": 140.30190888782593,
+    "p99_ttft_ms": 1580.8278884342872,
+    "request_count": 10000,
+    "success_count": 10000,
+    "vertical": "all"
+  },
+  "run_id": "baseline_v1",
+  "runtime_seconds": 1891.0295252308715,
+  "throughput_summary": {
+    "mean_total_tokens_per_second": 473.7263923551169,
+    "request_count": 10000
+  }
+}

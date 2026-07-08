@@ -1,0 +1,14 @@
+baseline_or_optimized,concurrency,engine,hardware,memory_mode,metric_name,metric_status,metric_value,model_alias,run_id,traffic_profile
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,ttft_ms,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,tpot_ms,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,latency_ms,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,throughput,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,gpu_utilization,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,vram,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,power,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,temperature,NOT_AVAILABLE,,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,cost,NOT_AVAILABLE,0.8173727790538885,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,json_validity,PASS,0.9993,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,contract_validity,FAIL,0.8154,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,groundedness,FAIL,0.6073,model3_7b+model6_gated,controlled_final_simulation,online_low_latency
+baseline,32,vllm+sglang+api_provider_route,a100_sxm_80gb,mm0-mm4,evidence_match,FAIL,0.623,model3_7b+model6_gated,controlled_final_simulation,online_low_latency

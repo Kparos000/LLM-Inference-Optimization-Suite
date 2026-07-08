@@ -4284,3 +4284,20 @@ contract/evidence/groundedness on the selected subset; Healthcare Admin safety
 findings dropped from 12 to 1. The targeted gate passed, so the final/main
 10,000-request experiment is allowed as a separate explicit run. The remaining
 SGLang MM4 c32 Healthcare Admin safety finding should be monitored in that run.
+
+## Official Baseline V1 Addendum
+
+Official baseline v1 completed the frozen 25-config, 10,000-request matrix on
+RunPod A100 SXM 80GB and is archived under `experiments/baseline_v1/`. It
+completed 10,000/10,000 requests with zero request failures. Runtime was
+1,891.030 seconds and total cost was `$0.817373`, including `$0.782676` GPU cost
+and `$0.034697` API cost.
+
+The baseline quality result is intentionally retained as measured: 99.93% JSON
+validity, 81.54% contract validity, 62.30% evidence match, 60.73% groundedness,
+and 103 safety findings. Runtime and cost SLOs passed, while quality and safety
+SLOs failed. The deployability verdict is `NOT_DEPLOYABLE_SLO_FAILURES`.
+
+This frozen archive is the reference point for subsequent optimization
+experiments. Optimization should improve quality and safety while preserving the
+runtime and cost SLO passes.

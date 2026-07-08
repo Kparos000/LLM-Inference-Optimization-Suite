@@ -1,0 +1,302 @@
+{
+  "archive_inventory": [
+    {
+      "path": "figures/README.md",
+      "size_bytes": 124
+    },
+    {
+      "path": "logs/final_10000_progress.jsonl",
+      "size_bytes": 65701
+    },
+    {
+      "path": "manifest.json",
+      "size_bytes": 5028
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_api_track_comparison.csv",
+      "size_bytes": 2175
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_api_vs_self_hosted_comparison.csv",
+      "size_bytes": 7892
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_artifact_sync_report.json",
+      "size_bytes": 17607
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_concurrency_comparison.csv",
+      "size_bytes": 7892
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_cost_report.json",
+      "size_bytes": 341
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_engine_comparison.csv",
+      "size_bytes": 6115
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_eval_report.json",
+      "size_bytes": 34275
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_eval_summary.csv",
+      "size_bytes": 850
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_memory_mode_comparison.csv",
+      "size_bytes": 7892
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_model_comparison.csv",
+      "size_bytes": 7892
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_plotting_dataset.csv",
+      "size_bytes": 2247
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_plotting_dataset.json",
+      "size_bytes": 5783
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_post_run_automation_report.json",
+      "size_bytes": 4877
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_runtime_report.json",
+      "size_bytes": 2507
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_slo_report.json",
+      "size_bytes": 51664
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_slo_summary.csv",
+      "size_bytes": 14713
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_vertical_comparison.csv",
+      "size_bytes": 1816
+    },
+    {
+      "path": "processed/final_10000_baseline_v1_vertical_comparison.json",
+      "size_bytes": 4885
+    },
+    {
+      "path": "raw/final_10000_baseline_v1_checkpoint.json",
+      "size_bytes": 884231
+    },
+    {
+      "path": "raw/final_10000_baseline_v1_gpu_telemetry.jsonl",
+      "size_bytes": 480679
+    },
+    {
+      "path": "raw/final_10000_baseline_v1_manifest.json",
+      "size_bytes": 5028
+    },
+    {
+      "path": "raw/final_10000_baseline_v1_results.jsonl.gz",
+      "size_bytes": 9599993
+    }
+  ],
+  "artifact_sync": {
+    "backup_completeness_score": 1.0,
+    "missing_required": [],
+    "success": true
+  },
+  "baseline_version": "baseline_v1",
+  "concurrency": {
+    "api": [
+      4
+    ],
+    "self_hosted": [
+      16,
+      32
+    ]
+  },
+  "cost": {
+    "api_cost_usd": 0.034696669999999964,
+    "api_request_count": 2000,
+    "gpu_cost_usd": 0.7826761090538885,
+    "run_id": "controlled_final_simulation",
+    "self_hosted_gpu_hourly_price_usd": 1.49,
+    "self_hosted_request_count": 8000,
+    "status": "COST_MEASURED",
+    "total_cost_usd": 0.8173727790538885,
+    "wall_seconds": 1891.0295252308715
+  },
+  "created_at_utc": "2026-07-08T07:35:19.625688+00:00",
+  "dataset_version": "controlled_2000",
+  "dataset_workload_hash": "e71ae1ed0411c2989cc68c2b9e2cfbe5322807f6b998d82e2afbd66437829662",
+  "git_branch_at_archive": "main",
+  "git_commit_at_run": "188823fcf9bf8d5be7827de1ea33596157da33c8",
+  "gpu_summary": {
+    "generated_at_utc": "2026-07-08T07:19:05.370481+00:00",
+    "gpu_names": [
+      "NVIDIA A100-SXM4-80GB"
+    ],
+    "max_memory_used_mb": 74419.0,
+    "max_temperature_c": 66.0,
+    "max_utilization_gpu_percent": 100.0,
+    "mean_power_draw_w": 224.42374845869298,
+    "mean_utilization_gpu_percent": 51.261405672009865,
+    "memory_total_mb": {
+      "max": 81920.0,
+      "mean": 81920.0,
+      "min": 81920.0
+    },
+    "memory_used_mb": {
+      "max": 74419.0,
+      "mean": 73999.0382244143,
+      "min": 73998.0
+    },
+    "power_draw_w": {
+      "max": 467.79,
+      "mean": 224.42374845869298,
+      "min": 69.37
+    },
+    "process_info_observed": [
+      "39258, VLLM::EngineCore, 38650 | 41015, sglang::scheduler, 35332"
+    ],
+    "process_names": [
+      "VLLM::EngineCore",
+      "sglang::scheduler"
+    ],
+    "requested_duration_seconds": 1891.0295252308715,
+    "sample_count": 1622,
+    "sample_end_timestamp": "2026/07/08 07:19:02.935",
+    "sample_start_timestamp": "2026/07/08 06:48:37.653",
+    "sampling_interval_seconds": 1.0,
+    "temperature_c": {
+      "max": 66.0,
+      "mean": 46.611590628853264,
+      "min": 30.0
+    },
+    "utilization_gpu_percent": {
+      "max": 100.0,
+      "mean": 51.261405672009865,
+      "min": 0.0
+    }
+  },
+  "hardware": {
+    "cuda": "Build cuda_12.4.r12.4/compiler.34097967_0",
+    "driver": "580.159.04",
+    "gpu_id": "a100_sxm_80gb",
+    "gpu_names": [
+      "NVIDIA A100-SXM4-80GB"
+    ],
+    "os": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "python": "3.11.10"
+  },
+  "known_caveats": [
+    "Raw results are archived as gzip-compressed JSONL to keep the Git archive below hosting file-size limits.",
+    "The baseline is operationally complete but not deployable: quality and safety SLOs failed.",
+    "Standalone figure image files were not generated; plotting-ready CSV and JSON artifacts are included."
+  ],
+  "matrix": {
+    "api_request_count": 2000,
+    "config_count": 25,
+    "expected_config_count": 25,
+    "expected_row_count": 10000,
+    "passed": true,
+    "prompt_count_per_config": 400,
+    "prompts_per_vertical_per_config": 80,
+    "row_count": 10000,
+    "self_hosted_request_count": 8000,
+    "vertical_counts": {
+      "airline": 2000,
+      "finance": 2000,
+      "healthcare_admin": 2000,
+      "research_ai": 2000,
+      "retail": 2000
+    }
+  },
+  "memory_modes": [
+    "mm0_no_context",
+    "mm1_dense_top5",
+    "mm2_hybrid_top5",
+    "mm3_compressed_hybrid_top5",
+    "mm4_bounded_agentic"
+  ],
+  "models": {
+    "api": "model6_gated / meta-llama/Llama-3.1-8B-Instruct",
+    "self_hosted": "model3_7b / Qwen/Qwen2.5-7B-Instruct"
+  },
+  "prompt_version": "controlled_final_generation_contract_repaired_phase2_targeted_baseline",
+  "quality": {
+    "contract_retry_count": 0,
+    "evidence_id_presence_count": 7198,
+    "evidence_id_presence_rate": 0.7198,
+    "evidence_match_count": 6230,
+    "evidence_match_rate": 0.623,
+    "expected_status_counts": "{\"answer\": 10000}",
+    "format_valid_count": 8154,
+    "format_valid_rate": 0.8154,
+    "generation_contract_valid_count": 8154,
+    "generation_contract_valid_rate": 0.8154,
+    "grounded_count": 6073,
+    "grounded_rate": 0.6073,
+    "joined_count": 10000,
+    "joined_rate": 1.0,
+    "json_valid_count": 9993,
+    "json_valid_rate": 0.9993,
+    "memory_modes": "mm0_no_context;mm1_dense_top5;mm2_hybrid_top5;mm3_compressed_hybrid_top5;mm4_bounded_agentic",
+    "parse_repair_count": 0,
+    "parse_repair_rate": 0.0,
+    "results_path": "results/raw/final_10000_baseline_v1_results.jsonl",
+    "retry_rate": 0.0,
+    "retry_row_count": 0,
+    "row_count": 10000,
+    "safety_violation_count": 103,
+    "safety_violation_rate": 0.0103,
+    "truncation_count": 0,
+    "truncation_rate": 0.0,
+    "verticals": "airline;finance;healthcare_admin;research_ai;retail"
+  },
+  "requests": {
+    "attempted": 10000,
+    "completed": 10000,
+    "failed": 0
+  },
+  "run_completed_at_utc": "2026-07-08T07:19:03.329273+00:00",
+  "run_started_at_utc": "2026-07-08T06:48:35.185807+00:00",
+  "run_type": "baseline",
+  "runtime": {
+    "gpu_hours": 0.5252859792307977,
+    "latency_summary": {
+      "mean_e2e_latency_ms": 1914.6157434799052,
+      "mean_total_tokens_per_second": 473.7263923551169,
+      "mean_tpot_ms": 48.01012770422652,
+      "mean_ttft_ms": 439.8925351858139,
+      "p50_e2e_latency_ms": 1760.5658594984561,
+      "p50_tpot_ms": 43.20543769530819,
+      "p50_ttft_ms": 293.5790184419602,
+      "p95_e2e_latency_ms": 3599.812677060254,
+      "p95_tpot_ms": 101.67353906072088,
+      "p95_ttft_ms": 1083.5117892711419,
+      "p99_e2e_latency_ms": 4405.131646003575,
+      "p99_tpot_ms": 140.30190888782593,
+      "p99_ttft_ms": 1580.8278884342872,
+      "request_count": 10000,
+      "success_count": 10000,
+      "vertical": "all"
+    },
+    "wall_seconds": 1891.0295252308715
+  },
+  "serving_engines": [
+    "vLLM",
+    "SGLang",
+    "API provider route"
+  ],
+  "slo_verdicts": {
+    "benchmark_execution_verdict": "COMPLETED",
+    "cost_slo_verdict": "PASS",
+    "overall_deployability_verdict": "NOT_DEPLOYABLE_SLO_FAILURES",
+    "quality_slo_verdict": "FAIL",
+    "runtime_slo_verdict": "PASS",
+    "safety_slo_verdict": "FAIL"
+  },
+  "title": "Official Baseline Inference Experiment"
+}

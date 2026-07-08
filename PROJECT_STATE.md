@@ -32,6 +32,7 @@ CONTROLLED_FINAL_REPAIRED_BASELINE_OPERATIONAL_NOT_DEPLOYABLE
 PHASE2_OPTIMIZATION_DIAGNOSIS_READY
 PHASE2_TARGETED_BASELINE_REPAIRS_PASSED
 FINAL_MAIN_10000_EXPERIMENT_ALLOWED
+OFFICIAL_BASELINE_V1_FROZEN
 ```
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
@@ -263,6 +264,16 @@ Healthcare Admin safety findings dropped from 12 to 1. The targeted repair gate
 passed and the final/main 10,000-request experiment is allowed as a separate
 explicit run. The one remaining safety finding is isolated to SGLang MM4 c32
 Healthcare Admin and should be monitored in the next full run.
+
+Official baseline v1 completed the frozen 25-config, 10,000-request matrix on
+RunPod A100 SXM 80GB. It completed 10,000/10,000 requests with zero request
+failures in 1,891.030 seconds. Total measured cost was `$0.817373`, including
+`$0.782676` GPU cost and `$0.034697` API cost. JSON validity was 99.93%,
+contract validity 81.54%, evidence match 62.30%, groundedness 60.73%, and
+safety findings 103. Runtime and cost SLOs passed, while quality and safety
+SLOs failed; deployability is `NOT_DEPLOYABLE_SLO_FAILURES`. The immutable
+baseline archive is `experiments/baseline_v1/` with metadata and SHA256
+checksums.
 
 Infrastructure completion repaired the live A100 SGLang stack by exposing CUDA
 13 runtime libraries to the dynamic linker, installing `libnuma1`, and replacing
