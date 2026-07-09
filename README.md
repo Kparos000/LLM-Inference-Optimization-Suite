@@ -78,10 +78,12 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
   requests, zero request failures, runtime and cost SLO passes, and quality and
   safety SLO failures. It is not the official Main_Inference run.
 - Result tracks are explicitly separated: API provider runs (`model5`/`model6`/`model7` through OpenRouter, Novita, or HF provider routes) use API token cost and no provider GPU telemetry; self-hosted GPU runs (`model2`/`model3`/`model4` through Hugging Face local, vLLM, SGLang, or RunPod) use GPU telemetry/hourly infrastructure cost when configured and no API token price.
-- The official `Main_Inference_V1` remains pending. Its correct matrix is
-  25 configs x 10,000 prompts/config = 250,000 total requests. Only after that
-  run is complete should `Optimized_Inference_V1` use it as the official
-  before-optimization reference.
+- The official `Main_Inference_V1` has completed and is archived under
+  `experiments/main/main_inference_v1/`. It ran 25 configs x 10,000
+  prompts/config = 250,000 total requests, completed 250,000/250,000 requests
+  with zero request failures, passed runtime and cost SLOs, and failed quality
+  and safety SLOs. It is now the official before-optimization reference for
+  `Optimized_Inference_V1`.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation

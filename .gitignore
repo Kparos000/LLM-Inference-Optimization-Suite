@@ -145,6 +145,12 @@ data/generated/vector_store/
 data/generated/phase4/*.jsonl
 data/workloads/**/*.jsonl
 
+# Oversized official experiment evidence is preserved locally/backed up, but
+# these compressed 250k-run blobs exceed normal Git host file-size limits.
+experiments/main/main_inference_v1/raw/main_inference_v1_results.jsonl.gz
+experiments/main/main_inference_v1/data/main_inference_v1_matrix.jsonl.gz
+experiments/main/main_inference_v1/data/main_inference_v1_repaired_runner_input.jsonl
+
 # Keep result folders
 !results/raw/.gitkeep
 !results/raw/README.md

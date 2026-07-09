@@ -1,0 +1,26 @@
+backend_type,config_id,engine,evidence_id_presence,evidence_match,failure_classes,format_valid,generation_contract_valid,groundedness,json_validity,memory_mode,normalization_applied,prompt_id,source_contract_error,source_missing_fields,vertical
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm0_no_context_c16,vllm,False,False,evidence_ids_absent;mm0_expected_evidence_absence,True,True,False,True,mm0_no_context,True,airline_scaleup_2000_0001,,[],airline
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm0_no_context_c32,vllm,False,False,mm0_expected_evidence_absence,True,True,False,True,mm0_no_context,True,healthcare_admin_scaleup_2000_0001,,[],healthcare_admin
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm1_dense_top5_c16,vllm,True,True,,True,True,True,True,mm1_dense_top5,True,retail_scaleup_2000_0001,,[],retail
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm1_dense_top5_c32,vllm,True,True,,True,True,True,True,mm1_dense_top5,True,finance_scaleup_2000_0001,,[],finance
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm2_hybrid_top5_c16,vllm,True,True,missing_evidence_field,True,True,True,True,mm2_hybrid_top5,True,research_ai_scaleup_2000_0001,"Missing generation contract fields: answer, evidence_ids","[""answer"", ""evidence_ids""]",research_ai
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm2_hybrid_top5_c32,vllm,True,False,answer_not_grounded_in_cited_evidence;cited_evidence_not_in_e1_e5,True,True,False,True,mm2_hybrid_top5,True,airline_scaleup_2000_0001,,[],airline
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm3_compressed_hybrid_top5_c16,vllm,True,True,,True,True,True,True,mm3_compressed_hybrid_top5,True,healthcare_admin_scaleup_2000_0001,,[],healthcare_admin
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm3_compressed_hybrid_top5_c32,vllm,True,True,,True,True,True,True,mm3_compressed_hybrid_top5,True,retail_scaleup_2000_0001,,[],retail
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm4_bounded_agentic_c16,vllm,True,True,,True,True,True,True,mm4_bounded_agentic,True,finance_scaleup_2000_0001,,[],finance
+self_hosted_gpu,self_hosted_model3_7b_vllm_mm4_bounded_agentic_c32,vllm,True,True,missing_evidence_field,True,True,True,True,mm4_bounded_agentic,True,research_ai_scaleup_2000_0001,"Missing generation contract fields: answer, evidence_ids","[""answer"", ""evidence_ids""]",research_ai
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm0_no_context_c16,sglang,False,False,evidence_ids_absent;mm0_expected_evidence_absence,True,True,False,True,mm0_no_context,True,airline_scaleup_2000_0001,,[],airline
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm0_no_context_c32,sglang,False,False,mm0_expected_evidence_absence,True,True,False,True,mm0_no_context,True,healthcare_admin_scaleup_2000_0001,,[],healthcare_admin
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm1_dense_top5_c16,sglang,True,True,,True,True,True,True,mm1_dense_top5,True,retail_scaleup_2000_0001,,[],retail
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm1_dense_top5_c32,sglang,True,True,,True,True,True,True,mm1_dense_top5,True,finance_scaleup_2000_0001,,[],finance
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm2_hybrid_top5_c16,sglang,True,True,missing_evidence_field,True,True,True,True,mm2_hybrid_top5,True,research_ai_scaleup_2000_0001,"Missing generation contract fields: answer, evidence_ids","[""answer"", ""evidence_ids""]",research_ai
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm2_hybrid_top5_c32,sglang,True,False,answer_not_grounded_in_cited_evidence;cited_evidence_not_in_e1_e5,True,True,False,True,mm2_hybrid_top5,True,airline_scaleup_2000_0001,,[],airline
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c16,sglang,True,True,,True,True,True,True,mm3_compressed_hybrid_top5,True,healthcare_admin_scaleup_2000_0001,,[],healthcare_admin
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm3_compressed_hybrid_top5_c32,sglang,True,True,,True,True,True,True,mm3_compressed_hybrid_top5,True,retail_scaleup_2000_0001,,[],retail
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm4_bounded_agentic_c16,sglang,True,True,,True,True,True,True,mm4_bounded_agentic,True,finance_scaleup_2000_0001,,[],finance
+self_hosted_gpu,self_hosted_model3_7b_sglang_mm4_bounded_agentic_c32,sglang,True,True,missing_evidence_field,True,True,True,True,mm4_bounded_agentic,True,research_ai_scaleup_2000_0001,"Missing generation contract fields: answer, evidence_ids","[""answer"", ""evidence_ids""]",research_ai
+api_provider,api_model6_gated_api_provider_route_mm0_no_context_c4,api_provider_route,False,False,mm0_expected_evidence_absence,True,True,False,True,mm0_no_context,True,airline_scaleup_2000_0001,,[],airline
+api_provider,api_model6_gated_api_provider_route_mm1_dense_top5_c4,api_provider_route,True,True,,True,True,True,True,mm1_dense_top5,True,healthcare_admin_scaleup_2000_0001,,[],healthcare_admin
+api_provider,api_model6_gated_api_provider_route_mm2_hybrid_top5_c4,api_provider_route,True,True,,True,True,True,True,mm2_hybrid_top5,True,retail_scaleup_2000_0001,,[],retail
+api_provider,api_model6_gated_api_provider_route_mm3_compressed_hybrid_top5_c4,api_provider_route,True,True,,True,True,True,True,mm3_compressed_hybrid_top5,True,finance_scaleup_2000_0001,,[],finance
+api_provider,api_model6_gated_api_provider_route_mm4_bounded_agentic_c4,api_provider_route,True,True,,True,True,True,True,mm4_bounded_agentic,True,research_ai_scaleup_2000_0001,,[],research_ai

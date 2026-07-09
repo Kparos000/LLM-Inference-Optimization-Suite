@@ -1,0 +1,178 @@
+{
+  "comparison_reports": [
+    {
+      "available": true,
+      "path": "results/processed/main_inference_v1_engine_comparison.csv"
+    },
+    {
+      "available": true,
+      "path": "results/processed/main_inference_v1_memory_comparison.csv"
+    },
+    {
+      "available": true,
+      "path": "results/processed/main_inference_v1_concurrency_comparison.csv"
+    },
+    {
+      "available": true,
+      "path": "results/processed/main_inference_v1_api_comparison.csv"
+    },
+    {
+      "available": true,
+      "path": "results/processed/main_inference_v1_api_vs_self_hosted_comparison.csv"
+    },
+    {
+      "available": true,
+      "path": "results/processed/main_inference_v1_model_comparison.csv"
+    },
+    {
+      "available": true,
+      "path": "results/processed/main_inference_v1_slo_summary.csv"
+    }
+  ],
+  "generated_at_utc": "2026-07-09T06:34:55.799601+00:00",
+  "manifest": {
+    "baseline_or_optimized": "baseline",
+    "concurrency": 32,
+    "dataset_version": "controlled_2000",
+    "engine": "vllm+sglang+api_provider_route",
+    "git_commit": "f929d2da6d35fe8504e6d421032d3c220482d235",
+    "hardware": "a100_sxm_80gb",
+    "memory_mode": "mm0-mm4",
+    "model_alias": "model3_7b+model6_gated",
+    "optimization_flags": [],
+    "prompt_count": 250000,
+    "run_id": "main_inference_v1",
+    "traffic_profile": "online_low_latency",
+    "vertical": "all"
+  },
+  "optimization_recommendations_status": "available_after_failed_slo_diagnosis",
+  "plotting_datasets": [
+    "baseline_vs_optimized",
+    "engine_comparison",
+    "memory_mode_comparison",
+    "concurrency_scaling",
+    "gpu_utilization",
+    "vram",
+    "power",
+    "temperature",
+    "ttft",
+    "tpot",
+    "cost",
+    "latency",
+    "throughput",
+    "slo_comparison"
+  ],
+  "run_id": "main_inference_v1",
+  "slo_metric_rows": [
+    {
+      "direction": "max",
+      "metric_name": "ttft_ms",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": 1000.0,
+      "target_source": "configs/slo_targets.yaml:latency_slo.ttft_p95_ms_max"
+    },
+    {
+      "direction": "max",
+      "metric_name": "tpot_ms",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": 50.0,
+      "target_source": "configs/slo_targets.yaml:latency_slo.tpot_p95_ms_max"
+    },
+    {
+      "direction": "max",
+      "metric_name": "latency_ms",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": 4000.0,
+      "target_source": "configs/slo_targets.yaml:latency_slo.e2e_p95_ms_max"
+    },
+    {
+      "direction": "min",
+      "metric_name": "throughput",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": 20.0,
+      "target_source": "configs/slo_targets.yaml:throughput_slo.tokens_per_second_min"
+    },
+    {
+      "direction": "min",
+      "metric_name": "gpu_utilization",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": 50.0,
+      "target_source": "configs/slo_targets.yaml:resource_slo.gpu_utilization_min_pct"
+    },
+    {
+      "direction": "max",
+      "metric_name": "vram",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": 81920.0,
+      "target_source": "configs/slo_targets.yaml:resource_slo.gpu_memory_peak_gb_max"
+    },
+    {
+      "direction": null,
+      "metric_name": "power",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": null,
+      "target_source": null
+    },
+    {
+      "direction": null,
+      "metric_name": "temperature",
+      "observed": null,
+      "status": "NOT_AVAILABLE",
+      "target": null,
+      "target_source": null
+    },
+    {
+      "direction": null,
+      "metric_name": "cost",
+      "observed": 18.461296726432796,
+      "status": "NOT_AVAILABLE",
+      "target": null,
+      "target_source": null
+    },
+    {
+      "direction": "min",
+      "metric_name": "json_validity",
+      "observed": 0.99822,
+      "status": "PASS",
+      "target": 0.95,
+      "target_source": "configs/slo_targets.yaml:quality_slo.format_validity_min"
+    },
+    {
+      "direction": "min",
+      "metric_name": "contract_validity",
+      "observed": 0.805388,
+      "status": "FAIL",
+      "target": 0.95,
+      "target_source": "configs/slo_targets.yaml:quality_slo.format_validity_min"
+    },
+    {
+      "direction": "min",
+      "metric_name": "groundedness",
+      "observed": 0.567204,
+      "status": "FAIL",
+      "target": 0.98,
+      "target_source": "configs/slo_targets.yaml:quality_slo.groundedness_min"
+    },
+    {
+      "direction": "min",
+      "metric_name": "evidence_match",
+      "observed": 0.589724,
+      "status": "FAIL",
+      "target": 0.95,
+      "target_source": "configs/slo_targets.yaml:quality_slo.evidence_match_min"
+    }
+  ],
+  "slo_status_counts": {
+    "FAIL": 3,
+    "NOT_AVAILABLE": 9,
+    "PASS": 1,
+    "WARNING": 0
+  }
+}

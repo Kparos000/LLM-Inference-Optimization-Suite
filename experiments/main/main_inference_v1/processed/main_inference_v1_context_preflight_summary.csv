@@ -1,0 +1,7 @@
+vertical,row_count,all_required_evidence_present_count,partial_present_count,absent_count,all_required_evidence_present_rate,partial_present_rate,absent_rate,unrecoverable_row_count,canonical_ids_exposed_to_model_count
+all,10000,9827,93,80,0.9827,0.0093,0.008,173,0
+airline,2000,2000,0,0,1.0,0.0,0.0,0,0
+healthcare_admin,2000,2000,0,0,1.0,0.0,0.0,0,0
+retail,2000,2000,0,0,1.0,0.0,0.0,0,0
+finance,2000,1920,0,80,0.96,0.0,0.04,80,0
+research_ai,2000,1907,93,0,0.9535,0.0465,0.0,93,0

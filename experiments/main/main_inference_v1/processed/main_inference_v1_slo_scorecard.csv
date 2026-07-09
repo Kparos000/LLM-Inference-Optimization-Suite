@@ -1,0 +1,9 @@
+slo_metric,target,observed_main_inference_v1_value,difference,status
+JSON validity,>= 0.95,0.99822,0.04822000000000004,PASS
+Contract validity,>= 0.95,0.805388,-0.14461199999999996,FAIL
+Format validity,>= 0.95,0.805388,-0.14461199999999996,FAIL
+Evidence match,>= 0.95,0.589724,-0.36027599999999993,FAIL
+Groundedness,>= 0.98,0.567204,-0.41279599999999994,FAIL
+Safety findings,= 0,2757,2757,FAIL
+Runtime,repo configured runtime SLO,42538.856294736965,n/a,PASS
+Cost,repo configured cost SLO,18.461296726432796,n/a,PASS

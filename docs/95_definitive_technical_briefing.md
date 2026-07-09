@@ -73,9 +73,27 @@ config, and 10,000 total requests. It completed 10,000/10,000 requests with
 zero request failures. Runtime and cost SLOs passed, but quality and safety
 SLOs failed, so deployability is `NOT_DEPLOYABLE_SLO_FAILURES`.
 
-The official Main_Inference_V1 remains pending. Its correct matrix is
-25 configs x 10,000 prompts/config = 250,000 total requests. Optimized
-Inference work should wait for that official before-optimization reference.
+The official Main_Inference_V1 has now completed and is archived under
+`experiments/main/main_inference_v1/`. It ran the corrected full matrix:
+25 configs x 10,000 prompts/config = 250,000 total requests. It is the official
+before-optimization reference for Optimized_Inference_V1.
+
+The measured Main_Inference_V1 result is:
+
+- Runtime: 42,538.856 seconds.
+- Total cost: `$18.461297`.
+- GPU cost: `$17.606360`.
+- API cost: `$0.854937`.
+- JSON validity: 99.822%.
+- Contract validity: 80.5388%.
+- Evidence match: 58.9724%.
+- Groundedness: 56.7204%.
+- Safety findings: 2,757.
+
+Main_Inference_V1 completed 250,000/250,000 requests with zero request
+failures. Runtime and cost SLOs passed; quality and safety SLOs failed, so
+deployability is `NOT_DEPLOYABLE_SLO_FAILURES`. Optimization may now begin
+from this official before-optimization result.
 
 The measured Baseline_Inference_V1 result is:
 
@@ -3770,8 +3788,9 @@ BASELINE_V1_FINAL_SAFETY_RISK_REPAIRED
 MAIN_INFERENCE_V1_ALLOWED_BY_FINAL_SAFETY_REPAIR
 BASELINE_INFERENCE_V1_COMPLETED
 BASELINE_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
-MAIN_INFERENCE_V1_PENDING_250000_REQUESTS
-OPTIMIZATION_BLOCKED_UNTIL_MAIN_INFERENCE_V1_COMPLETES
+MAIN_INFERENCE_V1_COMPLETED_250000_REQUESTS
+MAIN_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
+OPTIMIZATION_SELECTION_READY
 ```
 
 The remote serving path is operational, and Qwen2.5-1.5B fits within 8 GB
@@ -3902,7 +3921,7 @@ calibration package, and kept live RunPod calibration blocked because no
 - TensorRT-LLM smoke validation before it can enter live experiment matrices;
 - cloud artifact sync before remote long-run backup claims beyond local backup;
 - backend-native queue, batch, prefix-cache, and KV-cache time series;
-- larger 2,000 and 10,000 record runs.
+- optimization-strategy selection and one-factor Optimized_Inference_V1 rerun.
 
 ## Known Limitations
 
@@ -4010,15 +4029,14 @@ calibration package, and kept live RunPod calibration blocked because no
 
 ## Next Engineering Milestone
 
-Run the corrected official Main_Inference_V1 as the next independent track:
-25 configs x 10,000 prompts/config = 250,000 total requests. Use
-Baseline_Inference_V1 only as the completed 10,000-total-request validation
-run. After official Main_Inference_V1 completes, use it as the
-before-optimization reference for Optimized_Inference_V1. Keep MM0 as a
-no-context ablation, preserve vLLM/SGLang and API/self-hosted result-track
-separation, keep the final safety-risk repair active, and do not weaken SLOs,
-evaluators, gold data, or retrieval. Change one reviewed optimization factor at
-a time so the before/after comparison remains auditable.
+Select the first optimization strategy for Optimized_Inference_V1 using the
+official 250,000-request Main_Inference_V1 result as the before-optimization
+reference. Use Baseline_Inference_V1 only as the completed
+10,000-total-request validation run. Keep MM0 as a no-context ablation,
+preserve vLLM/SGLang and API/self-hosted result-track separation, keep the
+final safety-risk repair active, and do not weaken SLOs, evaluators, gold data,
+or retrieval. Change one reviewed optimization factor at a time so the
+before/after comparison remains auditable.
 
 # 23. What An AI Inference Engineer Should Understand
 
@@ -4376,8 +4394,24 @@ were 96. Runtime and cost SLOs passed; quality and safety SLOs failed.
 Deployability is `NOT_DEPLOYABLE_SLO_FAILURES`.
 
 This run is not the official Main_Inference_V1 before-optimization reference.
-The official Main_Inference_V1 remains pending and must run 25 configs x 10,000
-prompts/config = 250,000 total requests.
+The official Main_Inference_V1 has since completed as a separate
+250,000-request run and is archived under `experiments/main/main_inference_v1/`.
+
+## Official Main_Inference_V1 Addendum
+
+Official Main_Inference_V1 completed the corrected full matrix on A100 SXM
+80GB: 25 configs x 10,000 prompts/config = 250,000 total requests. It is
+archived under `experiments/main/main_inference_v1/`. It completed
+250,000/250,000 requests with zero request failures.
+
+Runtime was 42,538.856 seconds and total cost was `$18.461297`, including
+`$17.606360` GPU cost and `$0.854937` API cost. JSON validity was 99.822%,
+contract validity was 80.5388%, evidence match was 58.9724%, groundedness was
+56.7204%, and safety findings were 2,757.
+
+Runtime and cost SLOs passed, while quality and safety SLOs failed. The
+deployability verdict is `NOT_DEPLOYABLE_SLO_FAILURES`. This is now the
+official before-optimization reference for Optimized_Inference_V1.
 
 ## Official Baseline V1 Addendum
 
@@ -4408,7 +4442,8 @@ and safety findings from 14 to 1 on the selected 1,600-request set. That
 targeted repair gate authorized Main_Inference_V1 as a separate explicit run.
 The 10,000-total-request validation run that followed is now classified as
 Baseline_Inference_V1 under `experiments/baseline/baseline_inference_v1/`; the
-official 250,000-request Main_Inference_V1 remains pending.
+official 250,000-request Main_Inference_V1 is archived under
+`experiments/main/main_inference_v1/`.
 The final safety-risk repair is archived at
 `experiments/baseline/baseline_v1_quality_repair_v1/final_safety_risk_repair/`.
 It closes the remaining SGLang MM4 c32 Healthcare Admin wording artifact with
