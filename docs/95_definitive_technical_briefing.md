@@ -76,7 +76,8 @@ SLOs failed, so deployability is `NOT_DEPLOYABLE_SLO_FAILURES`.
 The official Main_Inference_V1 has now completed and is archived under
 `experiments/main/main_inference_v1/`. It ran the corrected full matrix:
 25 configs x 10,000 prompts/config = 250,000 total requests. It is the official
-before-optimization reference for Optimized_Inference_V1.
+before-optimization reference for Optimized_Inference_V1. The canonical
+detailed handoff and local-analysis guide is `docs/main_inference_V1.md`.
 
 The measured Main_Inference_V1 result is:
 
@@ -93,7 +94,9 @@ The measured Main_Inference_V1 result is:
 Main_Inference_V1 completed 250,000/250,000 requests with zero request
 failures. Runtime and cost SLOs passed; quality and safety SLOs failed, so
 deployability is `NOT_DEPLOYABLE_SLO_FAILURES`. Optimization may now begin
-from this official before-optimization result.
+from this official before-optimization result. Use `docs/main_inference_V1.md`
+for the artifact map, SLO scorecard, local analysis commands, and optimization
+readiness notes.
 
 The measured Baseline_Inference_V1 result is:
 
@@ -4402,7 +4405,8 @@ The official Main_Inference_V1 has since completed as a separate
 Official Main_Inference_V1 completed the corrected full matrix on A100 SXM
 80GB: 25 configs x 10,000 prompts/config = 250,000 total requests. It is
 archived under `experiments/main/main_inference_v1/`. It completed
-250,000/250,000 requests with zero request failures.
+250,000/250,000 requests with zero request failures. The canonical detailed
+reference is `docs/main_inference_V1.md`.
 
 Runtime was 42,538.856 seconds and total cost was `$18.461297`, including
 `$17.606360` GPU cost and `$0.854937` API cost. JSON validity was 99.822%,

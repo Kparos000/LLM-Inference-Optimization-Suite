@@ -1,0 +1,3 @@
+# Keep Markdown documentation line endings stable across Windows and Linux.
+.gitattributes text eol=lf
+*.md text eol=lf
