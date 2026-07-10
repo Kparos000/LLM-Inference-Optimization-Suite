@@ -1,0 +1,44 @@
+{
+  "apply_plan_count": 4,
+  "failed_slo_count": 5,
+  "failed_slo_option_counts": {
+    "main_inference_v1.contract_validity": 4,
+    "main_inference_v1.evidence_match": 4,
+    "main_inference_v1.format_validity": 4,
+    "main_inference_v1.groundedness": 3,
+    "main_inference_v1.safety_findings": 3
+  },
+  "generated_at_utc": "2026-07-10T22:36:49.741134+00:00",
+  "no_gpu_required_for_ui_replay": true,
+  "run_id": "main_inference_v1",
+  "status": "UI_STORY_READY",
+  "steps": [
+    {
+      "backend_artifact": "main_inference_v1_ui_diagnosis.json",
+      "step": "select_failed_slo",
+      "ui_action": "User clicks a failed SLO row."
+    },
+    {
+      "backend_artifact": "main_inference_v1_ui_diagnosis.json",
+      "step": "show_bottleneck",
+      "ui_action": "Show target, observed value, severity, confidence, and bottleneck."
+    },
+    {
+      "backend_artifact": "main_inference_v1_ui_optimization_options.json",
+      "step": "show_filtered_options",
+      "ui_action": "Dropdown contains only compatible, non-rejected optimizations."
+    },
+    {
+      "backend_artifact": "main_inference_v1_ui_optimization_options.json",
+      "step": "inspect_rejections",
+      "ui_action": "Optional details panel explains rejected optimizations and rules."
+    },
+    {
+      "backend_artifact": "main_inference_v1_ui_apply_plan.json",
+      "step": "apply_plan",
+      "ui_action": "Apply shows the exact plan; it does not run inference."
+    }
+  ],
+  "summary": "Main_Inference_V1 completed operationally but failed quality and safety SLOs. The UI reasoning layer maps each failed SLO to a bottleneck and only exposes catalog-backed optimizations that survived compatibility and negative-rule filters.",
+  "title": "Optimization Intelligence For Main_Inference_V1"
+}

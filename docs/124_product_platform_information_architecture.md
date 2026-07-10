@@ -1297,6 +1297,10 @@ User opens comparison
 - Negative optimization rules catalog.
 - Deterministic SLO diagnosis engine.
 - Deterministic optimization recommender.
+- Main_Inference-specific UI diagnosis wrapper.
+- UI-ready Main_Inference diagnosis, optimization option, apply-plan, and
+  story JSON artifacts.
+- Negative-rule enforcement in UI option generation.
 - Main_Inference SLO summary and comparison CSVs.
 - Artifact sync report, checkpoint, progress log, manifest, and checksums.
 - Baseline repair evidence from earlier phases.
@@ -1305,9 +1309,7 @@ User opens comparison
 
 - Frontend application.
 - Backend read API.
-- UI-ready JSON bundles.
-- Main_Inference-specific UI diagnosis export.
-- Negative-rule enforcement in UI option generation.
+- UI-ready summary, matrix, SLO, and before/after comparison bundles.
 - Optimized_Inference_V1 artifacts.
 - Saved before/after comparison bundle.
 - Row-level raw response access in the local repo checkout.
@@ -1329,18 +1331,20 @@ User opens comparison
 
 1. Generate `main_inference_v1_ui_summary.json`.
 2. Generate `main_inference_v1_ui_slo.json`.
-3. Generate `main_inference_v1_ui_diagnosis.json`.
-4. Generate `main_inference_v1_ui_optimization_options.json`.
-5. Generate `experiment_ui_index.json`.
-6. Do not require GPUs.
+3. `main_inference_v1_ui_diagnosis.json` is implemented.
+4. `main_inference_v1_ui_optimization_options.json` is implemented.
+5. `main_inference_v1_ui_apply_plan.json` is implemented.
+6. `main_inference_v1_ui_story.json` is implemented.
+7. Generate `experiment_ui_index.json`.
+8. Do not require GPUs.
 
 ### Phase P2: Diagnosis And Filtering
 
-1. Build a Main_Inference diagnosis wrapper over `main_inference_v1_slo_summary.csv`.
-2. Expand coarse recommendations into catalog-backed optimization options.
-3. Apply compatibility filters.
-4. Apply negative-rule filters.
-5. Preserve excluded-option explanations for transparency.
+1. Main_Inference diagnosis wrapper is implemented.
+2. Catalog-backed optimization options are implemented for failed SLOs.
+3. Compatibility filters are implemented through existing recommender logic.
+4. Negative-rule filters are implemented for UI option generation.
+5. Excluded-option explanations are preserved for transparency.
 
 ### Phase P3: Read-Only Backend
 

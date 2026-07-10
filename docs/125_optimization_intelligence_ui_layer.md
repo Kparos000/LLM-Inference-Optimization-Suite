@@ -1,0 +1,155 @@
+# Optimization Intelligence UI Layer
+
+Status: implemented for `Main_Inference_V1` as a saved-artifact reasoning
+layer.
+
+This document describes the UI-facing optimization intelligence layer that
+turns the completed Main_Inference run into an explainable product workflow.
+It does not run inference, mutate benchmark results, or create
+`Optimized_Inference_V1`.
+
+## Purpose
+
+The final platform needs more than a static benchmark dashboard. When a user
+clicks a failed SLO, the platform should explain:
+
+- which metric failed;
+- what target was missed;
+- what bottleneck the repository logic diagnosed;
+- which optimizations are compatible;
+- why each optimization applies;
+- which optimizations were rejected and why.
+
+The UI must never show a selectable optimization that is irrelevant to the
+selected failed SLO or blocked by a negative rule.
+
+## Implementation
+
+The implementation is:
+
+```text
+src/inference_bench/main_inference_optimization_ui.py
+scripts/phase4/build_main_inference_optimization_ui.py
+tests/test_main_inference_optimization_ui.py
+```
+
+It wraps existing repository logic:
+
+- `src/inference_bench/slo_diagnosis.py`
+- `src/inference_bench/optimization_recommender.py`
+- `src/inference_bench/bottleneck_catalog.py`
+- `src/inference_bench/optimization_catalog.py`
+- `src/inference_bench/optimization_negative_rules.py`
+
+It consumes only saved Main_Inference artifacts:
+
+- `experiments/main/main_inference_v1/processed/main_inference_v1_slo_scorecard.csv`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_slo_summary.csv`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_slo_report.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_context_preflight_report.json`
+- `experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json`
+
+## Generated UI Artifacts
+
+The script writes:
+
+```text
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_diagnosis.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_options.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_apply_plan.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_story.json
+```
+
+Each artifact includes:
+
+- `inference_executed: false`;
+- `llm_used: false` where applicable;
+- source artifact references;
+- deterministic catalog-backed explanations.
+
+## User Flow
+
+```text
+Click failed SLO
+-> show target, observed value, severity, and bottleneck
+-> show only compatible optimization options
+-> show explanation, tradeoffs, risk, and implementation status
+-> optional rejected-option audit
+-> apply produces a plan only
+-> saved optimized artifacts can be replayed later when they exist
+```
+
+## Current Main_Inference Diagnosis
+
+The UI diagnosis exposes five failed SLO rows:
+
+| Failed SLO | Bottleneck |
+| --- | --- |
+| Contract validity | `low_contract_validity` |
+| Format validity | `low_contract_validity` |
+| Evidence match | `low_evidence_match` |
+| Groundedness | `low_groundedness` |
+| Safety findings | `safety_violations` |
+
+Runtime and cost passed, so latency, throughput, GPU-utilization, and cost
+optimizations are not shown as selectable options for this run.
+
+## Negative-Rule Filtering
+
+The layer applies `configs/optimization_negative_rules.yaml` before an option
+can appear in a failed-SLO dropdown.
+
+Examples:
+
+- Stronger-model escalation is rejected for this run because prompt-contract
+  failures and context preflight gaps still exist.
+- Quantization is rejected because quality is already failing and quantized
+  runtime support is not a measured fix for the failed quality SLOs.
+- Concurrency increase is not shown because quality failed and runtime did not
+  fail.
+- Prefix caching is not shown because prefix reuse and cache-hit telemetry were
+  not diagnosed as failed SLO evidence.
+
+Rejected optimizations are retained in the JSON for audit panels, but the UI
+should not present them as selectable dropdown options.
+
+## Apply Plan Semantics
+
+`main_inference_v1_ui_apply_plan.json` is plan-only. It describes what would
+change in a controlled optimized experiment and what must remain fixed.
+
+It explicitly does not:
+
+- execute inference;
+- modify Main_Inference artifacts;
+- create `Optimized_Inference_V1`;
+- weaken evaluator semantics;
+- modify gold data.
+
+The plan is suitable for a product demo because users can inspect the
+reasoning and later replay saved optimized artifacts without needing GPU
+access.
+
+## Command
+
+```powershell
+python scripts/phase4/build_main_inference_optimization_ui.py
+```
+
+## Product Contract
+
+Frontend behavior:
+
+- Load `main_inference_v1_ui_diagnosis.json` for failed SLO rows.
+- Load `main_inference_v1_ui_optimization_options.json` for dropdown options.
+- Use `options_by_failed_slo[slo_id]` as the only selectable option source.
+- Show `rejected_optimizations_by_failed_slo[slo_id]` only in an audit drawer.
+- Load `main_inference_v1_ui_apply_plan.json` when the user clicks apply.
+- Load `main_inference_v1_ui_story.json` for the guided explanation page.
+
+Backend behavior:
+
+- Serve these JSON files as read-only artifacts.
+- Do not expose endpoints that start inference from this product layer.
+- Keep optimized-run replay separate from plan generation.

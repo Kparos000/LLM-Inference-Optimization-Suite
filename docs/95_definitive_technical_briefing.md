@@ -4417,6 +4417,17 @@ Runtime and cost SLOs passed, while quality and safety SLOs failed. The
 deployability verdict is `NOT_DEPLOYABLE_SLO_FAILURES`. This is now the
 official before-optimization reference for Optimized_Inference_V1.
 
+The product-facing Optimization Intelligence layer now wraps the existing SLO
+diagnosis, bottleneck catalog, optimization catalog, negative-rule registry,
+and optimization recommender for Main_Inference_V1. It writes read-only UI
+artifacts under `experiments/main/main_inference_v1/processed/`:
+`main_inference_v1_ui_diagnosis.json`,
+`main_inference_v1_ui_optimization_options.json`,
+`main_inference_v1_ui_apply_plan.json`, and
+`main_inference_v1_ui_story.json`. These artifacts explain failed SLOs,
+compatible optimizations, rejected optimizations, and plan-only apply
+semantics without running inference or creating Optimized_Inference_V1.
+
 ## Official Baseline V1 Addendum
 
 Official baseline v1 completed the frozen 25-config, 10,000-request matrix on

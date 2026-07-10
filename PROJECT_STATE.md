@@ -746,12 +746,23 @@ Result tracks are separated:
 ## Next Step
 
 Baseline_Inference_V1 is complete and remains not deployable by repository
-SLOs. The next independent track is the corrected official `Main_Inference_V1`:
-run 25 configs x 10,000 prompts/config = 250,000 total requests, then use that
-official run as the before-optimization reference for `Optimized_Inference_V1`.
-Preserve the strict evaluator, SLO targets, gold data, retrieval,
-checkpoint/resume, progress logging, artifact sync, manifest, telemetry, and
-backup verification controls.
+SLOs. The corrected official `Main_Inference_V1` has also completed: 25
+configs x 10,000 prompts/config = 250,000 total requests, with zero request
+failures. Runtime and cost SLOs passed, quality and safety SLOs failed, and the
+run is the official before-optimization reference for `Optimized_Inference_V1`.
+
+The current product-phase layer is Optimization Intelligence for
+Main_Inference_V1. It uses the existing SLO diagnosis, bottleneck catalog,
+optimization catalog, negative-rule registry, and recommender to generate
+UI-ready diagnosis, optimization-option, apply-plan, and story JSON artifacts
+under `experiments/main/main_inference_v1/processed/`. These artifacts are
+read-only and do not run inference or create `Optimized_Inference_V1`.
+
+The next engineering track is the frontend/read API that replays these saved
+artifacts, then a separate controlled optimized inference run when an approved
+optimization plan is ready. Preserve the strict evaluator, SLO targets, gold
+data, retrieval, checkpoint/resume, progress logging, artifact sync, manifest,
+telemetry, and backup verification controls.
 
 See `docs/summaries/blockB1_vllm_1_5b_quality_smoke_summary.md` for the measured
 result and comparison. See
@@ -782,4 +793,6 @@ Phase 1E artifact sync and recovery controls. See
 `docs/summaries/blockB7_controlled_1000_prompt_baseline_summary.md` for the B7
 summary, and
 `docs/summaries/blockB7R1_vllm_cuda_stability_repair_summary.md` for the B7R1
-summary.
+summary. See `docs/main_inference_V1.md` and
+`docs/125_optimization_intelligence_ui_layer.md` for the official
+Main_Inference and UI Optimization Intelligence references.

@@ -423,8 +423,8 @@ for line in manifest.read_text().splitlines():
 
 ## 15. Optimization Readiness
 
-The run is now ready for failed-SLO diagnosis and controlled optimization
-strategy selection. Relevant configuration and code:
+The run now has a UI-facing failed-SLO diagnosis and optimization option
+export. Relevant configuration and code:
 
 - `configs/bottleneck_catalog.yaml`
 - `configs/optimization_catalog.yaml`
@@ -434,13 +434,29 @@ strategy selection. Relevant configuration and code:
 - `src/inference_bench/slo_diagnosis.py`
 - `src/inference_bench/optimization_recommender.py`
 - `src/inference_bench/optimization_catalog.py`
+- `src/inference_bench/main_inference_optimization_ui.py`
+- `scripts/phase4/build_main_inference_optimization_ui.py`
 - `scripts/phase4/diagnose_phase2_optimization.py`
 - `scripts/phase4/generate_b2_slo_diagnosis_reports.py`
 
-The next engineering step is either to create and run a
-Main_Inference-specific diagnosis wrapper or to adapt the existing diagnosis
-scripts carefully. The diagnosis should use the measured failed SLOs from
-`main_inference_v1_slo_report.json` and `main_inference_v1_slo_summary.csv`.
+The UI-ready artifacts are:
+
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_diagnosis.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_options.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_apply_plan.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_story.json`
+
+They are generated with:
+
+```powershell
+python scripts/phase4/build_main_inference_optimization_ui.py
+```
+
+The UI layer uses the measured failed SLOs from
+`main_inference_v1_slo_report.json`, `main_inference_v1_slo_scorecard.csv`,
+and `main_inference_v1_slo_summary.csv`. It applies the bottleneck catalog,
+optimization catalog, and negative-rule filtering so the product dropdowns
+show only compatible options for the selected failed SLO.
 
 Optimization should target quality and safety first while preserving the
 runtime and cost SLO passes.

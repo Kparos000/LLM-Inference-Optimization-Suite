@@ -84,6 +84,14 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
   with zero request failures, passed runtime and cost SLOs, and failed quality
   and safety SLOs. It is now the official before-optimization reference for
   `Optimized_Inference_V1`.
+- The Optimization Intelligence UI layer now converts the Main_Inference
+  failed SLOs into bottlenecks, compatible optimization options, rejected
+  optimization audit rows, and plan-only apply semantics. It writes
+  `main_inference_v1_ui_diagnosis.json`,
+  `main_inference_v1_ui_optimization_options.json`,
+  `main_inference_v1_ui_apply_plan.json`, and
+  `main_inference_v1_ui_story.json` under
+  `experiments/main/main_inference_v1/processed/`.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation

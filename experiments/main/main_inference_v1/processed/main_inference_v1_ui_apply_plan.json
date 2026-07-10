@@ -1,0 +1,199 @@
+{
+  "apply_all_plan": {
+    "conflict_policy": "Apply prompt/contract and evidence-presentation fixes before model, agentic, concurrency, or hardware changes. Measure one factor at a time unless an approved optimized experiment explicitly bundles them.",
+    "does_not_execute": true,
+    "optimization_ids": [
+      "enable_escalation_path",
+      "improve_evidence_formatting",
+      "prompt_contract_repair",
+      "use_mm4_agentic_repair"
+    ],
+    "status": "PLAN_ONLY"
+  },
+  "generated_at_utc": "2026-07-10T22:36:49.741134+00:00",
+  "inference_executed": false,
+  "optimized_result_created": false,
+  "plan_semantics": "The UI may show what would change. A real optimized result requires a separate approved optimized rerun and artifact import.",
+  "plans": [
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Contract validity",
+          "slo_id": "main_inference_v1.contract_validity"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Format validity",
+          "slo_id": "main_inference_v1.format_validity"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_label": "Evidence match",
+          "slo_id": "main_inference_v1.evidence_match"
+        },
+        {
+          "bottleneck_id": "low_groundedness",
+          "metric_label": "Groundedness",
+          "slo_id": "main_inference_v1.groundedness"
+        },
+        {
+          "bottleneck_id": "safety_violations",
+          "metric_label": "Safety findings",
+          "slo_id": "main_inference_v1.safety_findings"
+        }
+      ],
+      "creates_optimized_inference_v1": false,
+      "display_name": "Enable Escalation Path",
+      "exact_changes": [
+        "Enable explicit escalation/insufficient-evidence handling for unsafe or unsupported answers.",
+        "Keep safety evaluator semantics unchanged."
+      ],
+      "execution_mode": "plan_only_no_inference",
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "optimization_id": "enable_escalation_path",
+      "plan_id": "main_inference_v1.enable_escalation_path",
+      "requires_api_rerun": true,
+      "requires_gpu_rerun": true
+    },
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Contract validity",
+          "slo_id": "main_inference_v1.contract_validity"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Format validity",
+          "slo_id": "main_inference_v1.format_validity"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_label": "Evidence match",
+          "slo_id": "main_inference_v1.evidence_match"
+        },
+        {
+          "bottleneck_id": "low_groundedness",
+          "metric_label": "Groundedness",
+          "slo_id": "main_inference_v1.groundedness"
+        }
+      ],
+      "creates_optimized_inference_v1": false,
+      "display_name": "Improve Evidence Formatting",
+      "exact_changes": [
+        "Reformat model-facing evidence blocks and citation instructions.",
+        "Keep the same selected context IDs and short evidence labels."
+      ],
+      "execution_mode": "plan_only_no_inference",
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "optimization_id": "improve_evidence_formatting",
+      "plan_id": "main_inference_v1.improve_evidence_formatting",
+      "requires_api_rerun": true,
+      "requires_gpu_rerun": true
+    },
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Contract validity",
+          "slo_id": "main_inference_v1.contract_validity"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Format validity",
+          "slo_id": "main_inference_v1.format_validity"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_label": "Evidence match",
+          "slo_id": "main_inference_v1.evidence_match"
+        },
+        {
+          "bottleneck_id": "safety_violations",
+          "metric_label": "Safety findings",
+          "slo_id": "main_inference_v1.safety_findings"
+        }
+      ],
+      "creates_optimized_inference_v1": false,
+      "display_name": "Prompt Contract Repair",
+      "exact_changes": [
+        "Tighten generation contract instructions and repair prompts.",
+        "Preserve gold data, evaluator semantics, prompt IDs, and source retrieval."
+      ],
+      "execution_mode": "plan_only_no_inference",
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "optimization_id": "prompt_contract_repair",
+      "plan_id": "main_inference_v1.prompt_contract_repair",
+      "requires_api_rerun": true,
+      "requires_gpu_rerun": true
+    },
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Contract validity",
+          "slo_id": "main_inference_v1.contract_validity"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_label": "Format validity",
+          "slo_id": "main_inference_v1.format_validity"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_label": "Evidence match",
+          "slo_id": "main_inference_v1.evidence_match"
+        },
+        {
+          "bottleneck_id": "low_groundedness",
+          "metric_label": "Groundedness",
+          "slo_id": "main_inference_v1.groundedness"
+        },
+        {
+          "bottleneck_id": "safety_violations",
+          "metric_label": "Safety findings",
+          "slo_id": "main_inference_v1.safety_findings"
+        }
+      ],
+      "creates_optimized_inference_v1": false,
+      "display_name": "Use MM4 Bounded Agentic Repair",
+      "exact_changes": [
+        "Route eligible contextual rows through bounded mm4 agentic repair.",
+        "Allow only the existing capped retrieval/generation/repair workflow."
+      ],
+      "execution_mode": "plan_only_no_inference",
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "optimization_id": "use_mm4_agentic_repair",
+      "plan_id": "main_inference_v1.use_mm4_agentic_repair",
+      "requires_api_rerun": true,
+      "requires_gpu_rerun": true
+    }
+  ],
+  "run_id": "main_inference_v1",
+  "status": "UI_APPLY_PLAN_READY"
+}

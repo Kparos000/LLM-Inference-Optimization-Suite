@@ -1,0 +1,163 @@
+{
+  "decision_source": "deterministic_slo_diagnosis_and_yaml_catalogs",
+  "failed_slo_count": 5,
+  "failed_slos": [
+    {
+      "bottleneck": {
+        "category": "quality",
+        "confidence": 1.0,
+        "description": "Generation quality is below its selected SLO.",
+        "id": "low_contract_validity",
+        "possible_causes": [
+          "model capability",
+          "prompt contract",
+          "context presentation"
+        ]
+      },
+      "confidence": 1.0,
+      "difference": -0.14461199999999996,
+      "explanation": "Contract validity missed the official Main_Inference_V1 target (>= 0.95) with observed value 0.805388. The existing bottleneck catalog maps this to low_contract_validity: Generation quality is below its selected SLO.",
+      "group": "quality",
+      "metric_id": "contract_validity",
+      "metric_label": "Contract validity",
+      "metric_name": "format_validity_min",
+      "observed": 0.805388,
+      "severity": 0.152223,
+      "slo_id": "main_inference_v1.contract_validity",
+      "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.95"
+    },
+    {
+      "bottleneck": {
+        "category": "quality",
+        "confidence": 1.0,
+        "description": "Generation quality is below its selected SLO.",
+        "id": "low_contract_validity",
+        "possible_causes": [
+          "model capability",
+          "prompt contract",
+          "context presentation"
+        ]
+      },
+      "confidence": 1.0,
+      "difference": -0.14461199999999996,
+      "explanation": "Format validity missed the official Main_Inference_V1 target (>= 0.95) with observed value 0.805388. The existing bottleneck catalog maps this to low_contract_validity: Generation quality is below its selected SLO.",
+      "group": "quality",
+      "metric_id": "format_validity",
+      "metric_label": "Format validity",
+      "metric_name": "format_validity_min",
+      "observed": 0.805388,
+      "severity": 0.152223,
+      "slo_id": "main_inference_v1.format_validity",
+      "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.95"
+    },
+    {
+      "bottleneck": {
+        "category": "quality",
+        "confidence": 1.0,
+        "description": "Generation quality is below its selected SLO.",
+        "id": "low_evidence_match",
+        "possible_causes": [
+          "model capability",
+          "prompt contract",
+          "context presentation"
+        ]
+      },
+      "confidence": 1.0,
+      "difference": -0.36027599999999993,
+      "explanation": "Evidence match missed the official Main_Inference_V1 target (>= 0.95) with observed value 0.589724. The existing bottleneck catalog maps this to low_evidence_match: Generation quality is below its selected SLO.",
+      "group": "quality",
+      "metric_id": "evidence_match",
+      "metric_label": "Evidence match",
+      "metric_name": "evidence_match_min",
+      "observed": 0.589724,
+      "severity": 0.379238,
+      "slo_id": "main_inference_v1.evidence_match",
+      "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.95"
+    },
+    {
+      "bottleneck": {
+        "category": "quality",
+        "confidence": 1.0,
+        "description": "Generation quality is below its selected SLO.",
+        "id": "low_groundedness",
+        "possible_causes": [
+          "model capability",
+          "prompt contract",
+          "context presentation"
+        ]
+      },
+      "confidence": 1.0,
+      "difference": -0.41279599999999994,
+      "explanation": "Groundedness missed the official Main_Inference_V1 target (>= 0.98) with observed value 0.567204. The existing bottleneck catalog maps this to low_groundedness: Generation quality is below its selected SLO.",
+      "group": "quality",
+      "metric_id": "groundedness",
+      "metric_label": "Groundedness",
+      "metric_name": "groundedness_min",
+      "observed": 0.567204,
+      "severity": 0.42122,
+      "slo_id": "main_inference_v1.groundedness",
+      "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.98"
+    },
+    {
+      "bottleneck": {
+        "category": "quality",
+        "confidence": 1.0,
+        "description": "Generation quality is below its selected SLO.",
+        "id": "safety_violations",
+        "possible_causes": [
+          "model capability",
+          "prompt contract",
+          "context presentation"
+        ]
+      },
+      "confidence": 1.0,
+      "difference": 2757.0,
+      "explanation": "Safety findings missed the official Main_Inference_V1 target (= 0) with observed value 2757. The existing bottleneck catalog maps this to safety_violations: Generation quality is below its selected SLO.",
+      "group": "safety",
+      "metric_id": "safety_findings",
+      "metric_label": "Safety findings",
+      "metric_name": "safety_violations_max",
+      "observed": 2757.0,
+      "severity": 1.0,
+      "slo_id": "main_inference_v1.safety_findings",
+      "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": "= 0"
+    }
+  ],
+  "generated_at_utc": "2026-07-10T22:36:49.741134+00:00",
+  "inference_executed": false,
+  "llm_used": false,
+  "negative_rule_filtering_applied": true,
+  "passed_slo_count": 3,
+  "run_context": {
+    "baseline_or_optimized": "baseline",
+    "completed_count": 250000,
+    "deployability_verdict": "NOT_DEPLOYABLE_SLO_FAILURES",
+    "engine": "vllm+sglang+api_provider_route",
+    "failed_count": 0,
+    "hardware": "a100_sxm_80gb",
+    "memory_mode": "mm0-mm4",
+    "model_alias": "model3_7b+model6_gated",
+    "run_id": "main_inference_v1",
+    "traffic_profile": "online_low_latency"
+  },
+  "run_id": "main_inference_v1",
+  "source_artifacts": {
+    "context_preflight": "experiments/main/main_inference_v1/processed/main_inference_v1_context_preflight_report.json",
+    "eval_report": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+    "manifest": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+    "slo_report": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_report.json",
+    "slo_scorecard": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_scorecard.csv",
+    "slo_summary": "experiments/main/main_inference_v1/processed/main_inference_v1_slo_summary.csv"
+  },
+  "status": "UI_DIAGNOSIS_READY"
+}
