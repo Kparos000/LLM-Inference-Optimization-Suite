@@ -98,6 +98,17 @@ from this official before-optimization result. Use `docs/main_inference_V1.md`
 for the artifact map, SLO scorecard, local analysis commands, and optimization
 readiness notes.
 
+Platform Foundation V1 is implemented under `platform/`. It adds a read-only
+FastAPI backend and a Next.js frontend for a guided eight-page product
+experience: About, Data & Workflow Explorer, Inference Experiment Preparation,
+Main Inference Simulation, Inference Optimization Lab, Optimized Inference
+Simulation, Before/After Comparison, and Conclusions & Recommendations. The
+platform replays saved Main_Inference_V1 artifacts and exposes plan-only
+optimization selection. It does not run inference, mutate Main_Inference
+artifacts, fabricate Optimized_Inference_V1, or label planned outcomes as
+measured. The implementation reference is
+`docs/126_platform_foundation_v1.md`.
+
 The measured Baseline_Inference_V1 result is:
 
 - Runtime: 1,900.585 seconds.

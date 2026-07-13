@@ -41,7 +41,17 @@ BASELINE_INFERENCE_V1_COMPLETED
 BASELINE_INFERENCE_V1_NOT_DEPLOYABLE_SLO_FAILURES
 MAIN_INFERENCE_V1_PENDING_250000_REQUESTS
 OPTIMIZATION_BLOCKED_UNTIL_MAIN_INFERENCE_V1_COMPLETES
+PLATFORM_FOUNDATION_V1_IMPLEMENTED
+OPTIMIZED_INFERENCE_V1_PENDING_MEASURED_ARTIFACTS
 ```
+
+Platform Foundation V1 is now implemented under `platform/`. It adds a
+read-only FastAPI backend and a Next.js App Router frontend for replaying saved
+Main_Inference_V1 artifacts, exploring data/preparation, selecting
+optimization plans, and preserving measured/planned labels. It does not run
+inference, mutate Main_Inference artifacts, or create Optimized_Inference_V1.
+Before/after comparison and conclusions remain unavailable until measured
+optimized artifacts and conclusion contracts exist.
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
 telemetry, and bounded mm4 workflow.

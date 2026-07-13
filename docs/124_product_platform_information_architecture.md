@@ -1,7 +1,8 @@
 # Product Platform Information Architecture
 
-Status: design blueprint only. No frontend, backend, API, or generated UI
-artifact is implemented by this document.
+Status: design blueprint with Platform Foundation V1 now implemented. The
+implemented product foundation is documented in
+`docs/126_platform_foundation_v1.md`.
 
 Purpose: define the final interactive AI Inference Engineering Platform. The
 platform is not a benchmark dashboard. It is a guided product experience that
@@ -1287,6 +1288,14 @@ User opens comparison
 
 ## Already Implemented
 
+- Platform Foundation V1 read-only FastAPI backend under `platform/backend/`.
+- Platform Foundation V1 Next.js frontend under `platform/frontend/`.
+- Eight guided product routes matching the final story.
+- Browser-persisted `ExperimentSession` state.
+- Time-compressed measured Main_Inference replay using saved progress events.
+- Optimization Lab with mandatory repair and core strategy lanes.
+- Planned/unavailable states for Optimized_Inference_V1, comparison, and
+  conclusions.
 - Full `Main_Inference_V1` artifact archive.
 - Main_Inference reference document.
 - Dataset, context, retrieval, memory-mode, serving, evaluation, telemetry,

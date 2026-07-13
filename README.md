@@ -30,6 +30,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 ## Current Status
 
 - The promoted benchmark contains 10,000 prompts, 10,000 gold/eval rows, and 4,740 KB records across Airline, Healthcare Admin, Retail, Finance, and Research AI.
+- Platform Foundation V1 is implemented under `platform/`. It provides a read-only FastAPI backend and Next.js frontend for replaying saved Main_Inference_V1 artifacts, exploring the dataset/preparation workflow, and planning optimizations without running GPUs.
 - Public dataset EDA is available under `data/generated/dataset_10000/`; Finance-specific assets are mirrored under `data/generated/finance/`.
 - Vertical context builders, normalized corpora, canonical retrieval keys, local Qdrant collections, BM25, hybrid reranking, and deterministic compression are implemented.
 - All five verticals pass the promoted retrieval SLOs in `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.
@@ -78,6 +79,36 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
   requests, zero request failures, runtime and cost SLO passes, and quality and
   safety SLO failures. It is not the official Main_Inference run.
 - Result tracks are explicitly separated: API provider runs (`model5`/`model6`/`model7` through OpenRouter, Novita, or HF provider routes) use API token cost and no provider GPU telemetry; self-hosted GPU runs (`model2`/`model3`/`model4` through Hugging Face local, vLLM, SGLang, or RunPod) use GPU telemetry/hourly infrastructure cost when configured and no API token price.
+
+## Interactive Platform
+
+Platform Foundation V1 lives in:
+
+```text
+platform/frontend/
+platform/backend/
+```
+
+Start the read-only API:
+
+```powershell
+python -m uvicorn main:app --app-dir platform/backend --reload --port 8000
+```
+
+Start the frontend:
+
+```powershell
+cd platform/frontend
+npm install
+npm run dev
+```
+
+The platform has eight guided routes: About, Data & Workflow Explorer,
+Inference Experiment Preparation, Main Inference Simulation, Inference
+Optimization Lab, Optimized Inference Simulation, Before/After Comparison, and
+Conclusions & Recommendations. `Main_Inference_V1` is measured;
+`Optimized_Inference_V1` remains planned until exact optimized artifacts are
+created or imported.
 - The official `Main_Inference_V1` has completed and is archived under
   `experiments/main/main_inference_v1/`. It ran 25 configs x 10,000
   prompts/config = 250,000 total requests, completed 250,000/250,000 requests

@@ -476,6 +476,22 @@ strategy planning are CPU-only tasks. The A100 is not needed for:
 The A100 is needed again only for live inference reruns such as
 `Optimized_Inference_V1` or targeted GPU validation runs.
 
+## 16A. Interactive Platform Replay
+
+Platform Foundation V1 now exposes this run through a read-only product demo
+under:
+
+```text
+platform/frontend/
+platform/backend/
+```
+
+The platform replays saved Main_Inference_V1 progress, telemetry, SLO, cost,
+diagnosis, and optimization-planning artifacts without running inference. The
+Main run is labeled `measured`. Optimized Inference, before/after comparison,
+and conclusions remain `planned` until exact saved optimized artifacts are
+created or imported.
+
 ## 17. Caveats
 
 - The full raw 250k response file is not present under

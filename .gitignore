@@ -186,6 +186,14 @@ Thumbs.db
 *.log.*
 logs/
 
+# Node / frontend
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+
 # Python packaging metadata
 *.egg-info/
 src/*.egg-info/
