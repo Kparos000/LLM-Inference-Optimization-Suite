@@ -2,6 +2,7 @@ export type ResultType = "measured" | "modeled" | "planned";
 
 export type ChapterId =
   | "about"
+  | "slo-metrics"
   | "data"
   | "preparation"
   | "main-inference"
@@ -65,4 +66,3 @@ export type OptimizationState = {
   reason: string;
   negative_rule?: string | null;
 };
-

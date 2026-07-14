@@ -1,6 +1,6 @@
 import type { PlatformResponse } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_PLATFORM_API_BASE ?? "http://127.0.0.1:8000";
+const API_BASE = process.env.NEXT_PUBLIC_PLATFORM_API_BASE ?? "http://127.0.0.1:8011";
 
 export async function fetchPlatform<T>(path: string): Promise<T | null> {
   try {
@@ -14,4 +14,3 @@ export async function fetchPlatform<T>(path: string): Promise<T | null> {
     return null;
   }
 }
-

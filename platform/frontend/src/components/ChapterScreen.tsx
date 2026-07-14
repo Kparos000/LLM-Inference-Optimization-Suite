@@ -33,7 +33,23 @@ import type { ChapterId, OptimizationState } from "@/lib/types";
 import { MissionShell } from "./MissionShell";
 import { MetricCard } from "./MetricCard";
 import { StatusBadge } from "./StatusBadge";
-import { ReplayLineChart, SloChart, TelemetryAreaChart, VerticalPressureChart } from "./Charts";
+import {
+  CostSplitChart,
+  LatencyPercentileChart,
+  QualityRateChart,
+  ReplayLineChart,
+  RequestSplitChart,
+  SloChart,
+  TelemetryAreaChart,
+  VerticalPressureChart
+} from "./Charts";
+import {
+  StoryAboutPage,
+  StoryDataPage,
+  StoryMainInferencePage,
+  StoryPreparationPage,
+  StorySloMetricsPage
+} from "./StoryRoutes";
 
 type ReplayEvent = {
   completed_requests?: number;
@@ -56,6 +72,61 @@ type TelemetrySample = {
   power_draw_w?: number;
   [key: string]: unknown;
 };
+
+type MainResults = {
+  eval_report?: {
+    latency_summary?: Record<string, unknown>;
+    matrix_summary?: Record<string, unknown>;
+    summary?: Record<string, unknown>;
+    wall_seconds?: number;
+  };
+  cost_report?: Record<string, unknown>;
+  slo_scorecard?: Array<Record<string, unknown>>;
+};
+
+const fallbackMainResults: MainResults = {
+  eval_report: {
+    latency_summary: {
+      mean_e2e_latency_ms: 1555.083189807053,
+      p50_e2e_latency_ms: 1357.596322428435,
+      p95_e2e_latency_ms: 2997.51268675318,
+      p99_e2e_latency_ms: 3990.831322551244,
+      mean_ttft_ms: 316.182404887296,
+      p50_ttft_ms: 177.4042589822784,
+      p95_ttft_ms: 881.2036044429988,
+      p99_ttft_ms: 1206.8634418747388,
+      mean_tpot_ms: 40.81780315907682,
+      p50_tpot_ms: 37.353379669200095,
+      p95_tpot_ms: 83.32632407512622,
+      p99_tpot_ms: 116.49905651574956,
+      mean_total_tokens_per_second: 574.1231592602473
+    },
+    matrix_summary: {
+      self_hosted_request_count: 200000,
+      api_request_count: 50000
+    },
+    summary: {
+      json_valid_rate: 0.99822,
+      generation_contract_valid_rate: 0.805388,
+      evidence_match_rate: 0.589724,
+      grounded_rate: 0.567204,
+      safety_violation_rate: 0.011028
+    }
+  },
+  cost_report: {
+    gpu_cost_usd: 17.606359966432798,
+    api_cost_usd: 0.854936759999998
+  },
+  slo_scorecard: []
+};
+
+function numericValue(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function ratePercent(value: unknown) {
+  return Number((numericValue(value) * 100).toFixed(2));
+}
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -125,6 +196,14 @@ function useApiData<T>(path: string, fallback: T): T {
 export function ChapterScreen({ chapterId }: { chapterId: ChapterId }) {
   const chapter = chapters.find((item) => item.id === chapterId) ?? chapters[0];
   const { setChapter } = useExperimentSession();
+  const storyRouteIds: ChapterId[] = [
+    "about",
+    "slo-metrics",
+    "data",
+    "preparation",
+    "main-inference"
+  ];
+  const usesStoryHeader = storyRouteIds.includes(chapter.id);
 
   useEffect(() => {
     setChapter(chapter.id, chapter.resultType);
@@ -138,35 +217,38 @@ export function ChapterScreen({ chapterId }: { chapterId: ChapterId }) {
         transition={{ duration: 0.35 }}
         className="space-y-5"
       >
-        <Panel>
-          <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-            <div>
-              <div className="mb-4 flex flex-wrap gap-2">
-                <StatusBadge tone={chapter.resultType === "measured" ? "pass" : "warn"}>
-                  {chapter.resultType}
-                </StatusBadge>
-                <StatusBadge tone="neutral">repo sourced</StatusBadge>
-                <StatusBadge tone="neutral">no GPU</StatusBadge>
+        {!usesStoryHeader ? (
+          <Panel>
+            <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
+              <div>
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <StatusBadge tone={chapter.resultType === "measured" ? "pass" : "warn"}>
+                    {chapter.resultType}
+                  </StatusBadge>
+                  <StatusBadge tone="neutral">repo sourced</StatusBadge>
+                  <StatusBadge tone="neutral">no GPU</StatusBadge>
+                </div>
+                <h1 className="max-w-5xl text-4xl font-semibold tracking-normal text-white md:text-6xl">
+                  {chapter.title}
+                </h1>
+                <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{chapter.purpose}</p>
               </div>
-              <h1 className="max-w-5xl text-4xl font-semibold tracking-normal text-white md:text-6xl">
-                {chapter.title}
-              </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{chapter.purpose}</p>
+              {chapter.id === "about" ? (
+                <Link
+                  href="/data"
+                  className="inline-flex w-fit items-center gap-2 rounded-2xl bg-signal-cyan px-5 py-3 text-sm font-semibold text-graphite-950"
+                >
+                  Start Experiment <ArrowRight size={18} />
+                </Link>
+              ) : null}
             </div>
-            {chapter.id === "about" ? (
-              <Link
-                href="/data"
-                className="inline-flex w-fit items-center gap-2 rounded-2xl bg-signal-cyan px-5 py-3 text-sm font-semibold text-graphite-950"
-              >
-                Start Experiment <ArrowRight size={18} />
-              </Link>
-            ) : null}
-          </div>
-        </Panel>
-        {chapter.id === "about" && <AboutPage sources={chapter.sourceArtifacts} />}
-        {chapter.id === "data" && <DataPage sources={chapter.sourceArtifacts} />}
-        {chapter.id === "preparation" && <PreparationPage sources={chapter.sourceArtifacts} />}
-        {chapter.id === "main-inference" && <MainInferencePage sources={chapter.sourceArtifacts} />}
+          </Panel>
+        ) : null}
+        {chapter.id === "about" && <StoryAboutPage sources={chapter.sourceArtifacts} />}
+        {chapter.id === "slo-metrics" && <StorySloMetricsPage sources={chapter.sourceArtifacts} />}
+        {chapter.id === "data" && <StoryDataPage sources={chapter.sourceArtifacts} />}
+        {chapter.id === "preparation" && <StoryPreparationPage sources={chapter.sourceArtifacts} />}
+        {chapter.id === "main-inference" && <StoryMainInferencePage sources={chapter.sourceArtifacts} />}
         {chapter.id === "optimization" && <OptimizationPage sources={chapter.sourceArtifacts} />}
         {chapter.id === "optimized-inference" && <OptimizedPage sources={chapter.sourceArtifacts} />}
         {chapter.id === "comparison" && <ComparisonPage sources={chapter.sourceArtifacts} />}
@@ -176,6 +258,8 @@ export function ChapterScreen({ chapterId }: { chapterId: ChapterId }) {
   );
 }
 
+// Legacy first-pass page retained temporarily while the enhanced story routes settle.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function AboutPage({ sources }: { sources: string[] }) {
   return (
     <>
@@ -225,6 +309,7 @@ function AboutPage({ sources }: { sources: string[] }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function DataPage({ sources }: { sources: string[] }) {
   return (
     <>
@@ -278,6 +363,7 @@ function DataPage({ sources }: { sources: string[] }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function PreparationPage({ sources }: { sources: string[] }) {
   const pipeline = [
     "Dataset",
@@ -342,6 +428,7 @@ function PreparationPage({ sources }: { sources: string[] }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function MainInferencePage({ sources }: { sources: string[] }) {
   const replay = useApiData<{ events: ReplayEvent[]; final_completed: number; final_failed: number }>(
     "/api/main-inference/replay-events",
@@ -351,10 +438,52 @@ function MainInferencePage({ sources }: { sources: string[] }) {
     "/api/main-inference/telemetry",
     { samples: [], summary: {} }
   );
+  const results = useApiData<MainResults>("/api/main-inference/results", fallbackMainResults);
   const [running, setRunning] = useState(false);
   const [eventIndex, setEventIndex] = useState(0);
   const events: ReplayEvent[] = replay.events.length ? replay.events : replayFallback;
   const current = events[Math.min(eventIndex, events.length - 1)] ?? replayFallback[0];
+  const visibleEvents = eventIndex === 0 && !running ? events.slice(0, 1) : events.slice(0, eventIndex + 1);
+  const latency = results.eval_report?.latency_summary ?? {};
+  const quality = results.eval_report?.summary ?? {};
+  const matrix = results.eval_report?.matrix_summary ?? {};
+  const cost = results.cost_report ?? {};
+  const progressPct = Math.min(100, (numericValue(current.completed_requests) / 250000) * 100);
+  const latencyChartData = [
+    {
+      metric: "TTFT",
+      p50: numericValue(latency.p50_ttft_ms),
+      p95: numericValue(latency.p95_ttft_ms),
+      p99: numericValue(latency.p99_ttft_ms)
+    },
+    {
+      metric: "TPOT",
+      p50: numericValue(latency.p50_tpot_ms),
+      p95: numericValue(latency.p95_tpot_ms),
+      p99: numericValue(latency.p99_tpot_ms)
+    },
+    {
+      metric: "E2E",
+      p50: numericValue(latency.p50_e2e_latency_ms),
+      p95: numericValue(latency.p95_e2e_latency_ms),
+      p99: numericValue(latency.p99_e2e_latency_ms)
+    }
+  ];
+  const qualityChartData = [
+    { metric: "JSON", rate: ratePercent(quality.json_valid_rate) },
+    { metric: "Contract", rate: ratePercent(quality.generation_contract_valid_rate) },
+    { metric: "Evidence", rate: ratePercent(quality.evidence_match_rate) },
+    { metric: "Grounded", rate: ratePercent(quality.grounded_rate) },
+    { metric: "Safety clean", rate: ratePercent(1 - numericValue(quality.safety_violation_rate)) }
+  ];
+  const requestSplitData = [
+    { track: "Self-hosted GPU", requests: numericValue(matrix.self_hosted_request_count) },
+    { track: "API provider", requests: numericValue(matrix.api_request_count) }
+  ];
+  const costSplitData = [
+    { track: "A100 GPU", cost: Number(numericValue(cost.gpu_cost_usd).toFixed(2)) },
+    { track: "API provider", cost: Number(numericValue(cost.api_cost_usd).toFixed(2)) }
+  ];
 
   useEffect(() => {
     if (!running) {
@@ -395,6 +524,26 @@ function MainInferencePage({ sources }: { sources: string[] }) {
           </StatusBadge>
           <StatusBadge tone="pass">measured artifact</StatusBadge>
         </div>
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+            <span className="font-mono text-signal-cyan">
+              {String(current.current_config_id ?? "waiting_for_replay_start")}
+            </span>
+            <span className="text-slate-400">{progressPct.toFixed(1)}% complete</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-signal-cyan transition-all duration-700"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <div className="mt-4 grid gap-3 text-sm text-slate-400 md:grid-cols-4">
+            <span>engine: {String(current.engine ?? current.runtime ?? "pending")}</span>
+            <span>memory: {String(current.memory_mode ?? "pending")}</span>
+            <span>vertical: {String(current.vertical ?? "pending")}</span>
+            <span>concurrency: {String(current.concurrency ?? "pending")}</span>
+          </div>
+        </div>
         <div className="mt-6 grid gap-4 md:grid-cols-4">
           <MetricCard
             metric={{
@@ -426,7 +575,7 @@ function MainInferencePage({ sources }: { sources: string[] }) {
               value:
                 typeof current.approximate_cost_so_far_usd === "number"
                   ? `$${current.approximate_cost_so_far_usd.toFixed(2)}`
-                  : "$18.46",
+                  : "$0.00",
               tone: "neutral",
               detail: "Measured final total cost is $18.46"
             }}
@@ -436,21 +585,105 @@ function MainInferencePage({ sources }: { sources: string[] }) {
       <div className="grid gap-5 xl:grid-cols-2">
         <Panel>
           <SectionTitle icon={<Activity size={22} />} title="Replay progress">
-            Ends at exactly 250,000 completed and zero failed.
+            This line grows from saved progress checkpoints as the replay advances. It should end
+            at exactly 250,000 completed requests with zero request failures.
           </SectionTitle>
-          <ReplayLineChart data={events} />
+          <ReplayLineChart data={visibleEvents} />
         </Panel>
         <Panel>
           <SectionTitle icon={<Gauge size={22} />} title="GPU telemetry sample">
-            A100 telemetry includes utilization, VRAM, temperature, power, and process names.
+            The telemetry sample shows how the A100 behaved while self-hosted vLLM/SGLang configs
+            were running. Utilization and temperature dip during API-provider phases because those
+            requests do not use the rented GPU.
           </SectionTitle>
           <TelemetryAreaChart data={telemetry.samples.length ? telemetry.samples : []} />
         </Panel>
       </div>
+      <div className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
+        <Panel>
+          <SectionTitle icon={<Gauge size={22} />} title="Latency percentiles">
+            TTFT measures time to first token, TPOT measures decode cadence per output token, and
+            E2E measures full request latency. The percentile spread shows how tail latency differs
+            from the median user experience.
+          </SectionTitle>
+          <LatencyPercentileChart data={latencyChartData} />
+        </Panel>
+        <Panel>
+          <SectionTitle icon={<Activity size={22} />} title="Throughput snapshot">
+            Throughput tells whether the serving stack is moving tokens efficiently, but it is only
+            useful with quality and safety beside it. A fast system that misses evidence is still
+            not deployable.
+          </SectionTitle>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <MetricCard
+              metric={{
+                label: "Mean E2E",
+                value: `${numericValue(latency.mean_e2e_latency_ms).toFixed(0)} ms`,
+                tone: "neutral",
+                detail: "Average end-to-end request latency"
+              }}
+            />
+            <MetricCard
+              metric={{
+                label: "p95 E2E",
+                value: `${numericValue(latency.p95_e2e_latency_ms).toFixed(0)} ms`,
+                tone: "neutral",
+                detail: "Tail latency experienced by slower requests"
+              }}
+            />
+            <MetricCard
+              metric={{
+                label: "Mean TTFT",
+                value: `${numericValue(latency.mean_ttft_ms).toFixed(0)} ms`,
+                tone: "pass",
+                detail: "Time until the first streamed token"
+              }}
+            />
+            <MetricCard
+              metric={{
+                label: "Tokens/sec",
+                value: numericValue(latency.mean_total_tokens_per_second).toFixed(1),
+                tone: "pass",
+                detail: "Mean total token throughput"
+              }}
+            />
+          </div>
+        </Panel>
+      </div>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel>
+          <SectionTitle icon={<ShieldAlert size={22} />} title="Quality and safety rates">
+            This graph separates quality rates from raw runtime and cost units. JSON validity was
+            strong, while contract validity, evidence match, groundedness, and safety are the
+            deployability blockers the optimization lab must explain.
+          </SectionTitle>
+          <QualityRateChart data={qualityChartData} />
+        </Panel>
+        <Panel>
+          <SectionTitle icon={<Split size={22} />} title="Request and cost split">
+            The experiment combined self-hosted A100 inference with API-provider inference. Keeping
+            those tracks separate helps the user understand why GPU cost, API cost, latency, and
+            quality do not move together.
+          </SectionTitle>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <RequestSplitChart data={requestSplitData} />
+            <CostSplitChart data={costSplitData} />
+          </div>
+        </Panel>
+      </div>
       <Panel>
-        <SectionTitle icon={<ShieldAlert size={22} />} title="Completion verdict">
-          Runtime and cost passed. Quality and safety failed, so the run is not deployable.
+        <SectionTitle icon={<ShieldAlert size={22} />} title="Deployability verdict">
+          This is not a completion-count chart. It is an SLO attainment chart normalized to percent
+          of target, so rates, counts, runtime, and cost can be interpreted together without hiding
+          the failed quality bars.
         </SectionTitle>
+        <div className="mb-5 flex flex-wrap gap-2">
+          <StatusBadge tone="pass">runtime pass</StatusBadge>
+          <StatusBadge tone="pass">cost pass</StatusBadge>
+          <StatusBadge tone="fail">quality fail</StatusBadge>
+          <StatusBadge tone="fail">safety fail</StatusBadge>
+          <StatusBadge tone="fail">not deployable</StatusBadge>
+        </div>
         <SloChart />
       </Panel>
       <SourceList sources={sources} />

@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { chapters, fallbackOptimizationStates, replayFallback } from "./facts";
 
 describe("platform foundation facts", () => {
-  it("defines the complete eight-page journey", () => {
+  it("defines the complete nine-page journey", () => {
     expect(chapters.map((chapter) => chapter.path)).toEqual([
       "/",
+      "/slo-metrics",
       "/data",
       "/preparation",
       "/main-inference",
@@ -13,6 +14,12 @@ describe("platform foundation facts", () => {
       "/comparison",
       "/conclusions"
     ]);
+  });
+
+  it("places pre-run SLO education before measured data pages", () => {
+    const slo = chapters.find((chapter) => chapter.id === "slo-metrics");
+    expect(slo?.resultType).toBe("planned");
+    expect(slo?.sourceArtifacts).toContain("configs/slo_targets.yaml");
   });
 
   it("labels optimized and comparison routes as planned", () => {
@@ -35,4 +42,3 @@ describe("platform foundation facts", () => {
     expect(replayFallback.at(-1)?.failure_count).toBe(0);
   });
 });
-

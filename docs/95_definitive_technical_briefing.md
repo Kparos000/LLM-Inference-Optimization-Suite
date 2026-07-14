@@ -4439,6 +4439,15 @@ artifacts under `experiments/main/main_inference_v1/processed/`:
 compatible optimizations, rejected optimizations, and plan-only apply
 semantics without running inference or creating Optimized_Inference_V1.
 
+The first five platform routes have also been upgraded into a repo-grounded
+storytelling layer documented in `docs/127_platform_ux_storytelling_upgrade.md`.
+The new route order is About, SLO & Metrics, Data & Workflow Explorer,
+Inference Experiment Preparation, and Main Inference Simulation. SLO & Metrics,
+Data, and Preparation are pre-run educational/context pages; Main Inference is
+a measured time-compressed replay over saved `Main_Inference_V1` artifacts.
+The browser demo still does not run GPU inference, call API providers, mutate
+saved results, or fabricate optimized outcomes.
+
 ## Official Baseline V1 Addendum
 
 Official baseline v1 completed the frozen 25-config, 10,000-request matrix on

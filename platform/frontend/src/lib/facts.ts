@@ -11,6 +11,15 @@ export const chapters: Chapter[] = [
     sourceArtifacts: ["docs/main_inference_V1.md", "docs/95_definitive_technical_briefing.md"]
   },
   {
+    id: "slo-metrics",
+    path: "/slo-metrics",
+    title: "SLO & Metrics",
+    shortTitle: "SLOs",
+    resultType: "planned",
+    purpose: "Explain the pre-run production SLOs and metric families.",
+    sourceArtifacts: ["configs/slo_targets.yaml", "configs/slo_profiles.yaml"]
+  },
+  {
     id: "data",
     path: "/data",
     title: "Data & Workflow Explorer",
@@ -220,4 +229,3 @@ export const replayFallback = [
   { completed_requests: 200000, failure_count: 0, compressed_second: 88, engine: "API route" },
   { completed_requests: 250000, failure_count: 0, compressed_second: 110, engine: "API route" }
 ];
-

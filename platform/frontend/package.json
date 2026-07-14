@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
+    "backend": "python -m uvicorn main:app --app-dir ../backend --reload --reload-dir ../.. --host 127.0.0.1 --port 8011",
+    "backend:8000": "python -m uvicorn main:app --app-dir ../backend --reload --reload-dir ../.. --host 127.0.0.1 --port 8000",
+    "dev": "next dev --hostname 127.0.0.1 --port 3001",
+    "dev:3000": "next dev --hostname 127.0.0.1 --port 3000",
     "build": "next build",
-    "start": "next start --port 3000",
+    "start": "next start --hostname 127.0.0.1 --port 3001",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -29,9 +32,12 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.0",
     "jsdom": "^25.0.1",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.18",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "postcss": "^8.5.18"
   }
 }

@@ -492,6 +492,12 @@ Main run is labeled `measured`. Optimized Inference, before/after comparison,
 and conclusions remain `planned` until exact saved optimized artifacts are
 created or imported.
 
+The first five product routes are now documented in
+`docs/127_platform_ux_storytelling_upgrade.md`. The Main Inference route uses a
+time-compressed replay over saved progress events and aggregate reports; it
+does not fabricate request-level latency series where the run only saved
+per-config or aggregate latency data.
+
 ## 17. Caveats
 
 - The full raw 250k response file is not present under

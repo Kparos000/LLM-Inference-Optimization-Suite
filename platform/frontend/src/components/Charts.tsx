@@ -6,8 +6,11 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -32,16 +35,49 @@ export function VerticalPressureChart() {
 }
 
 export function SloChart() {
-  const data = sloRows.filter((row) => typeof row.observed === "number");
+  const data = sloRows
+    .filter((row) => typeof row.observed === "number")
+    .map((row) => {
+      let attainment = 100;
+      if (row.metric === "Safety findings") {
+        attainment = row.observed === 0 ? 100 : 0;
+      } else if (row.metric === "Runtime" || row.metric === "Cost") {
+        attainment = row.status === "PASS" ? 100 : 0;
+      } else {
+        const target = Number(String(row.target).replace(/[^0-9.]/g, ""));
+        attainment = target > 0 ? Math.min(120, (Number(row.observed) / target) * 100) : 0;
+      }
+      return {
+        ...row,
+        attainment: Number(attainment.toFixed(1)),
+        label: row.status === "PASS" ? "PASS" : "FAIL"
+      };
+    });
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
           <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
           <XAxis dataKey="metric" stroke="#94a3b8" tick={{ fontSize: 10 }} interval={0} angle={-20} />
-          <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-          <Tooltip contentStyle={{ background: "#101825", border: "1px solid rgba(255,255,255,.12)" }} />
-          <Bar dataKey="observed" fill="#54e6a5" radius={[6, 6, 0, 0]} />
+          <YAxis
+            stroke="#94a3b8"
+            tick={{ fontSize: 11 }}
+            domain={[0, 120]}
+            label={{ value: "% of target", angle: -90, position: "insideLeft", fill: "#94a3b8" }}
+          />
+          <Tooltip
+            contentStyle={{ background: "#101825", border: "1px solid rgba(255,255,255,.12)" }}
+            formatter={(value) => [`${value}% of target`, "SLO attainment"]}
+          />
+          <ReferenceLine y={100} stroke="rgba(255,255,255,.35)" strokeDasharray="4 4" />
+          <Bar dataKey="attainment" minPointSize={4} radius={[6, 6, 0, 0]}>
+            {data.map((row) => (
+              <Cell
+                key={row.metric}
+                fill={row.status === "PASS" ? "#54e6a5" : "#ff6b8a"}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -91,3 +127,74 @@ export function TelemetryAreaChart({ data }: { data: Array<Record<string, unknow
   );
 }
 
+export function LatencyPercentileChart({ data }: { data: Array<Record<string, unknown>> }) {
+  return (
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
+          <XAxis dataKey="metric" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+          <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
+          <Tooltip contentStyle={{ background: "#101825", border: "1px solid rgba(255,255,255,.12)" }} />
+          <Legend />
+          <Bar dataKey="p50" name="p50 ms" fill="#47d7ff" radius={[5, 5, 0, 0]} />
+          <Bar dataKey="p95" name="p95 ms" fill="#ffbf5f" radius={[5, 5, 0, 0]} />
+          <Bar dataKey="p99" name="p99 ms" fill="#ff6b8a" radius={[5, 5, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function QualityRateChart({ data }: { data: Array<Record<string, unknown>> }) {
+  return (
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
+          <XAxis dataKey="metric" stroke="#94a3b8" tick={{ fontSize: 10 }} interval={0} angle={-15} />
+          <YAxis
+            stroke="#94a3b8"
+            tick={{ fontSize: 11 }}
+            domain={[0, 100]}
+            label={{ value: "rate %", angle: -90, position: "insideLeft", fill: "#94a3b8" }}
+          />
+          <Tooltip contentStyle={{ background: "#101825", border: "1px solid rgba(255,255,255,.12)" }} />
+          <Bar dataKey="rate" fill="#47d7ff" radius={[6, 6, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function RequestSplitChart({ data }: { data: Array<Record<string, unknown>> }) {
+  return (
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
+          <XAxis dataKey="track" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+          <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
+          <Tooltip contentStyle={{ background: "#101825", border: "1px solid rgba(255,255,255,.12)" }} />
+          <Bar dataKey="requests" name="requests" fill="#54e6a5" radius={[6, 6, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function CostSplitChart({ data }: { data: Array<Record<string, unknown>> }) {
+  return (
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
+          <XAxis dataKey="track" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+          <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
+          <Tooltip contentStyle={{ background: "#101825", border: "1px solid rgba(255,255,255,.12)" }} />
+          <Bar dataKey="cost" name="cost USD" fill="#ffbf5f" radius={[6, 6, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

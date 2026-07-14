@@ -8,7 +8,7 @@
     "main_inference_v1.groundedness": 3,
     "main_inference_v1.safety_findings": 3
   },
-  "generated_at_utc": "2026-07-10T22:36:49.741134+00:00",
+  "generated_at_utc": "2026-07-11T02:29:48.552158+00:00",
   "no_gpu_required_for_ui_replay": true,
   "run_id": "main_inference_v1",
   "status": "UI_STORY_READY",

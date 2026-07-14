@@ -92,7 +92,8 @@ platform/backend/
 Start the read-only API:
 
 ```powershell
-python -m uvicorn main:app --app-dir platform/backend --reload --port 8000
+cd platform/frontend
+npm run backend
 ```
 
 Start the frontend:
@@ -103,12 +104,27 @@ npm install
 npm run dev
 ```
 
-The platform has eight guided routes: About, Data & Workflow Explorer,
-Inference Experiment Preparation, Main Inference Simulation, Inference
-Optimization Lab, Optimized Inference Simulation, Before/After Comparison, and
-Conclusions & Recommendations. `Main_Inference_V1` is measured;
+Open the UI at:
+
+```text
+http://127.0.0.1:3001
+```
+
+The backend defaults to `http://127.0.0.1:8011`. These platform ports avoid
+common local conflicts with other Next.js apps on `3000` and local inference
+servers on `8000`.
+
+The platform has nine guided routes: About, SLO & Metrics, Data & Workflow
+Explorer, Inference Experiment Preparation, Main Inference Simulation,
+Inference Optimization Lab, Optimized Inference Simulation, Before/After
+Comparison, and Conclusions & Recommendations. `Main_Inference_V1` is measured;
 `Optimized_Inference_V1` remains planned until exact optimized artifacts are
-created or imported.
+created or imported. The first five routes now use a richer storytelling layer
+documented in
+[Platform UX Storytelling Upgrade](docs/127_platform_ux_storytelling_upgrade.md):
+SLO & Metrics is pre-run educational content, Data and Preparation are pre-run
+engineering context, and Main Inference is a time-compressed replay of measured
+artifacts.
 - The official `Main_Inference_V1` has completed and is archived under
   `experiments/main/main_inference_v1/`. It ran 25 configs x 10,000
   prompts/config = 250,000 total requests, completed 250,000/250,000 requests

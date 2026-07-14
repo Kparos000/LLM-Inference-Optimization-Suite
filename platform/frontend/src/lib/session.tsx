@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ChapterId, ExperimentSession, ResultType } from "./types";
 
 const STORAGE_KEY = "inference-platform-session-v1";
@@ -44,37 +44,50 @@ export function ExperimentSessionProvider({ children }: { children: React.ReactN
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   }, [session]);
 
+  const setChapter = useCallback((chapter: ChapterId, resultType: ResultType = "measured") => {
+    setSession((current) => {
+      if (current.currentChapter === chapter && current.resultType === resultType) {
+        return current;
+      }
+      return { ...current, currentChapter: chapter, resultType };
+    });
+  }, []);
+
+  const toggleMandatoryRepair = useCallback((id: string) => {
+    setSession((current) => ({
+      ...current,
+      selectedMandatoryRepairs: toggle(current.selectedMandatoryRepairs, id),
+      resultType: "planned"
+    }));
+  }, []);
+
+  const toggleCoreOptimization = useCallback((id: string) => {
+    setSession((current) => ({
+      ...current,
+      selectedCoreOptimizations: toggle(current.selectedCoreOptimizations, id),
+      resultType: "planned"
+    }));
+  }, []);
+
+  const applyAllSelected = useCallback((mandatoryIds: string[]) => {
+    setSession((current) => ({
+      ...current,
+      selectedMandatoryRepairs: Array.from(new Set(mandatoryIds)),
+      validatedRecipe: "plan_only_apply_all_selected",
+      resultType: "planned",
+      selectedScenarioId: "planned_optimized_recipe"
+    }));
+  }, []);
+
   const value = useMemo<SessionContextValue>(
     () => ({
       session,
-      setChapter: (chapter, resultType = "measured") => {
-        setSession((current) => ({ ...current, currentChapter: chapter, resultType }));
-      },
-      toggleMandatoryRepair: (id) => {
-        setSession((current) => ({
-          ...current,
-          selectedMandatoryRepairs: toggle(current.selectedMandatoryRepairs, id),
-          resultType: "planned"
-        }));
-      },
-      toggleCoreOptimization: (id) => {
-        setSession((current) => ({
-          ...current,
-          selectedCoreOptimizations: toggle(current.selectedCoreOptimizations, id),
-          resultType: "planned"
-        }));
-      },
-      applyAllSelected: (mandatoryIds) => {
-        setSession((current) => ({
-          ...current,
-          selectedMandatoryRepairs: Array.from(new Set(mandatoryIds)),
-          validatedRecipe: "plan_only_apply_all_selected",
-          resultType: "planned",
-          selectedScenarioId: "planned_optimized_recipe"
-        }));
-      }
+      setChapter,
+      toggleMandatoryRepair,
+      toggleCoreOptimization,
+      applyAllSelected
     }),
-    [session]
+    [applyAllSelected, session, setChapter, toggleCoreOptimization, toggleMandatoryRepair]
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -87,4 +100,3 @@ export function useExperimentSession() {
   }
   return context;
 }
-

@@ -62,7 +62,7 @@ export function MissionShell({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex flex-wrap items-center gap-3">
                 <StatusBadge tone={session.resultType === "measured" ? "pass" : "warn"}>
-                  {session.resultType}
+                  {session.resultType === "measured" ? "artifact replay" : "pre-run design"}
                 </StatusBadge>
                 <span className="text-sm text-slate-300">
                   Baseline: <strong className="text-white">{session.baselineRunId}</strong>
@@ -73,13 +73,13 @@ export function MissionShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex flex-wrap gap-2 text-xs text-slate-300">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-3 py-1">
-                  <Database size={14} /> saved artifacts
+                  <Database size={14} /> Main_Inference_V1 artifacts
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-3 py-1">
-                  <Gauge size={14} /> A100 measured
+                  <Gauge size={14} /> A100-SXM4 measured
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-3 py-1">
-                  <ShieldCheck size={14} /> no inference executed
+                  <ShieldCheck size={14} /> browser-only replay
                 </span>
               </div>
             </div>
@@ -118,4 +118,3 @@ export function MissionShell({ children }: { children: React.ReactNode }) {
     </main>
   );
 }
-
