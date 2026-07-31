@@ -31,6 +31,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 
 - The promoted benchmark contains 10,000 prompts, 10,000 gold/eval rows, and 4,740 KB records across Airline, Healthcare Admin, Retail, Finance, and Research AI.
 - Platform Foundation V1 is implemented under `platform/`. It provides a read-only FastAPI backend and Next.js frontend for replaying saved Main_Inference_V1 artifacts, exploring the dataset/preparation workflow, and planning optimizations without running GPUs.
+- The Optimization Lab now uses a two-track architecture: mandatory deployability repairs first, then core inference optimization only after measured repair validation. Passing runtime or cost SLOs means the minimum target was met, not that serving is already optimal. See `docs/128_inference_optimization_two_track_architecture.md`.
 - Public dataset EDA is available under `data/generated/dataset_10000/`; Finance-specific assets are mirrored under `data/generated/finance/`.
 - Vertical context builders, normalized corpora, canonical retrieval keys, local Qdrant collections, BM25, hybrid reranking, and deterministic compression are implemented.
 - All five verticals pass the promoted retrieval SLOs in `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.

@@ -109,6 +109,15 @@ artifacts, fabricate Optimized_Inference_V1, or label planned outcomes as
 measured. The implementation reference is
 `docs/126_platform_foundation_v1.md`.
 
+The Optimization Lab uses a two-track architecture. Mandatory deployability
+repairs address failed quality and safety SLOs first. Core inference
+optimizations, such as prefix caching, scheduler tuning, concurrency, engine
+changes, quantization, and TensorRT-LLM planning, remain visible as educational
+catalog content but are locked for the champion optimized run until measured
+repair validation passes. The current repair gate is `NOT_MEASURED`. The
+architecture reference is
+`docs/128_inference_optimization_two_track_architecture.md`.
+
 The measured Baseline_Inference_V1 result is:
 
 - Runtime: 1,900.585 seconds.

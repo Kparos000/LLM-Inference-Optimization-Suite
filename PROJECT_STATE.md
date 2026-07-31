@@ -43,6 +43,7 @@ MAIN_INFERENCE_V1_PENDING_250000_REQUESTS
 OPTIMIZATION_BLOCKED_UNTIL_MAIN_INFERENCE_V1_COMPLETES
 PLATFORM_FOUNDATION_V1_IMPLEMENTED
 PLATFORM_UX_STORYTELLING_V1_IMPLEMENTED
+OPTIMIZATION_TWO_TRACK_ARCHITECTURE_READY
 OPTIMIZED_INFERENCE_V1_PENDING_MEASURED_ARTIFACTS
 ```
 
@@ -61,6 +62,13 @@ prompt/gold/KB/evaluation case browsing, preparation modules, exact matrix
 construction, and a time-compressed measured replay of `Main_Inference_V1`.
 The detailed product contract is documented in
 `docs/127_platform_ux_storytelling_upgrade.md`.
+
+The Optimization Lab now separates mandatory deployability repairs from core
+inference optimizations. Main_Inference_V1 remains the immutable measured
+baseline: runtime and cost passed, but quality and safety failed. The repair
+gate is `NOT_MEASURED`, so core inference strategies are visible for education
+but locked until measured repair validation exists. The contract is documented
+in `docs/128_inference_optimization_two_track_architecture.md`.
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
 telemetry, and bounded mm4 workflow.

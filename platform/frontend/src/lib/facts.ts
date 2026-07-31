@@ -1,4 +1,13 @@
-import type { Chapter, MetricCard, OptimizationState } from "./types";
+import type {
+  Chapter,
+  CoreOptimizationState,
+  DeployabilityRepair,
+  ExperimentStage,
+  MetricCard,
+  OptimizationState,
+  OptimizationStory,
+  RepairGate
+} from "./types";
 
 export const chapters: Chapter[] = [
   {
@@ -220,6 +229,194 @@ export const fallbackOptimizationStates: OptimizationState[] = [
     negative_rule: "prefix_caching"
   }
 ];
+
+export const fallbackDeployabilityRepairs: DeployabilityRepair[] = [
+  {
+    repair_id: "prompt_contract_repair",
+    display_name: "Prompt Contract Repair",
+    track: "deployability_repairs",
+    state: "required_for_failed_deployability_slo",
+    selectable_now: true,
+    definition: "Tighten generation contract instructions and repair prompts.",
+    why_it_is_a_repair: "It fixes failed quality and safety behavior before serving tuning.",
+    why_it_applies: "Contract validity failed in the measured Main_Inference_V1 scorecard.",
+    affected_failed_slos: [
+      {
+        slo_id: "main_inference_v1.contract_validity",
+        metric_id: "contract_validity",
+        metric_label: "Contract validity",
+        target: ">= 0.95",
+        observed: 0.805388,
+        bottleneck_id: "low_contract_validity"
+      }
+    ],
+    exact_changes: ["Tighten generation contract instructions and repair prompts."],
+    implementation_status: "implemented",
+    requires_gpu_or_api_rerun: true
+  },
+  {
+    repair_id: "improve_evidence_formatting",
+    display_name: "Improve Evidence Formatting",
+    track: "deployability_repairs",
+    state: "required_for_failed_deployability_slo",
+    selectable_now: true,
+    definition: "Reformat evidence blocks and citation instructions.",
+    why_it_is_a_repair: "It helps the model use already-retrieved evidence correctly.",
+    why_it_applies: "Evidence match and groundedness failed in Main_Inference_V1.",
+    affected_failed_slos: [
+      {
+        slo_id: "main_inference_v1.evidence_match",
+        metric_id: "evidence_match",
+        metric_label: "Evidence match",
+        target: ">= 0.95",
+        observed: 0.589724,
+        bottleneck_id: "low_evidence_match"
+      }
+    ],
+    exact_changes: ["Reformat model-facing evidence blocks and citation instructions."],
+    implementation_status: "planned",
+    requires_gpu_or_api_rerun: true
+  }
+];
+
+export const fallbackRepairGate: RepairGate = {
+  gate_status: "NOT_MEASURED",
+  core_optimization_eligible: false,
+  blocking_reason:
+    "Main_Inference_V1 failed quality and safety, and measured repaired artifacts are not present yet.",
+  minimum_not_optimal_principle:
+    "A PASS means the configured minimum target was met. It does not mean serving is optimal.",
+  checks: [
+    {
+      check_id: "quality_slo",
+      label: "Quality SLO",
+      status: "FAIL",
+      observed: "FAIL",
+      target: "PASS",
+      source_artifact: "main_inference_v1_slo_report.json"
+    },
+    {
+      check_id: "safety_slo",
+      label: "Safety SLO",
+      status: "FAIL",
+      observed: "FAIL",
+      target: "PASS",
+      source_artifact: "main_inference_v1_slo_report.json"
+    },
+    {
+      check_id: "optimized_repair_validation_artifacts",
+      label: "Measured repair validation artifacts",
+      status: "NOT_MEASURED",
+      observed: "missing",
+      target: "optimized repair scorecard",
+      source_artifact: "experiments/optimized/optimized_inference_v1"
+    }
+  ]
+};
+
+export const fallbackCoreOptimizationStates: CoreOptimizationState[] = [
+  {
+    optimization_id: "enable_prefix_cache",
+    display_name: "Enable Prefix Cache",
+    category: "serving_engine",
+    track: "core_inference_optimizations",
+    state: "blocked_by_negative_rule",
+    selectable_now: false,
+    definition: "Reuse KV state for repeated prompt prefixes.",
+    mechanism: "config_toggle",
+    affected_metrics: ["latency", "throughput", "memory"],
+    possible_regressions: ["latency", "quality", "compatibility"],
+    implementation_status: "config_only",
+    current_project_support: "varies_by_engine",
+    requires_gpu_or_api_rerun: true,
+    reason: "No prefix-reuse or cache-hit telemetry was measured for this baseline.",
+    compatible_config_count: 20,
+    compatible_engines: ["sglang", "vllm"],
+    compatible_memory_modes: ["mm0_no_context", "mm1_dense_top5", "mm2_hybrid_top5"],
+    compatible_hardware: ["a100_sxm_80gb"],
+    compatible_models: ["model3_7b"],
+    negative_rule_triggered: "prefix_caching"
+  },
+  {
+    optimization_id: "concurrency_sweep",
+    display_name: "Concurrency Sweep",
+    category: "concurrency_capacity",
+    track: "core_inference_optimizations",
+    state: "blocked_by_negative_rule",
+    selectable_now: false,
+    definition: "Measure bounded concurrency to improve GPU occupancy.",
+    mechanism: "config_toggle",
+    affected_metrics: ["throughput", "gpu_utilization"],
+    possible_regressions: ["ttft", "tail_latency", "memory"],
+    implementation_status: "implemented",
+    current_project_support: "concurrent_runner_available",
+    requires_gpu_or_api_rerun: true,
+    reason: "Quality has not passed, so concurrency increase is locked.",
+    compatible_config_count: 25,
+    compatible_engines: ["api_provider", "sglang", "vllm"],
+    compatible_memory_modes: ["mm0_no_context", "mm1_dense_top5", "mm2_hybrid_top5"],
+    compatible_hardware: ["a100_sxm_80gb", "provider_managed"],
+    compatible_models: ["model3_7b", "model6_gated"],
+    negative_rule_triggered: "concurrency_increase"
+  }
+];
+
+export const fallbackExperimentStage: ExperimentStage = {
+  current_stage: "DEPLOYABILITY_REPAIR_PLANNED",
+  stage_sequence: [
+    {
+      stage: "MAIN_INFERENCE_MEASURED",
+      state: "complete",
+      description: "Official Main_Inference_V1 artifacts are present."
+    },
+    {
+      stage: "DEPLOYABILITY_REPAIR_REQUIRED",
+      state: "complete",
+      description: "Quality and safety failed, so repair comes first."
+    },
+    {
+      stage: "DEPLOYABILITY_REPAIR_PLANNED",
+      state: "current",
+      description: "A deterministic plan-only repair track exists."
+    },
+    {
+      stage: "CORE_OPTIMIZATION_ELIGIBLE",
+      state: "blocked",
+      description: "Core optimization waits for measured repair validation."
+    }
+  ],
+  gates: {
+    failed_slo_count: 5,
+    repair_required: true,
+    repair_plan_available: true,
+    repair_gate_status: "NOT_MEASURED",
+    core_optimization_eligible: false,
+    optimized_inference_ready: false
+  }
+};
+
+export const fallbackOptimizationStory: OptimizationStory = {
+  title: "Two-Track Inference Optimization Story",
+  summary:
+    "Main_Inference_V1 proves the system can run at scale, but deployability repairs must be validated before core inference optimization starts.",
+  principles: [
+    "Passing an SLO means the minimum target was met, not that serving is optimal.",
+    "Failed quality and safety SLOs create repair plans.",
+    "Core optimizations remain educational until repair validation passes."
+  ],
+  interaction_flow: [
+    {
+      step: "Plan deployability repair",
+      user_action: "Select repair-track changes.",
+      system_response: "Show exact changes and constants held fixed."
+    },
+    {
+      step: "Validate repair gate",
+      user_action: "Inspect measured repaired artifacts when available.",
+      system_response: "Unlock or block core optimization."
+    }
+  ]
+};
 
 export const replayFallback = [
   { completed_requests: 0, failure_count: 0, compressed_second: 0, engine: "vLLM" },

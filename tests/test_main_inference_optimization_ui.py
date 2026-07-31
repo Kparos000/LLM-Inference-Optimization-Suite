@@ -67,10 +67,61 @@ def test_apply_plan_is_plan_only_and_does_not_create_optimized_result() -> None:
     assert all(item["execution_mode"] == "plan_only_no_inference" for item in apply_plan["plans"])
 
 
+def test_two_track_taxonomy_separates_repairs_from_core_optimizations() -> None:
+    payload = build_ui_diagnosis()
+    repairs = payload["deployability_repairs"]
+    core_catalog = payload["core_optimization_catalog"]
+    repair_ids = {item["repair_id"] for item in repairs["repairs"]}
+    core_ids = {item["optimization_id"] for item in core_catalog["optimizations"]}
+
+    assert repairs["track"] == "deployability_repairs"
+    assert core_catalog["track"] == "core_inference_optimizations"
+    assert repair_ids.isdisjoint(core_ids)
+    assert "prompt_contract_repair" in repair_ids
+    assert "enable_prefix_cache" in core_ids
+    assert "concurrency_sweep" in core_ids
+
+
+def test_repair_gate_blocks_core_optimization_until_measured_validation() -> None:
+    payload = build_ui_diagnosis()
+    repair_gate = payload["repair_gate"]
+    experiment_stage = payload["experiment_stage"]
+
+    assert repair_gate["gate_status"] == "NOT_MEASURED"
+    assert repair_gate["core_optimization_eligible"] is False
+    assert experiment_stage["current_stage"] == "DEPLOYABILITY_REPAIR_PLANNED"
+    assert experiment_stage["gates"]["core_optimization_eligible"] is False
+
+
+def test_core_optimization_applicability_applies_negative_rules() -> None:
+    payload = build_ui_diagnosis()
+    states = {
+        item["optimization_id"]: item
+        for item in payload["core_optimization_applicability"]["states"]
+    }
+
+    assert states["use_quantized_model"]["state"] == "blocked_by_negative_rule"
+    assert states["use_quantized_model"]["negative_rule_triggered"] == "quantization"
+    assert states["concurrency_sweep"]["negative_rule_triggered"] == "concurrency_increase"
+    assert states["enable_prefix_cache"]["negative_rule_triggered"] == "prefix_caching"
+    assert states["use_pagedattention_capable_engine"]["state"] == "already_measured_in_baseline"
+
+
 def test_write_ui_artifacts_writes_expected_json_files(tmp_path: Path) -> None:
     paths = write_ui_artifacts(output_root=tmp_path)
 
-    assert set(paths) == {"diagnosis", "optimization_options", "apply_plan", "story"}
+    assert set(paths) == {
+        "diagnosis",
+        "optimization_options",
+        "apply_plan",
+        "story",
+        "deployability_repairs",
+        "repair_gate",
+        "core_optimization_catalog",
+        "core_optimization_applicability",
+        "experiment_stage",
+        "optimization_story",
+    }
     for path in paths.values():
         assert path.exists()
         payload = json.loads(path.read_text(encoding="utf-8"))

@@ -1,0 +1,427 @@
+{
+  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
+  "inference_executed": false,
+  "principle": "Repair failed quality and safety SLOs before claiming a deployable system or starting core inference optimization.",
+  "repairs": [
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "contract_validity",
+          "metric_label": "Contract validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.contract_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_id": "evidence_match",
+          "metric_label": "Evidence match",
+          "observed": 0.589724,
+          "slo_id": "main_inference_v1.evidence_match",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "format_validity",
+          "metric_label": "Format validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.format_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_groundedness",
+          "metric_id": "groundedness",
+          "metric_label": "Groundedness",
+          "observed": 0.567204,
+          "slo_id": "main_inference_v1.groundedness",
+          "target": ">= 0.98"
+        }
+      ],
+      "application_method": "code_change",
+      "definition": "Change workload or context construction under a controlled rerun.",
+      "display_name": "Improve Evidence Formatting",
+      "exact_changes": [
+        "Reformat model-facing evidence blocks and citation instructions.",
+        "Keep the same selected context IDs and short evidence labels."
+      ],
+      "expected_improvement": {
+        "expected_gain_range": {
+          "basis": "must_measure",
+          "max_pct": null,
+          "min_pct": null
+        },
+        "improves": [
+          "quality",
+          "latency",
+          "cost"
+        ],
+        "summary": "Expected improvement must be measured in a controlled optimized rerun."
+      },
+      "expected_tradeoffs": [
+        "quality"
+      ],
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "implementation_status": "planned",
+      "repair_id": "improve_evidence_formatting",
+      "requires_gpu_or_api_rerun": true,
+      "risks": {
+        "cost_risk": "low",
+        "quality_risk": "medium",
+        "safety_notes": [
+          "Change one workload factor and rerun the frozen prompt set."
+        ]
+      },
+      "selectable_now": true,
+      "source_catalog": "configs/optimization_catalog.yaml",
+      "state": "required_for_failed_deployability_slo",
+      "track": "deployability_repairs",
+      "why_it_applies": "Selected by existing diagnosis for measured Main_Inference_V1 failed SLOs.",
+      "why_it_is_a_repair": "This changes prompt, evidence, repair, or escalation behavior needed to make failed quality/safety SLOs deployable before core throughput or latency experiments are allowed."
+    },
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "contract_validity",
+          "metric_label": "Contract validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.contract_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_id": "evidence_match",
+          "metric_label": "Evidence match",
+          "observed": 0.589724,
+          "slo_id": "main_inference_v1.evidence_match",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "format_validity",
+          "metric_label": "Format validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.format_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "safety_violations",
+          "metric_id": "safety_findings",
+          "metric_label": "Safety findings",
+          "observed": 2757.0,
+          "slo_id": "main_inference_v1.safety_findings",
+          "target": "= 0"
+        }
+      ],
+      "application_method": "code_change",
+      "definition": "Change workload or context construction under a controlled rerun.",
+      "display_name": "Prompt Contract Repair",
+      "exact_changes": [
+        "Tighten generation contract instructions and repair prompts.",
+        "Preserve gold data, evaluator semantics, prompt IDs, and source retrieval."
+      ],
+      "expected_improvement": {
+        "expected_gain_range": {
+          "basis": "must_measure",
+          "max_pct": null,
+          "min_pct": null
+        },
+        "improves": [
+          "quality",
+          "latency",
+          "cost"
+        ],
+        "summary": "Expected improvement must be measured in a controlled optimized rerun."
+      },
+      "expected_tradeoffs": [
+        "quality"
+      ],
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "implementation_status": "implemented",
+      "repair_id": "prompt_contract_repair",
+      "requires_gpu_or_api_rerun": true,
+      "risks": {
+        "cost_risk": "low",
+        "quality_risk": "medium",
+        "safety_notes": [
+          "Change one workload factor and rerun the frozen prompt set."
+        ]
+      },
+      "selectable_now": true,
+      "source_catalog": "configs/optimization_catalog.yaml",
+      "state": "required_for_failed_deployability_slo",
+      "track": "deployability_repairs",
+      "why_it_applies": "Selected by existing diagnosis for measured Main_Inference_V1 failed SLOs.",
+      "why_it_is_a_repair": "This changes prompt, evidence, repair, or escalation behavior needed to make failed quality/safety SLOs deployable before core throughput or latency experiments are allowed."
+    },
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "contract_validity",
+          "metric_label": "Contract validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.contract_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_id": "evidence_match",
+          "metric_label": "Evidence match",
+          "observed": 0.589724,
+          "slo_id": "main_inference_v1.evidence_match",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "format_validity",
+          "metric_label": "Format validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.format_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_groundedness",
+          "metric_id": "groundedness",
+          "metric_label": "Groundedness",
+          "observed": 0.567204,
+          "slo_id": "main_inference_v1.groundedness",
+          "target": ">= 0.98"
+        },
+        {
+          "bottleneck_id": "safety_violations",
+          "metric_id": "safety_findings",
+          "metric_label": "Safety findings",
+          "observed": 2757.0,
+          "slo_id": "main_inference_v1.safety_findings",
+          "target": "= 0"
+        }
+      ],
+      "application_method": "agent_mode_change",
+      "definition": "Change bounded mm4 repair, escalation, or tool budgets.",
+      "display_name": "Use MM4 Bounded Agentic Repair",
+      "exact_changes": [
+        "Route eligible contextual rows through bounded mm4 agentic repair.",
+        "Allow only the existing capped retrieval/generation/repair workflow."
+      ],
+      "expected_improvement": {
+        "expected_gain_range": {
+          "basis": "must_measure",
+          "max_pct": null,
+          "min_pct": null
+        },
+        "improves": [
+          "quality",
+          "safety"
+        ],
+        "summary": "Expected improvement must be measured in a controlled optimized rerun."
+      },
+      "expected_tradeoffs": [
+        "latency",
+        "tokens",
+        "cost"
+      ],
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "implementation_status": "implemented",
+      "repair_id": "use_mm4_agentic_repair",
+      "requires_gpu_or_api_rerun": true,
+      "risks": {
+        "cost_risk": "medium",
+        "quality_risk": "low",
+        "safety_notes": [
+          "Keep hard tool",
+          "retrieval",
+          "generation",
+          "and repair limits."
+        ]
+      },
+      "selectable_now": true,
+      "source_catalog": "configs/optimization_catalog.yaml",
+      "state": "required_for_failed_deployability_slo",
+      "track": "deployability_repairs",
+      "why_it_applies": "Selected by existing diagnosis for measured Main_Inference_V1 failed SLOs.",
+      "why_it_is_a_repair": "This changes prompt, evidence, repair, or escalation behavior needed to make failed quality/safety SLOs deployable before core throughput or latency experiments are allowed."
+    },
+    {
+      "affected_failed_slos": [
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "contract_validity",
+          "metric_label": "Contract validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.contract_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_evidence_match",
+          "metric_id": "evidence_match",
+          "metric_label": "Evidence match",
+          "observed": 0.589724,
+          "slo_id": "main_inference_v1.evidence_match",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_contract_validity",
+          "metric_id": "format_validity",
+          "metric_label": "Format validity",
+          "observed": 0.805388,
+          "slo_id": "main_inference_v1.format_validity",
+          "target": ">= 0.95"
+        },
+        {
+          "bottleneck_id": "low_groundedness",
+          "metric_id": "groundedness",
+          "metric_label": "Groundedness",
+          "observed": 0.567204,
+          "slo_id": "main_inference_v1.groundedness",
+          "target": ">= 0.98"
+        },
+        {
+          "bottleneck_id": "safety_violations",
+          "metric_id": "safety_findings",
+          "metric_label": "Safety findings",
+          "observed": 2757.0,
+          "slo_id": "main_inference_v1.safety_findings",
+          "target": "= 0"
+        }
+      ],
+      "application_method": "agent_mode_change",
+      "definition": "Change bounded mm4 repair, escalation, or tool budgets.",
+      "display_name": "Enable Escalation Path",
+      "exact_changes": [
+        "Enable explicit escalation/insufficient-evidence handling for unsafe or unsupported answers.",
+        "Keep safety evaluator semantics unchanged."
+      ],
+      "expected_improvement": {
+        "expected_gain_range": {
+          "basis": "must_measure",
+          "max_pct": null,
+          "min_pct": null
+        },
+        "improves": [
+          "quality",
+          "safety"
+        ],
+        "summary": "Expected improvement must be measured in a controlled optimized rerun."
+      },
+      "expected_tradeoffs": [
+        "latency",
+        "tokens",
+        "cost"
+      ],
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "reported baseline metrics",
+        "dataset split"
+      ],
+      "implementation_status": "implemented",
+      "repair_id": "enable_escalation_path",
+      "requires_gpu_or_api_rerun": true,
+      "risks": {
+        "cost_risk": "medium",
+        "quality_risk": "low",
+        "safety_notes": [
+          "Keep hard tool",
+          "retrieval",
+          "generation",
+          "and repair limits."
+        ]
+      },
+      "selectable_now": true,
+      "source_catalog": "configs/optimization_catalog.yaml",
+      "state": "required_for_failed_deployability_slo",
+      "track": "deployability_repairs",
+      "why_it_applies": "Selected by existing diagnosis for measured Main_Inference_V1 failed SLOs.",
+      "why_it_is_a_repair": "This changes prompt, evidence, repair, or escalation behavior needed to make failed quality/safety SLOs deployable before core throughput or latency experiments are allowed."
+    },
+    {
+      "affected_failed_slos": [],
+      "application_method": "agent_mode_change",
+      "definition": "Change bounded mm4 repair, escalation, or tool budgets.",
+      "display_name": "Enable Bounded Citation Repair",
+      "exact_changes": [
+        "Apply catalog optimization enable_bounded_citation_repair as a single controlled factor.",
+        "Measure the same SLOs against the frozen Main_Inference prompt set."
+      ],
+      "expected_improvement": {
+        "expected_gain_range": {
+          "basis": "must_measure",
+          "max_pct": null,
+          "min_pct": null
+        },
+        "improves": [
+          "quality",
+          "safety"
+        ],
+        "summary": "Expected improvement must be measured in a controlled optimized rerun."
+      },
+      "expected_tradeoffs": [
+        "latency",
+        "tokens",
+        "cost"
+      ],
+      "hold_constant": [
+        "gold data",
+        "evaluator semantics",
+        "source Main_Inference_V1 artifacts",
+        "dataset split"
+      ],
+      "implementation_status": "implemented",
+      "repair_id": "enable_bounded_citation_repair",
+      "requires_gpu_or_api_rerun": false,
+      "risks": {
+        "cost_risk": "medium",
+        "quality_risk": "low",
+        "safety_notes": [
+          "Keep hard tool",
+          "retrieval",
+          "generation",
+          "and repair limits."
+        ]
+      },
+      "selectable_now": false,
+      "source_catalog": "configs/optimization_catalog.yaml",
+      "state": "available_supporting_repair_not_selected",
+      "track": "deployability_repairs",
+      "why_it_applies": "No failed Main_Inference config supports this optimization under the current engine, memory mode, model, and hardware constraints.",
+      "why_it_is_a_repair": "This changes prompt, evidence, repair, or escalation behavior needed to make failed quality/safety SLOs deployable before core throughput or latency experiments are allowed."
+    }
+  ],
+  "required_repair_count": 4,
+  "required_repair_ids": [
+    "improve_evidence_formatting",
+    "prompt_contract_repair",
+    "use_mm4_agentic_repair",
+    "enable_escalation_path"
+  ],
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "status": "UI_DEPLOYABILITY_REPAIRS_READY",
+  "track": "deployability_repairs",
+  "ui_guardrails": [
+    "Show these as repair plans, not core inference optimizations.",
+    "Do not combine repair validation with core optimization claims.",
+    "Do not create Optimized_Inference_V1 from this payload."
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "core_state_counts": {
+    "already_measured_in_baseline": 2,
+    "blocked_by_negative_rule": 19,
+    "locked_until_deployability_repair_validated": 31
+  },
+  "current_stage": "DEPLOYABILITY_REPAIR_PLANNED",
+  "failed_slo_count": 5,
+  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
+  "interaction_flow": [
+    {
+      "step": "Inspect failed SLOs",
+      "system_response": "Show target, observed value, severity, bottleneck, and evidence.",
+      "user_action": "Click a failed quality or safety SLO."
+    },
+    {
+      "step": "Plan deployability repair",
+      "system_response": "Show exact changes and constants held fixed for a measured repair rerun.",
+      "user_action": "Select repair-track changes only."
+    },
+    {
+      "step": "Validate repair gate",
+      "system_response": "PASS/FAIL/NOT_MEASURED gate decides whether core optimization is allowed.",
+      "user_action": "Replay or inspect measured repaired artifacts when available."
+    },
+    {
+      "step": "Study core optimizations",
+      "system_response": "Show why each is locked, blocked, already active, planned, or eligible.",
+      "user_action": "Open serving, concurrency, model, hardware, and context strategies."
+    },
+    {
+      "step": "Prepare optimized experiment",
+      "system_response": "Create a plan only; no inference is executed by the UI replay layer.",
+      "user_action": "After repair validation, select one controlled core optimization recipe."
+    }
+  ],
+  "principles": [
+    "Passing an SLO means the configured minimum was met, not that serving is optimal.",
+    "Failed deployability SLOs produce repair plans, not throughput tuning recipes.",
+    "Core optimizations remain visible for education but locked until repair validation.",
+    "Every selectable option must be backed by catalog compatibility and negative rules."
+  ],
+  "repair_gate_status": "NOT_MEASURED",
+  "required_repair_count": 4,
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "status": "UI_OPTIMIZATION_STORY_V2_READY",
+  "summary": "Main_Inference_V1 proves the system can run at scale, but it cannot be optimized as a deployable product until failed quality and safety SLOs are repaired. The platform therefore teaches optimization in two stages: mandatory deployability repairs first, core inference optimization second.",
+  "title": "Two-Track Inference Optimization Story"
+}

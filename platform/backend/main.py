@@ -176,14 +176,47 @@ def mandatory_repairs() -> PlatformResponse:
     return _response(platform_data().mandatory_repairs(), result_type="planned")
 
 
+@app.get("/api/optimizations/deployability-repairs", response_model=PlatformResponse)
+def deployability_repairs() -> PlatformResponse:
+    return _response(platform_data().deployability_repairs(), result_type="planned")
+
+
+@app.get("/api/optimizations/repair-gate", response_model=PlatformResponse)
+def repair_gate() -> PlatformResponse:
+    return _response(platform_data().repair_gate(), result_type="planned")
+
+
 @app.get("/api/optimizations/core-catalog", response_model=PlatformResponse)
 def core_optimization_catalog() -> PlatformResponse:
     return _response(platform_data().core_optimization_catalog(), result_type="planned")
 
 
+@app.get("/api/optimizations/core-catalog-v2", response_model=PlatformResponse)
+def core_optimization_catalog_v2() -> PlatformResponse:
+    return _response(platform_data().core_optimization_catalog_v2(), result_type="planned")
+
+
 @app.get("/api/optimizations/applicability", response_model=PlatformResponse)
 def optimization_applicability() -> PlatformResponse:
     return _response(platform_data().optimization_applicability(), result_type="planned")
+
+
+@app.get("/api/optimizations/core-applicability", response_model=PlatformResponse)
+def core_optimization_applicability() -> PlatformResponse:
+    return _response(
+        platform_data().core_optimization_applicability_v2(),
+        result_type="planned",
+    )
+
+
+@app.get("/api/optimizations/experiment-stage", response_model=PlatformResponse)
+def optimization_experiment_stage() -> PlatformResponse:
+    return _response(platform_data().experiment_stage(), result_type="planned")
+
+
+@app.get("/api/optimizations/story", response_model=PlatformResponse)
+def optimization_story() -> PlatformResponse:
+    return _response(platform_data().optimization_story_v2(), result_type="planned")
 
 
 @app.post("/api/optimizations/recipe/validate", response_model=RecipeValidationResponse)

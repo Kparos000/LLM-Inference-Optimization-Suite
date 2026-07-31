@@ -11,6 +11,11 @@ inspect SLO failures, understand bottlenecks, select only applicable inference
 optimization strategies, and compare saved before/after artifacts without
 running GPUs.
 
+Architecture update: Optimization now uses the two-track contract documented
+in `docs/128_inference_optimization_two_track_architecture.md`. Mandatory
+deployability repairs are planned and validated before core inference
+optimizations become selectable.
+
 ## Product Principle
 
 The deployed demo must run from saved artifacts. Users do not start vLLM,
@@ -25,10 +30,12 @@ Measured result
 -> failed SLO
 -> deterministic diagnosis
 -> bottleneck
--> compatible optimization options
--> explanation and risk
--> apply
--> replay saved optimized result or show controlled rerun plan
+-> deployability repair options
+-> repair explanation and risk
+-> plan repair only
+-> repair gate validation
+-> core optimization options when eligible
+-> replay saved optimized result when measured artifacts exist
 -> compare before and after
 ```
 
@@ -70,6 +77,13 @@ Current repository sources:
 - `src/inference_bench/optimization_recommender.py`
 - `src/inference_bench/optimization_catalog.py`
 - `src/inference_bench/optimization_negative_rules.py`
+- `src/inference_bench/main_inference_optimization_ui.py`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_deployability_repairs.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_repair_gate.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_catalog.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_applicability.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_experiment_stage.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_story.json`
 
 Known missing product sources:
 
@@ -77,8 +91,8 @@ Known missing product sources:
 - `optimized_inference_v1` eval, SLO, cost, telemetry, comparison, and plotting
   artifacts.
 - UI-ready JSON bundles such as `main_inference_v1_ui_summary.json`.
-- A Main_Inference-specific diagnosis export that applies catalog,
-  compatibility, and negative-rule filtering per failed row.
+- measured repair-validation artifacts that pass the repair gate.
+- a core optimization experiment plan derived after repair validation.
 - A saved before/after replay bundle for optimized inference.
 
 ## Frontend Information Architecture

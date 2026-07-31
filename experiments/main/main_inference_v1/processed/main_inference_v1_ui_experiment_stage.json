@@ -1,0 +1,52 @@
+{
+  "current_stage": "DEPLOYABILITY_REPAIR_PLANNED",
+  "gates": {
+    "core_optimization_eligible": false,
+    "failed_slo_count": 5,
+    "optimized_inference_ready": false,
+    "repair_gate_status": "NOT_MEASURED",
+    "repair_plan_available": true,
+    "repair_required": true
+  },
+  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "stage_sequence": [
+    {
+      "description": "Official Main_Inference_V1 artifacts are present.",
+      "stage": "MAIN_INFERENCE_MEASURED",
+      "state": "complete"
+    },
+    {
+      "description": "Quality and safety failed, so repair work comes before core optimization.",
+      "stage": "DEPLOYABILITY_REPAIR_REQUIRED",
+      "state": "complete"
+    },
+    {
+      "description": "A deterministic plan-only repair track exists for the failed SLOs.",
+      "stage": "DEPLOYABILITY_REPAIR_PLANNED",
+      "state": "current"
+    },
+    {
+      "description": "A measured repaired run must prove quality, safety, runtime, and cost gates pass.",
+      "stage": "DEPLOYABILITY_REPAIR_VALIDATED",
+      "state": "blocked"
+    },
+    {
+      "description": "Only after repair validation can latency, throughput, memory, and cost strategies be selected for the champion optimized run.",
+      "stage": "CORE_OPTIMIZATION_ELIGIBLE",
+      "state": "blocked"
+    },
+    {
+      "description": "A controlled core optimization recipe is selected.",
+      "stage": "CORE_OPTIMIZATION_PLANNED",
+      "state": "blocked"
+    },
+    {
+      "description": "Optimized_Inference_V1 artifacts are present and comparable.",
+      "stage": "OPTIMIZED_INFERENCE_READY",
+      "state": "blocked"
+    }
+  ],
+  "status": "UI_EXPERIMENT_STAGE_READY"
+}

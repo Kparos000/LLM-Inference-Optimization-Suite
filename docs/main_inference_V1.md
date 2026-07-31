@@ -445,6 +445,12 @@ The UI-ready artifacts are:
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_options.json`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_apply_plan.json`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_story.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_deployability_repairs.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_repair_gate.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_catalog.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_applicability.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_experiment_stage.json`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_story.json`
 
 They are generated with:
 
@@ -459,7 +465,12 @@ optimization catalog, and negative-rule filtering so the product dropdowns
 show only compatible options for the selected failed SLO.
 
 Optimization should target quality and safety first while preserving the
-runtime and cost SLO passes.
+runtime and cost SLO passes. The product-facing layer now separates this into
+two tracks: mandatory deployability repairs first, then core inference
+optimization after measured repair validation. The current repair gate is
+`NOT_MEASURED`, so core optimizations are visible for education but locked for
+the champion optimized run. See
+`docs/128_inference_optimization_two_track_architecture.md`.
 
 ## 16. GPU Shutdown / CPU-Only Analysis
 

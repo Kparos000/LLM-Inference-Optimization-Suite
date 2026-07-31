@@ -1,0 +1,147 @@
+{
+  "blocking_reason": "Main_Inference_V1 failed quality and safety, and a measured repaired artifact set is not present yet.",
+  "checks": [
+    {
+      "check_id": "main_inference_measured",
+      "label": "Main_Inference_V1 completed",
+      "observed": "COMPLETED",
+      "source_artifact": "main_inference_v1_slo_report.json",
+      "status": "PASS",
+      "target": "COMPLETED"
+    },
+    {
+      "check_id": "quality_slo",
+      "label": "Quality SLO",
+      "observed": "FAIL",
+      "source_artifact": "main_inference_v1_slo_report.json",
+      "status": "FAIL",
+      "target": "PASS"
+    },
+    {
+      "check_id": "safety_slo",
+      "label": "Safety SLO",
+      "observed": "FAIL",
+      "source_artifact": "main_inference_v1_slo_report.json",
+      "status": "FAIL",
+      "target": "PASS"
+    },
+    {
+      "check_id": "runtime_slo",
+      "label": "Runtime SLO",
+      "observed": "PASS",
+      "source_artifact": "main_inference_v1_slo_report.json",
+      "status": "PASS",
+      "target": "PASS"
+    },
+    {
+      "check_id": "cost_slo",
+      "label": "Cost SLO",
+      "observed": "PASS",
+      "source_artifact": "main_inference_v1_slo_report.json",
+      "status": "PASS",
+      "target": "PASS"
+    },
+    {
+      "check_id": "scorecard.json_validity",
+      "difference": "0.04822000000000004",
+      "label": "JSON validity",
+      "observed": "0.99822",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "PASS",
+      "target": ">= 0.95"
+    },
+    {
+      "check_id": "scorecard.contract_validity",
+      "difference": "-0.14461199999999996",
+      "label": "Contract validity",
+      "observed": "0.805388",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.95"
+    },
+    {
+      "check_id": "scorecard.format_validity",
+      "difference": "-0.14461199999999996",
+      "label": "Format validity",
+      "observed": "0.805388",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.95"
+    },
+    {
+      "check_id": "scorecard.evidence_match",
+      "difference": "-0.36027599999999993",
+      "label": "Evidence match",
+      "observed": "0.589724",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.95"
+    },
+    {
+      "check_id": "scorecard.groundedness",
+      "difference": "-0.41279599999999994",
+      "label": "Groundedness",
+      "observed": "0.567204",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": ">= 0.98"
+    },
+    {
+      "check_id": "scorecard.safety_findings",
+      "difference": "2757",
+      "label": "Safety findings",
+      "observed": "2757",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "FAIL",
+      "target": "= 0"
+    },
+    {
+      "check_id": "scorecard.runtime",
+      "difference": "n/a",
+      "label": "Runtime",
+      "observed": "42538.856294736965",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "PASS",
+      "target": "repo configured runtime SLO"
+    },
+    {
+      "check_id": "scorecard.cost",
+      "difference": "n/a",
+      "label": "Cost",
+      "observed": "18.461296726432796",
+      "source_artifact": "main_inference_v1_slo_scorecard.csv",
+      "status": "PASS",
+      "target": "repo configured cost SLO"
+    },
+    {
+      "check_id": "optimized_repair_validation_artifacts",
+      "label": "Measured repair validation artifacts",
+      "observed": "missing",
+      "source_artifact": "experiments/optimized/optimized_inference_v1",
+      "status": "NOT_MEASURED",
+      "target": "optimized_inference_v1_slo_report.json and optimized_inference_v1_slo_scorecard.csv"
+    }
+  ],
+  "core_optimization_eligible": false,
+  "criteria": [
+    "Use the existing repo SLO targets and scorecard semantics.",
+    "Quality and safety must pass before deployability is claimed.",
+    "Runtime and cost must remain passing in the measured repaired result.",
+    "No tolerance or regression budget is invented by this UI layer."
+  ],
+  "failed_slo_count": 5,
+  "failed_slo_ids": [
+    "main_inference_v1.contract_validity",
+    "main_inference_v1.format_validity",
+    "main_inference_v1.evidence_match",
+    "main_inference_v1.groundedness",
+    "main_inference_v1.safety_findings"
+  ],
+  "gate_name": "deployability_repair_validation_gate",
+  "gate_status": "NOT_MEASURED",
+  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
+  "minimum_not_optimal_principle": "A PASS means the measured value cleared the configured minimum target. It does not mean the system is optimally served for latency, throughput, GPU utilization, or cost.",
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "status": "UI_REPAIR_GATE_READY"
+}

@@ -69,6 +69,21 @@ def test_recipe_validation_rejects_blocked_negative_rule_strategy() -> None:
     assert payload["plan"]["does_not_execute_inference"] is True
 
 
+def test_product_platform_exposes_two_track_optimization_contracts() -> None:
+    data = ProductPlatformData()
+    repairs = data.deployability_repairs()
+    repair_gate = data.repair_gate()
+    core = data.core_optimization_applicability_v2()
+    stage = data.experiment_stage()
+
+    assert repairs["track"] == "deployability_repairs"
+    assert repairs["required_repair_count"] == 4
+    assert repair_gate["gate_status"] == "NOT_MEASURED"
+    assert repair_gate["core_optimization_eligible"] is False
+    assert stage["current_stage"] == "DEPLOYABILITY_REPAIR_PLANNED"
+    assert core["state_counts"]["blocked_by_negative_rule"] >= 1
+
+
 def test_fastapi_health_and_results_are_read_only() -> None:
     module = _load_backend_module()
     client = TestClient(module.app)
@@ -82,6 +97,10 @@ def test_fastapi_health_and_results_are_read_only() -> None:
     assert results.status_code == 200
     assert body["data"]["result_type"] == "measured"
     assert body["data"]["eval_report"]["total_requests_completed"] == 250000
+
+    repair_gate = client.get("/api/optimizations/repair-gate")
+    assert repair_gate.status_code == 200
+    assert repair_gate.json()["data"]["gate_status"] == "NOT_MEASURED"
 
 
 def test_fastapi_allows_frontend_origin_for_api_fetches() -> None:

@@ -21,8 +21,10 @@ The product currently supports:
   registry, serving, and matrix construction;
 - browser-persisted experiment session state;
 - a measured Main_Inference replay using saved progress and telemetry events;
-- a two-lane Optimization Lab separating mandatory system repairs from core
-  inference-engineering strategies;
+- a two-track Optimization Lab separating mandatory deployability repairs from
+  core inference-engineering strategies;
+- a repair gate that keeps core optimization locked until measured repair
+  validation exists;
 - visible disabled states for negative-rule-blocked strategies;
 - plan-only apply/apply-all behavior;
 - honest planned placeholders for `Optimized_Inference_V1`, comparison, and
@@ -113,9 +115,15 @@ Endpoints:
 | `GET /api/main-inference/replay-detail` | Main replay contract, phases, charts, gates, lessons, and artifacts |
 | `GET /api/main-inference/comparisons` | Engine, memory, concurrency, API/self-hosted, model, and SLO comparisons |
 | `GET /api/main-inference/diagnosis` | Existing UI diagnosis/options/apply/story artifacts |
-| `GET /api/optimizations/mandatory-repairs` | Mandatory repair plan lane |
-| `GET /api/optimizations/core-catalog` | Full optimization catalog for education |
-| `GET /api/optimizations/applicability` | Optimization states and negative-rule blocks |
+| `GET /api/optimizations/mandatory-repairs` | Legacy mandatory repair plan lane |
+| `GET /api/optimizations/deployability-repairs` | Two-track deployability repair contract |
+| `GET /api/optimizations/repair-gate` | PASS/FAIL/NOT_MEASURED/MISSING_CONFIGURATION repair gate |
+| `GET /api/optimizations/core-catalog` | Legacy full optimization catalog for education |
+| `GET /api/optimizations/core-catalog-v2` | Core optimization catalog without repair-track IDs |
+| `GET /api/optimizations/applicability` | Legacy optimization states and negative-rule blocks |
+| `GET /api/optimizations/core-applicability` | Stage-gated core optimization applicability |
+| `GET /api/optimizations/experiment-stage` | Current optimization stage sequence |
+| `GET /api/optimizations/story` | Two-track optimization story contract |
 | `POST /api/optimizations/recipe/validate` | Plan-only recipe validation |
 | `GET /api/scenarios` | Measured/planned scenario registry |
 | `GET /api/comparison/availability` | Before/after availability contract |

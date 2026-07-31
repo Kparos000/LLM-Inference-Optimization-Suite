@@ -1908,6 +1908,26 @@ class ProductPlatformData:
             "story": _read_json(MAIN_PROCESSED / "main_inference_v1_ui_story.json"),
         }
 
+    def deployability_repairs(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "main_inference_v1_ui_deployability_repairs.json")
+
+    def repair_gate(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "main_inference_v1_ui_repair_gate.json")
+
+    def core_optimization_catalog_v2(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "main_inference_v1_ui_core_optimization_catalog.json")
+
+    def core_optimization_applicability_v2(self) -> JsonDict:
+        return _read_json(
+            MAIN_PROCESSED / "main_inference_v1_ui_core_optimization_applicability.json"
+        )
+
+    def experiment_stage(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "main_inference_v1_ui_experiment_stage.json")
+
+    def optimization_story_v2(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "main_inference_v1_ui_optimization_story.json")
+
     def mandatory_repairs(self) -> JsonDict:
         apply_plan = _read_json(MAIN_PROCESSED / "main_inference_v1_ui_apply_plan.json")
         plans = cast(list[JsonDict], apply_plan.get("plans", []))

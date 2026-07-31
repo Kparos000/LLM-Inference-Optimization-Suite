@@ -22,14 +22,24 @@ import { useEffect, useState } from "react";
 import { fetchPlatform } from "@/lib/api";
 import {
   chapters,
-  fallbackOptimizationStates,
+  fallbackCoreOptimizationStates,
+  fallbackDeployabilityRepairs,
+  fallbackExperimentStage,
+  fallbackOptimizationStory,
+  fallbackRepairGate,
   headlineMetrics,
   replayFallback,
-  sloRows,
   verticalRows
 } from "@/lib/facts";
 import { useExperimentSession } from "@/lib/session";
-import type { ChapterId, OptimizationState } from "@/lib/types";
+import type {
+  ChapterId,
+  CoreOptimizationState,
+  DeployabilityRepair,
+  ExperimentStage,
+  OptimizationStory,
+  RepairGate
+} from "@/lib/types";
 import { MissionShell } from "./MissionShell";
 import { MetricCard } from "./MetricCard";
 import { StatusBadge } from "./StatusBadge";
@@ -692,73 +702,150 @@ function MainInferencePage({ sources }: { sources: string[] }) {
 }
 
 function OptimizationPage({ sources }: { sources: string[] }) {
-  const { session, toggleMandatoryRepair, toggleCoreOptimization, applyAllSelected } =
-    useExperimentSession();
-  const applicability = useApiData<{ states: OptimizationState[] }>(
-    "/api/optimizations/applicability",
-    { states: fallbackOptimizationStates }
+  const { session, toggleMandatoryRepair, toggleCoreOptimization, applyAllSelected } = useExperimentSession();
+  const repairsPayload = useApiData<{ repairs: DeployabilityRepair[]; principle?: string }>(
+    "/api/optimizations/deployability-repairs",
+    {
+      repairs: fallbackDeployabilityRepairs,
+      principle: "Repair failed quality and safety SLOs before core optimization."
+    }
   );
-  const states = applicability.states.length ? applicability.states : fallbackOptimizationStates;
-  const mandatory = states.filter((item) =>
-    ["prompt_contract_repair", "improve_evidence_formatting", "use_mm4_agentic_repair", "enable_escalation_path"].includes(
-      item.optimization_id
-    )
+  const repairGate = useApiData<RepairGate>("/api/optimizations/repair-gate", fallbackRepairGate);
+  const corePayload = useApiData<{ states: CoreOptimizationState[]; state_counts?: Record<string, number> }>(
+    "/api/optimizations/core-applicability",
+    { states: fallbackCoreOptimizationStates }
   );
-  const core = states.filter((item) => !mandatory.some((repair) => repair.optimization_id === item.optimization_id));
-  const selectedCount =
-    session.selectedMandatoryRepairs.length + session.selectedCoreOptimizations.length;
+  const experimentStage = useApiData<ExperimentStage>(
+    "/api/optimizations/experiment-stage",
+    fallbackExperimentStage
+  );
+  const story = useApiData<OptimizationStory>(
+    "/api/optimizations/story",
+    fallbackOptimizationStory
+  );
+  const repairs = repairsPayload.repairs.length ? repairsPayload.repairs : fallbackDeployabilityRepairs;
+  const core = corePayload.states.length ? corePayload.states : fallbackCoreOptimizationStates;
+  const selectedCount = session.selectedMandatoryRepairs.length + session.selectedCoreOptimizations.length;
+  const requiredRepairIds = repairs
+    .filter((item) => item.state === "required_for_failed_deployability_slo")
+    .map((item) => item.repair_id);
+  const coreLocked = !repairGate.core_optimization_eligible;
 
   return (
     <>
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <Panel>
-          <SectionTitle icon={<FlaskConical size={22} />} title="Two-lane optimization logic">
-            Mandatory repairs target failed deployability SLOs. Core strategies remain educational
-            and disabled when negative rules block them.
+          <SectionTitle icon={<FlaskConical size={22} />} title="Two-track optimization logic">
+            {story.summary}
           </SectionTitle>
-          <div className="grid gap-5 xl:grid-cols-2">
-            <OptimizationLane
-              title="A. Mandatory System Quality & Workflow Repairs"
-              items={mandatory}
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              metric={{
+                label: "Current stage",
+                value: experimentStage.current_stage.replaceAll("_", " "),
+                tone: "warn",
+                detail: "The platform is plan-only until measured repair artifacts exist."
+              }}
+            />
+            <MetricCard
+              metric={{
+                label: "Repair gate",
+                value: repairGate.gate_status.replaceAll("_", " "),
+                tone: repairGate.gate_status === "PASS" ? "pass" : "warn",
+                detail: repairGate.blocking_reason
+              }}
+            />
+            <MetricCard
+              metric={{
+                label: "Selected repairs",
+                value: String(session.selectedMandatoryRepairs.length),
+                tone: "neutral",
+                detail: "Repair-track changes only."
+              }}
+            />
+            <MetricCard
+              metric={{
+                label: "Core selectable",
+                value: repairGate.core_optimization_eligible ? "yes" : "no",
+                tone: repairGate.core_optimization_eligible ? "pass" : "warn",
+                detail: repairGate.minimum_not_optimal_principle
+              }}
+            />
+          </div>
+          <div className="mt-6 grid gap-5 xl:grid-cols-2">
+            <DeployabilityRepairLane
+              items={repairs}
               selected={session.selectedMandatoryRepairs}
               onToggle={toggleMandatoryRepair}
             />
-            <OptimizationLane
-              title="B. Core Inference Engineering Optimizations"
-              items={core.slice(0, 12)}
+            <CoreOptimizationLane
+              items={core}
               selected={session.selectedCoreOptimizations}
               onToggle={toggleCoreOptimization}
+              coreLocked={coreLocked}
             />
           </div>
         </Panel>
         <Panel>
-          <SectionTitle icon={<ClipboardList size={22} />} title="Selected recipe">
-            Apply All means mandatory repairs plus selected compatible core strategies.
+          <SectionTitle icon={<ClipboardList size={22} />} title="Repair plan only">
+            Plan the mandatory deployability repairs first. Core optimization unlocks only after
+            measured repair validation.
           </SectionTitle>
           <p className="text-5xl font-semibold text-white">{selectedCount}</p>
-          <p className="mt-2 text-sm text-slate-400">selected changes, plan-only</p>
+          <p className="mt-2 text-sm text-slate-400">
+            selected changes, no inference executed
+          </p>
           <button
             className="mt-6 w-full rounded-2xl bg-signal-cyan px-4 py-3 text-sm font-semibold text-graphite-950"
-            onClick={() => applyAllSelected(mandatory.map((item) => item.optimization_id))}
+            onClick={() => applyAllSelected(requiredRepairIds)}
           >
-            Apply All Selected Optimizations
+            Add Mandatory Repair Plan
           </button>
           <div className="mt-5 rounded-2xl border border-signal-amber/30 bg-signal-amber/10 p-4 text-sm leading-6 text-signal-amber">
-            This produces a validated plan only. It does not create Optimized_Inference_V1.
+            This creates a plan only. It does not validate repairs, apply core optimizations,
+            run GPUs, or create Optimized_Inference_V1.
+          </div>
+          <div className="mt-5 space-y-3">
+            {experimentStage.stage_sequence.slice(0, 5).map((stage) => (
+              <div key={stage.stage} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-white">{stage.stage.replaceAll("_", " ")}</p>
+                  <StatusBadge tone={stage.state === "complete" ? "pass" : stage.state === "current" ? "warn" : "neutral"}>
+                    {stage.state}
+                  </StatusBadge>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-500">{stage.description}</p>
+              </div>
+            ))}
           </div>
         </Panel>
       </div>
       <Panel>
-        <SectionTitle icon={<AlertTriangle size={22} />} title="Failed SLOs driving the lab">
-          The UI must expose only valid selectable options for the selected failure while preserving
-          disabled strategies as educational explanations.
+        <SectionTitle icon={<AlertTriangle size={22} />} title="Repair gate evidence">
+          The measured baseline passed runtime and cost, but failed quality and safety. Passing
+          a runtime SLO is a minimum threshold, not proof that the serving stack is optimal.
         </SectionTitle>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {sloRows.map((row) => (
-            <div key={row.metric} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <p className="font-semibold text-white">{row.metric}</p>
-              <p className="mt-1 text-sm text-slate-400">target {row.target}</p>
-              <StatusBadge tone={row.status === "PASS" ? "pass" : "fail"}>{row.status}</StatusBadge>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {repairGate.checks.slice(0, 9).map((check) => (
+            <div key={check.check_id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-semibold text-white">{check.label}</p>
+                <StatusBadge
+                  tone={
+                    check.status === "PASS"
+                      ? "pass"
+                      : check.status === "FAIL"
+                        ? "fail"
+                        : "warn"
+                  }
+                >
+                  {check.status.replaceAll("_", " ")}
+                </StatusBadge>
+              </div>
+              <p className="mt-2 text-sm text-slate-400">target {check.target}</p>
+              <p className="mt-1 truncate font-mono text-xs text-slate-500">
+                observed {String(check.observed)}
+              </p>
             </div>
           ))}
         </div>
@@ -768,23 +855,81 @@ function OptimizationPage({ sources }: { sources: string[] }) {
   );
 }
 
-function OptimizationLane({
-  title,
+function DeployabilityRepairLane({
   items,
   selected,
   onToggle
 }: {
-  title: string;
-  items: OptimizationState[];
+  items: DeployabilityRepair[];
   selected: string[];
   onToggle: (id: string) => void;
 }) {
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">{title}</h3>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
+        A. Mandatory Deployability Repairs
+      </h3>
       <div className="max-h-[640px] space-y-3 overflow-auto pr-2 scrollbar-thin">
         {items.map((item) => {
-          const selectable = item.state === "applicable_measured" || item.state === "applicable_planned";
+          const selectable = item.selectable_now;
+          return (
+            <button
+              key={item.repair_id}
+              onClick={() => selectable && onToggle(item.repair_id)}
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-signal-cyan/40 disabled:cursor-not-allowed"
+              disabled={!selectable}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-semibold text-white">{item.display_name}</p>
+                <StatusBadge
+                  tone={
+                    item.state === "required_for_failed_deployability_slo"
+                      ? "pass"
+                      : item.state === "blocked_by_negative_rule"
+                        ? "fail"
+                        : "warn"
+                  }
+                >
+                  {item.state.replaceAll("_", " ")}
+                </StatusBadge>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-400">{item.definition}</p>
+              <p className="mt-3 text-xs text-slate-500">{item.why_it_applies}</p>
+              <p className="mt-3 text-xs text-slate-500">
+                affects{" "}
+                {item.affected_failed_slos.map((slo) => slo.metric_label).join(", ") ||
+                  "supporting repair"}
+              </p>
+              {selected.includes(item.repair_id) ? (
+                <p className="mt-3 text-sm font-semibold text-signal-cyan">selected</p>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CoreOptimizationLane({
+  items,
+  selected,
+  onToggle,
+  coreLocked
+}: {
+  items: CoreOptimizationState[];
+  selected: string[];
+  onToggle: (id: string) => void;
+  coreLocked: boolean;
+}) {
+  return (
+    <div>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
+        B. Core Inference Optimizations
+      </h3>
+      <div className="max-h-[640px] space-y-3 overflow-auto pr-2 scrollbar-thin">
+        {items.slice(0, 18).map((item) => {
+          const selectable = item.selectable_now && !coreLocked;
           return (
             <button
               key={item.optimization_id}
@@ -796,7 +941,7 @@ function OptimizationLane({
                 <p className="font-semibold text-white">{item.display_name}</p>
                 <StatusBadge
                   tone={
-                    item.state === "applicable_measured"
+                    item.state === "eligible_after_repair_gate"
                       ? "pass"
                       : item.state === "blocked_by_negative_rule"
                         ? "fail"
@@ -808,6 +953,9 @@ function OptimizationLane({
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-400">{item.definition}</p>
               <p className="mt-3 text-xs text-slate-500">{item.reason}</p>
+              <p className="mt-3 text-xs text-slate-500">
+                improves {item.affected_metrics.join(", ")}; compatible configs {item.compatible_config_count}
+              </p>
               {selected.includes(item.optimization_id) ? (
                 <p className="mt-3 text-sm font-semibold text-signal-cyan">selected</p>
               ) : null}

@@ -8,6 +8,12 @@ turns the completed Main_Inference run into an explainable product workflow.
 It does not run inference, mutate benchmark results, or create
 `Optimized_Inference_V1`.
 
+Update: the product-facing layer now uses the two-track architecture described
+in `docs/128_inference_optimization_two_track_architecture.md`.
+Deployability repairs and core inference optimizations are separate stages.
+The repair gate is currently `NOT_MEASURED`, so core strategies are visible for
+education but are not selectable for a champion optimized run.
+
 ## Purpose
 
 The final platform needs more than a static benchmark dashboard. When a user
@@ -59,6 +65,12 @@ experiments/main/main_inference_v1/processed/main_inference_v1_ui_diagnosis.json
 experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_options.json
 experiments/main/main_inference_v1/processed/main_inference_v1_ui_apply_plan.json
 experiments/main/main_inference_v1/processed/main_inference_v1_ui_story.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_deployability_repairs.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_repair_gate.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_catalog.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_applicability.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_experiment_stage.json
+experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_story.json
 ```
 
 Each artifact includes:
@@ -73,10 +85,12 @@ Each artifact includes:
 ```text
 Click failed SLO
 -> show target, observed value, severity, and bottleneck
--> show only compatible optimization options
+-> show deployability repair options for failed quality/safety SLOs
 -> show explanation, tradeoffs, risk, and implementation status
 -> optional rejected-option audit
--> apply produces a plan only
+-> repair action produces a plan only
+-> repair gate remains NOT_MEASURED until measured repaired artifacts exist
+-> core optimization catalog remains visible but locked or rule-filtered
 -> saved optimized artifacts can be replayed later when they exist
 ```
 
@@ -93,7 +107,9 @@ The UI diagnosis exposes five failed SLO rows:
 | Safety findings | `safety_violations` |
 
 Runtime and cost passed, so latency, throughput, GPU-utilization, and cost
-optimizations are not shown as selectable options for this run.
+optimizations are not required deployability repairs for this run. They remain
+visible in the core catalog because passing an SLO means minimum acceptance,
+not optimal serving.
 
 ## Negative-Rule Filtering
 
@@ -116,8 +132,10 @@ should not present them as selectable dropdown options.
 
 ## Apply Plan Semantics
 
-`main_inference_v1_ui_apply_plan.json` is plan-only. It describes what would
-change in a controlled optimized experiment and what must remain fixed.
+`main_inference_v1_ui_apply_plan.json` is retained for compatibility and is
+plan-only. The corrected product flow should use the repair plan and repair
+gate contracts first, then create a separate core optimization experiment plan
+only after measured repair validation passes.
 
 It explicitly does not:
 

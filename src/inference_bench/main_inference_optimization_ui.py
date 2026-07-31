@@ -122,6 +122,36 @@ QUALITY_STATUS_FIELDS = (
     "slo_safety",
 )
 
+DEPLOYABILITY_REPAIR_IDS = (
+    "improve_evidence_formatting",
+    "prompt_contract_repair",
+    "use_mm4_agentic_repair",
+    "enable_escalation_path",
+    "enable_bounded_citation_repair",
+)
+
+STAGE_SEQUENCE = (
+    "MAIN_INFERENCE_MEASURED",
+    "DEPLOYABILITY_REPAIR_REQUIRED",
+    "DEPLOYABILITY_REPAIR_PLANNED",
+    "DEPLOYABILITY_REPAIR_VALIDATED",
+    "CORE_OPTIMIZATION_ELIGIBLE",
+    "CORE_OPTIMIZATION_PLANNED",
+    "OPTIMIZED_INFERENCE_READY",
+)
+
+CORE_LOCKED_STATES = {
+    "blocked_by_negative_rule",
+    "locked_until_deployability_repair_validated",
+    "planned_not_ready",
+    "already_measured_in_baseline",
+}
+
+BASELINE_ACTIVE_CORE_CAPABILITIES = {
+    "use_pagedattention_capable_engine",
+    "enable_continuous_batching",
+}
+
 
 def _repo_path(path: str | Path) -> Path:
     value = Path(path)
@@ -829,11 +859,58 @@ def build_ui_diagnosis(
         apply_plan=apply_plan,
         generated_at=generated_at,
     )
+    deployability_repairs = _build_deployability_repairs(
+        diagnosis_payload=diagnosis_payload,
+        options_payload=options_payload,
+        apply_plan=apply_plan,
+        catalog=catalog,
+        generated_at=generated_at,
+    )
+    repair_gate = _build_repair_gate(
+        diagnosis_payload=diagnosis_payload,
+        slo_report=slo_report,
+        scorecard_rows=scorecard_rows,
+        generated_at=generated_at,
+        experiment_root=root,
+    )
+    core_catalog = _build_core_optimization_catalog(
+        catalog=catalog,
+        negative_rules=negative_rules,
+        generated_at=generated_at,
+    )
+    core_applicability = _build_core_optimization_applicability(
+        catalog=catalog,
+        negative_rules=negative_rules,
+        run_facts=run_facts,
+        slo_summary_rows=slo_summary_rows,
+        repair_gate=repair_gate,
+        generated_at=generated_at,
+    )
+    experiment_stage = _build_experiment_stage(
+        diagnosis_payload=diagnosis_payload,
+        deployability_repairs=deployability_repairs,
+        repair_gate=repair_gate,
+        generated_at=generated_at,
+    )
+    optimization_story = _build_optimization_story_v2(
+        diagnosis_payload=diagnosis_payload,
+        deployability_repairs=deployability_repairs,
+        repair_gate=repair_gate,
+        core_applicability=core_applicability,
+        experiment_stage=experiment_stage,
+        generated_at=generated_at,
+    )
     return {
         "diagnosis": diagnosis_payload,
         "optimization_options": options_payload,
         "apply_plan": apply_plan,
         "story": story,
+        "deployability_repairs": deployability_repairs,
+        "repair_gate": repair_gate,
+        "core_optimization_catalog": core_catalog,
+        "core_optimization_applicability": core_applicability,
+        "experiment_stage": experiment_stage,
+        "optimization_story": optimization_story,
     }
 
 
@@ -1007,12 +1084,669 @@ def _build_story(
     }
 
 
+def _option_index(options_payload: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    index: dict[str, list[dict[str, Any]]] = {}
+    for slo_id, options in cast(
+        dict[str, list[dict[str, Any]]],
+        options_payload["options_by_failed_slo"],
+    ).items():
+        for option in options:
+            item = dict(option)
+            item["source_failed_slo_id"] = slo_id
+            index.setdefault(str(option["optimization_id"]), []).append(item)
+    return index
+
+
+def _rejection_index(options_payload: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    index: dict[str, list[dict[str, Any]]] = {}
+    for slo_id, rejections in cast(
+        dict[str, list[dict[str, Any]]],
+        options_payload["rejected_optimizations_by_failed_slo"],
+    ).items():
+        for rejection in rejections:
+            item = dict(rejection)
+            item["source_failed_slo_id"] = slo_id
+            index.setdefault(str(rejection["optimization_id"]), []).append(item)
+    return index
+
+
+def _affected_slos_for_options(
+    *,
+    options: list[dict[str, Any]],
+    failed_slos_by_id: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    affected: dict[str, dict[str, Any]] = {}
+    for option in options:
+        slo_id = str(option["source_failed_slo_id"])
+        failed = failed_slos_by_id[slo_id]
+        affected[slo_id] = {
+            "slo_id": slo_id,
+            "metric_id": failed["metric_id"],
+            "metric_label": failed["metric_label"],
+            "target": failed["target"],
+            "observed": failed["observed"],
+            "bottleneck_id": failed["bottleneck"]["id"],
+        }
+    return sorted(affected.values(), key=lambda item: str(item["slo_id"]))
+
+
+def _repair_state(
+    *,
+    options: list[dict[str, Any]],
+    rejections: list[dict[str, Any]],
+) -> tuple[str, str]:
+    if options:
+        return (
+            "required_for_failed_deployability_slo",
+            "Selected by existing diagnosis for measured Main_Inference_V1 failed SLOs.",
+        )
+    if rejections:
+        first = rejections[0]
+        if first.get("negative_rule_triggered"):
+            return (
+                "blocked_by_negative_rule",
+                str(first.get("reason_rejected") or "Blocked by negative-rule filtering."),
+            )
+        return (
+            "available_supporting_repair_not_selected",
+            str(first.get("reason_rejected") or "Not selected by this diagnosis."),
+        )
+    return (
+        "available_supporting_repair_not_selected",
+        "Cataloged as a deployability repair, but not selected by this Main_Inference diagnosis.",
+    )
+
+
+def _build_deployability_repairs(
+    *,
+    diagnosis_payload: dict[str, Any],
+    options_payload: dict[str, Any],
+    apply_plan: dict[str, Any],
+    catalog: dict[str, OptimizationDefinition],
+    generated_at: str,
+) -> dict[str, Any]:
+    option_lookup = _option_index(options_payload)
+    rejection_lookup = _rejection_index(options_payload)
+    failed_slos_by_id = {
+        str(item["slo_id"]): item
+        for item in cast(list[dict[str, Any]], diagnosis_payload["failed_slos"])
+    }
+    plans_by_id = {
+        str(plan["optimization_id"]): plan
+        for plan in cast(list[dict[str, Any]], apply_plan["plans"])
+    }
+    repairs: list[dict[str, Any]] = []
+    for repair_id in DEPLOYABILITY_REPAIR_IDS:
+        definition = catalog[repair_id]
+        options = option_lookup.get(repair_id, [])
+        rejections = rejection_lookup.get(repair_id, [])
+        state, reason = _repair_state(options=options, rejections=rejections)
+        plan = plans_by_id.get(repair_id)
+        repairs.append(
+            {
+                "repair_id": repair_id,
+                "display_name": _display_name(repair_id),
+                "track": "deployability_repairs",
+                "state": state,
+                "selectable_now": state == "required_for_failed_deployability_slo",
+                "definition": definition.description,
+                "why_it_is_a_repair": (
+                    "This changes prompt, evidence, repair, or escalation behavior needed "
+                    "to make failed quality/safety SLOs deployable before core throughput "
+                    "or latency experiments are allowed."
+                ),
+                "why_it_applies": reason,
+                "affected_failed_slos": _affected_slos_for_options(
+                    options=options,
+                    failed_slos_by_id=failed_slos_by_id,
+                ),
+                "exact_changes": (
+                    list(plan["exact_changes"])
+                    if plan
+                    else _exact_changes_for_optimization(repair_id)
+                ),
+                "hold_constant": (
+                    list(plan["hold_constant"])
+                    if plan
+                    else [
+                        "gold data",
+                        "evaluator semantics",
+                        "source Main_Inference_V1 artifacts",
+                        "dataset split",
+                    ]
+                ),
+                "implementation_status": definition.implementation_status,
+                "application_method": definition.application_method,
+                "requires_gpu_or_api_rerun": bool(
+                    (plan or {}).get("requires_gpu_rerun")
+                    or (plan or {}).get("requires_api_rerun")
+                    or options
+                ),
+                "expected_improvement": _expected_improvement(definition),
+                "expected_tradeoffs": list(definition.may_hurt),
+                "risks": {
+                    "quality_risk": definition.quality_risk,
+                    "cost_risk": definition.cost_risk,
+                    "safety_notes": list(definition.experiment_safety_notes),
+                },
+                "source_catalog": "configs/optimization_catalog.yaml",
+            }
+        )
+    required = [
+        repair for repair in repairs if repair["state"] == "required_for_failed_deployability_slo"
+    ]
+    return {
+        "run_id": RUN_ID,
+        "generated_at_utc": generated_at,
+        "status": "UI_DEPLOYABILITY_REPAIRS_READY",
+        "result_type": "planned",
+        "inference_executed": False,
+        "track": "deployability_repairs",
+        "principle": (
+            "Repair failed quality and safety SLOs before claiming a deployable system or "
+            "starting core inference optimization."
+        ),
+        "repairs": repairs,
+        "required_repair_ids": [str(repair["repair_id"]) for repair in required],
+        "required_repair_count": len(required),
+        "ui_guardrails": [
+            "Show these as repair plans, not core inference optimizations.",
+            "Do not combine repair validation with core optimization claims.",
+            "Do not create Optimized_Inference_V1 from this payload.",
+        ],
+    }
+
+
+def _status_from_verdict(verdict: object) -> str:
+    return "PASS" if verdict == "PASS" or verdict == "COMPLETED" else "FAIL"
+
+
+def _build_repair_gate(
+    *,
+    diagnosis_payload: dict[str, Any],
+    slo_report: dict[str, Any],
+    scorecard_rows: list[dict[str, str]],
+    generated_at: str,
+    experiment_root: Path,
+) -> dict[str, Any]:
+    checks: list[dict[str, Any]] = [
+        {
+            "check_id": "main_inference_measured",
+            "label": "Main_Inference_V1 completed",
+            "status": _status_from_verdict(slo_report.get("benchmark_execution_verdict")),
+            "observed": slo_report.get("benchmark_execution_verdict"),
+            "target": "COMPLETED",
+            "source_artifact": "main_inference_v1_slo_report.json",
+        },
+        {
+            "check_id": "quality_slo",
+            "label": "Quality SLO",
+            "status": _status_from_verdict(slo_report.get("quality_slo_verdict")),
+            "observed": slo_report.get("quality_slo_verdict"),
+            "target": "PASS",
+            "source_artifact": "main_inference_v1_slo_report.json",
+        },
+        {
+            "check_id": "safety_slo",
+            "label": "Safety SLO",
+            "status": _status_from_verdict(slo_report.get("safety_slo_verdict")),
+            "observed": slo_report.get("safety_slo_verdict"),
+            "target": "PASS",
+            "source_artifact": "main_inference_v1_slo_report.json",
+        },
+        {
+            "check_id": "runtime_slo",
+            "label": "Runtime SLO",
+            "status": _status_from_verdict(slo_report.get("runtime_slo_verdict")),
+            "observed": slo_report.get("runtime_slo_verdict"),
+            "target": "PASS",
+            "source_artifact": "main_inference_v1_slo_report.json",
+        },
+        {
+            "check_id": "cost_slo",
+            "label": "Cost SLO",
+            "status": _status_from_verdict(slo_report.get("cost_slo_verdict")),
+            "observed": slo_report.get("cost_slo_verdict"),
+            "target": "PASS",
+            "source_artifact": "main_inference_v1_slo_report.json",
+        },
+    ]
+    for row in scorecard_rows:
+        checks.append(
+            {
+                "check_id": f"scorecard.{row['slo_metric'].lower().replace(' ', '_')}",
+                "label": row["slo_metric"],
+                "status": row["status"],
+                "observed": row["observed_main_inference_v1_value"],
+                "target": row["target"],
+                "difference": row["difference"],
+                "source_artifact": "main_inference_v1_slo_scorecard.csv",
+            }
+        )
+    optimized_root = experiment_root.parent.parent / "optimized/optimized_inference_v1"
+    optimized_scorecard = optimized_root / "processed/optimized_inference_v1_slo_scorecard.csv"
+    optimized_report = optimized_root / "processed/optimized_inference_v1_slo_report.json"
+    optimized_status = (
+        "PASS" if optimized_scorecard.exists() and optimized_report.exists() else "NOT_MEASURED"
+    )
+    checks.append(
+        {
+            "check_id": "optimized_repair_validation_artifacts",
+            "label": "Measured repair validation artifacts",
+            "status": optimized_status,
+            "observed": "present" if optimized_status == "PASS" else "missing",
+            "target": (
+                "optimized_inference_v1_slo_report.json and "
+                "optimized_inference_v1_slo_scorecard.csv"
+            ),
+            "source_artifact": _display_path(optimized_root),
+        }
+    )
+    statuses = [str(check["status"]) for check in checks]
+    if "MISSING_CONFIGURATION" in statuses:
+        gate_status = "MISSING_CONFIGURATION"
+    elif "NOT_MEASURED" in statuses:
+        gate_status = "NOT_MEASURED"
+    elif "FAIL" in statuses:
+        gate_status = "FAIL"
+    else:
+        gate_status = "PASS"
+    failed_slos = cast(list[dict[str, Any]], diagnosis_payload["failed_slos"])
+    return {
+        "run_id": RUN_ID,
+        "generated_at_utc": generated_at,
+        "status": "UI_REPAIR_GATE_READY",
+        "result_type": "planned",
+        "gate_name": "deployability_repair_validation_gate",
+        "gate_status": gate_status,
+        "core_optimization_eligible": gate_status == "PASS",
+        "checks": checks,
+        "failed_slo_ids": [str(item["slo_id"]) for item in failed_slos],
+        "failed_slo_count": len(failed_slos),
+        "minimum_not_optimal_principle": (
+            "A PASS means the measured value cleared the configured minimum target. It does "
+            "not mean the system is optimally served for latency, throughput, GPU "
+            "utilization, or cost."
+        ),
+        "criteria": [
+            "Use the existing repo SLO targets and scorecard semantics.",
+            "Quality and safety must pass before deployability is claimed.",
+            "Runtime and cost must remain passing in the measured repaired result.",
+            "No tolerance or regression budget is invented by this UI layer.",
+        ],
+        "blocking_reason": (
+            "Main_Inference_V1 failed quality and safety, and a measured repaired artifact "
+            "set is not present yet."
+            if gate_status != "PASS"
+            else "All repair-gate checks passed."
+        ),
+    }
+
+
+def _definition_payload(definition: OptimizationDefinition) -> dict[str, Any]:
+    return {
+        "optimization_id": definition.id,
+        "display_name": _display_name(definition.id),
+        "category": definition.category,
+        "definition": definition.description,
+        "mechanism": definition.application_method,
+        "affected_metrics": list(definition.improves),
+        "possible_regressions": list(definition.may_hurt),
+        "required_engines": list(definition.required_engines),
+        "required_hardware": list(definition.required_hardware),
+        "compatible_memory_modes": list(definition.compatible_memory_modes),
+        "incompatible_memory_modes": list(definition.incompatible_memory_modes),
+        "compatible_bottlenecks": list(definition.compatible_bottlenecks),
+        "implementation_status": definition.implementation_status,
+        "current_project_support": definition.current_project_support,
+        "expected_improvement": _expected_improvement(definition),
+        "quality_risk": definition.quality_risk,
+        "cost_risk": definition.cost_risk,
+        "experiment_safety_notes": list(definition.experiment_safety_notes),
+    }
+
+
+def _build_core_optimization_catalog(
+    *,
+    catalog: dict[str, OptimizationDefinition],
+    negative_rules: dict[str, OptimizationNegativeRule],
+    generated_at: str,
+) -> dict[str, Any]:
+    negative_by_optimization: dict[str, list[dict[str, Any]]] = {}
+    for rule in negative_rules.values():
+        for optimization_id in rule.optimization_ids:
+            negative_by_optimization.setdefault(optimization_id, []).append(
+                {
+                    "rule_id": rule.id,
+                    "when_not_to_use": list(rule.when_not_to_use),
+                }
+            )
+    optimizations: list[dict[str, Any]] = []
+    for definition in catalog.values():
+        if definition.id in DEPLOYABILITY_REPAIR_IDS:
+            continue
+        payload = _definition_payload(definition)
+        payload.update(
+            {
+                "track": "core_inference_optimizations",
+                "negative_rules": negative_by_optimization.get(definition.id, []),
+                "visible_when_locked": True,
+                "selectable_before_repair_gate": False,
+            }
+        )
+        optimizations.append(payload)
+    return {
+        "run_id": RUN_ID,
+        "generated_at_utc": generated_at,
+        "status": "UI_CORE_OPTIMIZATION_CATALOG_READY",
+        "result_type": "planned",
+        "track": "core_inference_optimizations",
+        "principle": (
+            "Core optimization improves the serving behavior of a deployable system. It can "
+            "still be inspected before repairs, but it is not selectable for the champion "
+            "optimized run until repair validation passes."
+        ),
+        "optimizations": sorted(optimizations, key=lambda item: str(item["optimization_id"])),
+        "optimization_count": len(optimizations),
+    }
+
+
+def _row_hardware_capabilities(row: dict[str, str]) -> set[str]:
+    capabilities = {"provider_managed"} if row.get("backend_type") == "api_provider" else {"gpu"}
+    if row.get("backend_type") == "self_hosted_gpu":
+        capabilities.add("a100_sxm_80gb")
+        capabilities.add("runpod")
+    return capabilities
+
+
+def _compatible_contexts_for_definition(
+    *,
+    definition: OptimizationDefinition,
+    slo_summary_rows: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    contexts: list[dict[str, Any]] = []
+    for row in slo_summary_rows:
+        memory_mode = str(row.get("memory_mode") or "")
+        engine = str(row.get("engine") or "")
+        if (
+            definition.compatible_memory_modes
+            and memory_mode not in definition.compatible_memory_modes
+        ):
+            continue
+        if memory_mode in definition.incompatible_memory_modes:
+            continue
+        if definition.required_engines and engine not in definition.required_engines:
+            continue
+        if set(definition.required_hardware) - _row_hardware_capabilities(row):
+            continue
+        contexts.append(_context_for_row(row))
+    return contexts
+
+
+def _build_core_optimization_applicability(
+    *,
+    catalog: dict[str, OptimizationDefinition],
+    negative_rules: dict[str, OptimizationNegativeRule],
+    run_facts: dict[str, Any],
+    slo_summary_rows: list[dict[str, str]],
+    repair_gate: dict[str, Any],
+    generated_at: str,
+) -> dict[str, Any]:
+    repair_gate_passed = repair_gate["gate_status"] == "PASS"
+    states: list[dict[str, Any]] = []
+    core_context = {
+        "slo_id": f"{RUN_ID}.core_optimization_gate",
+        "metric_id": "core_optimization_gate",
+        "metric_label": "Core optimization gate",
+        "bottleneck": {"id": "post_deployability_optimization"},
+    }
+    for definition in catalog.values():
+        if definition.id in DEPLOYABILITY_REPAIR_IDS:
+            continue
+        negative_checks = _negative_rule_checks(
+            definition.id,
+            definition=definition,
+            rules=negative_rules,
+            run_facts=run_facts,
+            failed_slo=core_context,
+        )
+        triggered = _triggered_negative_checks(negative_checks)
+        contexts = _compatible_contexts_for_definition(
+            definition=definition,
+            slo_summary_rows=slo_summary_rows,
+        )
+        if definition.id in BASELINE_ACTIVE_CORE_CAPABILITIES:
+            state = "already_measured_in_baseline"
+            selectable = False
+            reason = (
+                "This capability was already present in the measured vLLM/SGLang baseline "
+                "path, so it is educational evidence rather than a new selectable change."
+            )
+        elif triggered:
+            state = "blocked_by_negative_rule"
+            selectable = False
+            reason = "Blocked by negative-rule filtering: " + "; ".join(
+                str(item["condition"]) for item in triggered
+            )
+        elif not repair_gate_passed:
+            state = "locked_until_deployability_repair_validated"
+            selectable = False
+            reason = (
+                "Core optimization is locked until quality and safety repairs have a "
+                "measured PASS repair gate."
+            )
+        elif definition.implementation_status == "planned":
+            state = "planned_not_ready"
+            selectable = False
+            reason = "Cataloged for future work, but not ready for a live optimized run."
+        elif not contexts:
+            state = "not_compatible_with_measured_matrix"
+            selectable = False
+            reason = "No measured Main_Inference config matches the catalog compatibility metadata."
+        else:
+            state = "eligible_after_repair_gate"
+            selectable = True
+            reason = "Compatible with the measured matrix and no negative rule is triggered."
+        states.append(
+            {
+                **_definition_payload(definition),
+                "track": "core_inference_optimizations",
+                "state": state,
+                "selectable_now": selectable,
+                "reason": reason,
+                "requires_gpu_or_api_rerun": selectable or state in CORE_LOCKED_STATES,
+                "compatible_config_count": len(contexts),
+                "compatible_engines": sorted({str(item["engine"]) for item in contexts}),
+                "compatible_memory_modes": sorted({str(item["memory_mode"]) for item in contexts}),
+                "compatible_hardware": sorted({str(item["hardware"]) for item in contexts}),
+                "compatible_models": sorted({str(item["model_alias"]) for item in contexts}),
+                "negative_rule_checks": negative_checks,
+                "negative_rule_triggered": triggered[0]["rule_id"] if triggered else None,
+            }
+        )
+    state_names = sorted({str(item["state"]) for item in states})
+    return {
+        "run_id": RUN_ID,
+        "generated_at_utc": generated_at,
+        "status": "UI_CORE_OPTIMIZATION_APPLICABILITY_READY",
+        "result_type": "planned",
+        "track": "core_inference_optimizations",
+        "repair_gate_status": repair_gate["gate_status"],
+        "core_optimization_eligible": repair_gate["core_optimization_eligible"],
+        "states": sorted(
+            states,
+            key=lambda item: (str(item["category"]), str(item["optimization_id"])),
+        ),
+        "state_counts": {
+            state: sum(1 for item in states if item["state"] == state) for state in state_names
+        },
+        "ui_guardrails": [
+            "Show every core optimization as educational catalog content.",
+            "Disable core optimization selection until the repair gate passes.",
+            "Explain each disabled state with the negative rule or stage gate that caused it.",
+            "Do not present core optimization as the fix for failed quality/safety SLOs.",
+        ],
+    }
+
+
+def _build_experiment_stage(
+    *,
+    diagnosis_payload: dict[str, Any],
+    deployability_repairs: dict[str, Any],
+    repair_gate: dict[str, Any],
+    generated_at: str,
+) -> dict[str, Any]:
+    failed_count = int(diagnosis_payload["failed_slo_count"])
+    repair_required = failed_count > 0
+    repair_planned = int(deployability_repairs["required_repair_count"]) > 0
+    repair_validated = repair_gate["gate_status"] == "PASS"
+    statuses = {
+        "MAIN_INFERENCE_MEASURED": "complete",
+        "DEPLOYABILITY_REPAIR_REQUIRED": "complete" if repair_required else "not_required",
+        "DEPLOYABILITY_REPAIR_PLANNED": (
+            "current" if repair_planned and not repair_validated else "blocked"
+        ),
+        "DEPLOYABILITY_REPAIR_VALIDATED": "complete" if repair_validated else "blocked",
+        "CORE_OPTIMIZATION_ELIGIBLE": "available" if repair_validated else "blocked",
+        "CORE_OPTIMIZATION_PLANNED": "blocked",
+        "OPTIMIZED_INFERENCE_READY": "blocked",
+    }
+    current_stage = (
+        "DEPLOYABILITY_REPAIR_PLANNED"
+        if repair_required and repair_planned and not repair_validated
+        else "CORE_OPTIMIZATION_ELIGIBLE"
+        if repair_validated
+        else "MAIN_INFERENCE_MEASURED"
+    )
+    return {
+        "run_id": RUN_ID,
+        "generated_at_utc": generated_at,
+        "status": "UI_EXPERIMENT_STAGE_READY",
+        "result_type": "planned",
+        "current_stage": current_stage,
+        "stage_sequence": [
+            {
+                "stage": stage,
+                "state": statuses[stage],
+                "description": _stage_description(stage),
+            }
+            for stage in STAGE_SEQUENCE
+        ],
+        "gates": {
+            "failed_slo_count": failed_count,
+            "repair_required": repair_required,
+            "repair_plan_available": repair_planned,
+            "repair_gate_status": repair_gate["gate_status"],
+            "core_optimization_eligible": repair_validated,
+            "optimized_inference_ready": False,
+        },
+    }
+
+
+def _stage_description(stage: str) -> str:
+    descriptions = {
+        "MAIN_INFERENCE_MEASURED": "Official Main_Inference_V1 artifacts are present.",
+        "DEPLOYABILITY_REPAIR_REQUIRED": (
+            "Quality and safety failed, so repair work comes before core optimization."
+        ),
+        "DEPLOYABILITY_REPAIR_PLANNED": (
+            "A deterministic plan-only repair track exists for the failed SLOs."
+        ),
+        "DEPLOYABILITY_REPAIR_VALIDATED": (
+            "A measured repaired run must prove quality, safety, runtime, and cost gates pass."
+        ),
+        "CORE_OPTIMIZATION_ELIGIBLE": (
+            "Only after repair validation can latency, throughput, memory, and cost strategies "
+            "be selected for the champion optimized run."
+        ),
+        "CORE_OPTIMIZATION_PLANNED": "A controlled core optimization recipe is selected.",
+        "OPTIMIZED_INFERENCE_READY": "Optimized_Inference_V1 artifacts are present and comparable.",
+    }
+    return descriptions[stage]
+
+
+def _build_optimization_story_v2(
+    *,
+    diagnosis_payload: dict[str, Any],
+    deployability_repairs: dict[str, Any],
+    repair_gate: dict[str, Any],
+    core_applicability: dict[str, Any],
+    experiment_stage: dict[str, Any],
+    generated_at: str,
+) -> dict[str, Any]:
+    return {
+        "run_id": RUN_ID,
+        "generated_at_utc": generated_at,
+        "status": "UI_OPTIMIZATION_STORY_V2_READY",
+        "result_type": "planned",
+        "title": "Two-Track Inference Optimization Story",
+        "summary": (
+            "Main_Inference_V1 proves the system can run at scale, but it cannot be optimized "
+            "as a deployable product until failed quality and safety SLOs are repaired. The "
+            "platform therefore teaches optimization in two stages: mandatory deployability "
+            "repairs first, core inference optimization second."
+        ),
+        "principles": [
+            "Passing an SLO means the configured minimum was met, not that serving is optimal.",
+            "Failed deployability SLOs produce repair plans, not throughput tuning recipes.",
+            "Core optimizations remain visible for education but locked until repair validation.",
+            "Every selectable option must be backed by catalog compatibility and negative rules.",
+        ],
+        "interaction_flow": [
+            {
+                "step": "Inspect failed SLOs",
+                "user_action": "Click a failed quality or safety SLO.",
+                "system_response": (
+                    "Show target, observed value, severity, bottleneck, and evidence."
+                ),
+            },
+            {
+                "step": "Plan deployability repair",
+                "user_action": "Select repair-track changes only.",
+                "system_response": (
+                    "Show exact changes and constants held fixed for a measured repair rerun."
+                ),
+            },
+            {
+                "step": "Validate repair gate",
+                "user_action": "Replay or inspect measured repaired artifacts when available.",
+                "system_response": (
+                    "PASS/FAIL/NOT_MEASURED gate decides whether core optimization is allowed."
+                ),
+            },
+            {
+                "step": "Study core optimizations",
+                "user_action": (
+                    "Open serving, concurrency, model, hardware, and context strategies."
+                ),
+                "system_response": (
+                    "Show why each is locked, blocked, already active, planned, or eligible."
+                ),
+            },
+            {
+                "step": "Prepare optimized experiment",
+                "user_action": (
+                    "After repair validation, select one controlled core optimization recipe."
+                ),
+                "system_response": (
+                    "Create a plan only; no inference is executed by the UI replay layer."
+                ),
+            },
+        ],
+        "current_stage": experiment_stage["current_stage"],
+        "repair_gate_status": repair_gate["gate_status"],
+        "failed_slo_count": diagnosis_payload["failed_slo_count"],
+        "required_repair_count": deployability_repairs["required_repair_count"],
+        "core_state_counts": core_applicability["state_counts"],
+    }
+
+
 def write_ui_artifacts(
     *,
     experiment_root: str | Path = DEFAULT_EXPERIMENT_ROOT,
     output_root: str | Path = DEFAULT_OUTPUT_ROOT,
 ) -> dict[str, Path]:
-    """Write the four Main_Inference UI optimization artifacts."""
+    """Write Main_Inference UI optimization artifacts."""
 
     payloads = build_ui_diagnosis(experiment_root=experiment_root)
     output = _repo_path(output_root)
@@ -1021,6 +1755,16 @@ def write_ui_artifacts(
         "optimization_options": output / "main_inference_v1_ui_optimization_options.json",
         "apply_plan": output / "main_inference_v1_ui_apply_plan.json",
         "story": output / "main_inference_v1_ui_story.json",
+        "deployability_repairs": (output / "main_inference_v1_ui_deployability_repairs.json"),
+        "repair_gate": output / "main_inference_v1_ui_repair_gate.json",
+        "core_optimization_catalog": (
+            output / "main_inference_v1_ui_core_optimization_catalog.json"
+        ),
+        "core_optimization_applicability": (
+            output / "main_inference_v1_ui_core_optimization_applicability.json"
+        ),
+        "experiment_stage": output / "main_inference_v1_ui_experiment_stage.json",
+        "optimization_story": output / "main_inference_v1_ui_optimization_story.json",
     }
     for key, path in paths.items():
         _write_json(path, cast(dict[str, Any], payloads[key]))

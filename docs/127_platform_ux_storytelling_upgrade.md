@@ -16,6 +16,11 @@ The platform remains a read-only replay product. It does not run GPUs, start
 vLLM or SGLang, call API providers, mutate `Main_Inference_V1` artifacts, or
 fabricate optimized results.
 
+The later Optimization Lab route is governed by the two-track architecture in
+`docs/128_inference_optimization_two_track_architecture.md`: deployability
+repairs first, then core inference optimization after measured repair
+validation.
+
 ## Design Goal
 
 The goal is to make the completed inference engineering project understandable
@@ -295,4 +300,3 @@ UI smoke routes:
   exports that can be added in a later pass.
 - Screenshots should be regenerated after the local browser server is running
   cleanly.
-
