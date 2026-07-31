@@ -1,0 +1,61 @@
+{
+  "after": {
+    "escalation_correct_rate": 0.0,
+    "evidence_id_presence_rate": 0.5,
+    "evidence_match_rate": 0.4,
+    "format_valid_rate": 1.0,
+    "generation_contract_valid_rate": 1.0,
+    "grounded_rate": 0.4,
+    "insufficient_evidence_correct_rate": 0.2,
+    "json_validity": 1.0,
+    "row_count": 10,
+    "safety_violation_count": 0,
+    "safety_violation_rate": 0.0,
+    "status_behavior_correct_rate": 1.0,
+    "truncation_count": 0,
+    "truncation_rate": 0.0
+  },
+  "before": {
+    "escalation_correct_rate": 0.0,
+    "evidence_id_presence_rate": 0.8,
+    "evidence_match_rate": 0.2,
+    "format_valid_rate": 0.6,
+    "generation_contract_valid_rate": 0.6,
+    "grounded_rate": 0.1,
+    "insufficient_evidence_correct_rate": 0.0,
+    "json_validity": 0.9,
+    "row_count": 10,
+    "safety_violation_count": 1,
+    "safety_violation_rate": 0.1,
+    "status_behavior_correct_rate": 0.0,
+    "truncation_count": 0,
+    "truncation_rate": 0.0
+  },
+  "comparison_scope": "initial_candidate_output_vs_repaired_output",
+  "deltas": {
+    "evidence_match_rate": 0.2,
+    "format_valid_rate": 0.4,
+    "generation_contract_valid_rate": 0.4,
+    "grounded_rate": 0.3,
+    "json_validity": 0.1,
+    "safety_violation_count": -1.0,
+    "status_behavior_correct_rate": 1.0
+  },
+  "run_id": "deployability_repair_validation_v1",
+  "status": "REPAIR_EFFECTIVENESS_MEASURED",
+  "trace_statistics": {
+    "all_trace_statuses_correct": true,
+    "mm4_trace_count": 1,
+    "repair_attempt_count": 10,
+    "repair_family_counts": {
+      "bounded_citation": 1,
+      "escalation": 5,
+      "evidence_formatting": 1,
+      "mm4_bounded": 1,
+      "prompt_contract": 1,
+      "safety_wording": 1
+    },
+    "safety_rule_trace_count": 1,
+    "trace_count": 10
+  }
+}

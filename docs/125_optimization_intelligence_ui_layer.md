@@ -11,8 +11,9 @@ It does not run inference, mutate benchmark results, or create
 Update: the product-facing layer now uses the two-track architecture described
 in `docs/128_inference_optimization_two_track_architecture.md`.
 Deployability repairs and core inference optimizations are separate stages.
-The repair gate is currently `NOT_MEASURED`, so core strategies are visible for
-education but are not selectable for a champion optimized run.
+The targeted repair gate is currently `SAMPLE_VALIDATED`, so core strategies
+are now eligible for planning. Full deployability still requires measured
+`Optimized_Inference_V1` artifacts.
 
 ## Purpose
 
@@ -56,6 +57,10 @@ It consumes only saved Main_Inference artifacts:
 - `experiments/main/main_inference_v1/processed/main_inference_v1_context_preflight_report.json`
 - `experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json`
 
+It also reads the targeted repair-validation gate when present:
+
+- `experiments/repairs/deployability_repair_validation_v1/processed/deployability_repair_validation_v1_validation_gate_report.json`
+
 ## Generated UI Artifacts
 
 The script writes:
@@ -89,8 +94,9 @@ Click failed SLO
 -> show explanation, tradeoffs, risk, and implementation status
 -> optional rejected-option audit
 -> repair action produces a plan only
--> repair gate remains NOT_MEASURED until measured repaired artifacts exist
--> core optimization catalog remains visible but locked or rule-filtered
+-> targeted repair gate is SAMPLE_VALIDATED after deterministic sample validation
+-> core optimization catalog becomes eligible for planning, while negative
+   rules still block invalid strategies
 -> saved optimized artifacts can be replayed later when they exist
 ```
 
@@ -135,7 +141,7 @@ should not present them as selectable dropdown options.
 `main_inference_v1_ui_apply_plan.json` is retained for compatibility and is
 plan-only. The corrected product flow should use the repair plan and repair
 gate contracts first, then create a separate core optimization experiment plan
-only after measured repair validation passes.
+only after targeted repair validation passes.
 
 It explicitly does not:
 
@@ -165,6 +171,10 @@ Frontend behavior:
 - Show `rejected_optimizations_by_failed_slo[slo_id]` only in an audit drawer.
 - Load `main_inference_v1_ui_apply_plan.json` when the user clicks apply.
 - Load `main_inference_v1_ui_story.json` for the guided explanation page.
+- Load `main_inference_v1_ui_repair_gate.json` to distinguish
+  `SAMPLE_VALIDATED` from full-scale optimized `PASS`.
+- Load `main_inference_v1_ui_core_optimization_applicability.json` for
+  post-repair core strategy eligibility.
 
 Backend behavior:
 

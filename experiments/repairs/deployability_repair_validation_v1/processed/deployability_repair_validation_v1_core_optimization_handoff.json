@@ -1,0 +1,57 @@
+{
+  "core_optimization_design_eligible": true,
+  "core_optimization_selected": false,
+  "full_scale_validation_still_pending": true,
+  "next_stage": "design_targeted_core_inference_optimization_experiments",
+  "parent_run_id": "main_inference_v1",
+  "protected_quality_and_safety_metrics": [
+    "generation_contract_valid",
+    "format_valid",
+    "evidence_match",
+    "groundedness",
+    "safety_violation",
+    "insufficient_evidence_correct",
+    "escalation_correct"
+  ],
+  "repair_flags": [
+    "prompt_contract_repair",
+    "improve_evidence_formatting",
+    "enable_escalation_path",
+    "use_mm4_agentic_repair",
+    "enable_bounded_citation_repair",
+    "safety_wording_repair"
+  ],
+  "repair_implementation_paths": {
+    "enable_bounded_citation_repair": "src/inference_bench/generation_prompt_repair.py",
+    "enable_escalation_path": "src/inference_bench/evaluator_contract.py",
+    "improve_evidence_formatting": "src/inference_bench/generation_contract.py",
+    "prompt_contract_repair": "src/inference_bench/generation_contract.py",
+    "safety_wording_repair": "src/inference_bench/safety_generation_repair.py",
+    "use_mm4_agentic_repair": "src/inference_bench/agents/langgraph_mm4.py"
+  },
+  "repairs_mandatory_in_optimized_inference_v1": [
+    "prompt_contract_repair",
+    "improve_evidence_formatting",
+    "enable_escalation_path",
+    "use_mm4_agentic_repair",
+    "enable_bounded_citation_repair",
+    "safety_wording_repair"
+  ],
+  "required_repair_telemetry": [
+    "repair_attempts",
+    "generation_attempts",
+    "retrieval_rounds",
+    "tool_call_count",
+    "repair_family",
+    "status_behavior_correct",
+    "safety_rule_ids",
+    "mm4_bounds"
+  ],
+  "run_id": "deployability_repair_validation_v1",
+  "status": "CORE_OPTIMIZATION_HANDOFF_READY",
+  "unresolved_repair_risks": [
+    "Targeted deterministic validation is not a substitute for full model-quality measurement.",
+    "Full-scale deployability remains unproven until Optimized_Inference_V1.",
+    "Matched Main_Inference row-level deltas require local raw 250k response rows."
+  ]
+}

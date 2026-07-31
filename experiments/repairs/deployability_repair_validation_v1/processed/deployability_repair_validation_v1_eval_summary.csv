@@ -1,0 +1,2 @@
+row_count,json_validity,generation_contract_valid_rate,format_valid_rate,evidence_id_presence_rate,evidence_match_rate,grounded_rate,safety_violation_count,safety_violation_rate,insufficient_evidence_correct_rate,escalation_correct_rate,status_behavior_correct_rate,truncation_count,truncation_rate
+10,1.0,1.0,1.0,0.5,0.4,0.4,0,0.0,0.2,0.0,1.0,0,0.0

@@ -1,0 +1,205 @@
+{
+  "checks": [
+    {
+      "check_id": "deterministic_sample_has_no_duplicate_prompt_ids",
+      "details": {
+        "duplicate_prompt_ids": []
+      },
+      "gate": "A_STATIC_VALIDATION",
+      "passed": true
+    },
+    {
+      "check_id": "all_repair_families_represented",
+      "details": {
+        "repair_families": [
+          "bounded_citation",
+          "escalation",
+          "evidence_formatting",
+          "mm4_bounded",
+          "prompt_contract",
+          "safety_wording"
+        ]
+      },
+      "gate": "A_STATIC_VALIDATION",
+      "passed": true
+    },
+    {
+      "check_id": "no_gold_leakage_in_rendered_prompts",
+      "details": {
+        "blocked_markers": [
+          "required_doc_ids",
+          "required_evidence_ids",
+          "required_chunk_ids",
+          "reference_answer",
+          "must_include",
+          "must_not_include",
+          "citation_aliases:"
+        ],
+        "failure_count": 0,
+        "failures": [],
+        "passed": true
+      },
+      "gate": "A_STATIC_VALIDATION",
+      "passed": true
+    },
+    {
+      "check_id": "evidence_alias_integrity",
+      "details": {
+        "failure_count": 0,
+        "failures": [],
+        "passed": true
+      },
+      "gate": "A_STATIC_VALIDATION",
+      "passed": true
+    },
+    {
+      "check_id": "held_constant_core_settings",
+      "details": {
+        "changed_only": [
+          "prompt contract repair logic",
+          "visible evidence formatting/whitelist logic",
+          "bounded citation repair logic",
+          "safety wording repair logic",
+          "escalation/status routing logic",
+          "MM4 bounded repair validation"
+        ],
+        "core_inference_optimization_activated": false,
+        "core_optimization_flags": [],
+        "held_constant": {
+          "attention_kernels": "not changed",
+          "backend_routes": "unchanged; no provider call executed",
+          "concurrency": "not tuned",
+          "continuous_batching": "not changed",
+          "cuda_graphs": "not changed",
+          "engines": "vLLM, SGLang, and API route represented as logic-only tracks",
+          "evaluator_semantics": "unchanged evaluator_contract.py",
+          "hardware_selection": "no A100 rental or live GPU serving change",
+          "kv_cache": "not tuned",
+          "models": "preserved from selected Main_Inference_V1 tracks",
+          "precision": "not changed",
+          "prefix_caching": "not enabled",
+          "quantization": "not enabled",
+          "scheduler": "not tuned",
+          "slo_targets": "unchanged",
+          "speculative_decoding": "not enabled"
+        },
+        "run_id": "deployability_repair_validation_v1",
+        "status": "CORE_INFERENCE_VARIABLES_HELD_CONSTANT"
+      },
+      "gate": "A_STATIC_VALIDATION",
+      "passed": true
+    },
+    {
+      "check_id": "each_repair_path_executed",
+      "details": {
+        "result_count": 10
+      },
+      "gate": "B_SMALL_REPAIR_SMOKE",
+      "passed": true
+    },
+    {
+      "check_id": "repair_traces_written_for_each_row",
+      "details": {
+        "result_count": 10,
+        "trace_count": 10
+      },
+      "gate": "B_SMALL_REPAIR_SMOKE",
+      "passed": true
+    },
+    {
+      "check_id": "mm4_bounds_respected",
+      "details": {
+        "mm4_contract": {
+          "approved_tools": [
+            "retrieve_context",
+            "assemble_context",
+            "validate_generation_contract",
+            "validate_evidence",
+            "validate_safety",
+            "repair_generation_once",
+            "escalate"
+          ],
+          "contract_stage": "phase4_active",
+          "hard_limits": {
+            "corpus_scope": "project_corpus_only",
+            "max_generation_attempts": 2,
+            "max_repair_attempts": 1,
+            "max_retrieval_rounds": 2,
+            "max_tool_calls": 3,
+            "no_arbitrary_tools": true,
+            "no_internet": true
+          },
+          "memory_mode": "mm4_bounded_agentic",
+          "no_model_inference_triggered": false,
+          "workflow_steps": [
+            "classify_task",
+            "plan_retrieval",
+            "retrieve_context",
+            "assemble_context",
+            "generate_answer",
+            "validate_output",
+            "repair_once",
+            "finalize_or_escalate"
+          ]
+        }
+      },
+      "gate": "B_SMALL_REPAIR_SMOKE",
+      "passed": true
+    },
+    {
+      "check_id": "no_inference_serving_optimization_activated",
+      "details": {
+        "core_optimization_flags": []
+      },
+      "gate": "B_SMALL_REPAIR_SMOKE",
+      "passed": true
+    },
+    {
+      "check_id": "all_rows_completed",
+      "details": {
+        "completed_count": 10,
+        "expected_count": 10
+      },
+      "gate": "C_TARGETED_MEASURED_VALIDATION",
+      "passed": true
+    },
+    {
+      "check_id": "status_behavior_validated",
+      "details": {
+        "escalation_correct_rate": 0.0,
+        "evidence_id_presence_rate": 0.5,
+        "evidence_match_rate": 0.4,
+        "format_valid_rate": 1.0,
+        "generation_contract_valid_rate": 1.0,
+        "grounded_rate": 0.4,
+        "insufficient_evidence_correct_rate": 0.2,
+        "json_validity": 1.0,
+        "row_count": 10,
+        "safety_violation_count": 0,
+        "safety_violation_rate": 0.0,
+        "status_behavior_correct_rate": 1.0,
+        "truncation_count": 0,
+        "truncation_rate": 0.0
+      },
+      "gate": "C_TARGETED_MEASURED_VALIDATION",
+      "passed": true
+    },
+    {
+      "check_id": "safety_not_weakened",
+      "details": {
+        "safety_violation_count": 0
+      },
+      "gate": "C_TARGETED_MEASURED_VALIDATION",
+      "passed": true
+    }
+  ],
+  "core_optimization_eligible": true,
+  "deployability_repair_full_scale_validated": false,
+  "deployability_repair_implemented": true,
+  "deployability_repair_sample_validated": true,
+  "final_deployability_verdict": "pending Optimized_Inference_V1",
+  "message": "Repair implementation validated on a targeted sample. Full-scale deployability will be measured in Optimized_Inference_V1.",
+  "parent_run_id": "main_inference_v1",
+  "run_id": "deployability_repair_validation_v1",
+  "status": "SAMPLE_VALIDATED"
+}

@@ -1,5 +1,5 @@
 {
-  "blocking_reason": "Main_Inference_V1 failed quality and safety, and a measured repaired artifact set is not present yet.",
+  "blocking_reason": "Targeted deployability repair validation passed, so core optimization planning can begin. Full deployability remains pending Optimized_Inference_V1.",
   "checks": [
     {
       "check_id": "main_inference_measured",
@@ -114,20 +114,30 @@
       "target": "repo configured cost SLO"
     },
     {
-      "check_id": "optimized_repair_validation_artifacts",
-      "label": "Measured repair validation artifacts",
+      "check_id": "targeted_repair_sample_validation_artifacts",
+      "label": "Targeted deployability repair sample",
+      "observed": "SAMPLE_VALIDATED",
+      "source_artifact": "experiments/repairs/deployability_repair_validation_v1/processed/deployability_repair_validation_v1_validation_gate_report.json",
+      "status": "PASS",
+      "target": "SAMPLE_VALIDATED"
+    },
+    {
+      "check_id": "optimized_full_scale_validation_artifacts",
+      "label": "Full-scale optimized validation artifacts",
       "observed": "missing",
       "source_artifact": "experiments/optimized/optimized_inference_v1",
       "status": "NOT_MEASURED",
       "target": "optimized_inference_v1_slo_report.json and optimized_inference_v1_slo_scorecard.csv"
     }
   ],
-  "core_optimization_eligible": false,
+  "core_optimization_eligible": true,
   "criteria": [
     "Use the existing repo SLO targets and scorecard semantics.",
     "Quality and safety must pass before deployability is claimed.",
     "Runtime and cost must remain passing in the measured repaired result.",
-    "No tolerance or regression budget is invented by this UI layer."
+    "No tolerance or regression budget is invented by this UI layer.",
+    "A targeted SAMPLE_VALIDATED gate permits core optimization planning only.",
+    "Full deployability still requires Optimized_Inference_V1 artifacts."
   ],
   "failed_slo_count": 5,
   "failed_slo_ids": [
@@ -137,11 +147,15 @@
     "main_inference_v1.groundedness",
     "main_inference_v1.safety_findings"
   ],
+  "full_scale_deployability_validated": false,
+  "full_scale_repair_validated": false,
   "gate_name": "deployability_repair_validation_gate",
-  "gate_status": "NOT_MEASURED",
-  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
+  "gate_status": "SAMPLE_VALIDATED",
+  "generated_at_utc": "2026-07-31T20:22:16.491417+00:00",
   "minimum_not_optimal_principle": "A PASS means the measured value cleared the configured minimum target. It does not mean the system is optimally served for latency, throughput, GPU utilization, or cost.",
   "result_type": "planned",
   "run_id": "main_inference_v1",
-  "status": "UI_REPAIR_GATE_READY"
+  "status": "UI_REPAIR_GATE_READY",
+  "targeted_repair_sample_source": "experiments/repairs/deployability_repair_validation_v1/processed/deployability_repair_validation_v1_validation_gate_report.json",
+  "targeted_repair_sample_validated": true
 }

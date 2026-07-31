@@ -23,8 +23,8 @@ The product currently supports:
 - a measured Main_Inference replay using saved progress and telemetry events;
 - a two-track Optimization Lab separating mandatory deployability repairs from
   core inference-engineering strategies;
-- a repair gate that keeps core optimization locked until measured repair
-  validation exists;
+- a targeted repair gate that now marks deployability repair implementation as
+  `SAMPLE_VALIDATED` and unlocks core optimization planning;
 - visible disabled states for negative-rule-blocked strategies;
 - plan-only apply/apply-all behavior;
 - honest planned placeholders for `Optimized_Inference_V1`, comparison, and
@@ -117,7 +117,7 @@ Endpoints:
 | `GET /api/main-inference/diagnosis` | Existing UI diagnosis/options/apply/story artifacts |
 | `GET /api/optimizations/mandatory-repairs` | Legacy mandatory repair plan lane |
 | `GET /api/optimizations/deployability-repairs` | Two-track deployability repair contract |
-| `GET /api/optimizations/repair-gate` | PASS/FAIL/NOT_MEASURED/MISSING_CONFIGURATION repair gate |
+| `GET /api/optimizations/repair-gate` | SAMPLE_VALIDATED/PASS/FAIL/NOT_MEASURED/MISSING_CONFIGURATION repair gate |
 | `GET /api/optimizations/core-catalog` | Legacy full optimization catalog for education |
 | `GET /api/optimizations/core-catalog-v2` | Core optimization catalog without repair-track IDs |
 | `GET /api/optimizations/applicability` | Legacy optimization states and negative-rule blocks |

@@ -131,4 +131,4 @@ def test_a100_artifact_paths_remain_generated_outputs() -> None:
     ]
 
     for path in expected:
-        assert str(path).startswith(("data/generated/", "results/"))
+        assert path.as_posix().startswith(("data/generated/", "results/"))

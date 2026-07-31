@@ -90,8 +90,9 @@ Examples:
 - prefill/decode disaggregation
 - TensorRT-LLM as a planned future engine
 
-These remain visible in the UI for education, but most are not selectable while
-the deployability repair gate is not validated.
+These remain visible in the UI for education. They become selectable for
+planning after the targeted deployability repair sample is validated, but they
+still do not create an optimized result until a measured optimized run exists.
 
 ## Stage Gate
 
@@ -100,7 +101,7 @@ The product exposes these stages:
 1. `MAIN_INFERENCE_MEASURED`
 2. `DEPLOYABILITY_REPAIR_REQUIRED`
 3. `DEPLOYABILITY_REPAIR_PLANNED`
-4. `DEPLOYABILITY_REPAIR_VALIDATED`
+4. `DEPLOYABILITY_REPAIR_SAMPLE_VALIDATED`
 5. `CORE_OPTIMIZATION_ELIGIBLE`
 6. `CORE_OPTIMIZATION_PLANNED`
 7. `OPTIMIZED_INFERENCE_READY`
@@ -108,17 +109,18 @@ The product exposes these stages:
 The current repo state is:
 
 ```text
-DEPLOYABILITY_REPAIR_PLANNED
+CORE_OPTIMIZATION_ELIGIBLE
 ```
 
 The repair gate is:
 
 ```text
-NOT_MEASURED
+SAMPLE_VALIDATED
 ```
 
-That means the product can explain the repair plan and core optimization
-catalog, but it cannot claim `Optimized_Inference_V1` exists.
+That means the targeted deployability repair sample passed and core inference
+optimization planning can begin. It still cannot claim
+`Optimized_Inference_V1` exists.
 
 ## UI Contracts
 
@@ -148,13 +150,14 @@ The Optimization Lab should tell this story:
 4. UI shows only repair actions that apply to the failed deployability SLOs.
 5. User creates a repair plan.
 6. UI explains this is plan-only and no inference is executed.
-7. Repair gate remains `NOT_MEASURED` until measured repaired artifacts exist.
+7. Targeted repair gate is `SAMPLE_VALIDATED` when the deterministic repair
+   sample passes.
 8. User opens the core optimization track.
 9. UI shows every core technique as educational content.
 10. UI disables core techniques that are locked by stage gates or negative
     rules.
-11. After repair validation passes, the product can allow a controlled core
-    optimization experiment plan.
+11. After targeted repair validation passes, the product can allow a
+    controlled core optimization experiment plan.
 
 There is no single combined "Apply All Optimizations" action at this stage.
 
@@ -193,13 +196,16 @@ The existing endpoints remain available for compatibility.
 
 ## Implementation Boundary
 
-This architecture does not:
+This architecture and validation layer do not:
 
 - execute inference;
 - mutate Main_Inference results;
 - fabricate optimized metrics;
 - create `Optimized_Inference_V1`;
-- authorize core optimization before repair validation.
+- authorize full deployability before `Optimized_Inference_V1`.
 
-The next measured work is a repair-validation run. Core inference optimization
-comes after that gate passes.
+The targeted repair-validation sample now exists at
+`experiments/repairs/deployability_repair_validation_v1/` and is documented in
+`docs/129_deployability_repair_validation_v1.md`. The next measured work is a
+core inference optimization experiment plan followed by a separately measured
+`Optimized_Inference_V1`.

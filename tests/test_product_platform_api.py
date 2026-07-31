@@ -78,9 +78,11 @@ def test_product_platform_exposes_two_track_optimization_contracts() -> None:
 
     assert repairs["track"] == "deployability_repairs"
     assert repairs["required_repair_count"] == 4
-    assert repair_gate["gate_status"] == "NOT_MEASURED"
-    assert repair_gate["core_optimization_eligible"] is False
-    assert stage["current_stage"] == "DEPLOYABILITY_REPAIR_PLANNED"
+    assert repair_gate["gate_status"] == "SAMPLE_VALIDATED"
+    assert repair_gate["targeted_repair_sample_validated"] is True
+    assert repair_gate["full_scale_repair_validated"] is False
+    assert repair_gate["core_optimization_eligible"] is True
+    assert stage["current_stage"] == "CORE_OPTIMIZATION_ELIGIBLE"
     assert core["state_counts"]["blocked_by_negative_rule"] >= 1
 
 
@@ -100,7 +102,7 @@ def test_fastapi_health_and_results_are_read_only() -> None:
 
     repair_gate = client.get("/api/optimizations/repair-gate")
     assert repair_gate.status_code == 200
-    assert repair_gate.json()["data"]["gate_status"] == "NOT_MEASURED"
+    assert repair_gate.json()["data"]["gate_status"] == "SAMPLE_VALIDATED"
 
 
 def test_fastapi_allows_frontend_origin_for_api_fetches() -> None:

@@ -1,0 +1,91 @@
+{
+  "audit_rows": [
+    {
+      "active_during_main_inference_v1": "partially",
+      "catalog_entry": "configs/optimization_catalog.yaml",
+      "feature_flag": "bounded repair decision/retry prompt",
+      "implementation_path": "src/inference_bench/generation_contract.py; src/inference_bench/generation_prompt_repair.py",
+      "missing_before_this_phase": "first-class deployability repair validation artifact",
+      "protected_metrics": [
+        "json_validity",
+        "generation_contract_valid",
+        "format_valid"
+      ],
+      "repair_id": "prompt_contract_repair",
+      "runner_wiring": "B4/B5/B7 and phase2 targeted repair scripts",
+      "status": "executable"
+    },
+    {
+      "active_during_main_inference_v1": "partially",
+      "catalog_entry": "configs/optimization_catalog.yaml",
+      "feature_flag": "visible E-label whitelist",
+      "implementation_path": "src/inference_bench/generation_contract.py",
+      "missing_before_this_phase": "sample proof and no-gold-leak report",
+      "protected_metrics": [
+        "evidence_match",
+        "groundedness"
+      ],
+      "repair_id": "improve_evidence_formatting",
+      "runner_wiring": "E1-E5 rendering and phase2 repair prompt insertion",
+      "status": "partially_executable"
+    },
+    {
+      "active_during_main_inference_v1": "partially",
+      "catalog_entry": "configs/optimization_catalog.yaml",
+      "feature_flag": "expected_status and final_status",
+      "implementation_path": "src/inference_bench/evaluator_contract.py; src/inference_bench/agents/tools.py",
+      "missing_before_this_phase": "targeted insufficient/out-of-scope/escalation traces",
+      "protected_metrics": [
+        "safety_violation",
+        "status_behavior_correct"
+      ],
+      "repair_id": "enable_escalation_path",
+      "runner_wiring": "MM4 escalate tool and evaluator expected-status fields",
+      "status": "executable_for_status_routing"
+    },
+    {
+      "active_during_main_inference_v1": "included_as_memory_mode_not_deployability_fix",
+      "catalog_entry": "configs/optimization_catalog.yaml",
+      "feature_flag": "mm4_bounded_agentic",
+      "implementation_path": "src/inference_bench/agents/langgraph_mm4.py",
+      "missing_before_this_phase": "repair validation trace under new run identity",
+      "protected_metrics": [
+        "repair_attempts",
+        "tool_call_count",
+        "trace_completeness"
+      ],
+      "repair_id": "use_mm4_agentic_repair",
+      "runner_wiring": "bounded LangGraph graph with injected generator",
+      "status": "executable"
+    },
+    {
+      "active_during_main_inference_v1": "partially",
+      "catalog_entry": "configs/optimization_catalog.yaml",
+      "feature_flag": "allowed evidence labels from citation aliases",
+      "implementation_path": "src/inference_bench/generation_prompt_repair.py; src/inference_bench/grounding_repair.py",
+      "missing_before_this_phase": "invalid citation rejection trace",
+      "protected_metrics": [
+        "evidence_match",
+        "groundedness"
+      ],
+      "repair_id": "enable_bounded_citation_repair",
+      "runner_wiring": "citation repair decision and prompt rendering",
+      "status": "executable"
+    },
+    {
+      "active_during_main_inference_v1": "partially",
+      "catalog_entry": "repo-supported helper, not standalone catalog id",
+      "feature_flag": "stable safety rule IDs and gold must-not terms",
+      "implementation_path": "src/inference_bench/safety_generation_repair.py",
+      "missing_before_this_phase": "safety-boundary targeted sample trace",
+      "protected_metrics": [
+        "safety_violation"
+      ],
+      "repair_id": "safety_wording_repair",
+      "runner_wiring": "B5/phase2 targeted repair scripts",
+      "status": "executable"
+    }
+  ],
+  "run_id": "deployability_repair_validation_v1",
+  "status": "REPAIR_IMPLEMENTATION_AUDIT_COMPLETE"
+}

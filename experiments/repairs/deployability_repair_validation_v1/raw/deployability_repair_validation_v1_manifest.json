@@ -1,0 +1,100 @@
+{
+  "artifact_paths": {
+    "eval_report": "experiments\\repairs\\deployability_repair_validation_v1\\processed\\deployability_repair_validation_v1_eval_report.json",
+    "raw_results": "experiments\\repairs\\deployability_repair_validation_v1\\raw\\deployability_repair_validation_v1_results.jsonl",
+    "repair_traces": "experiments\\repairs\\deployability_repair_validation_v1\\raw\\deployability_repair_validation_v1_repair_traces.jsonl",
+    "root": "experiments\\repairs\\deployability_repair_validation_v1",
+    "validation_gate": "experiments\\repairs\\deployability_repair_validation_v1\\processed\\deployability_repair_validation_v1_validation_gate_report.json"
+  },
+  "backend_type": [
+    "api_provider",
+    "self_hosted_gpu"
+  ],
+  "completed_at": "2026-07-31T20:22:10.473664+00:00",
+  "completed_count": 10,
+  "concurrency": "logic_only_no_live_serving",
+  "config_hash": "eb99b519333de2a5e5b09b23fa08d0e07035b72bf78347315e5aca22af800a37",
+  "config_id": "deployability_repair_validation_v1",
+  "core_optimization_flags": [],
+  "dataset_workload_hash": "c2ed679c1260a3f13a487242c55605252754ac68b7c8f6955989d810df0d540c",
+  "engine": [
+    "api_provider",
+    "sglang",
+    "vllm"
+  ],
+  "evaluator_version": "src/inference_bench/evaluator_contract.py",
+  "execution_device": {
+    "a100_selected": false,
+    "fallback_reason": "nvidia-smi is unavailable",
+    "fallback_used": true,
+    "gpu_names": [],
+    "inference_executed": false,
+    "model_used_for_validation": "deterministic_repair_logic_no_model_inference",
+    "rtx_available": false,
+    "runtime_selected": "deterministic_cpu_repair_validation",
+    "selected_device": "cpu"
+  },
+  "expected_count": 10,
+  "expected_status_families_tested": [
+    "answer",
+    "escalate",
+    "insufficient_evidence",
+    "out_of_scope",
+    "safety_boundary"
+  ],
+  "failed_count": 0,
+  "git_commit": "0824321d7b5662cd748674fa6bf74063ec451aac",
+  "hardware": [
+    "a100_sxm_80gb",
+    "provider_managed"
+  ],
+  "inference_executed": false,
+  "llm_used": false,
+  "memory_mode": [
+    "mm2_hybrid_top5",
+    "mm4_bounded_agentic"
+  ],
+  "model_alias": [
+    "model3_7b",
+    "model6_gated"
+  ],
+  "model_id": [
+    "Qwen/Qwen2.5-7B-Instruct",
+    "meta-llama/Llama-3.1-8B-Instruct"
+  ],
+  "parent_run_id": "main_inference_v1",
+  "prompt_count": 10,
+  "provider": [
+    "huggingface"
+  ],
+  "repair_flags": [
+    "prompt_contract_repair",
+    "improve_evidence_formatting",
+    "enable_escalation_path",
+    "use_mm4_agentic_repair",
+    "enable_bounded_citation_repair",
+    "safety_wording_repair"
+  ],
+  "run_id": "deployability_repair_validation_v1",
+  "run_type": "deployability_repair_validation",
+  "runtime": [
+    "api_provider_route",
+    "sglang",
+    "vllm"
+  ],
+  "sample_selection_method": "deterministic_case_specs",
+  "slo_profile_path": "configs/slo_profiles.yaml",
+  "slo_target_path": "configs/slo_targets.yaml",
+  "started_at": "2026-07-31T20:22:09.389970+00:00",
+  "status": "completed",
+  "traffic_profile": "targeted_repair_validation",
+  "updated_at": "2026-07-31T20:22:10.473664+00:00",
+  "validation_scope": "targeted_sample",
+  "vertical": [
+    "airline",
+    "finance",
+    "healthcare_admin",
+    "research_ai",
+    "retail"
+  ]
+}

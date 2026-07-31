@@ -114,7 +114,7 @@ def load_probe_environment(
 ) -> dict[str, str]:
     """Load environment variables, .env entries, and supported credential aliases."""
 
-    loaded = dict(base_environment or os.environ)
+    loaded = dict(os.environ if base_environment is None else base_environment)
     path = Path(env_path)
     if not path.exists():
         return _canonicalize_environment_aliases(loaded)

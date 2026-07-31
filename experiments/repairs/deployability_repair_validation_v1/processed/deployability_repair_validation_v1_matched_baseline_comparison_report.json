@@ -1,0 +1,12 @@
+{
+  "deltas": null,
+  "matched_row_count": 0,
+  "message": "Matching raw Main_Inference_V1 response rows are not present in this local repo checkout, so no before/after row-level delta is claimed.",
+  "parent_run_id": "main_inference_v1",
+  "paths_checked": [
+    "experiments\\main\\main_inference_v1\\raw\\main_inference_v1_results.jsonl",
+    "experiments\\main\\main_inference_v1\\raw\\main_inference_v1_results.jsonl.gz"
+  ],
+  "run_id": "deployability_repair_validation_v1",
+  "status": "MATCHED_BASELINE_RAW_UNAVAILABLE"
+}

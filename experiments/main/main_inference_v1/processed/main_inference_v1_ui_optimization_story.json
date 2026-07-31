@@ -2,11 +2,12 @@
   "core_state_counts": {
     "already_measured_in_baseline": 2,
     "blocked_by_negative_rule": 19,
-    "locked_until_deployability_repair_validated": 31
+    "eligible_after_repair_gate": 19,
+    "planned_not_ready": 12
   },
-  "current_stage": "DEPLOYABILITY_REPAIR_PLANNED",
+  "current_stage": "CORE_OPTIMIZATION_ELIGIBLE",
   "failed_slo_count": 5,
-  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
+  "generated_at_utc": "2026-07-31T20:22:16.491417+00:00",
   "interaction_flow": [
     {
       "step": "Inspect failed SLOs",
@@ -40,7 +41,7 @@
     "Core optimizations remain visible for education but locked until repair validation.",
     "Every selectable option must be backed by catalog compatibility and negative rules."
   ],
-  "repair_gate_status": "NOT_MEASURED",
+  "repair_gate_status": "SAMPLE_VALIDATED",
   "required_repair_count": 4,
   "result_type": "planned",
   "run_id": "main_inference_v1",

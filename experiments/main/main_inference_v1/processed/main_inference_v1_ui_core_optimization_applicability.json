@@ -1,13 +1,14 @@
 {
-  "core_optimization_eligible": false,
-  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
-  "repair_gate_status": "NOT_MEASURED",
+  "core_optimization_eligible": true,
+  "generated_at_utc": "2026-07-31T20:22:16.491417+00:00",
+  "repair_gate_status": "SAMPLE_VALIDATED",
   "result_type": "planned",
   "run_id": "main_inference_v1",
   "state_counts": {
     "already_measured_in_baseline": 2,
     "blocked_by_negative_rule": 19,
-    "locked_until_deployability_repair_validated": 31
+    "eligible_after_repair_gate": 19,
+    "planned_not_ready": 12
   },
   "states": [
     {
@@ -77,12 +78,12 @@
         "cost"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -152,12 +153,12 @@
         "cost"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -223,12 +224,12 @@
         "memory"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -390,12 +391,12 @@
         "memory"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -557,12 +558,12 @@
         "memory"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -628,12 +629,12 @@
         "memory"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -1248,14 +1249,14 @@
         "reproducibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [
         "multi_gpu"
       ],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -1306,14 +1307,14 @@
         "reproducibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [
         "multi_gpu"
       ],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -1880,12 +1881,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -2066,12 +2067,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -2243,12 +2244,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -2314,12 +2315,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -2385,12 +2386,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -2456,12 +2457,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -2527,12 +2528,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -2598,12 +2599,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -2669,12 +2670,12 @@
         "cost"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -2822,7 +2823,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "vllm",
         "sglang"
@@ -2831,8 +2832,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3108,7 +3109,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "huggingface",
         "vllm",
@@ -3118,8 +3119,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3188,7 +3189,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [
         "huggingface",
         "vllm",
@@ -3199,7 +3200,7 @@
       ],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -3267,7 +3268,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "huggingface",
         "sglang",
@@ -3277,8 +3278,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3346,7 +3347,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "vllm"
       ],
@@ -3354,8 +3355,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3424,7 +3425,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "vllm",
         "sglang"
@@ -3433,8 +3434,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3503,7 +3504,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "vllm",
         "sglang"
@@ -3512,8 +3513,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3581,7 +3582,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "vllm"
       ],
@@ -3589,8 +3590,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3659,7 +3660,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "vllm",
         "sglang"
@@ -3668,8 +3669,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3738,7 +3739,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [
         "huggingface",
         "vllm",
@@ -3748,8 +3749,8 @@
         "gpu"
       ],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -3818,7 +3819,7 @@
         "compatibility"
       ],
       "quality_risk": "low",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [
         "vllm",
         "sglang"
@@ -3828,7 +3829,7 @@
       ],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -4067,12 +4068,12 @@
         "quality"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Cataloged for future work, but not ready for a live optimized run.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
       "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "state": "planned_not_ready",
       "track": "core_inference_optimizations"
     },
     {
@@ -4237,12 +4238,12 @@
         "quality"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     },
     {
@@ -4309,12 +4310,12 @@
         "quality"
       ],
       "quality_risk": "medium",
-      "reason": "Core optimization is locked until quality and safety repairs have a measured PASS repair gate.",
+      "reason": "Compatible with the measured matrix and no negative rule is triggered.",
       "required_engines": [],
       "required_hardware": [],
       "requires_gpu_or_api_rerun": true,
-      "selectable_now": false,
-      "state": "locked_until_deployability_repair_validated",
+      "selectable_now": true,
+      "state": "eligible_after_repair_gate",
       "track": "core_inference_optimizations"
     }
   ],
@@ -4322,7 +4323,7 @@
   "track": "core_inference_optimizations",
   "ui_guardrails": [
     "Show every core optimization as educational catalog content.",
-    "Disable core optimization selection until the repair gate passes.",
+    "Disable core optimization selection until targeted repair validation passes.",
     "Explain each disabled state with the negative rule or stage gate that caused it.",
     "Do not present core optimization as the fix for failed quality/safety SLOs."
   ]

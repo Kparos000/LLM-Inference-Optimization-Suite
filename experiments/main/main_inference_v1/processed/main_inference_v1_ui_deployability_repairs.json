@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-31T16:36:15.532293+00:00",
+  "generated_at_utc": "2026-07-31T20:22:16.491417+00:00",
   "inference_executed": false,
   "principle": "Repair failed quality and safety SLOs before claiming a deployable system or starting core inference optimization.",
   "repairs": [

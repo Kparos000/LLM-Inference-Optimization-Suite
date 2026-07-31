@@ -113,10 +113,12 @@ The Optimization Lab uses a two-track architecture. Mandatory deployability
 repairs address failed quality and safety SLOs first. Core inference
 optimizations, such as prefix caching, scheduler tuning, concurrency, engine
 changes, quantization, and TensorRT-LLM planning, remain visible as educational
-catalog content but are locked for the champion optimized run until measured
-repair validation passes. The current repair gate is `NOT_MEASURED`. The
-architecture reference is
-`docs/128_inference_optimization_two_track_architecture.md`.
+catalog content and become eligible for planning only after repair validation.
+The targeted deployability repair sample is now `SAMPLE_VALIDATED`; full
+optimized deployability remains pending until `Optimized_Inference_V1` exists.
+The architecture references are
+`docs/128_inference_optimization_two_track_architecture.md` and
+`docs/129_deployability_repair_validation_v1.md`.
 
 The measured Baseline_Inference_V1 result is:
 

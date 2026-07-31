@@ -134,7 +134,7 @@ STAGE_SEQUENCE = (
     "MAIN_INFERENCE_MEASURED",
     "DEPLOYABILITY_REPAIR_REQUIRED",
     "DEPLOYABILITY_REPAIR_PLANNED",
-    "DEPLOYABILITY_REPAIR_VALIDATED",
+    "DEPLOYABILITY_REPAIR_SAMPLE_VALIDATED",
     "CORE_OPTIMIZATION_ELIGIBLE",
     "CORE_OPTIMIZATION_PLANNED",
     "OPTIMIZED_INFERENCE_READY",
@@ -1329,10 +1329,36 @@ def _build_repair_gate(
     optimized_status = (
         "PASS" if optimized_scorecard.exists() and optimized_report.exists() else "NOT_MEASURED"
     )
+    repair_root = experiment_root.parent.parent / "repairs/deployability_repair_validation_v1"
+    repair_validation_report = (
+        repair_root / "processed/deployability_repair_validation_v1_validation_gate_report.json"
+    )
+    targeted_repair_status = "NOT_MEASURED"
+    targeted_repair_observed: object = "missing"
+    targeted_repair_payload: dict[str, Any] = {}
+    if repair_validation_report.exists():
+        targeted_repair_payload = _read_json(repair_validation_report)
+        targeted_repair_status = (
+            "PASS"
+            if targeted_repair_payload.get("status") == "SAMPLE_VALIDATED"
+            and targeted_repair_payload.get("deployability_repair_sample_validated") is True
+            else "FAIL"
+        )
+        targeted_repair_observed = targeted_repair_payload.get("status")
     checks.append(
         {
-            "check_id": "optimized_repair_validation_artifacts",
-            "label": "Measured repair validation artifacts",
+            "check_id": "targeted_repair_sample_validation_artifacts",
+            "label": "Targeted deployability repair sample",
+            "status": targeted_repair_status,
+            "observed": targeted_repair_observed,
+            "target": "SAMPLE_VALIDATED",
+            "source_artifact": _display_path(repair_validation_report),
+        }
+    )
+    checks.append(
+        {
+            "check_id": "optimized_full_scale_validation_artifacts",
+            "label": "Full-scale optimized validation artifacts",
             "status": optimized_status,
             "observed": "present" if optimized_status == "PASS" else "missing",
             "target": (
@@ -1343,7 +1369,13 @@ def _build_repair_gate(
         }
     )
     statuses = [str(check["status"]) for check in checks]
-    if "MISSING_CONFIGURATION" in statuses:
+    targeted_sample_validated = targeted_repair_status == "PASS"
+    full_scale_repair_validated = optimized_status == "PASS"
+    if full_scale_repair_validated:
+        gate_status = "PASS"
+    elif targeted_sample_validated:
+        gate_status = "SAMPLE_VALIDATED"
+    elif "MISSING_CONFIGURATION" in statuses:
         gate_status = "MISSING_CONFIGURATION"
     elif "NOT_MEASURED" in statuses:
         gate_status = "NOT_MEASURED"
@@ -1359,7 +1391,11 @@ def _build_repair_gate(
         "result_type": "planned",
         "gate_name": "deployability_repair_validation_gate",
         "gate_status": gate_status,
-        "core_optimization_eligible": gate_status == "PASS",
+        "targeted_repair_sample_validated": targeted_sample_validated,
+        "full_scale_repair_validated": full_scale_repair_validated,
+        "full_scale_deployability_validated": full_scale_repair_validated,
+        "core_optimization_eligible": targeted_sample_validated or full_scale_repair_validated,
+        "targeted_repair_sample_source": _display_path(repair_validation_report),
         "checks": checks,
         "failed_slo_ids": [str(item["slo_id"]) for item in failed_slos],
         "failed_slo_count": len(failed_slos),
@@ -1373,14 +1409,27 @@ def _build_repair_gate(
             "Quality and safety must pass before deployability is claimed.",
             "Runtime and cost must remain passing in the measured repaired result.",
             "No tolerance or regression budget is invented by this UI layer.",
+            "A targeted SAMPLE_VALIDATED gate permits core optimization planning only.",
+            "Full deployability still requires Optimized_Inference_V1 artifacts.",
         ],
-        "blocking_reason": (
-            "Main_Inference_V1 failed quality and safety, and a measured repaired artifact "
-            "set is not present yet."
-            if gate_status != "PASS"
-            else "All repair-gate checks passed."
-        ),
+        "blocking_reason": _repair_gate_blocking_reason(gate_status),
     }
+
+
+def _repair_gate_blocking_reason(gate_status: str) -> str:
+    if gate_status == "PASS":
+        return "Full-scale optimized repair artifacts are present."
+    if gate_status == "SAMPLE_VALIDATED":
+        return (
+            "Targeted deployability repair validation passed, so core optimization planning "
+            "can begin. Full deployability remains pending Optimized_Inference_V1."
+        )
+    if gate_status == "NOT_MEASURED":
+        return (
+            "Main_Inference_V1 failed quality and safety, and targeted repair validation "
+            "artifacts are not present yet."
+        )
+    return "Deployability repair validation did not pass."
 
 
 def _definition_payload(definition: OptimizationDefinition) -> dict[str, Any]:
@@ -1492,7 +1541,7 @@ def _build_core_optimization_applicability(
     repair_gate: dict[str, Any],
     generated_at: str,
 ) -> dict[str, Any]:
-    repair_gate_passed = repair_gate["gate_status"] == "PASS"
+    repair_gate_passed = bool(repair_gate["core_optimization_eligible"])
     states: list[dict[str, Any]] = []
     core_context = {
         "slo_id": f"{RUN_ID}.core_optimization_gate",
@@ -1532,8 +1581,8 @@ def _build_core_optimization_applicability(
             state = "locked_until_deployability_repair_validated"
             selectable = False
             reason = (
-                "Core optimization is locked until quality and safety repairs have a "
-                "measured PASS repair gate."
+                "Core optimization is locked until targeted quality and safety repairs "
+                "have a measured sample validation gate."
             )
         elif definition.implementation_status == "planned":
             state = "planned_not_ready"
@@ -1582,7 +1631,7 @@ def _build_core_optimization_applicability(
         },
         "ui_guardrails": [
             "Show every core optimization as educational catalog content.",
-            "Disable core optimization selection until the repair gate passes.",
+            "Disable core optimization selection until targeted repair validation passes.",
             "Explain each disabled state with the negative rule or stage gate that caused it.",
             "Do not present core optimization as the fix for failed quality/safety SLOs.",
         ],
@@ -1599,23 +1648,24 @@ def _build_experiment_stage(
     failed_count = int(diagnosis_payload["failed_slo_count"])
     repair_required = failed_count > 0
     repair_planned = int(deployability_repairs["required_repair_count"]) > 0
-    repair_validated = repair_gate["gate_status"] == "PASS"
+    sample_validated = bool(repair_gate["core_optimization_eligible"])
+    full_scale_validated = bool(repair_gate.get("full_scale_repair_validated"))
     statuses = {
         "MAIN_INFERENCE_MEASURED": "complete",
         "DEPLOYABILITY_REPAIR_REQUIRED": "complete" if repair_required else "not_required",
         "DEPLOYABILITY_REPAIR_PLANNED": (
-            "current" if repair_planned and not repair_validated else "blocked"
+            "current" if repair_planned and not sample_validated else "complete"
         ),
-        "DEPLOYABILITY_REPAIR_VALIDATED": "complete" if repair_validated else "blocked",
-        "CORE_OPTIMIZATION_ELIGIBLE": "available" if repair_validated else "blocked",
+        "DEPLOYABILITY_REPAIR_SAMPLE_VALIDATED": ("complete" if sample_validated else "blocked"),
+        "CORE_OPTIMIZATION_ELIGIBLE": "available" if sample_validated else "blocked",
         "CORE_OPTIMIZATION_PLANNED": "blocked",
-        "OPTIMIZED_INFERENCE_READY": "blocked",
+        "OPTIMIZED_INFERENCE_READY": "complete" if full_scale_validated else "blocked",
     }
     current_stage = (
         "DEPLOYABILITY_REPAIR_PLANNED"
-        if repair_required and repair_planned and not repair_validated
+        if repair_required and repair_planned and not sample_validated
         else "CORE_OPTIMIZATION_ELIGIBLE"
-        if repair_validated
+        if sample_validated
         else "MAIN_INFERENCE_MEASURED"
     )
     return {
@@ -1637,8 +1687,9 @@ def _build_experiment_stage(
             "repair_required": repair_required,
             "repair_plan_available": repair_planned,
             "repair_gate_status": repair_gate["gate_status"],
-            "core_optimization_eligible": repair_validated,
-            "optimized_inference_ready": False,
+            "targeted_repair_sample_validated": sample_validated,
+            "core_optimization_eligible": sample_validated,
+            "optimized_inference_ready": full_scale_validated,
         },
     }
 
@@ -1652,8 +1703,9 @@ def _stage_description(stage: str) -> str:
         "DEPLOYABILITY_REPAIR_PLANNED": (
             "A deterministic plan-only repair track exists for the failed SLOs."
         ),
-        "DEPLOYABILITY_REPAIR_VALIDATED": (
-            "A measured repaired run must prove quality, safety, runtime, and cost gates pass."
+        "DEPLOYABILITY_REPAIR_SAMPLE_VALIDATED": (
+            "A targeted measured sample proves the repair logic can clear selected "
+            "deployability failure modes without changing Main_Inference_V1."
         ),
         "CORE_OPTIMIZATION_ELIGIBLE": (
             "Only after repair validation can latency, throughput, memory, and cost strategies "

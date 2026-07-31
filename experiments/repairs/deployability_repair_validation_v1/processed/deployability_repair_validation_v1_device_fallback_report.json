@@ -1,0 +1,11 @@
+{
+  "a100_selected": false,
+  "fallback_reason": "nvidia-smi is unavailable",
+  "fallback_used": true,
+  "gpu_names": [],
+  "inference_executed": false,
+  "model_used_for_validation": "deterministic_repair_logic_no_model_inference",
+  "rtx_available": false,
+  "runtime_selected": "deterministic_cpu_repair_validation",
+  "selected_device": "cpu"
+}

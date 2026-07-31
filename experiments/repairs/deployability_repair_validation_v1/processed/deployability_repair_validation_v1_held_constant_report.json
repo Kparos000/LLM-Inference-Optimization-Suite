@@ -1,0 +1,32 @@
+{
+  "changed_only": [
+    "prompt contract repair logic",
+    "visible evidence formatting/whitelist logic",
+    "bounded citation repair logic",
+    "safety wording repair logic",
+    "escalation/status routing logic",
+    "MM4 bounded repair validation"
+  ],
+  "core_inference_optimization_activated": false,
+  "core_optimization_flags": [],
+  "held_constant": {
+    "attention_kernels": "not changed",
+    "backend_routes": "unchanged; no provider call executed",
+    "concurrency": "not tuned",
+    "continuous_batching": "not changed",
+    "cuda_graphs": "not changed",
+    "engines": "vLLM, SGLang, and API route represented as logic-only tracks",
+    "evaluator_semantics": "unchanged evaluator_contract.py",
+    "hardware_selection": "no A100 rental or live GPU serving change",
+    "kv_cache": "not tuned",
+    "models": "preserved from selected Main_Inference_V1 tracks",
+    "precision": "not changed",
+    "prefix_caching": "not enabled",
+    "quantization": "not enabled",
+    "scheduler": "not tuned",
+    "slo_targets": "unchanged",
+    "speculative_decoding": "not enabled"
+  },
+  "run_id": "deployability_repair_validation_v1",
+  "status": "CORE_INFERENCE_VARIABLES_HELD_CONSTANT"
+}

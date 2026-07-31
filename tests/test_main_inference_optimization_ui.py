@@ -82,15 +82,18 @@ def test_two_track_taxonomy_separates_repairs_from_core_optimizations() -> None:
     assert "concurrency_sweep" in core_ids
 
 
-def test_repair_gate_blocks_core_optimization_until_measured_validation() -> None:
+def test_repair_gate_allows_core_planning_after_targeted_sample_validation() -> None:
     payload = build_ui_diagnosis()
     repair_gate = payload["repair_gate"]
     experiment_stage = payload["experiment_stage"]
 
-    assert repair_gate["gate_status"] == "NOT_MEASURED"
-    assert repair_gate["core_optimization_eligible"] is False
-    assert experiment_stage["current_stage"] == "DEPLOYABILITY_REPAIR_PLANNED"
-    assert experiment_stage["gates"]["core_optimization_eligible"] is False
+    assert repair_gate["gate_status"] == "SAMPLE_VALIDATED"
+    assert repair_gate["targeted_repair_sample_validated"] is True
+    assert repair_gate["full_scale_repair_validated"] is False
+    assert repair_gate["core_optimization_eligible"] is True
+    assert experiment_stage["current_stage"] == "CORE_OPTIMIZATION_ELIGIBLE"
+    assert experiment_stage["gates"]["targeted_repair_sample_validated"] is True
+    assert experiment_stage["gates"]["optimized_inference_ready"] is False
 
 
 def test_core_optimization_applicability_applies_negative_rules() -> None:
