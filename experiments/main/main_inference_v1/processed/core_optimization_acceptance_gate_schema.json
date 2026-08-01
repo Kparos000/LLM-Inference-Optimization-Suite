@@ -1,0 +1,39 @@
+{
+  "performance_metrics": [
+    "ttft",
+    "tpot",
+    "itl",
+    "e2e_latency",
+    "throughput",
+    "gpu_utilization",
+    "vram",
+    "cost",
+    "tokens_per_gpu_dollar"
+  ],
+  "protected_metrics": [
+    "json_validity",
+    "contract_validity",
+    "format_validity",
+    "evidence_match",
+    "groundedness",
+    "safety_findings",
+    "truncation",
+    "completion_failure_rate",
+    "escalation_behavior",
+    "mm4_trace_bounds"
+  ],
+  "regression_budget_policy": {
+    "note": "The repo has SLO targets, but no explicit one-factor regression budgets. This schema preserves a place for them without inventing values.",
+    "repo_explicit_one_factor_tolerances_present": false,
+    "schema_fields": [
+      "metric_name",
+      "baseline_value",
+      "candidate_value",
+      "target",
+      "allowed_regression",
+      "approval_required"
+    ]
+  },
+  "status": "SCHEMA_ONLY_NO_THRESHOLDS_INVENTED",
+  "version": 1
+}

@@ -116,6 +116,14 @@ SAMPLE_VALIDATED
 This means core inference optimization planning can begin. It does not mean the
 system is deployable, and it does not mean `Optimized_Inference_V1` exists.
 
+The subsequent planning audit is now saved in
+`docs/130_core_optimization_planning_baseline_capability_audit.md` with
+machine-readable outputs under `experiments/main/main_inference_v1/processed/`.
+That audit keeps the validated repair layer separate from core serving
+experiments such as prefix layout, scheduler/batch tuning, prefix-cache
+verification, KV-cache tuning, chunked prefill, quantization, and future
+TensorRT-LLM planning.
+
 ## Authoritative Artifacts
 
 | Artifact | Purpose |

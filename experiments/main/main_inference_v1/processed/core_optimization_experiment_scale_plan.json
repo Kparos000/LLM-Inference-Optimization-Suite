@@ -1,0 +1,85 @@
+{
+  "scales": [
+    {
+      "artifact_requirements": [
+        "planning reports",
+        "no measured inference outputs"
+      ],
+      "device": "cpu",
+      "memory_mode_coverage": "source workload plus processed matrix summaries",
+      "model_engine_coverage": "no live model",
+      "promotion_gate": "no leakage, deterministic outputs, reviewed plan",
+      "purpose": "Validate taxonomy, prefix reuse, prompt diff, and instrumentation plan.",
+      "request_count": 0,
+      "sampling_method": "deterministic full-workload metadata scan where local files exist",
+      "scale_id": "A_static_cpu_audit",
+      "telemetry": [
+        "static token estimates",
+        "prefix family counts"
+      ],
+      "vertical_coverage": "all five verticals"
+    },
+    {
+      "artifact_requirements": [
+        "manifest",
+        "raw results",
+        "telemetry",
+        "eval report"
+      ],
+      "device": "A100 only when execution is approved",
+      "memory_mode_coverage": "minimum mm2 plus targeted modes relevant to the factor",
+      "model_engine_coverage": "model3_7b on one selected engine per experiment",
+      "promotion_gate": "quality/safety gates pass and factor improves target metrics",
+      "purpose": "Measure one changed serving factor on a small representative sample.",
+      "request_count": "approval_required",
+      "sampling_method": "deterministic stratified by vertical, memory mode, and length bucket",
+      "scale_id": "B_targeted_one_factor_validation",
+      "telemetry": [
+        "factor-specific telemetry",
+        "quality/safety metrics"
+      ],
+      "vertical_coverage": "all five where feasible"
+    },
+    {
+      "artifact_requirements": [
+        "bundle manifest",
+        "comparison report",
+        "repair traces"
+      ],
+      "device": "A100",
+      "memory_mode_coverage": "candidate champion modes",
+      "model_engine_coverage": "selected champion route only",
+      "promotion_gate": "no gate failure and clear Pareto improvement",
+      "purpose": "Combine validated compatible factors before full run.",
+      "request_count": "approval_required",
+      "sampling_method": "deterministic larger sample preserving matrix shape",
+      "scale_id": "C_medium_candidate_bundle_validation",
+      "telemetry": [
+        "full runtime and factor-specific telemetry"
+      ],
+      "vertical_coverage": "all five"
+    },
+    {
+      "artifact_requirements": [
+        "optimized_inference_v1 complete artifact set"
+      ],
+      "device": "A100 or approved provider route",
+      "memory_mode_coverage": "selected champion configuration",
+      "model_engine_coverage": "approved champion",
+      "promotion_gate": "SLO pass and human approval",
+      "purpose": "Run final champion against official workload and evaluation framework.",
+      "request_count": 250000,
+      "sampling_method": "official full matrix workload",
+      "scale_id": "D_full_optimized_inference_v1",
+      "telemetry": [
+        "full manifest",
+        "checkpoint",
+        "GPU/API cost",
+        "SLO report"
+      ],
+      "vertical_coverage": "all five"
+    }
+  ],
+  "status": "SCALE_STRATEGY_PLANNED",
+  "version": 1
+}

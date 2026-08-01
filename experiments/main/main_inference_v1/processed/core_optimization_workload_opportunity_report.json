@@ -1,0 +1,243 @@
+{
+  "cache_hits_measured": false,
+  "chunked_prefill_opportunity": {
+    "evidence": "The workload contains long prompt/context buckets and mixed memory modes, but prefill chunk timing was not captured.",
+    "required_measurement": [
+      "prefill_time_ms",
+      "chunk_count",
+      "decode_interference",
+      "length_bucket_ttft"
+    ],
+    "state": "applicable_after_instrumentation"
+  },
+  "concurrency_scheduler_opportunity": {
+    "engine_metric_summary": {
+      "sglang": {
+        "by_concurrency": {
+          "16": {
+            "mean_e2e_latency_ms": 1441.7610476755585,
+            "mean_total_tokens_per_second": 599.6103649852206,
+            "mean_tpot_ms": 41.63566448187069,
+            "mean_ttft_ms": 141.47642750326546,
+            "row_count": 5
+          },
+          "32": {
+            "mean_e2e_latency_ms": 1943.6850408306036,
+            "mean_total_tokens_per_second": 461.19012184546347,
+            "mean_tpot_ms": 52.94020825422042,
+            "mean_ttft_ms": 294.0105111885536,
+            "row_count": 5
+          }
+        },
+        "completed_requests": 100000,
+        "mean_e2e_latency_ms": 1692.723044253081,
+        "mean_total_tokens_per_second": 530.400243415342,
+        "mean_tpot_ms": 47.28793636804556,
+        "mean_ttft_ms": 217.74346934590955,
+        "row_count": 10
+      },
+      "vllm": {
+        "by_concurrency": {
+          "16": {
+            "mean_e2e_latency_ms": 1309.7584877857657,
+            "mean_total_tokens_per_second": 666.7291288496377,
+            "mean_tpot_ms": 40.358556745794665,
+            "mean_ttft_ms": 134.38562614887954,
+            "row_count": 5
+          },
+          "32": {
+            "mean_e2e_latency_ms": 1825.9649648455638,
+            "mean_total_tokens_per_second": 492.6189878360793,
+            "mean_tpot_ms": 53.871876384368946,
+            "mean_ttft_ms": 266.70231757259927,
+            "row_count": 5
+          }
+        },
+        "completed_requests": 100000,
+        "mean_e2e_latency_ms": 1567.8617263156648,
+        "mean_total_tokens_per_second": 579.6740583428585,
+        "mean_tpot_ms": 47.11521656508181,
+        "mean_ttft_ms": 200.54397186073942,
+        "row_count": 10
+      }
+    },
+    "interpretation": "The saved comparison suggests c32 increased latency and reduced average tokens/sec versus c16 for both self-hosted engines. That points toward controlled scheduler/batch tuning, not a simple concurrency increase.",
+    "sglang_c32_minus_c16": {
+      "e2e_latency_ms": 501.9239931550451,
+      "tokens_per_second": -138.42024313975713,
+      "ttft_ms": 152.53408368528815
+    },
+    "vllm_c32_minus_c16": {
+      "e2e_latency_ms": 516.2064770597981,
+      "tokens_per_second": -174.1101410135584,
+      "ttft_ms": 132.31669142371973
+    }
+  },
+  "kv_cache_opportunity": {
+    "exact_kv_bytes_per_token": null,
+    "kv_block_telemetry_available": false,
+    "reason": "Model architecture, KV block counts, and engine cache occupancy were not recorded. Later experiments need KV telemetry before making cache claims.",
+    "vram_telemetry_available": true
+  },
+  "limitations": [
+    "No measured cache hits, cache evictions, or speculation acceptance are claimed.",
+    "Exact historical tokenizer state is unavailable; token counts are planning estimates.",
+    "Main raw 250k response rows are not required for this planning audit."
+  ],
+  "measured_cache_hits_available": false,
+  "prefix_cache_hit_rate": null,
+  "prefix_reuse_potential": {
+    "cache_hit_telemetry_available": false,
+    "common_prefix_tokens_first_2000_rows": 28,
+    "max_prefix_family_share": 1.0,
+    "measured_cache_hits": null,
+    "median_prefix_length_estimate": 28,
+    "method": "token-identical leading prefix using deterministic whitespace tokens",
+    "prefix_family_count": 1,
+    "top_prefix_families": [
+      {
+        "prefix_hash": "7b5a53fff5609eb2",
+        "request_count": 10000
+      }
+    ]
+  },
+  "prompt_context_length_distribution": {
+    "context_token_estimate": {
+      "buckets": {
+        "large_513_1024": 699,
+        "medium_257_512": 3019,
+        "small_1_256": 6282
+      },
+      "max": 1012,
+      "mean": 274.795,
+      "min": 116
+    },
+    "per_vertical": {
+      "airline": {
+        "mean_context_tokens": 221.0015,
+        "mean_prompt_tokens": 325.492,
+        "request_count": 2000
+      },
+      "finance": {
+        "mean_context_tokens": 264.116,
+        "mean_prompt_tokens": 373.577,
+        "request_count": 2000
+      },
+      "healthcare_admin": {
+        "mean_context_tokens": 204.0385,
+        "mean_prompt_tokens": 305.113,
+        "request_count": 2000
+      },
+      "research_ai": {
+        "mean_context_tokens": 402.563,
+        "mean_prompt_tokens": 540.843,
+        "request_count": 2000
+      },
+      "retail": {
+        "mean_context_tokens": 282.256,
+        "mean_prompt_tokens": 437.412,
+        "request_count": 2000
+      }
+    },
+    "prompt_token_estimate": {
+      "buckets": {
+        "long_1025_2048": 25,
+        "medium_513_1024": 1228,
+        "short_0_512": 8747
+      },
+      "max": 1139,
+      "mean": 396.4874,
+      "min": 208
+    }
+  },
+  "quantization_opportunity": {
+    "baseline_precision": "unknown",
+    "quantized_checkpoint_registered": false,
+    "reason": "Main_Inference quality/safety failed and no quantized Qwen2.5-7B checkpoint is registered in configs/models.yaml.",
+    "state": "blocked_by_negative_rule"
+  },
+  "run_id": "main_inference_v1",
+  "semantic_similarity_counted": false,
+  "source_artifacts": [
+    "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl",
+    "experiments/main/main_inference_v1/processed/main_inference_v1_engine_comparison.csv",
+    "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl"
+  ],
+  "speculative_decoding_opportunity": {
+    "acceptance_telemetry_available": false,
+    "draft_model_registered": false,
+    "reason": "No compatible draft model or acceptance-rate instrumentation is registered.",
+    "state": "not_implemented"
+  },
+  "status": "WORKLOAD_OPPORTUNITY_AUDITED",
+  "workload_scan": {
+    "historical_tokenizer_reproducibility": "Exact historical model tokenizer settings were not saved locally; this audit uses deterministic whitespace-token estimates for planning only.",
+    "prefix_reuse": {
+      "cache_hit_telemetry_available": false,
+      "common_prefix_tokens_first_2000_rows": 28,
+      "max_prefix_family_share": 1.0,
+      "measured_cache_hits": null,
+      "median_prefix_length_estimate": 28,
+      "method": "token-identical leading prefix using deterministic whitespace tokens",
+      "prefix_family_count": 1,
+      "top_prefix_families": [
+        {
+          "prefix_hash": "7b5a53fff5609eb2",
+          "request_count": 10000
+        }
+      ]
+    },
+    "prompt_context_length_distribution": {
+      "context_token_estimate": {
+        "buckets": {
+          "large_513_1024": 699,
+          "medium_257_512": 3019,
+          "small_1_256": 6282
+        },
+        "max": 1012,
+        "mean": 274.795,
+        "min": 116
+      },
+      "per_vertical": {
+        "airline": {
+          "mean_context_tokens": 221.0015,
+          "mean_prompt_tokens": 325.492,
+          "request_count": 2000
+        },
+        "finance": {
+          "mean_context_tokens": 264.116,
+          "mean_prompt_tokens": 373.577,
+          "request_count": 2000
+        },
+        "healthcare_admin": {
+          "mean_context_tokens": 204.0385,
+          "mean_prompt_tokens": 305.113,
+          "request_count": 2000
+        },
+        "research_ai": {
+          "mean_context_tokens": 402.563,
+          "mean_prompt_tokens": 540.843,
+          "request_count": 2000
+        },
+        "retail": {
+          "mean_context_tokens": 282.256,
+          "mean_prompt_tokens": 437.412,
+          "request_count": 2000
+        }
+      },
+      "prompt_token_estimate": {
+        "buckets": {
+          "long_1025_2048": 25,
+          "medium_513_1024": 1228,
+          "short_0_512": 8747
+        },
+        "max": 1139,
+        "mean": 396.4874,
+        "min": 208
+      }
+    },
+    "rows_scanned": 10000,
+    "semantic_similarity_counted": false,
+    "source_workload_path": "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl"
+  }
+}

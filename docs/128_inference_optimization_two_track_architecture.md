@@ -110,6 +110,7 @@ The current repo state is:
 
 ```text
 CORE_OPTIMIZATION_ELIGIBLE
+CORE_OPTIMIZATION_PLANNING_AUDIT_COMPLETE
 ```
 
 The repair gate is:
@@ -121,6 +122,19 @@ SAMPLE_VALIDATED
 That means the targeted deployability repair sample passed and core inference
 optimization planning can begin. It still cannot claim
 `Optimized_Inference_V1` exists.
+
+The core planning audit now lives in
+`docs/130_core_optimization_planning_baseline_capability_audit.md`. It
+separates four layers:
+
+1. engine baseline capabilities;
+2. engineer-applied core optimizations;
+3. applicable one-factor candidates;
+4. measured or planned optimization scenarios.
+
+This prevents the UI from presenting vLLM/SGLang built-in serving behavior as
+a newly applied optimization and prevents future strategies from appearing as
+measured results.
 
 ## UI Contracts
 

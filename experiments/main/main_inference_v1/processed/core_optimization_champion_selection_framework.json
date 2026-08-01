@@ -1,0 +1,44 @@
+{
+  "champion_selected": false,
+  "human_approval_record": {
+    "fields": [
+      "approver",
+      "timestamp_utc",
+      "candidate_id",
+      "reason",
+      "accepted_risks"
+    ],
+    "required": true
+  },
+  "mandatory_conditions": [
+    "quality/safety protection gates pass",
+    "no critical reliability regression",
+    "exact experiment artifact is complete",
+    "human approval recorded"
+  ],
+  "pareto_frontier_design": "Compare only candidates with passing protection gates; maximize speed/cost gains while minimizing operational risk.",
+  "ranking_dimensions": [
+    "ttft_improvement",
+    "tpot_improvement",
+    "e2e_improvement",
+    "throughput_improvement",
+    "gpu_utilization",
+    "vram_efficiency",
+    "cost_efficiency",
+    "operational_complexity",
+    "implementation_risk",
+    "reproducibility"
+  ],
+  "scorecard_schema": {
+    "approval_record_path": "path|null",
+    "approved_by_engineer": "bool",
+    "candidate_id": "string",
+    "measured_artifact_root": "path",
+    "pareto_frontier_member": "bool",
+    "performance_scores": "object",
+    "protected_gate_status": "PASS|FAIL",
+    "recommended_by_system": "bool"
+  },
+  "status": "FRAMEWORK_READY_NO_CHAMPION_SELECTED",
+  "version": 1
+}

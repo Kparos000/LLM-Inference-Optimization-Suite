@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 import typer
+import yaml
 from rich.console import Console
 from rich.table import Table
 
@@ -44,6 +45,14 @@ app = typer.Typer(
 )
 
 console = Console()
+
+
+def _load_yaml_mapping(path: str, label: str) -> dict[str, Any]:
+    payload = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        msg = f"{label} must be a YAML mapping"
+        raise typer.BadParameter(msg)
+    return cast(dict[str, Any], payload)
 
 
 @app.command()
@@ -127,6 +136,14 @@ def validate_config(
         str,
         typer.Option(help="Path to the RunPod calibration profile YAML config."),
     ] = "configs/runpod_calibration_profiles.yaml",
+    core_optimization_taxonomy_path: Annotated[
+        str,
+        typer.Option(help="Path to the core optimization taxonomy YAML config."),
+    ] = "configs/core_optimization_taxonomy.yaml",
+    core_optimization_scenario_registry_path: Annotated[
+        str,
+        typer.Option(help="Path to the core optimization scenario registry YAML config."),
+    ] = "configs/core_optimization_scenario_registry.yaml",
 ) -> None:
     """Validate benchmark configuration files."""
 
@@ -144,6 +161,22 @@ def validate_config(
     slo_profiles = load_slo_profiles(slo_profiles_path)
     gpu_price_registry = load_gpu_price_registry(gpu_prices_path)
     calibration_profiles = load_runpod_calibration_profiles(runpod_calibration_profiles_path)
+    core_taxonomy = _load_yaml_mapping(
+        core_optimization_taxonomy_path, "Core optimization taxonomy"
+    )
+    core_scenario_registry = _load_yaml_mapping(
+        core_optimization_scenario_registry_path,
+        "Core optimization scenario registry",
+    )
+    layers = core_taxonomy.get("layers", {})
+    if not isinstance(layers, dict):
+        raise typer.BadParameter("Core optimization taxonomy layers must be a mapping")
+    core_optimizations = layers.get("B_engineer_applied_core_optimizations", [])
+    if not isinstance(core_optimizations, list) or not core_optimizations:
+        raise typer.BadParameter("Core optimization taxonomy has no core optimizations")
+    scenarios = core_scenario_registry.get("scenarios", [])
+    if not isinstance(scenarios, list) or not scenarios:
+        raise typer.BadParameter("Core optimization scenario registry has no scenarios")
     result_track_errors = validate_result_track_row(
         {
             "run_id": "config-validation",
@@ -188,6 +221,10 @@ def validate_config(
     console.print(f"SLO profiles loaded: {len(profiles)}")
     console.print(f"GPU price registry loaded: {len(gpu_price_registry)} GPUs")
     console.print(f"RunPod calibration profiles loaded: {len(calibration_profiles)}")
+    console.print(
+        f"Core optimization taxonomy loaded: {len(core_optimizations)} core optimizations"
+    )
+    console.print(f"Core optimization scenario registry loaded: {len(scenarios)} scenarios")
     console.print(f"Result track schema join keys loaded: {len(RESULT_TRACK_JOIN_KEYS)}")
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")

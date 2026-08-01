@@ -1,0 +1,515 @@
+{
+  "baseline_capabilities_are_new_optimizations": false,
+  "baseline_summary": {
+    "engine": "vllm+sglang+api_provider_route",
+    "hardware": "a100_sxm_80gb",
+    "model_alias": "model3_7b+model6_gated",
+    "optimization_flags": [],
+    "optimization_flags_empty": true,
+    "prompt_count": 250000,
+    "runtime": "mixed"
+  },
+  "capabilities": [
+    {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        },
+        {
+          "note": "Catalog marks some serving features as engine_builtin.",
+          "path": "configs/optimization_catalog.yaml"
+        },
+        {
+          "note": "Runtime registry marks vLLM and SGLang as ready self-hosted GPU engines.",
+          "path": "configs/runtime_engines.yaml"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "vllm_pagedattention_block_kv",
+      "category": "automatic_engine_native",
+      "display_name": "PagedAttention / block KV management",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown; vLLM package version is not recorded.",
+      "mechanism": "Paged KV blocks reduce fragmentation and improve serving memory layout.",
+      "separately_measured": false,
+      "source_artifact_config": "configs/optimization_catalog.yaml",
+      "target_metrics": [
+        "vram",
+        "throughput",
+        "ttft",
+        "e2e_latency"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "The baseline used vLLM, so the platform should describe PagedAttention as a vLLM baseline capability, not as a newly applied optimization."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        },
+        {
+          "note": "Catalog marks some serving features as engine_builtin.",
+          "path": "configs/optimization_catalog.yaml"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "vllm_continuous_batching",
+      "category": "automatic_engine_native",
+      "display_name": "Continuous batching",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown; batch internals were not logged.",
+      "mechanism": "The serving engine schedules active requests together during decode.",
+      "separately_measured": false,
+      "source_artifact_config": "configs/optimization_catalog.yaml",
+      "target_metrics": [
+        "throughput",
+        "gpu_utilization",
+        "e2e_latency"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "vLLM was not raw single-request generation. It used a serving runtime that can batch concurrent requests, but scheduler tuning was not changed."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "vllm_per_request_kv_cache",
+      "category": "automatic_engine_native",
+      "display_name": "Per-request KV cache",
+      "engine": "vllm",
+      "exact_version_config_dependence": "not recorded",
+      "mechanism": "Autoregressive decoding reuses each request's own past keys and values.",
+      "separately_measured": false,
+      "source_artifact_config": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+      "target_metrics": [
+        "tpot",
+        "e2e_latency"
+      ],
+      "tunable_later": false,
+      "ui_explanation": "This is ordinary decode-time KV reuse inside a request, not cross-request prefix caching."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "vllm_scheduler_admission",
+      "category": "default_enabled_configurable",
+      "display_name": "Scheduler and admission defaults",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown; scheduler mode was not recorded.",
+      "mechanism": "The server schedules queued requests and token work using engine defaults.",
+      "separately_measured": false,
+      "source_artifact_config": "experiments/main/main_inference_v1/processed/main_inference_v1_engine_comparison.csv",
+      "target_metrics": [
+        "queue_delay",
+        "ttft",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Scheduler tuning remains a future one-factor experiment."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "vllm_attention_kernel_dispatch",
+      "category": "supported_not_automatic",
+      "display_name": "Optimized attention/kernel dispatch",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown; package and attention backend logs missing.",
+      "mechanism": "Runtime may select optimized attention kernels depending on install.",
+      "separately_measured": false,
+      "source_artifact_config": "missing engine startup logs",
+      "target_metrics": [
+        "tpot",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Do not claim a specific kernel backend for the baseline."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "vllm_cuda_graph_state",
+      "category": "supported_not_automatic",
+      "display_name": "CUDA Graph state",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Graph capture can reduce CPU overhead for steady decode paths.",
+      "separately_measured": false,
+      "source_artifact_config": "missing engine startup logs",
+      "target_metrics": [
+        "tpot",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "CUDA Graph status must be instrumented before being taught as active."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "vllm_chunked_prefill_state",
+      "category": "supported_not_automatic",
+      "display_name": "Chunked prefill state",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Long prefills can be split to reduce decode interference.",
+      "separately_measured": false,
+      "source_artifact_config": "missing engine startup logs",
+      "target_metrics": [
+        "ttft",
+        "e2e_latency",
+        "tail_latency"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "This is a candidate, not a proven baseline feature."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "vllm_prefix_cache_state",
+      "category": "supported_not_automatic",
+      "display_name": "Cross-request prefix cache state",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Identical request prefixes can reuse prefetched KV across requests.",
+      "separately_measured": false,
+      "source_artifact_config": "missing engine cache telemetry",
+      "target_metrics": [
+        "ttft",
+        "prefill_time",
+        "gpu_utilization"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Prefix cache needs an explicit hit/miss experiment."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        },
+        {
+          "note": "GPU memory was sampled, but KV block counts were not captured.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "vllm_gpu_memory_kv_block_allocation",
+      "category": "automatic_engine_native",
+      "display_name": "GPU memory / KV-block allocation",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "The runtime allocates GPU memory for model weights and KV blocks.",
+      "separately_measured": false,
+      "source_artifact_config": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+      "target_metrics": [
+        "vram",
+        "oom_rate",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "VRAM was measured; KV block occupancy still needs instrumentation."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "sglang_radixattention_prefix_reuse",
+      "category": "supported_not_automatic",
+      "display_name": "RadixAttention / prefix reuse",
+      "engine": "sglang",
+      "exact_version_config_dependence": "unknown; SGLang package version not recorded.",
+      "mechanism": "SGLang can organize prefixes for reuse when cache conditions are met.",
+      "separately_measured": false,
+      "source_artifact_config": "missing SGLang cache telemetry",
+      "target_metrics": [
+        "ttft",
+        "prefill_time",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Do not claim RadixAttention cache hits without engine telemetry."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "sglang_paged_kv_storage",
+      "category": "supported_not_automatic",
+      "display_name": "Paged KV storage",
+      "engine": "sglang",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Engine may use paged KV storage depending on runtime configuration.",
+      "separately_measured": false,
+      "source_artifact_config": "missing SGLang startup logs",
+      "target_metrics": [
+        "vram",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Supported engine capability is not proof of baseline activation."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        },
+        {
+          "note": "Catalog marks some serving features as engine_builtin.",
+          "path": "configs/optimization_catalog.yaml"
+        },
+        {
+          "note": "Runtime registry marks vLLM and SGLang as ready self-hosted GPU engines.",
+          "path": "configs/runtime_engines.yaml"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "sglang_continuous_batching",
+      "category": "automatic_engine_native",
+      "display_name": "Continuous batching",
+      "engine": "sglang",
+      "exact_version_config_dependence": "unknown; scheduler internals were not logged.",
+      "mechanism": "The server schedules concurrent request token work together.",
+      "separately_measured": false,
+      "source_artifact_config": "configs/optimization_catalog.yaml",
+      "target_metrics": [
+        "throughput",
+        "gpu_utilization",
+        "e2e_latency"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "SGLang baseline is an optimized serving baseline, not raw generation."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "sglang_cache_aware_scheduling",
+      "category": "supported_not_automatic",
+      "display_name": "Cache-aware scheduling",
+      "engine": "sglang",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Scheduler can exploit cache locality when measurable cache hits exist.",
+      "separately_measured": false,
+      "source_artifact_config": "missing SGLang scheduler telemetry",
+      "target_metrics": [
+        "ttft",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Needs cache hit/miss and queue telemetry before claims."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "sglang_per_request_kv_cache",
+      "category": "automatic_engine_native",
+      "display_name": "Per-request KV cache",
+      "engine": "sglang",
+      "exact_version_config_dependence": "not recorded",
+      "mechanism": "Autoregressive decoding reuses past keys and values within a request.",
+      "separately_measured": false,
+      "source_artifact_config": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+      "target_metrics": [
+        "tpot",
+        "e2e_latency"
+      ],
+      "tunable_later": false,
+      "ui_explanation": "Per-request KV reuse is distinct from cross-request prefix reuse."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "sglang_attention_backend_selection",
+      "category": "supported_not_automatic",
+      "display_name": "Attention backend selection",
+      "engine": "sglang",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Runtime can choose attention backends based on install and flags.",
+      "separately_measured": false,
+      "source_artifact_config": "missing SGLang startup logs",
+      "target_metrics": [
+        "tpot",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Kernel/backend state must be logged in later experiments."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "No engine-specific cache/kernel telemetry was saved for this field.",
+          "path": "not available"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "sglang_cuda_graph_state",
+      "category": "supported_not_automatic",
+      "display_name": "CUDA Graph state",
+      "engine": "sglang",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Graph capture can reduce CPU overhead for repeated decode shapes.",
+      "separately_measured": false,
+      "source_artifact_config": "missing SGLang startup logs",
+      "target_metrics": [
+        "tpot",
+        "throughput"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "No baseline claim without startup/runtime evidence."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "A profile contains a chunked-prefill command, but the exact live baseline startup log is unavailable.",
+          "path": "configs/serving_profiles.yaml"
+        }
+      ],
+      "baseline_activation_state": "unknown",
+      "capability_id": "sglang_chunked_prefill_state",
+      "category": "supported_not_automatic",
+      "display_name": "Chunked prefill state",
+      "engine": "sglang",
+      "exact_version_config_dependence": "unknown",
+      "mechanism": "Long prompts can be prefilled in chunks to reduce blocking.",
+      "separately_measured": false,
+      "source_artifact_config": "configs/serving_profiles.yaml",
+      "target_metrics": [
+        "ttft",
+        "tail_latency"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "Treat chunked prefill as a candidate until measured."
+    },
+    {
+      "activation_evidence": [
+        {
+          "note": "Runtime registry marks TensorRT-LLM planned and smoke_tested false.",
+          "path": "configs/runtime_engines.yaml"
+        },
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        }
+      ],
+      "baseline_activation_state": "not_enabled",
+      "capability_id": "tensorrt_llm_future_engine",
+      "category": "supported_not_automatic",
+      "display_name": "TensorRT-LLM planned engine",
+      "engine": "tensorrt_llm",
+      "exact_version_config_dependence": "not installed or smoke-tested in repo evidence",
+      "mechanism": "Compiled TensorRT-LLM serving path planned for future work.",
+      "separately_measured": false,
+      "source_artifact_config": "configs/runtime_engines.yaml",
+      "target_metrics": [
+        "tpot",
+        "throughput",
+        "latency",
+        "cost"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "TensorRT-LLM belongs in future architecture, not baseline claims."
+    }
+  ],
+  "exact_engine_state": {
+    "sglang": {
+      "attention_backend": "unknown",
+      "cache_block_page_settings": "unknown",
+      "chunked_prefill_state": "unknown",
+      "context_model_length": "unknown",
+      "cuda_graph_state": "unknown",
+      "gpu_memory_utilization_setting": "unknown",
+      "max_batched_tokens": "unknown",
+      "max_running_requests": "unknown",
+      "model_precision": "unknown",
+      "offloading_state": "not_enabled_by_project",
+      "package_version": "unknown",
+      "parallelism_settings": "not_enabled_by_project",
+      "prefix_caching_state": "unknown",
+      "quantization_state": "not_enabled_by_project",
+      "scheduler_mode": "unknown",
+      "speculative_decoding_state": "not_enabled_by_project"
+    },
+    "tensorrt_llm": {
+      "baseline_state": "not_enabled",
+      "package_version": "not_applicable",
+      "reason": "Runtime registry marks TensorRT-LLM planned and smoke_tested false."
+    },
+    "vllm": {
+      "attention_backend": "unknown",
+      "cache_block_page_settings": "unknown",
+      "chunked_prefill_state": "unknown",
+      "context_model_length": "unknown",
+      "cuda_graph_state": "unknown",
+      "gpu_memory_utilization_setting": "unknown",
+      "max_batched_tokens": "unknown",
+      "max_running_sequences": "unknown",
+      "model_precision": "unknown",
+      "offloading_state": "not_enabled_by_project",
+      "package_version": "unknown",
+      "parallelism_settings": "not_enabled_by_project",
+      "prefix_caching_state": "unknown",
+      "quantization_state": "not_enabled_by_project",
+      "scheduler_mode": "unknown",
+      "speculative_decoding_state": "not_enabled_by_project"
+    }
+  },
+  "interpretation": "The baseline used optimized serving engines, but no project-selected core optimization flags were recorded. Engine-native capabilities must be taught as baseline capabilities unless a later experiment changes or tunes them.",
+  "main_inference_v1_manifest_optimization_flags": [],
+  "run_id": "main_inference_v1",
+  "source_manifest": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+  "status": "ENGINE_BASELINE_CAPABILITY_AUDITED"
+}

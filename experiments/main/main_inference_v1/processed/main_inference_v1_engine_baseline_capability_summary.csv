@@ -1,0 +1,19 @@
+capability_id,display_name,engine,category,baseline_activation_state,separately_measured,tunable_later,source_artifact_config
+vllm_pagedattention_block_kv,PagedAttention / block KV management,vllm,automatic_engine_native,engine_inherent,False,True,configs/optimization_catalog.yaml
+vllm_continuous_batching,Continuous batching,vllm,automatic_engine_native,engine_inherent,False,True,configs/optimization_catalog.yaml
+vllm_per_request_kv_cache,Per-request KV cache,vllm,automatic_engine_native,engine_inherent,False,False,experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+vllm_scheduler_admission,Scheduler and admission defaults,vllm,default_enabled_configurable,engine_inherent,False,True,experiments/main/main_inference_v1/processed/main_inference_v1_engine_comparison.csv
+vllm_attention_kernel_dispatch,Optimized attention/kernel dispatch,vllm,supported_not_automatic,unknown,False,True,missing engine startup logs
+vllm_cuda_graph_state,CUDA Graph state,vllm,supported_not_automatic,unknown,False,True,missing engine startup logs
+vllm_chunked_prefill_state,Chunked prefill state,vllm,supported_not_automatic,unknown,False,True,missing engine startup logs
+vllm_prefix_cache_state,Cross-request prefix cache state,vllm,supported_not_automatic,unknown,False,True,missing engine cache telemetry
+vllm_gpu_memory_kv_block_allocation,GPU memory / KV-block allocation,vllm,automatic_engine_native,engine_inherent,False,True,experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl
+sglang_radixattention_prefix_reuse,RadixAttention / prefix reuse,sglang,supported_not_automatic,unknown,False,True,missing SGLang cache telemetry
+sglang_paged_kv_storage,Paged KV storage,sglang,supported_not_automatic,unknown,False,True,missing SGLang startup logs
+sglang_continuous_batching,Continuous batching,sglang,automatic_engine_native,engine_inherent,False,True,configs/optimization_catalog.yaml
+sglang_cache_aware_scheduling,Cache-aware scheduling,sglang,supported_not_automatic,unknown,False,True,missing SGLang scheduler telemetry
+sglang_per_request_kv_cache,Per-request KV cache,sglang,automatic_engine_native,engine_inherent,False,False,experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+sglang_attention_backend_selection,Attention backend selection,sglang,supported_not_automatic,unknown,False,True,missing SGLang startup logs
+sglang_cuda_graph_state,CUDA Graph state,sglang,supported_not_automatic,unknown,False,True,missing SGLang startup logs
+sglang_chunked_prefill_state,Chunked prefill state,sglang,supported_not_automatic,unknown,False,True,configs/serving_profiles.yaml
+tensorrt_llm_future_engine,TensorRT-LLM planned engine,tensorrt_llm,supported_not_automatic,not_enabled,False,True,configs/runtime_engines.yaml

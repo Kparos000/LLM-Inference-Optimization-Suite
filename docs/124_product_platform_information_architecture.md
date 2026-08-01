@@ -78,12 +78,19 @@ Current repository sources:
 - `src/inference_bench/optimization_catalog.py`
 - `src/inference_bench/optimization_negative_rules.py`
 - `src/inference_bench/main_inference_optimization_ui.py`
+- `src/inference_bench/core_optimization_planning.py`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_deployability_repairs.json`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_repair_gate.json`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_catalog.json`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_core_optimization_applicability.json`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_experiment_stage.json`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_story.json`
+- `configs/core_optimization_taxonomy.yaml`
+- `configs/core_optimization_scenario_registry.yaml`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_engine_baseline_capability_report.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_applicability_matrix.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_one_factor_experiment_plan.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_ui_contract.json`
 
 Known missing product sources:
 
@@ -91,8 +98,6 @@ Known missing product sources:
 - `optimized_inference_v1` eval, SLO, cost, telemetry, comparison, and plotting
   artifacts.
 - UI-ready JSON bundles such as `main_inference_v1_ui_summary.json`.
-- measured repair-validation artifacts that pass the repair gate.
-- a core optimization experiment plan derived after repair validation.
 - A saved before/after replay bundle for optimized inference.
 
 ## Frontend Information Architecture
@@ -1324,14 +1329,15 @@ User opens comparison
 - UI-ready Main_Inference diagnosis, optimization option, apply-plan, and
   story JSON artifacts.
 - Negative-rule enforcement in UI option generation.
+- Core optimization planning taxonomy, baseline capability report,
+  applicability matrix, one-factor experiment plan, scenario registry, and UI
+  contract.
 - Main_Inference SLO summary and comparison CSVs.
 - Artifact sync report, checkpoint, progress log, manifest, and checksums.
 - Baseline repair evidence from earlier phases.
 
 ## Missing
 
-- Frontend application.
-- Backend read API.
 - UI-ready summary, matrix, SLO, and before/after comparison bundles.
 - Optimized_Inference_V1 artifacts.
 - Saved before/after comparison bundle.

@@ -1,0 +1,117 @@
+version: 1
+status: SCENARIO_REGISTRY_PLANNED
+scenario_types:
+- engine_baseline
+- repair_validation
+- one_factor
+- candidate_bundle
+- champion_full_run
+- educational_future
+scenarios:
+- scenario_id: main_inference_v1
+  scenario_type: engine_baseline
+  result_type: measured
+  lineage:
+    parent_run_id: null
+  changed_factor: null
+  held_constants: []
+  artifact_paths:
+  - experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+  - experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json
+  - experiments/main/main_inference_v1/processed/main_inference_v1_engine_comparison.csv
+  ui_replay_available: true
+  conclusion_available: true
+- scenario_id: deployability_repair_validation_v1
+  scenario_type: repair_validation
+  result_type: measured
+  lineage:
+    parent_run_id: main_inference_v1
+  changed_factor: deployability_repair_logic
+  held_constants:
+  - no_core_optimization
+  - no_a100
+  - no_inference_results_mutation
+  artifact_paths:
+  - experiments/repairs/deployability_repair_validation_v1/processed/deployability_repair_validation_v1_validation_gate_report.json
+  ui_replay_available: true
+  conclusion_available: true
+- scenario_id: coreopt_prefix_layout_static_v1
+  scenario_type: one_factor
+  result_type: planned
+  lineage:
+    parent_run_id: main_inference_v1
+  changed_factor: rendered_prompt_prefix_layout
+  held_constants:
+  - dataset
+  - evaluator
+  - gold_records
+  - repairs
+  artifact_paths: []
+  ui_replay_available: false
+  conclusion_available: false
+- scenario_id: coreopt_scheduler_batch_vllm_v1
+  scenario_type: one_factor
+  result_type: planned
+  lineage:
+    parent_run_id: main_inference_v1
+  changed_factor: scheduler_batch_config
+  held_constants:
+  - dataset
+  - evaluator
+  - model3_7b
+  - repairs
+  artifact_paths: []
+  ui_replay_available: false
+  conclusion_available: false
+- scenario_id: coreopt_prefix_cache_vllm_v1
+  scenario_type: one_factor
+  result_type: planned
+  lineage:
+    parent_run_id: main_inference_v1
+  changed_factor: prefix_cache_flag
+  held_constants:
+  - dataset
+  - evaluator
+  - model3_7b
+  - repairs
+  artifact_paths: []
+  ui_replay_available: false
+  conclusion_available: false
+- scenario_id: coreopt_chunked_prefill_sglang_v1
+  scenario_type: one_factor
+  result_type: planned
+  lineage:
+    parent_run_id: main_inference_v1
+  changed_factor: chunked_prefill_config
+  held_constants:
+  - dataset
+  - evaluator
+  - model3_7b
+  - repairs
+  artifact_paths: []
+  ui_replay_available: false
+  conclusion_available: false
+- scenario_id: optimized_inference_v1
+  scenario_type: champion_full_run
+  result_type: missing_not_created
+  lineage:
+    parent_run_id: main_inference_v1
+  changed_factor: human_approved_champion_recipe
+  held_constants:
+  - official_workload
+  - slo_targets
+  - evaluator
+  artifact_paths: []
+  ui_replay_available: false
+  conclusion_available: false
+- scenario_id: tensorrt_llm_future
+  scenario_type: educational_future
+  result_type: future
+  lineage:
+    parent_run_id: null
+  changed_factor: future_engine_architecture
+  held_constants: []
+  artifact_paths: []
+  ui_replay_available: false
+  conclusion_available: false
+champion_selected: false

@@ -1,0 +1,2087 @@
+version: 1
+status: planning_audit_complete
+principles:
+- Deployability repairs are separate from core inference optimization.
+- Engine support does not prove baseline activation.
+- Engine-native baseline capabilities are not new optimizations.
+- Every measured experiment changes one factor.
+- Quality and safety gates remain protected.
+layers:
+  A_engine_baseline_capabilities:
+  - capability_id: vllm_pagedattention_block_kv
+    display_name: PagedAttention / block KV management
+    engine: vllm
+    category: automatic_engine_native
+    mechanism: Paged KV blocks reduce fragmentation and improve serving memory layout.
+    target_metrics:
+    - vram
+    - throughput
+    - ttft
+    - e2e_latency
+    baseline_activation_state: engine_inherent
+    activation_evidence:
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    - path: configs/optimization_catalog.yaml
+      note: Catalog marks some serving features as engine_builtin.
+    - path: configs/runtime_engines.yaml
+      note: Runtime registry marks vLLM and SGLang as ready self-hosted GPU engines.
+    exact_version_config_dependence: unknown; vLLM package version is not recorded.
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: The baseline used vLLM, so the platform should describe PagedAttention
+      as a vLLM baseline capability, not as a newly applied optimization.
+    source_artifact_config: configs/optimization_catalog.yaml
+  - capability_id: vllm_continuous_batching
+    display_name: Continuous batching
+    engine: vllm
+    category: automatic_engine_native
+    mechanism: The serving engine schedules active requests together during decode.
+    target_metrics:
+    - throughput
+    - gpu_utilization
+    - e2e_latency
+    baseline_activation_state: engine_inherent
+    activation_evidence:
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    - path: configs/optimization_catalog.yaml
+      note: Catalog marks some serving features as engine_builtin.
+    exact_version_config_dependence: unknown; batch internals were not logged.
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: vLLM was not raw single-request generation. It used a serving
+      runtime that can batch concurrent requests, but scheduler tuning was not changed.
+    source_artifact_config: configs/optimization_catalog.yaml
+  - capability_id: vllm_per_request_kv_cache
+    display_name: Per-request KV cache
+    engine: vllm
+    category: automatic_engine_native
+    mechanism: Autoregressive decoding reuses each request's own past keys and values.
+    target_metrics:
+    - tpot
+    - e2e_latency
+    baseline_activation_state: engine_inherent
+    activation_evidence:
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    exact_version_config_dependence: not recorded
+    separately_measured: false
+    tunable_later: false
+    ui_explanation: This is ordinary decode-time KV reuse inside a request, not cross-request
+      prefix caching.
+    source_artifact_config: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+  - capability_id: vllm_scheduler_admission
+    display_name: Scheduler and admission defaults
+    engine: vllm
+    category: default_enabled_configurable
+    mechanism: The server schedules queued requests and token work using engine defaults.
+    target_metrics:
+    - queue_delay
+    - ttft
+    - throughput
+    baseline_activation_state: engine_inherent
+    activation_evidence:
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    exact_version_config_dependence: unknown; scheduler mode was not recorded.
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Scheduler tuning remains a future one-factor experiment.
+    source_artifact_config: experiments/main/main_inference_v1/processed/main_inference_v1_engine_comparison.csv
+  - capability_id: vllm_attention_kernel_dispatch
+    display_name: Optimized attention/kernel dispatch
+    engine: vllm
+    category: supported_not_automatic
+    mechanism: Runtime may select optimized attention kernels depending on install.
+    target_metrics:
+    - tpot
+    - throughput
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown; package and attention backend logs missing.
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Do not claim a specific kernel backend for the baseline.
+    source_artifact_config: missing engine startup logs
+  - capability_id: vllm_cuda_graph_state
+    display_name: CUDA Graph state
+    engine: vllm
+    category: supported_not_automatic
+    mechanism: Graph capture can reduce CPU overhead for steady decode paths.
+    target_metrics:
+    - tpot
+    - throughput
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: CUDA Graph status must be instrumented before being taught as
+      active.
+    source_artifact_config: missing engine startup logs
+  - capability_id: vllm_chunked_prefill_state
+    display_name: Chunked prefill state
+    engine: vllm
+    category: supported_not_automatic
+    mechanism: Long prefills can be split to reduce decode interference.
+    target_metrics:
+    - ttft
+    - e2e_latency
+    - tail_latency
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: This is a candidate, not a proven baseline feature.
+    source_artifact_config: missing engine startup logs
+  - capability_id: vllm_prefix_cache_state
+    display_name: Cross-request prefix cache state
+    engine: vllm
+    category: supported_not_automatic
+    mechanism: Identical request prefixes can reuse prefetched KV across requests.
+    target_metrics:
+    - ttft
+    - prefill_time
+    - gpu_utilization
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Prefix cache needs an explicit hit/miss experiment.
+    source_artifact_config: missing engine cache telemetry
+  - capability_id: vllm_gpu_memory_kv_block_allocation
+    display_name: GPU memory / KV-block allocation
+    engine: vllm
+    category: automatic_engine_native
+    mechanism: The runtime allocates GPU memory for model weights and KV blocks.
+    target_metrics:
+    - vram
+    - oom_rate
+    - throughput
+    baseline_activation_state: engine_inherent
+    activation_evidence:
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl
+      note: GPU memory was sampled, but KV block counts were not captured.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: VRAM was measured; KV block occupancy still needs instrumentation.
+    source_artifact_config: experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl
+  - capability_id: sglang_radixattention_prefix_reuse
+    display_name: RadixAttention / prefix reuse
+    engine: sglang
+    category: supported_not_automatic
+    mechanism: SGLang can organize prefixes for reuse when cache conditions are met.
+    target_metrics:
+    - ttft
+    - prefill_time
+    - throughput
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown; SGLang package version not recorded.
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Do not claim RadixAttention cache hits without engine telemetry.
+    source_artifact_config: missing SGLang cache telemetry
+  - capability_id: sglang_paged_kv_storage
+    display_name: Paged KV storage
+    engine: sglang
+    category: supported_not_automatic
+    mechanism: Engine may use paged KV storage depending on runtime configuration.
+    target_metrics:
+    - vram
+    - throughput
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Supported engine capability is not proof of baseline activation.
+    source_artifact_config: missing SGLang startup logs
+  - capability_id: sglang_continuous_batching
+    display_name: Continuous batching
+    engine: sglang
+    category: automatic_engine_native
+    mechanism: The server schedules concurrent request token work together.
+    target_metrics:
+    - throughput
+    - gpu_utilization
+    - e2e_latency
+    baseline_activation_state: engine_inherent
+    activation_evidence:
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    - path: configs/optimization_catalog.yaml
+      note: Catalog marks some serving features as engine_builtin.
+    - path: configs/runtime_engines.yaml
+      note: Runtime registry marks vLLM and SGLang as ready self-hosted GPU engines.
+    exact_version_config_dependence: unknown; scheduler internals were not logged.
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: SGLang baseline is an optimized serving baseline, not raw generation.
+    source_artifact_config: configs/optimization_catalog.yaml
+  - capability_id: sglang_cache_aware_scheduling
+    display_name: Cache-aware scheduling
+    engine: sglang
+    category: supported_not_automatic
+    mechanism: Scheduler can exploit cache locality when measurable cache hits exist.
+    target_metrics:
+    - ttft
+    - throughput
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Needs cache hit/miss and queue telemetry before claims.
+    source_artifact_config: missing SGLang scheduler telemetry
+  - capability_id: sglang_per_request_kv_cache
+    display_name: Per-request KV cache
+    engine: sglang
+    category: automatic_engine_native
+    mechanism: Autoregressive decoding reuses past keys and values within a request.
+    target_metrics:
+    - tpot
+    - e2e_latency
+    baseline_activation_state: engine_inherent
+    activation_evidence:
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    exact_version_config_dependence: not recorded
+    separately_measured: false
+    tunable_later: false
+    ui_explanation: Per-request KV reuse is distinct from cross-request prefix reuse.
+    source_artifact_config: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+  - capability_id: sglang_attention_backend_selection
+    display_name: Attention backend selection
+    engine: sglang
+    category: supported_not_automatic
+    mechanism: Runtime can choose attention backends based on install and flags.
+    target_metrics:
+    - tpot
+    - throughput
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Kernel/backend state must be logged in later experiments.
+    source_artifact_config: missing SGLang startup logs
+  - capability_id: sglang_cuda_graph_state
+    display_name: CUDA Graph state
+    engine: sglang
+    category: supported_not_automatic
+    mechanism: Graph capture can reduce CPU overhead for repeated decode shapes.
+    target_metrics:
+    - tpot
+    - throughput
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: not available
+      note: No engine-specific cache/kernel telemetry was saved for this field.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: No baseline claim without startup/runtime evidence.
+    source_artifact_config: missing SGLang startup logs
+  - capability_id: sglang_chunked_prefill_state
+    display_name: Chunked prefill state
+    engine: sglang
+    category: supported_not_automatic
+    mechanism: Long prompts can be prefilled in chunks to reduce blocking.
+    target_metrics:
+    - ttft
+    - tail_latency
+    baseline_activation_state: unknown
+    activation_evidence:
+    - path: configs/serving_profiles.yaml
+      note: A profile contains a chunked-prefill command, but the exact live baseline
+        startup log is unavailable.
+    exact_version_config_dependence: unknown
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: Treat chunked prefill as a candidate until measured.
+    source_artifact_config: configs/serving_profiles.yaml
+  - capability_id: tensorrt_llm_future_engine
+    display_name: TensorRT-LLM planned engine
+    engine: tensorrt_llm
+    category: supported_not_automatic
+    mechanism: Compiled TensorRT-LLM serving path planned for future work.
+    target_metrics:
+    - tpot
+    - throughput
+    - latency
+    - cost
+    baseline_activation_state: not_enabled
+    activation_evidence:
+    - path: configs/runtime_engines.yaml
+      note: Runtime registry marks TensorRT-LLM planned and smoke_tested false.
+    - path: experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json
+      note: Main_Inference_V1 selected vLLM, SGLang, and API provider route.
+    exact_version_config_dependence: not installed or smoke-tested in repo evidence
+    separately_measured: false
+    tunable_later: true
+    ui_explanation: TensorRT-LLM belongs in future architecture, not baseline claims.
+    source_artifact_config: configs/runtime_engines.yaml
+  B_engineer_applied_core_optimizations:
+  - optimization_id: prompt_prefix_layout_optimization
+    display_name: Prompt and prefix-layout optimization
+    difficulty_tier: 1
+    category: workload_and_configuration
+    definition: Move stable instructions, schema, and reusable scaffolding into identical
+      leading token spans without changing the answer contract.
+    mechanism: Increase token-identical leading prefix length for cacheability.
+    implementation_mechanism:
+    - code_change
+    - workload_change
+    target_metrics:
+    - ttft
+    - prefill_time
+    - tokens_per_second
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - rendered prompt diff
+    - no gold leakage check
+    engine_compatibility:
+    - vllm
+    - sglang
+    - api_provider_route
+    model_compatibility:
+    - model3_7b
+    - model6_gated
+    hardware_compatibility:
+    - a100_sxm_80gb
+    - provider_managed
+    baseline_state: not_applied_as_project_optimization
+    already_active: false
+    negative_rules:
+    - context_compression
+    risks:
+    - accidental contract change
+    - lower evidence clarity
+    expected_telemetry:
+    - exact_reusable_prefix_tokens
+    - prompt_token_distribution
+    one_factor_experiment_design: Change prompt layout only; keep context and model
+      fixed.
+    gpu_api_cpu_requirements: CPU for static diff; GPU/API only for measured latency.
+    result_availability: planned
+    ui_visualization_concept: Prefix waterfall showing fixed vs per-request token
+      spans.
+    future_paper_evidence_required: Prefix-cache and prompt-layout literature review.
+    source_catalog_ids:
+    - reduce_context_tokens
+  - optimization_id: prefix_cache_verification_tuning
+    display_name: Prefix-cache verification and tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    definition: Enable and verify cross-request prefix cache behavior where supported.
+    mechanism: Reuse KV for exact matching prefixes across requests.
+    implementation_mechanism:
+    - engine_flag
+    - runtime_config
+    target_metrics:
+    - ttft
+    - prefill_time
+    - gpu_utilization
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - exact prefix audit
+    - cache hit/miss telemetry
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: unknown
+    already_active: false
+    negative_rules:
+    - prefix_caching
+    risks:
+    - no hits if prefixes diverge
+    - cache eviction overhead
+    expected_telemetry:
+    - cache_lookup_count
+    - hit_count
+    - miss_count
+    - hit_token_count
+    - cache_occupancy
+    one_factor_experiment_design: Enable prefix cache only; compare against same engine.
+    gpu_api_cpu_requirements: GPU required for measured cache behavior.
+    result_availability: planned
+    ui_visualization_concept: Cache hit/miss timeline and reusable-token histogram.
+    future_paper_evidence_required: Engine-specific prefix caching docs and papers.
+    source_catalog_ids:
+    - enable_prefix_cache
+  - optimization_id: scheduler_batch_tuning
+    display_name: Scheduler and batch tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    definition: Tune request scheduling, max running requests, and batching limits.
+    mechanism: Balance queueing, prefill, decode, and batch composition.
+    implementation_mechanism:
+    - engine_flag
+    - runtime_config
+    target_metrics:
+    - throughput
+    - ttft
+    - e2e_latency
+    - gpu_utilization
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - queue wait telemetry
+    - active batch telemetry
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: default_engine_behavior_untuned
+    already_active: false
+    negative_rules:
+    - concurrency_increase
+    risks:
+    - tail latency regression
+    - OOM
+    - lower reliability
+    expected_telemetry:
+    - queue_wait_ms
+    - active_batch_size
+    - running_requests
+    one_factor_experiment_design: Change one scheduler/batch setting group only.
+    gpu_api_cpu_requirements: GPU required.
+    result_availability: planned
+    ui_visualization_concept: Queue depth, active batch size, and latency overlay.
+    future_paper_evidence_required: Continuous batching and scheduling references.
+    source_catalog_ids:
+    - tune_scheduler
+    - tune_max_num_seqs
+    - concurrency_sweep
+  - optimization_id: kv_cache_capacity_allocation_tuning
+    display_name: KV-cache capacity/allocation tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    definition: Tune allocation headroom for model weights, KV blocks, and request
+      mix.
+    mechanism: Improve sequence capacity while avoiding OOM and eviction pressure.
+    implementation_mechanism:
+    - engine_flag
+    - runtime_config
+    target_metrics:
+    - vram
+    - throughput
+    - ttft
+    - oom_rate
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - KV block metrics
+    - VRAM headroom telemetry
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: engine_allocated_but_not_instrumented
+    already_active: false
+    negative_rules: []
+    risks:
+    - OOM
+    - lower concurrency
+    - cache thrash
+    expected_telemetry:
+    - blocks_total
+    - blocks_used
+    - blocks_free
+    - evictions
+    one_factor_experiment_design: Change one KV allocation setting only.
+    gpu_api_cpu_requirements: GPU required.
+    result_availability: planned
+    ui_visualization_concept: KV block occupancy gauge and per-length pressure bands.
+    future_paper_evidence_required: Paged KV and memory management references.
+    source_catalog_ids:
+    - tune_kv_cache
+    - tune_gpu_memory_utilization
+  - optimization_id: chunked_prefill_tuning
+    display_name: Chunked-prefill tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    definition: Split long prompt prefill work to reduce head-of-line blocking.
+    mechanism: Interleave long-prefill requests with decode work.
+    implementation_mechanism:
+    - engine_flag
+    - runtime_config
+    target_metrics:
+    - ttft
+    - tail_latency
+    - e2e_latency
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - length-bucket telemetry
+    - prefill/decode timing
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: unknown
+    already_active: false
+    negative_rules:
+    - disaggregated_prefill
+    risks:
+    - throughput loss
+    - scheduler instability
+    expected_telemetry:
+    - chunk_count
+    - chunk_size
+    - long_prefill_queue_time
+    one_factor_experiment_design: Change chunked-prefill setting only.
+    gpu_api_cpu_requirements: GPU required.
+    result_availability: planned
+    ui_visualization_concept: Long-prefill lane showing chunk boundaries and TTFT.
+    future_paper_evidence_required: Chunked prefill engine docs and studies.
+    source_catalog_ids: []
+  - optimization_id: cache_workload_aware_routing
+    display_name: Cache-aware/workload-aware routing
+    difficulty_tier: 1
+    category: workload_and_configuration
+    definition: Route similar-prefix or similar-length requests to improve locality.
+    mechanism: Improve cache locality and reduce mixed-length interference.
+    implementation_mechanism:
+    - routing_layer
+    - deployment_architecture
+    target_metrics:
+    - ttft
+    - throughput
+    - cache_hit_rate
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - prefix family IDs
+    - length buckets
+    - routing telemetry
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: not_applied
+    already_active: false
+    negative_rules:
+    - prefix_caching
+    risks:
+    - load imbalance
+    - operational complexity
+    expected_telemetry:
+    - route_id
+    - prefix_family_id
+    - worker_cache_hit_rate
+    one_factor_experiment_design: Change routing policy only after cache telemetry
+      exists.
+    gpu_api_cpu_requirements: GPU required for live routing; CPU for simulation.
+    result_availability: planned
+    ui_visualization_concept: Router map from prefix families to workers.
+    future_paper_evidence_required: Cache-aware serving/routing evidence.
+    source_catalog_ids:
+    - route_long_and_short_requests_separately
+  - optimization_id: quantization
+    display_name: Quantization
+    difficulty_tier: 2
+    category: model_execution
+    definition: Use lower-precision weights or kernels to reduce memory/cost.
+    mechanism: Lower weight memory and sometimes increase throughput.
+    implementation_mechanism:
+    - model_checkpoint
+    - engine_flag
+    target_metrics:
+    - vram
+    - throughput
+    - cost
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - registered quantized checkpoint
+    - quality guard
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: not_enabled_by_project
+    already_active: false
+    negative_rules:
+    - quantization
+    risks:
+    - quality loss
+    - kernel incompatibility
+    expected_telemetry:
+    - model_memory_mb
+    - precision_format
+    - quality_metrics
+    one_factor_experiment_design: Change model precision/checkpoint only.
+    gpu_api_cpu_requirements: GPU required.
+    result_availability: planned
+    ui_visualization_concept: Memory footprint before/after with quality guard overlay.
+    future_paper_evidence_required: Quantization method evidence for Qwen2.5.
+    source_catalog_ids:
+    - enable_int8_quantization
+    - enable_awq_int4
+    - enable_gptq_int4
+    - enable_fp8_where_supported
+  - optimization_id: speculative_decoding
+    display_name: Speculative decoding
+    difficulty_tier: 2
+    category: model_execution
+    definition: Use a draft model to propose tokens and verify with the target model.
+    mechanism: Reduce target-model decode work when draft tokens are accepted.
+    implementation_mechanism:
+    - engine_flag
+    - model_checkpoint
+    target_metrics:
+    - tpot
+    - throughput
+    - e2e_latency
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - compatible draft model
+    - acceptance-rate telemetry
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: not_enabled_by_project
+    already_active: false
+    negative_rules:
+    - speculative_decoding
+    risks:
+    - extra VRAM
+    - low acceptance rate
+    - complexity
+    expected_telemetry:
+    - drafted_tokens
+    - accepted_tokens
+    - acceptance_rate
+    one_factor_experiment_design: Enable speculation only with one draft model.
+    gpu_api_cpu_requirements: GPU required.
+    result_availability: planned
+    ui_visualization_concept: Draft vs accepted token stream.
+    future_paper_evidence_required: Speculative decoding acceptance references.
+    source_catalog_ids:
+    - enable_speculative_decoding
+  - optimization_id: model_selection_routing
+    display_name: Model selection and routing
+    difficulty_tier: 2
+    category: model_execution
+    definition: Route tasks to smaller, stronger, or provider models by workload class.
+    mechanism: Match model capacity/cost to task difficulty.
+    implementation_mechanism:
+    - routing_layer
+    - model_checkpoint
+    - api_route
+    target_metrics:
+    - cost
+    - quality
+    - latency
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - task classifier
+    - per-class quality reports
+    engine_compatibility:
+    - vllm
+    - sglang
+    - api_provider_route
+    model_compatibility:
+    - model3_7b
+    - model6_gated
+    hardware_compatibility:
+    - a100_sxm_80gb
+    - provider_managed
+    baseline_state: matrix_compared_models_but_no_router
+    already_active: false
+    negative_rules:
+    - stronger_model_escalation
+    risks:
+    - routing errors
+    - cost regression
+    expected_telemetry:
+    - route_decision
+    - model_alias
+    - per_route_quality
+    one_factor_experiment_design: Change routing policy only.
+    gpu_api_cpu_requirements: GPU and API credentials for measured routing.
+    result_availability: planned
+    ui_visualization_concept: Decision tree from prompt class to model route.
+    future_paper_evidence_required: LLM routing/model cascade references.
+    source_catalog_ids:
+    - use_smaller_model
+    - use_stronger_model
+  - optimization_id: model_compression
+    display_name: Model compression
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    definition: Use distillation, pruning, or compressed checkpoints.
+    mechanism: Reduce model size while preserving useful behavior.
+    implementation_mechanism:
+    - model_checkpoint
+    target_metrics:
+    - vram
+    - cost
+    - throughput
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - compressed checkpoint
+    - quality validation
+    engine_compatibility:
+    - vllm
+    - sglang
+    model_compatibility:
+    - future_compressed_model
+    hardware_compatibility:
+    - a100_sxm_80gb
+    - smaller_gpu_future
+    baseline_state: not_implemented
+    already_active: false
+    negative_rules:
+    - quantization
+    risks:
+    - quality loss
+    - training cost
+    expected_telemetry:
+    - model_memory_mb
+    - quality_metrics
+    one_factor_experiment_design: Change checkpoint only.
+    gpu_api_cpu_requirements: GPU required after checkpoint exists.
+    result_availability: future
+    ui_visualization_concept: Model size vs quality frontier.
+    future_paper_evidence_required: Compression/distillation evidence.
+    source_catalog_ids:
+    - use_distilled_model
+  - optimization_id: multi_gpu_parallelism
+    display_name: Multi-GPU parallelism
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    definition: Shard model or work across multiple GPUs.
+    mechanism: Increase capacity or throughput with tensor/pipeline/data parallelism.
+    implementation_mechanism:
+    - deployment_architecture
+    - engine_flag
+    target_metrics:
+    - throughput
+    - vram_headroom
+    - latency
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - multi-GPU hardware
+    - interconnect control
+    - cost registry
+    engine_compatibility:
+    - vllm
+    - sglang
+    - tensorrt_llm
+    model_compatibility:
+    - model3_7b
+    - model4_32b_future
+    hardware_compatibility:
+    - multi_gpu
+    baseline_state: not_applicable_single_a100
+    already_active: false
+    negative_rules:
+    - tensor_parallelism
+    risks:
+    - communication overhead
+    - cost increase
+    expected_telemetry:
+    - gpu_count
+    - per_gpu_utilization
+    - interconnect_metrics
+    one_factor_experiment_design: Change GPU topology only.
+    gpu_api_cpu_requirements: Multi-GPU rental required.
+    result_availability: future
+    ui_visualization_concept: GPU shard topology and cost/latency tradeoff.
+    future_paper_evidence_required: Parallel serving references.
+    source_catalog_ids:
+    - use_tensor_parallelism
+    - use_pipeline_parallelism
+    - use_data_parallelism
+  - optimization_id: kv_cache_offloading_hierarchical_cache
+    display_name: KV-cache offloading / hierarchical caching
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    definition: Move KV state across GPU/CPU/storage tiers when memory is constrained.
+    mechanism: Trade memory capacity against transfer overhead.
+    implementation_mechanism:
+    - deployment_architecture
+    - runtime_config
+    target_metrics:
+    - vram
+    - sequence_capacity
+    - cost
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - engine support
+    - eviction/offload telemetry
+    engine_compatibility:
+    - future
+    model_compatibility:
+    - future
+    hardware_compatibility:
+    - future
+    baseline_state: not_implemented
+    already_active: false
+    negative_rules: []
+    risks:
+    - latency regression
+    - complexity
+    expected_telemetry:
+    - offload_bytes
+    - evictions
+    - recomputations
+    one_factor_experiment_design: Change offload policy only after support exists.
+    gpu_api_cpu_requirements: Future GPU/host-memory setup.
+    result_availability: future
+    ui_visualization_concept: Cache hierarchy diagram with movement counters.
+    future_paper_evidence_required: KV offload/hierarchical cache references.
+    source_catalog_ids: []
+  - optimization_id: manual_kernel_compiler_optimization
+    display_name: Manual kernel/compiler optimization
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    definition: Change attention kernels, compiler settings, or runtime compilation
+      path.
+    mechanism: Reduce kernel latency or CPU overhead.
+    implementation_mechanism:
+    - runtime_config
+    - code_change
+    target_metrics:
+    - tpot
+    - throughput
+    - latency
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - engine version logs
+    - kernel/backend telemetry
+    engine_compatibility:
+    - vllm
+    - sglang
+    - tensorrt_llm
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - a100_sxm_80gb
+    baseline_state: unknown_kernel_state
+    already_active: false
+    negative_rules: []
+    risks:
+    - build instability
+    - non-reproducibility
+    expected_telemetry:
+    - attention_backend
+    - kernel_name
+    - compile_state
+    one_factor_experiment_design: Change one kernel/backend flag only.
+    gpu_api_cpu_requirements: GPU required.
+    result_availability: future
+    ui_visualization_concept: Kernel path card with measured TPOT before/after.
+    future_paper_evidence_required: Kernel/compiler docs and references.
+    source_catalog_ids:
+    - enable_cuda_graphs
+    - use_flashattention_where_available
+    - use_flashinfer_where_available
+  - optimization_id: prefill_decode_disaggregation
+    display_name: Prefill/decode disaggregation
+    difficulty_tier: 4
+    category: distributed_architecture
+    definition: Separate prefill and decode workers or stages.
+    mechanism: Specialize infrastructure for long-input and decode-heavy work.
+    implementation_mechanism:
+    - deployment_architecture
+    - routing_layer
+    target_metrics:
+    - ttft
+    - throughput
+    - tail_latency
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - prefill/decode telemetry
+    - multi-worker deployment
+    engine_compatibility:
+    - future
+    model_compatibility:
+    - model3_7b
+    hardware_compatibility:
+    - multi_gpu_or_multi_worker
+    baseline_state: not_implemented
+    already_active: false
+    negative_rules:
+    - disaggregated_prefill
+    risks:
+    - operational complexity
+    - higher infrastructure cost
+    expected_telemetry:
+    - prefill_time_ms
+    - decode_time_ms
+    - worker_role
+    one_factor_experiment_design: Change serving architecture only.
+    gpu_api_cpu_requirements: Future multi-worker GPU environment.
+    result_availability: future
+    ui_visualization_concept: Prefill lane and decode lane flow diagram.
+    future_paper_evidence_required: Disaggregated serving references.
+    source_catalog_ids:
+    - prefill_decode_disaggregation
+  - optimization_id: distributed_capacity_serving_architecture
+    display_name: Distributed capacity and serving architecture
+    difficulty_tier: 4
+    category: distributed_architecture
+    definition: Scale serving across workers, queues, and admission control.
+    mechanism: Increase capacity through routing, admission, and worker placement.
+    implementation_mechanism:
+    - deployment_architecture
+    - routing_layer
+    target_metrics:
+    - throughput
+    - availability
+    - cost_per_request
+    protected_metrics:
+    - json_validity
+    - contract_validity
+    - format_validity
+    - evidence_match
+    - groundedness
+    - safety_findings
+    - truncation
+    - completion_failure_rate
+    prerequisites:
+    - multi-worker setup
+    - load probe
+    - admission telemetry
+    engine_compatibility:
+    - vllm
+    - sglang
+    - api_provider_route
+    model_compatibility:
+    - model3_7b
+    - model6_gated
+    hardware_compatibility:
+    - multi_worker
+    baseline_state: not_implemented
+    already_active: false
+    negative_rules:
+    - concurrency_increase
+    - stronger_model_escalation
+    risks:
+    - cost regression
+    - operational complexity
+    expected_telemetry:
+    - worker_id
+    - admission_decision
+    - queue_wait_ms
+    one_factor_experiment_design: Change deployment topology only.
+    gpu_api_cpu_requirements: Future multi-worker GPU/API setup.
+    result_availability: future
+    ui_visualization_concept: Capacity map and request flow diagram.
+    future_paper_evidence_required: Serving architecture and load balancing references.
+    source_catalog_ids:
+    - admission_control
+    - request_queue_tuning
+  C_applicable_experiment_candidates:
+  - optimization_id: prompt_prefix_layout_optimization
+    display_name: Prompt and prefix-layout optimization
+    difficulty_tier: 1
+    category: workload_and_configuration
+    applicability_state: selected_for_one_factor_test
+    why: Evidence is available and the factor can be isolated.
+    observed_opportunity: Exact shared prompt scaffolding exists.
+    causally_isolatable: true
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: low
+    paper_demo_value: high
+    result_type: planned
+  - optimization_id: prefix_cache_verification_tuning
+    display_name: Prefix-cache verification and tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    applicability_state: applicable_after_instrumentation
+    why: Likely relevant, but missing telemetry would make claims weak.
+    observed_opportunity: Reusable prefix families exist, but cache hits are unmeasured.
+    causally_isolatable: true
+    instrument_first: true
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: medium
+    paper_demo_value: high
+    result_type: planned
+  - optimization_id: scheduler_batch_tuning
+    display_name: Scheduler and batch tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    applicability_state: selected_for_one_factor_test
+    why: Evidence is available and the factor can be isolated.
+    observed_opportunity: c32 underperformed c16 in saved comparison artifacts.
+    causally_isolatable: true
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: medium
+    paper_demo_value: high
+    result_type: planned
+  - optimization_id: kv_cache_capacity_allocation_tuning
+    display_name: KV-cache capacity/allocation tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    applicability_state: applicable_after_instrumentation
+    why: Likely relevant, but missing telemetry would make claims weak.
+    observed_opportunity: A100 VRAM was heavily allocated; KV details missing.
+    causally_isolatable: true
+    instrument_first: true
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: medium
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: chunked_prefill_tuning
+    display_name: Chunked-prefill tuning
+    difficulty_tier: 1
+    category: workload_and_configuration
+    applicability_state: applicable_after_instrumentation
+    why: Likely relevant, but missing telemetry would make claims weak.
+    observed_opportunity: Long-context and mixed-length requests create prefill risk.
+    causally_isolatable: true
+    instrument_first: true
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: medium
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: cache_workload_aware_routing
+    display_name: Cache-aware/workload-aware routing
+    difficulty_tier: 1
+    category: workload_and_configuration
+    applicability_state: applicable_candidate
+    why: Applicable after higher-priority one-factor tests.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: true
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: quantization
+    display_name: Quantization
+    difficulty_tier: 2
+    category: model_execution
+    applicability_state: blocked_by_negative_rule
+    why: Negative rules block this until quality/safety are protected and support
+      exists.
+    observed_opportunity: Potential VRAM/cost lever, currently gated by quality risk.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: medium_when_supported
+    result_type: planned
+  - optimization_id: speculative_decoding
+    display_name: Speculative decoding
+    difficulty_tier: 2
+    category: model_execution
+    applicability_state: not_implemented
+    why: Required model/runtime support or instrumentation is absent.
+    observed_opportunity: Potential TPOT lever, but no draft model is registered.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: medium_when_supported
+    result_type: planned
+  - optimization_id: model_selection_routing
+    display_name: Model selection and routing
+    difficulty_tier: 2
+    category: model_execution
+    applicability_state: applicable_candidate
+    why: Applicable after higher-priority one-factor tests.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: true
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: model_compression
+    display_name: Model compression
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    applicability_state: future_architecture
+    why: Important concept, but outside the current one-A100 program.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: multi_gpu_parallelism
+    display_name: Multi-GPU parallelism
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    applicability_state: not_applicable_current_project
+    why: Current final run target is one A100, not multi-GPU.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: false
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: kv_cache_offloading_hierarchical_cache
+    display_name: KV-cache offloading / hierarchical caching
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    applicability_state: future_architecture
+    why: Important concept, but outside the current one-A100 program.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: false
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: manual_kernel_compiler_optimization
+    display_name: Manual kernel/compiler optimization
+    difficulty_tier: 3
+    category: model_hardware_architecture
+    applicability_state: future_architecture
+    why: Important concept, but outside the current one-A100 program.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: true
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: prefill_decode_disaggregation
+    display_name: Prefill/decode disaggregation
+    difficulty_tier: 4
+    category: distributed_architecture
+    applicability_state: future_architecture
+    why: Important concept, but outside the current one-A100 program.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: false
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  - optimization_id: distributed_capacity_serving_architecture
+    display_name: Distributed capacity and serving architecture
+    difficulty_tier: 4
+    category: distributed_architecture
+    applicability_state: future_architecture
+    why: Important concept, but outside the current one-A100 program.
+    observed_opportunity: No direct measured opportunity yet.
+    causally_isolatable: false
+    instrument_first: false
+    feasible_on_one_a100: false
+    quality_safety_protected: true
+    implementation_cost: high
+    paper_demo_value: future
+    result_type: planned
+  D_measured_optimization_scenarios:
+  - scenario_id: main_inference_v1
+    scenario_type: engine_baseline
+    result_type: measured
+    artifact_root: experiments/main/main_inference_v1
+  - scenario_id: deployability_repair_validation_v1
+    scenario_type: repair_validation
+    result_type: measured
+    artifact_root: experiments/repairs/deployability_repair_validation_v1
+removed_from_core_list:
+- enable_bounded_citation_repair
+- enable_escalation_path
+- improve_evidence_formatting
+- prompt_contract_repair
+- repair_retrieval
+- use_mm4_agentic_repair
+catalog_audit:
+  run_id: main_inference_v1
+  status: CATALOG_AUDITED
+  true_core_inference_optimizations:
+  - prompt_prefix_layout_optimization
+  - prefix_cache_verification_tuning
+  - scheduler_batch_tuning
+  - kv_cache_capacity_allocation_tuning
+  - chunked_prefill_tuning
+  - cache_workload_aware_routing
+  - quantization
+  - speculative_decoding
+  - model_selection_routing
+  - model_compression
+  - multi_gpu_parallelism
+  - kv_cache_offloading_hierarchical_cache
+  - manual_kernel_compiler_optimization
+  - prefill_decode_disaggregation
+  - distributed_capacity_serving_architecture
+  engine_native_baseline_capability_ids:
+  - enable_continuous_batching
+  - enable_cuda_graphs
+  - use_flashattention_where_available
+  - use_pagedattention_capable_engine
+  engineer_configurable_catalog_entries:
+  - id: reduce_context_tokens
+    category: workload_context
+    implementation_status: config_only
+    application_method: workload_change
+    improves:
+    - quality
+    - latency
+    - cost
+    required_engines: []
+    current_project_support: supported_by_existing_configuration
+  - id: enable_context_compression
+    category: workload_context
+    implementation_status: config_only
+    application_method: workload_change
+    improves:
+    - quality
+    - latency
+    - cost
+    required_engines: []
+    current_project_support: supported_by_existing_configuration
+  - id: reduce_top_k
+    category: workload_context
+    implementation_status: config_only
+    application_method: workload_change
+    improves:
+    - quality
+    - latency
+    - cost
+    required_engines: []
+    current_project_support: supported_by_existing_configuration
+  - id: improve_context_ordering
+    category: workload_context
+    implementation_status: planned
+    application_method: code_change
+    improves:
+    - quality
+    - latency
+    - cost
+    required_engines: []
+    current_project_support: supported_by_existing_configuration
+  - id: reduce_max_new_tokens
+    category: workload_context
+    implementation_status: config_only
+    application_method: workload_change
+    improves:
+    - quality
+    - latency
+    - cost
+    required_engines: []
+    current_project_support: supported_by_existing_configuration
+  - id: use_stronger_model
+    category: model
+    implementation_status: config_only
+    application_method: model_switch
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines: []
+    current_project_support: model_registry_and_runner_support
+  - id: use_smaller_model
+    category: model
+    implementation_status: config_only
+    application_method: model_switch
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines: []
+    current_project_support: model_registry_and_runner_support
+  - id: use_distilled_model
+    category: model
+    implementation_status: planned
+    application_method: model_switch
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines: []
+    current_project_support: model_registry_and_runner_support
+  - id: use_quantized_model
+    category: model
+    implementation_status: planned
+    application_method: model_switch
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines: []
+    current_project_support: model_registry_and_runner_support
+  - id: enable_int8_quantization
+    category: model
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines: []
+    current_project_support: model_registry_and_runner_support
+  - id: enable_awq_int4
+    category: model
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: model_registry_and_runner_support
+  - id: enable_gptq_int4
+    category: model
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: model_registry_and_runner_support
+  - id: enable_fp8_where_supported
+    category: model
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - quality
+    - latency
+    - memory
+    - cost
+    required_engines:
+    - vllm
+    - tensorrt_llm
+    current_project_support: model_registry_and_runner_support
+  - id: switch_engine_to_vllm
+    category: serving_engine
+    implementation_status: implemented
+    application_method: engine_switch
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - huggingface
+    - sglang
+    - openai_compatible
+    current_project_support: validated_on_remote_rtx3070
+  - id: switch_engine_to_sglang
+    category: serving_engine
+    implementation_status: implemented
+    application_method: engine_switch
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - huggingface
+    - vllm
+    - openai_compatible
+    current_project_support: validated_on_remote_rtx3070
+  - id: switch_engine_to_tensorrt_llm
+    category: serving_engine
+    implementation_status: planned
+    application_method: engine_switch
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - huggingface
+    - vllm
+    - sglang
+    current_project_support: varies_by_engine
+  - id: tune_scheduler
+    category: serving_engine
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: varies_by_engine
+  - id: tune_max_num_seqs
+    category: serving_engine
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    current_project_support: varies_by_engine
+  - id: tune_max_model_len
+    category: serving_engine
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: varies_by_engine
+  - id: tune_gpu_memory_utilization
+    category: serving_engine
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    current_project_support: varies_by_engine
+  - id: enable_prefix_cache
+    category: serving_engine
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: varies_by_engine
+  - id: tune_kv_cache
+    category: serving_engine
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: varies_by_engine
+  - id: enable_speculative_decoding
+    category: serving_engine
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: varies_by_engine
+  - id: use_flashinfer_where_available
+    category: serving_engine
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines:
+    - vllm
+    - sglang
+    current_project_support: varies_by_engine
+  - id: increase_concurrency
+    category: concurrency_capacity
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - throughput
+    - gpu_utilization
+    required_engines: []
+    current_project_support: concurrent_runner_available
+  - id: decrease_concurrency
+    category: concurrency_capacity
+    implementation_status: config_only
+    application_method: config_toggle
+    improves:
+    - throughput
+    - gpu_utilization
+    required_engines: []
+    current_project_support: concurrent_runner_available
+  - id: concurrency_sweep
+    category: concurrency_capacity
+    implementation_status: implemented
+    application_method: config_toggle
+    improves:
+    - throughput
+    - gpu_utilization
+    required_engines: []
+    current_project_support: concurrent_runner_available
+  - id: admission_control
+    category: concurrency_capacity
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - throughput
+    - gpu_utilization
+    required_engines: []
+    current_project_support: concurrent_runner_available
+  - id: request_queue_tuning
+    category: concurrency_capacity
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - throughput
+    - gpu_utilization
+    required_engines: []
+    current_project_support: concurrent_runner_available
+  - id: route_long_and_short_requests_separately
+    category: concurrency_capacity
+    implementation_status: planned
+    application_method: code_change
+    improves:
+    - throughput
+    - gpu_utilization
+    required_engines: []
+    current_project_support: concurrent_runner_available
+  - id: increase_gpu_size
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_rtx4090
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_l40s
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_a100
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_h100
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: use_tensor_parallelism
+    category: hardware
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: use_pipeline_parallelism
+    category: hardware
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: use_data_parallelism
+    category: hardware
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: prefill_decode_disaggregation
+    category: hardware
+    implementation_status: planned
+    application_method: code_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  advanced_future_architecture_entries:
+  - id: increase_gpu_size
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_rtx4090
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_l40s
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_a100
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: move_to_runpod_h100
+    category: hardware
+    implementation_status: planned
+    application_method: hardware_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: use_tensor_parallelism
+    category: hardware
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: use_pipeline_parallelism
+    category: hardware
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: use_data_parallelism
+    category: hardware
+    implementation_status: planned
+    application_method: config_toggle
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  - id: prefill_decode_disaggregation
+    category: hardware
+    implementation_status: planned
+    application_method: code_change
+    improves:
+    - latency
+    - throughput
+    - memory
+    required_engines: []
+    current_project_support: requires_reviewed_external_hardware_and_price
+  deployability_repairs_to_keep_out_of_core:
+  - id: improve_evidence_formatting
+    category: workload_context
+    implementation_status: planned
+    application_method: code_change
+    improves:
+    - quality
+    - latency
+    - cost
+    required_engines: []
+    current_project_support: supported_by_existing_configuration
+  - id: prompt_contract_repair
+    category: workload_context
+    implementation_status: implemented
+    application_method: code_change
+    improves:
+    - quality
+    - latency
+    - cost
+    required_engines: []
+    current_project_support: supported_by_existing_configuration
+  - id: repair_retrieval
+    category: retrieval
+    implementation_status: implemented
+    application_method: code_change
+    improves:
+    - retrieval
+    - quality
+    required_engines: []
+    current_project_support: controlled_retrieval_harness_available
+  - id: use_mm4_agentic_repair
+    category: agentic
+    implementation_status: implemented
+    application_method: agent_mode_change
+    improves:
+    - quality
+    - safety
+    required_engines: []
+    current_project_support: bounded_langgraph_mm4_available
+  - id: enable_bounded_citation_repair
+    category: agentic
+    implementation_status: implemented
+    application_method: agent_mode_change
+    improves:
+    - quality
+    - safety
+    required_engines: []
+    current_project_support: bounded_langgraph_mm4_available
+  - id: enable_escalation_path
+    category: agentic
+    implementation_status: implemented
+    application_method: agent_mode_change
+    improves:
+    - quality
+    - safety
+    required_engines: []
+    current_project_support: bounded_langgraph_mm4_available
+  - id: reduce_agent_retrieval_rounds
+    category: agentic
+    implementation_status: implemented
+    application_method: agent_mode_change
+    improves:
+    - quality
+    - safety
+    required_engines: []
+    current_project_support: bounded_langgraph_mm4_available
+  - id: cap_agent_tool_calls
+    category: agentic
+    implementation_status: implemented
+    application_method: agent_mode_change
+    improves:
+    - quality
+    - safety
+    required_engines: []
+    current_project_support: bounded_langgraph_mm4_available
+  duplicated_or_ambiguous_groups:
+  - group: quantization_family
+    ids:
+    - use_quantized_model
+    - enable_int8_quantization
+    - enable_awq_int4
+    - enable_gptq_int4
+    - enable_fp8_where_supported
+    issue: Generic and method-specific quantization entries overlap.
+  - group: concurrency_family
+    ids:
+    - increase_concurrency
+    - decrease_concurrency
+    - concurrency_sweep
+    issue: Sweep and directional changes should be modeled as separate experiments.
+  - group: engine_switch_vs_engine_builtin
+    ids:
+    - switch_engine_to_vllm
+    - switch_engine_to_sglang
+    - use_pagedattention_capable_engine
+    - enable_continuous_batching
+    issue: Engine selection and engine-native capabilities are currently adjacent.
+  - group: context_quality_vs_serving
+    ids:
+    - prompt_contract_repair
+    - improve_evidence_formatting
+    - repair_retrieval
+    - reduce_context_tokens
+    - enable_context_compression
+    issue: Deployability repairs and token/workload optimizations need separation.
+  unsupported_by_evidence_states:
+  - issue: Current UI catalogs can show engine built-ins near planned optimizations.
+    required_fix: Render baseline capabilities separately from engineer-applied candidates.
+  - issue: No engine cache hit, CUDA Graph, attention backend, or KV block telemetry.
+    required_fix: Mark exact baseline state unknown unless direct evidence exists.
+  missing_instrumentation_fields:
+  - field: exact_reusable_prefix_tokens
+    area: prefix_cache
+    state: derivable
+  - field: cache_lookup_count
+    area: prefix_cache
+    state: missing
+  - field: cache_hit_count
+    area: prefix_cache
+    state: missing
+  - field: cache_miss_count
+    area: prefix_cache
+    state: missing
+  - field: hit_token_count
+    area: prefix_cache
+    state: missing
+  - field: hit_miss_ttft_ms
+    area: prefix_cache
+    state: missing
+  - field: cache_occupancy
+    area: prefix_cache
+    state: missing
+  - field: eviction_count
+    area: prefix_cache
+    state: missing
+  - field: queue_wait_ms
+    area: scheduler_batching
+    state: missing
+  - field: active_batch_size
+    area: scheduler_batching
+    state: missing
+  - field: scheduled_tokens
+    area: scheduler_batching
+    state: missing
+  - field: prefill_tokens_per_iteration
+    area: scheduler_batching
+    state: missing
+  - field: decode_tokens_per_iteration
+    area: scheduler_batching
+    state: missing
+  - field: running_waiting_requests
+    area: scheduler_batching
+    state: missing
+  - field: kv_blocks_total
+    area: kv_cache
+    state: missing
+  - field: kv_blocks_free
+    area: kv_cache
+    state: missing
+  - field: kv_blocks_used
+    area: kv_cache
+    state: missing
+  - field: kv_bytes_per_token
+    area: kv_cache
+    state: missing
+  - field: oom_count
+    area: kv_cache
+    state: already_captured_indirectly
+  - field: chunk_count
+    area: chunked_prefill
+    state: missing
+  - field: chunk_size
+    area: chunked_prefill
+    state: missing
+  - field: length_bucket_ttft_ms
+    area: chunked_prefill
+    state: derivable
+  - field: model_memory_mb
+    area: quantization
+    state: missing
+  - field: precision_format
+    area: quantization
+    state: missing
+  - field: drafted_tokens
+    area: speculation
+    state: missing
+  - field: accepted_tokens
+    area: speculation
+    state: missing
+  - field: acceptance_rate
+    area: speculation
+    state: missing

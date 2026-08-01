@@ -32,6 +32,8 @@ def test_validate_config_cli_covers_production_config_files() -> None:
         "SLO profiles loaded: 1",
         "GPU price registry loaded: 26 GPUs",
         "RunPod calibration profiles loaded: 3",
+        "Core optimization taxonomy loaded: 15 core optimizations",
+        "Core optimization scenario registry loaded: 8 scenarios",
         "Result track schema join keys loaded: 12",
     ]
     for expected in expected_lines:

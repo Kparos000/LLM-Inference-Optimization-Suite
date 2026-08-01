@@ -1,0 +1,182 @@
+{
+  "candidate_requirements": {
+    "chunked_prefill_tuning": [
+      "chunk_count",
+      "chunk_size",
+      "length_bucket_ttft_ms"
+    ],
+    "kv_cache_capacity_allocation_tuning": [
+      "kv_blocks_total",
+      "kv_blocks_free",
+      "kv_blocks_used",
+      "kv_bytes_per_token"
+    ],
+    "prefix_cache_verification_tuning": [
+      "cache_lookup_count",
+      "cache_hit_count",
+      "cache_miss_count",
+      "hit_token_count",
+      "cache_occupancy"
+    ],
+    "quantization": [
+      "model_memory_mb",
+      "precision_format",
+      "quality_metrics"
+    ],
+    "scheduler_batch_tuning": [
+      "queue_wait_ms",
+      "active_batch_size",
+      "scheduled_tokens",
+      "running_waiting_requests"
+    ],
+    "speculative_decoding": [
+      "drafted_tokens",
+      "accepted_tokens",
+      "acceptance_rate"
+    ]
+  },
+  "fields": [
+    {
+      "area": "prefix_cache",
+      "field": "exact_reusable_prefix_tokens",
+      "state": "derivable"
+    },
+    {
+      "area": "prefix_cache",
+      "field": "cache_lookup_count",
+      "state": "missing"
+    },
+    {
+      "area": "prefix_cache",
+      "field": "cache_hit_count",
+      "state": "missing"
+    },
+    {
+      "area": "prefix_cache",
+      "field": "cache_miss_count",
+      "state": "missing"
+    },
+    {
+      "area": "prefix_cache",
+      "field": "hit_token_count",
+      "state": "missing"
+    },
+    {
+      "area": "prefix_cache",
+      "field": "hit_miss_ttft_ms",
+      "state": "missing"
+    },
+    {
+      "area": "prefix_cache",
+      "field": "cache_occupancy",
+      "state": "missing"
+    },
+    {
+      "area": "prefix_cache",
+      "field": "eviction_count",
+      "state": "missing"
+    },
+    {
+      "area": "scheduler_batching",
+      "field": "queue_wait_ms",
+      "state": "missing"
+    },
+    {
+      "area": "scheduler_batching",
+      "field": "active_batch_size",
+      "state": "missing"
+    },
+    {
+      "area": "scheduler_batching",
+      "field": "scheduled_tokens",
+      "state": "missing"
+    },
+    {
+      "area": "scheduler_batching",
+      "field": "prefill_tokens_per_iteration",
+      "state": "missing"
+    },
+    {
+      "area": "scheduler_batching",
+      "field": "decode_tokens_per_iteration",
+      "state": "missing"
+    },
+    {
+      "area": "scheduler_batching",
+      "field": "running_waiting_requests",
+      "state": "missing"
+    },
+    {
+      "area": "kv_cache",
+      "field": "kv_blocks_total",
+      "state": "missing"
+    },
+    {
+      "area": "kv_cache",
+      "field": "kv_blocks_free",
+      "state": "missing"
+    },
+    {
+      "area": "kv_cache",
+      "field": "kv_blocks_used",
+      "state": "missing"
+    },
+    {
+      "area": "kv_cache",
+      "field": "kv_bytes_per_token",
+      "state": "missing"
+    },
+    {
+      "area": "kv_cache",
+      "field": "oom_count",
+      "state": "already_captured_indirectly"
+    },
+    {
+      "area": "chunked_prefill",
+      "field": "chunk_count",
+      "state": "missing"
+    },
+    {
+      "area": "chunked_prefill",
+      "field": "chunk_size",
+      "state": "missing"
+    },
+    {
+      "area": "chunked_prefill",
+      "field": "length_bucket_ttft_ms",
+      "state": "derivable"
+    },
+    {
+      "area": "quantization",
+      "field": "model_memory_mb",
+      "state": "missing"
+    },
+    {
+      "area": "quantization",
+      "field": "precision_format",
+      "state": "missing"
+    },
+    {
+      "area": "speculation",
+      "field": "drafted_tokens",
+      "state": "missing"
+    },
+    {
+      "area": "speculation",
+      "field": "accepted_tokens",
+      "state": "missing"
+    },
+    {
+      "area": "speculation",
+      "field": "acceptance_rate",
+      "state": "missing"
+    }
+  ],
+  "run_id": "main_inference_v1",
+  "state_counts": {
+    "already_captured_indirectly": 1,
+    "derivable": 2,
+    "missing": 24
+  },
+  "status": "INSTRUMENTATION_GAPS_IDENTIFIED"
+}

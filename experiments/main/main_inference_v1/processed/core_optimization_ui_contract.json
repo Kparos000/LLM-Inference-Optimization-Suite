@@ -1,0 +1,191 @@
+{
+  "does_not_create_optimized_inference_v1": true,
+  "example_records": {
+    "baseline_capability": {
+      "activation_evidence": [
+        {
+          "note": "Main_Inference_V1 selected vLLM, SGLang, and API provider route.",
+          "path": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+        },
+        {
+          "note": "Catalog marks some serving features as engine_builtin.",
+          "path": "configs/optimization_catalog.yaml"
+        },
+        {
+          "note": "Runtime registry marks vLLM and SGLang as ready self-hosted GPU engines.",
+          "path": "configs/runtime_engines.yaml"
+        }
+      ],
+      "baseline_activation_state": "engine_inherent",
+      "capability_id": "vllm_pagedattention_block_kv",
+      "category": "automatic_engine_native",
+      "display_name": "PagedAttention / block KV management",
+      "engine": "vllm",
+      "exact_version_config_dependence": "unknown; vLLM package version is not recorded.",
+      "mechanism": "Paged KV blocks reduce fragmentation and improve serving memory layout.",
+      "separately_measured": false,
+      "source_artifact_config": "configs/optimization_catalog.yaml",
+      "target_metrics": [
+        "vram",
+        "throughput",
+        "ttft",
+        "e2e_latency"
+      ],
+      "tunable_later": true,
+      "ui_explanation": "The baseline used vLLM, so the platform should describe PagedAttention as a vLLM baseline capability, not as a newly applied optimization."
+    },
+    "planned_core_optimization": {
+      "already_active": false,
+      "baseline_state": "not_applied_as_project_optimization",
+      "category": "workload_and_configuration",
+      "definition": "Move stable instructions, schema, and reusable scaffolding into identical leading token spans without changing the answer contract.",
+      "difficulty_tier": 1,
+      "display_name": "Prompt and prefix-layout optimization",
+      "engine_compatibility": [
+        "vllm",
+        "sglang",
+        "api_provider_route"
+      ],
+      "expected_telemetry": [
+        "exact_reusable_prefix_tokens",
+        "prompt_token_distribution"
+      ],
+      "future_paper_evidence_required": "Prefix-cache and prompt-layout literature review.",
+      "gpu_api_cpu_requirements": "CPU for static diff; GPU/API only for measured latency.",
+      "hardware_compatibility": [
+        "a100_sxm_80gb",
+        "provider_managed"
+      ],
+      "implementation_mechanism": [
+        "code_change",
+        "workload_change"
+      ],
+      "mechanism": "Increase token-identical leading prefix length for cacheability.",
+      "model_compatibility": [
+        "model3_7b",
+        "model6_gated"
+      ],
+      "negative_rules": [
+        "context_compression"
+      ],
+      "one_factor_experiment_design": "Change prompt layout only; keep context and model fixed.",
+      "optimization_id": "prompt_prefix_layout_optimization",
+      "prerequisites": [
+        "rendered prompt diff",
+        "no gold leakage check"
+      ],
+      "protected_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "result_availability": "planned",
+      "risks": [
+        "accidental contract change",
+        "lower evidence clarity"
+      ],
+      "source_catalog_ids": [
+        "reduce_context_tokens"
+      ],
+      "target_metrics": [
+        "ttft",
+        "prefill_time",
+        "tokens_per_second"
+      ],
+      "ui_visualization_concept": "Prefix waterfall showing fixed vs per-request token spans."
+    },
+    "planned_scenario": {
+      "artifact_paths": [],
+      "changed_factor": "rendered_prompt_prefix_layout",
+      "conclusion_available": false,
+      "held_constants": [
+        "dataset",
+        "evaluator",
+        "gold_records",
+        "repairs"
+      ],
+      "lineage": {
+        "parent_run_id": "main_inference_v1"
+      },
+      "result_type": "planned",
+      "scenario_id": "coreopt_prefix_layout_static_v1",
+      "scenario_type": "one_factor",
+      "ui_replay_available": false
+    }
+  },
+  "frontend_must_not_display_as_measured": [
+    "core optimization candidates",
+    "modeled expected improvements",
+    "future TensorRT-LLM or multi-GPU concepts"
+  ],
+  "no_fabricated_values": true,
+  "stages": {
+    "core_optimization_lab": {
+      "labels": [
+        "selected_for_one_factor_test",
+        "applicable_candidate",
+        "applicable_after_instrumentation",
+        "already_active_baseline",
+        "not_applicable_current_project",
+        "blocked_by_negative_rule",
+        "not_implemented",
+        "future_architecture"
+      ],
+      "organization": "difficulty_tier",
+      "visuals": [
+        "exact prefix reuse",
+        "cache hits/misses",
+        "scheduler queues",
+        "chunked prefill",
+        "KV blocks",
+        "quantization memory",
+        "speculative token acceptance"
+      ]
+    },
+    "main_inference_simulation": {
+      "callouts": [
+        "vLLM/SGLang are optimized serving baselines.",
+        "Engine-native capability is not the same as an applied experiment."
+      ],
+      "cards": [
+        "baseline capability cards",
+        "activation state",
+        "mechanism",
+        "evidence source",
+        "untuned settings",
+        "future experiment link"
+      ],
+      "section": "Serving Engine Optimization Baseline"
+    },
+    "optimized_inference_simulation": {
+      "current_state": "not_available",
+      "requires": [
+        "mandatory repairs",
+        "selected core optimizations",
+        "config deltas",
+        "progress events",
+        "telemetry",
+        "quality protection",
+        "final measured result"
+      ],
+      "show_only": "selected champion recipe after human approval"
+    }
+  },
+  "status": "UI_CONTRACT_DESIGNED_NO_MEASURED_OPTIMIZATION_RESULTS",
+  "ui_state_labels": {
+    "blocked_by_negative_rule": "Blocked by negative rule",
+    "engine_inherent": "Engine inherent",
+    "future_architecture": "Future architecture",
+    "measured_baseline_capability": "Measured baseline capability",
+    "missing_result": "Missing result",
+    "planned_candidate": "Planned candidate",
+    "requires_instrumentation": "Requires instrumentation",
+    "unknown": "Unknown, not instrumented"
+  },
+  "version": 1
+}

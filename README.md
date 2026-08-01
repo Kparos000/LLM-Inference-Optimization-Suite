@@ -32,6 +32,7 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The promoted benchmark contains 10,000 prompts, 10,000 gold/eval rows, and 4,740 KB records across Airline, Healthcare Admin, Retail, Finance, and Research AI.
 - Platform Foundation V1 is implemented under `platform/`. It provides a read-only FastAPI backend and Next.js frontend for replaying saved Main_Inference_V1 artifacts, exploring the dataset/preparation workflow, and planning optimizations without running GPUs.
 - The Optimization Lab now uses a two-track architecture: mandatory deployability repairs first, then core inference optimization planning only after targeted repair validation. The repair sample is `SAMPLE_VALIDATED`; full deployability still waits for measured `Optimized_Inference_V1` artifacts. See `docs/128_inference_optimization_two_track_architecture.md` and `docs/129_deployability_repair_validation_v1.md`.
+- Core optimization planning is now audited separately from deployability repair. The generated taxonomy distinguishes engine-native baseline capabilities, engineer-applied core optimizations, applicable one-factor candidates, and measured/planned scenarios. No core optimization experiment has run yet, and `Optimized_Inference_V1` is still missing.
 - Public dataset EDA is available under `data/generated/dataset_10000/`; Finance-specific assets are mirrored under `data/generated/finance/`.
 - Vertical context builders, normalized corpora, canonical retrieval keys, local Qdrant collections, BM25, hybrid reranking, and deterministic compression are implemented.
 - All five verticals pass the promoted retrieval SLOs in `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.
@@ -147,6 +148,13 @@ artifacts.
   violations, and backup verification passing. The UI repair gate is now
   `SAMPLE_VALIDATED`, which allows core optimization planning but does not
   create `Optimized_Inference_V1`.
+- The core optimization planning audit writes
+  `configs/core_optimization_taxonomy.yaml`,
+  `configs/core_optimization_scenario_registry.yaml`, and planning artifacts
+  under `experiments/main/main_inference_v1/processed/`. It records that vLLM
+  and SGLang supplied optimized serving baselines, but cache/kernel/prefix
+  states remain unknown unless directly instrumented. The first planned
+  one-factor candidates are prompt/prefix layout and scheduler/batch tuning.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -282,6 +290,13 @@ artifacts.
 - [Phase 2 optimization diagnosis](docs/121_phase2_optimization_diagnosis.md)
 - [Phase 2 targeted baseline repairs](docs/122_phase2_targeted_baseline_repairs.md)
 - [Official baseline v1](docs/123_official_baseline_v1.md)
+- [Product platform information architecture](docs/124_product_platform_information_architecture.md)
+- [Optimization intelligence UI layer](docs/125_optimization_intelligence_ui_layer.md)
+- [Platform foundation V1](docs/126_platform_foundation_v1.md)
+- [Platform UX storytelling upgrade](docs/127_platform_ux_storytelling_upgrade.md)
+- [Inference optimization two-track architecture](docs/128_inference_optimization_two_track_architecture.md)
+- [Deployability repair validation V1](docs/129_deployability_repair_validation_v1.md)
+- [Core optimization planning baseline audit](docs/130_core_optimization_planning_baseline_capability_audit.md)
 - [Block controlled final simulation summary](docs/summaries/blockControlledFinalSimulation_summary.md)
 - [Block Phase 2 optimization diagnosis summary](docs/summaries/blockPhase2_optimization_diagnosis_summary.md)
 - [Block Phase 2 targeted baseline repairs summary](docs/summaries/blockPhase2_targeted_baseline_repairs_summary.md)
@@ -297,6 +312,7 @@ artifacts.
 - [Deployment readiness guardrails](docs/113_deployment_readiness_guardrails.md)
 - [Repository cleanup and CI hardening](docs/114_repository_cleanup_ci_hardening.md)
 - [Phase 1E artifact sync summary](docs/summaries/blockPhase1E_artifact_sync_long_run_recovery_summary.md)
+- [Block core optimization planning summary](docs/summaries/blockCoreOptimizationPlanningBaselineAudit_summary.md)
 - [Current project state](PROJECT_STATE.md)
 - [Data directory policy](data/README.md)
 
@@ -326,8 +342,8 @@ inference-bench validate-config
 
 `validate-config` covers the model registry, runtime registry, serving
 profiles, load profiles, optimization negative rules, SLO targets/profiles,
-result-track schema, RunPod GPU price registry, and RunPod calibration
-profiles.
+result-track schema, RunPod GPU price registry, RunPod calibration profiles,
+core optimization taxonomy, and core optimization scenario registry.
 
 ## Initial Development Model
 

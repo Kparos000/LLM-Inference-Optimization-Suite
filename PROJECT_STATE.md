@@ -1,6 +1,6 @@
 # Project State
 
-Status as of July 8, 2026.
+Status as of August 1, 2026.
 
 ## Current Decision
 
@@ -46,6 +46,7 @@ PLATFORM_UX_STORYTELLING_V1_IMPLEMENTED
 OPTIMIZATION_TWO_TRACK_ARCHITECTURE_READY
 DEPLOYABILITY_REPAIR_SAMPLE_VALIDATED
 CORE_OPTIMIZATION_ELIGIBLE
+CORE_OPTIMIZATION_PLANNING_AUDIT_COMPLETE
 OPTIMIZED_INFERENCE_V1_PENDING_MEASURED_ARTIFACTS
 ```
 
@@ -73,6 +74,16 @@ optimization planning is allowed. Full deployability remains pending until
 measured `Optimized_Inference_V1` artifacts exist. The contract is documented
 in `docs/128_inference_optimization_two_track_architecture.md` and
 `docs/129_deployability_repair_validation_v1.md`.
+
+Core Optimization Planning and Baseline Capability Audit is now complete. It
+adds `configs/core_optimization_taxonomy.yaml`,
+`configs/core_optimization_scenario_registry.yaml`, generated planning reports
+under `experiments/main/main_inference_v1/processed/`, and
+`docs/130_core_optimization_planning_baseline_capability_audit.md`. The audit
+separates engine-native vLLM/SGLang baseline capabilities from engineer-applied
+core optimizations, marks unsupported cache/kernel states as unknown, and
+plans one-factor experiments without running inference or creating
+`Optimized_Inference_V1`.
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
 telemetry, and bounded mm4 workflow.

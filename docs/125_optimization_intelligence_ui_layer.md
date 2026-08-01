@@ -15,6 +15,20 @@ The targeted repair gate is currently `SAMPLE_VALIDATED`, so core strategies
 are now eligible for planning. Full deployability still requires measured
 `Optimized_Inference_V1` artifacts.
 
+Core optimization planning is now grounded by
+`docs/130_core_optimization_planning_baseline_capability_audit.md` and the
+generated planning artifacts:
+
+- `configs/core_optimization_taxonomy.yaml`
+- `configs/core_optimization_scenario_registry.yaml`
+- `experiments/main/main_inference_v1/processed/main_inference_v1_engine_baseline_capability_report.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_applicability_matrix.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_one_factor_experiment_plan.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_ui_contract.json`
+
+These files keep engine-native baseline behavior, planned one-factor
+experiments, and missing optimized results in separate UI states.
+
 ## Purpose
 
 The final platform needs more than a static benchmark dashboard. When a user
@@ -175,6 +189,9 @@ Frontend behavior:
   `SAMPLE_VALIDATED` from full-scale optimized `PASS`.
 - Load `main_inference_v1_ui_core_optimization_applicability.json` for
   post-repair core strategy eligibility.
+- Load `core_optimization_ui_contract.json` and
+  `core_optimization_scenario_registry.yaml` before rendering planned core
+  experiments or optimized-result placeholders.
 
 Backend behavior:
 

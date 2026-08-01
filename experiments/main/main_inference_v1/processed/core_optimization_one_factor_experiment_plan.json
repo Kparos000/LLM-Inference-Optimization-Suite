@@ -1,0 +1,318 @@
+{
+  "does_not_create_optimized_inference_v1": true,
+  "does_not_execute_inference": true,
+  "experiments": [
+    {
+      "acceptance_criteria": [
+        "no gold leakage",
+        "same evaluator contract",
+        "larger exact prefix"
+      ],
+      "artifact_outputs": [
+        "coreopt_prefix_layout_static_v1_prompt_diff_report.json",
+        "coreopt_prefix_layout_static_v1_summary.csv"
+      ],
+      "baseline_config": "Main_Inference_V1 rendered prompt layout",
+      "candidate_configs": [
+        "prefix_grouped_schema_first_layout"
+      ],
+      "changed_variable": "rendered_prompt_prefix_layout",
+      "device_requirements": "cpu",
+      "does_not_execute_automatically": true,
+      "engine_model": "planning-only; later vLLM/SGLang measured run",
+      "estimated_runtime_cost": "CPU only for static diff",
+      "experiment_id": "coreopt_prefix_layout_static_v1",
+      "held_constant_variables": [
+        "parent_run_id",
+        "prompt_ids",
+        "dataset_version",
+        "gold_records",
+        "evaluator",
+        "mandatory_deployability_repairs",
+        "model_alias_except_model_routing_tests",
+        "temperature",
+        "traffic_profile",
+        "memory_mode_except_memory_specific_tests"
+      ],
+      "hypothesis": "A more stable leading prefix increases cacheability without changing quality.",
+      "optimization_id": "prompt_prefix_layout_optimization",
+      "paper_recruiter_learning_value": "Shows that prefix caching starts with prompt layout.",
+      "parent_run": "main_inference_v1",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate",
+        "escalation_behavior",
+        "mm4_trace_bounds"
+      ],
+      "rank": 1,
+      "rejection_criteria": [
+        "contract text changes semantics",
+        "evidence visibility worsens"
+      ],
+      "sample_stratification": [
+        "vertical",
+        "memory_mode",
+        "expected_status"
+      ],
+      "target_metrics": [
+        "reusable_prefix_tokens",
+        "future_ttft"
+      ],
+      "telemetry_required": [
+        "exact_reusable_prefix_tokens",
+        "prompt_token_distribution"
+      ],
+      "ui_replay_requirements": [
+        "prefix waterfall",
+        "changed-token diff"
+      ],
+      "workload_sample": "static CPU diff over final_10000 source workload"
+    },
+    {
+      "acceptance_criteria": [
+        "quality/safety gates pass",
+        "request completion remains complete",
+        "measured latency or throughput improves"
+      ],
+      "artifact_outputs": [
+        "coreopt_scheduler_batch_vllm_v1_manifest.json",
+        "coreopt_scheduler_batch_vllm_v1_eval_report.json"
+      ],
+      "baseline_config": "Main_Inference_V1 vLLM baseline scenario",
+      "candidate_configs": [
+        "one_scheduler_batch_variant_at_a_time"
+      ],
+      "changed_variable": "scheduler_batch_config",
+      "device_requirements": "a100_sxm_80gb",
+      "does_not_execute_automatically": true,
+      "engine_model": "vLLM + model3_7b",
+      "estimated_runtime_cost": "small A100 run, exact count pending approval",
+      "experiment_id": "coreopt_scheduler_batch_vllm_v1",
+      "held_constant_variables": [
+        "parent_run_id",
+        "prompt_ids",
+        "dataset_version",
+        "gold_records",
+        "evaluator",
+        "mandatory_deployability_repairs",
+        "model_alias_except_model_routing_tests",
+        "temperature",
+        "traffic_profile",
+        "memory_mode_except_memory_specific_tests"
+      ],
+      "hypothesis": "A controlled scheduler/batch setting improves latency/throughput balance.",
+      "optimization_id": "scheduler_batch_tuning",
+      "paper_recruiter_learning_value": "Explains why more concurrency is not always faster.",
+      "parent_run": "main_inference_v1",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate",
+        "escalation_behavior",
+        "mm4_trace_bounds"
+      ],
+      "rank": 2,
+      "rejection_criteria": [
+        "tail latency worsens",
+        "OOM",
+        "quality/safety gate fails"
+      ],
+      "sample_stratification": [
+        "vertical",
+        "memory_mode",
+        "length_bucket"
+      ],
+      "target_metrics": [
+        "ttft",
+        "tpot",
+        "e2e_latency",
+        "tokens_per_second"
+      ],
+      "telemetry_required": [
+        "queue_wait_ms",
+        "active_batch_size",
+        "running_requests"
+      ],
+      "ui_replay_requirements": [
+        "queue chart",
+        "batch-size timeline",
+        "latency overlay"
+      ],
+      "workload_sample": "deterministic targeted self-hosted sample, approval required"
+    },
+    {
+      "acceptance_criteria": [
+        "cache hits measured",
+        "TTFT improves for hit rows"
+      ],
+      "artifact_outputs": [
+        "coreopt_prefix_cache_vllm_v1_cache_report.json",
+        "coreopt_prefix_cache_vllm_v1_eval_report.json"
+      ],
+      "baseline_config": "same vLLM scenario with prefix cache off/unknown",
+      "candidate_configs": [
+        "prefix_cache_enabled"
+      ],
+      "changed_variable": "prefix_cache_flag",
+      "device_requirements": "a100_sxm_80gb",
+      "does_not_execute_automatically": true,
+      "engine_model": "vLLM + model3_7b",
+      "estimated_runtime_cost": "small A100 run after instrumentation",
+      "experiment_id": "coreopt_prefix_cache_vllm_v1",
+      "held_constant_variables": [
+        "parent_run_id",
+        "prompt_ids",
+        "dataset_version",
+        "gold_records",
+        "evaluator",
+        "mandatory_deployability_repairs",
+        "model_alias_except_model_routing_tests",
+        "temperature",
+        "traffic_profile",
+        "memory_mode_except_memory_specific_tests"
+      ],
+      "hypothesis": "Exact shared prefixes can reduce TTFT when cache hits are recorded.",
+      "optimization_id": "prefix_cache_verification_tuning",
+      "paper_recruiter_learning_value": "Connects workload construction to serving speed.",
+      "parent_run": "main_inference_v1",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate",
+        "escalation_behavior",
+        "mm4_trace_bounds"
+      ],
+      "rank": 3,
+      "rejection_criteria": [
+        "no cache hits",
+        "quality/safety regression"
+      ],
+      "sample_stratification": [
+        "prefix_family",
+        "vertical",
+        "memory_mode"
+      ],
+      "target_metrics": [
+        "ttft",
+        "prefill_time",
+        "tokens_per_second"
+      ],
+      "telemetry_required": [
+        "hit_count",
+        "miss_count",
+        "hit_token_count",
+        "hit_miss_ttft_ms"
+      ],
+      "ui_replay_requirements": [
+        "hit/miss chart",
+        "reused-token distribution"
+      ],
+      "workload_sample": "prefix-family stratified sample, approval required"
+    },
+    {
+      "acceptance_criteria": [
+        "long-bucket TTFT improves",
+        "no completion regression"
+      ],
+      "artifact_outputs": [
+        "coreopt_chunked_prefill_sglang_v1_eval_report.json"
+      ],
+      "baseline_config": "Main_Inference_V1 SGLang baseline scenario",
+      "candidate_configs": [
+        "one_chunked_prefill_variant_at_a_time"
+      ],
+      "changed_variable": "chunked_prefill_config",
+      "device_requirements": "a100_sxm_80gb",
+      "does_not_execute_automatically": true,
+      "engine_model": "SGLang + model3_7b",
+      "estimated_runtime_cost": "small A100 run after instrumentation",
+      "experiment_id": "coreopt_chunked_prefill_sglang_v1",
+      "held_constant_variables": [
+        "parent_run_id",
+        "prompt_ids",
+        "dataset_version",
+        "gold_records",
+        "evaluator",
+        "mandatory_deployability_repairs",
+        "model_alias_except_model_routing_tests",
+        "temperature",
+        "traffic_profile",
+        "memory_mode_except_memory_specific_tests"
+      ],
+      "hypothesis": "Chunked prefill reduces long-context TTFT and queue interference.",
+      "optimization_id": "chunked_prefill_tuning",
+      "paper_recruiter_learning_value": "Shows prefill/decode tradeoffs visually.",
+      "parent_run": "main_inference_v1",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate",
+        "escalation_behavior",
+        "mm4_trace_bounds"
+      ],
+      "rank": 4,
+      "rejection_criteria": [
+        "decode throughput worsens materially",
+        "quality/safety fails"
+      ],
+      "sample_stratification": [
+        "length_bucket",
+        "vertical",
+        "memory_mode"
+      ],
+      "target_metrics": [
+        "ttft",
+        "p95_e2e_latency",
+        "p99_e2e_latency"
+      ],
+      "telemetry_required": [
+        "chunk_count",
+        "chunk_size",
+        "length_bucket_ttft_ms"
+      ],
+      "ui_replay_requirements": [
+        "long-prefill lane",
+        "length-bucket TTFT chart"
+      ],
+      "workload_sample": "long-context stratified sample, approval required"
+    }
+  ],
+  "not_selected_yet": [
+    {
+      "optimization_id": "quantization",
+      "reason": "Blocked until repair path is full-run validated and checkpoint support exists."
+    },
+    {
+      "optimization_id": "speculative_decoding",
+      "reason": "No compatible draft model or acceptance telemetry exists."
+    },
+    {
+      "optimization_id": "multi_gpu_parallelism",
+      "reason": "Current final target is one A100."
+    }
+  ],
+  "run_id": "main_inference_v1",
+  "selection_rule": "Ranked by prerequisite order, causal clarity, instrumentation readiness, cost, and recruiter learning value.",
+  "status": "ONE_FACTOR_EXPERIMENT_PROGRAM_PLANNED"
+}

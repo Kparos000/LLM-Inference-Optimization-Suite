@@ -1,0 +1,16 @@
+optimization_id,display_name,difficulty_tier,category,applicability_state,feasible_on_one_a100,instrument_first,result_type,why
+prompt_prefix_layout_optimization,Prompt and prefix-layout optimization,1,workload_and_configuration,selected_for_one_factor_test,True,False,planned,Evidence is available and the factor can be isolated.
+prefix_cache_verification_tuning,Prefix-cache verification and tuning,1,workload_and_configuration,applicable_after_instrumentation,True,True,planned,"Likely relevant, but missing telemetry would make claims weak."
+scheduler_batch_tuning,Scheduler and batch tuning,1,workload_and_configuration,selected_for_one_factor_test,True,False,planned,Evidence is available and the factor can be isolated.
+kv_cache_capacity_allocation_tuning,KV-cache capacity/allocation tuning,1,workload_and_configuration,applicable_after_instrumentation,True,True,planned,"Likely relevant, but missing telemetry would make claims weak."
+chunked_prefill_tuning,Chunked-prefill tuning,1,workload_and_configuration,applicable_after_instrumentation,True,True,planned,"Likely relevant, but missing telemetry would make claims weak."
+cache_workload_aware_routing,Cache-aware/workload-aware routing,1,workload_and_configuration,applicable_candidate,True,False,planned,Applicable after higher-priority one-factor tests.
+quantization,Quantization,2,model_execution,blocked_by_negative_rule,True,False,planned,Negative rules block this until quality/safety are protected and support exists.
+speculative_decoding,Speculative decoding,2,model_execution,not_implemented,True,False,planned,Required model/runtime support or instrumentation is absent.
+model_selection_routing,Model selection and routing,2,model_execution,applicable_candidate,True,False,planned,Applicable after higher-priority one-factor tests.
+model_compression,Model compression,3,model_hardware_architecture,future_architecture,True,False,planned,"Important concept, but outside the current one-A100 program."
+multi_gpu_parallelism,Multi-GPU parallelism,3,model_hardware_architecture,not_applicable_current_project,False,False,planned,"Current final run target is one A100, not multi-GPU."
+kv_cache_offloading_hierarchical_cache,KV-cache offloading / hierarchical caching,3,model_hardware_architecture,future_architecture,False,False,planned,"Important concept, but outside the current one-A100 program."
+manual_kernel_compiler_optimization,Manual kernel/compiler optimization,3,model_hardware_architecture,future_architecture,True,False,planned,"Important concept, but outside the current one-A100 program."
+prefill_decode_disaggregation,Prefill/decode disaggregation,4,distributed_architecture,future_architecture,False,False,planned,"Important concept, but outside the current one-A100 program."
+distributed_capacity_serving_architecture,Distributed capacity and serving architecture,4,distributed_architecture,future_architecture,False,False,planned,"Important concept, but outside the current one-A100 program."

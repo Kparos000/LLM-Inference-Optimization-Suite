@@ -120,6 +120,18 @@ The architecture references are
 `docs/128_inference_optimization_two_track_architecture.md` and
 `docs/129_deployability_repair_validation_v1.md`.
 
+Core Optimization Planning and Baseline Capability Audit is complete as a
+planning layer only. It writes `configs/core_optimization_taxonomy.yaml`,
+`configs/core_optimization_scenario_registry.yaml`,
+`experiments/main/main_inference_v1/processed/main_inference_v1_engine_baseline_capability_report.json`,
+`experiments/main/main_inference_v1/processed/core_optimization_applicability_matrix.json`,
+and related UI/planning reports. The audit separates vLLM/SGLang engine-native
+baseline capabilities from engineer-applied core optimizations, records cache,
+CUDA Graph, kernel, and prefix-cache states as unknown where direct evidence is
+missing, and ranks one-factor candidate experiments. It does not run inference,
+mutate `Main_Inference_V1`, or create `Optimized_Inference_V1`. The reference
+document is `docs/130_core_optimization_planning_baseline_capability_audit.md`.
+
 The measured Baseline_Inference_V1 result is:
 
 - Runtime: 1,900.585 seconds.
