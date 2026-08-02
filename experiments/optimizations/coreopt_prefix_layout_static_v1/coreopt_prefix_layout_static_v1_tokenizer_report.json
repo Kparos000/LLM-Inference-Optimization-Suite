@@ -1,0 +1,10 @@
+{
+  "analysis_timestamp": "2026-08-02T03:01:07.372195+00:00",
+  "fallback_reason": "We couldn't connect to 'https://huggingface.co' to load the files, and couldn't find them in the cached files.\nCheck your internet connection or see how to run the library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'.",
+  "fallback_used": true,
+  "metadata_sha256": "f84ce4f816a15500964aa2021c302a1e5bff12d622fda8f286938486ae704543",
+  "tokenizer_available": false,
+  "tokenizer_model_id": "Qwen/Qwen2.5-7B-Instruct",
+  "tokenizer_semantics": "Static proxy tokenizer; not suitable for latency claims.",
+  "tokenizer_source": "deterministic_regex_fallback"
+}

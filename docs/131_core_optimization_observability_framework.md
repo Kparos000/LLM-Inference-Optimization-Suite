@@ -159,6 +159,22 @@ token-identical leading tokens only. Because historical engine tokenization and
 cache counters were not captured in Main_Inference_V1, this analysis is
 labeled `estimated`.
 
+The first full static scenario is now complete under:
+
+```text
+experiments/optimizations/coreopt_prefix_layout_static_v1/
+```
+
+It scans 40,000 authoritative rendered workload rows across mm0-mm3
+`prompt_plus_metadata` workloads, compares `baseline_prompt_layout_v1` with
+`prefix_optimized_prompt_layout_v1`, and stores hashes/metrics without raw
+prompt text. It is `measured_static_analysis`, not a latency experiment. The
+derived mean exact common prefix increased from 29 to 358 tokens, with total
+input tokens unchanged. The scenario decision is `MISSING_CONFIGURATION`
+because no acceptance threshold is configured for promoting static prefix
+layout into engine validation. See
+`docs/132_coreopt_prefix_layout_static_v1.md`.
+
 ## Event Schema
 
 The unified event schema is saved at:
@@ -174,7 +190,8 @@ It validates discriminated event payloads for:
 `prefix_cache_lookup`, `prefix_cache_hit`, `prefix_cache_miss`,
 `kv_cache_allocated`, `kv_cache_evicted`, `batch_iteration`, `decode_token`,
 `request_completed`, `request_failed`, `telemetry_sample`,
-`quality_evaluation`, `optimization_decision`, and `run_completed`.
+`quality_evaluation`, `optimization_decision`, `prompt_layout_rendered`,
+`prefix_family_assigned`, `static_metric_computed`, and `run_completed`.
 
 Each event carries schema version, timestamp, run/scenario/config identity,
 engine, model, optimization ID, source, measurement type, event type, and a
@@ -198,14 +215,15 @@ size, KV block counters, chunk count, and speculative acceptance rate.
 
 ## Scenario Readiness
 
-The one-factor scenarios remain planned:
+The first scenario is complete as static analysis. Runtime one-factor
+scenarios remain planned:
 
-| Scenario | Optimization | Readiness | GPU needed now |
-| --- | --- | --- | --- |
-| `coreopt_prefix_layout_static_v1` | prompt prefix layout | `ready_derivable` | No |
-| `coreopt_scheduler_batch_vllm_v1` | scheduler/batch tuning | `requires_runner_instrumentation` | Not until instrumentation exists |
-| `coreopt_prefix_cache_vllm_v1` | prefix-cache verification | `requires_engine_metrics` | Not until engine metrics exist |
-| `coreopt_chunked_prefill_sglang_v1` | chunked prefill | `requires_engine_metrics` | Not until engine metrics exist |
+| Scenario | Optimization | Result type | Readiness | GPU needed now |
+| --- | --- | --- | --- | --- |
+| `coreopt_prefix_layout_static_v1` | prompt prefix layout | `measured_static_analysis` | `ready_derivable` | No |
+| `coreopt_scheduler_batch_vllm_v1` | scheduler/batch tuning | `planned` | `requires_runner_instrumentation` | Not until instrumentation exists |
+| `coreopt_prefix_cache_vllm_v1` | prefix-cache verification | `planned` | `requires_engine_metrics` | Not until engine metrics exist |
+| `coreopt_chunked_prefill_sglang_v1` | chunked prefill | `planned` | `requires_engine_metrics` | Not until engine metrics exist |
 
 `Optimized_Inference_V1` is still `missing_not_created`; no champion is
 selected.
@@ -221,6 +239,13 @@ FastAPI exposes read-only planned endpoints:
 - `/api/optimizations/observability/event-schema`
 - `/api/optimizations/observability/missing-instrumentation`
 - `/api/optimizations/observability/cards`
+- `/api/optimizations/coreopt-prefix-layout-static-v1`
+- `/api/optimizations/coreopt-prefix-layout-static-v1/summary`
+- `/api/optimizations/coreopt-prefix-layout-static-v1/layouts`
+- `/api/optimizations/coreopt-prefix-layout-static-v1/prefix-metrics`
+- `/api/optimizations/coreopt-prefix-layout-static-v1/equivalence`
+- `/api/optimizations/coreopt-prefix-layout-static-v1/decision`
+- `/api/optimizations/coreopt-prefix-layout-static-v1/story`
 
 The Next.js Optimization Lab renders a compact observability card set. Each
 card shows:
@@ -240,11 +265,13 @@ and future values. Missing telemetry must never render as zero.
 - No speculative decoding run exists.
 - No quantized or TensorRT-LLM run exists.
 - No optimized artifacts exist.
+- No static acceptance threshold exists for
+  `minimum_reusable_token_ratio_delta_for_engine_validation`.
 
 ## Exact Next Task
 
-Implement `coreopt_prefix_layout_static_v1` as a prompt-layout candidate
-builder and diff tool. It should not run inference. It should compare baseline
-rendered prompts with a candidate layout, report token savings and prefix
-family changes, and preserve the current gold data and evaluator. A GPU is not
-required until the later one-factor latency rerun.
+Configure the missing static acceptance threshold, review
+`coreopt_prefix_layout_static_v1`, and design
+`coreopt_prefix_layout_engine_validation_v1`. The next experiment must run a
+one-factor engine validation with protected quality/safety gates and actual
+latency or cache metrics before any runtime improvement claim is accepted.

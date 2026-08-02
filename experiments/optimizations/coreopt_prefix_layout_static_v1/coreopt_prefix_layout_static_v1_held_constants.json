@@ -1,0 +1,50 @@
+{
+  "changed_factor": "rendered_prompt_section_order",
+  "hashes": {
+    "generation_contract_renderer": "a282de6d35af0669bd94d69a8a724524ec44bbdba246a377fbacd6a5eb6d5e69",
+    "memory_modes": "872b95c7ac11354fa60fa9bc00bdf8fd4224b9c1d2effa7248c8e9873d3cb38a",
+    "models": "bae009f401dbf95fde7e368989be03da3dcbd78d648cb72de602736c4cef1ac7",
+    "runtime_engines": "4889ca68c1f6ebe5a315011bf6a78b21e2bb01afbf13cab797c4df5cf60b288e",
+    "slo_targets": "c1164ae62426acd3fdcc5c2ba07d52e462bea989acdcf53e30f53f23559b775a",
+    "workload_adapter": "f84d4ac70808cd4a5cb25b0ffcd1650a820310480639dfb769c5c3e26d1036c8",
+    "workload_files": {
+      "data/workloads/final_10000/prompt_plus_metadata/mm0_no_context.jsonl": "06f5191ee67eb40c65e381d0034e0e4fa3685db6507a352bc274914e499a53c1",
+      "data/workloads/final_10000/prompt_plus_metadata/mm1_dense_top5.jsonl": "2a88a0e83cc408869c90c89718c7ac982ec3b93d4cefc0ce14e12ea513763366",
+      "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl": "911a16a40f7d61cc736b3799c949d9ac353d121a0900e5989d70b2846727b34e",
+      "data/workloads/final_10000/prompt_plus_metadata/mm3_compressed_hybrid_top5.jsonl": "bf37e897453816f74e8bf2ac0690c0e8b989af197d7904581bad7f2c912bc57b"
+    }
+  },
+  "held_constant_categories": [
+    "workload",
+    "prompt_ids",
+    "gold_contract",
+    "knowledge_base_context",
+    "retrieval_order",
+    "evidence_aliases",
+    "memory_semantics",
+    "tokenizer_model",
+    "generation_contract",
+    "safety_and_escalation_rules",
+    "evaluator_semantics",
+    "output_token_limits",
+    "model_metadata",
+    "engine_metadata"
+  ],
+  "inference_executed": false,
+  "paths": {
+    "generation_contract_renderer": "src/inference_bench/generation_contract.py",
+    "memory_modes": "configs/memory_modes.yaml",
+    "models": "configs/models.yaml",
+    "runtime_engines": "configs/runtime_engines.yaml",
+    "slo_targets": "configs/slo_targets.yaml",
+    "workload_adapter": "src/inference_bench/workload_adapter.py",
+    "workload_files": [
+      "data/workloads/final_10000/prompt_plus_metadata/mm0_no_context.jsonl",
+      "data/workloads/final_10000/prompt_plus_metadata/mm1_dense_top5.jsonl",
+      "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl",
+      "data/workloads/final_10000/prompt_plus_metadata/mm3_compressed_hybrid_top5.jsonl"
+    ]
+  },
+  "result_mutation": "none",
+  "scenario_id": "coreopt_prefix_layout_static_v1"
+}

@@ -194,3 +194,80 @@ export type CoreObservabilityCards = {
   prefix_summary: Record<string, number | string | Record<string, number>>;
   source_artifacts: string[];
 };
+
+export type PrefixLayoutStaticExperiment = {
+  summary: {
+    scenario_id: string;
+    parent_run_id: string;
+    optimization_id: string;
+    result_type: string;
+    status: string;
+    workload_rows_scanned: number;
+    inference_executed: boolean;
+    cache_hits_measured: boolean;
+    latency_claimed: boolean;
+    layout_summaries: Record<
+      string,
+      {
+        prompt_count: number;
+        mean_input_tokens: number;
+        median_input_tokens: number;
+        p95_input_tokens: number;
+        p99_input_tokens: number;
+        mean_longest_exact_common_prefix_tokens: number;
+        mean_reusable_token_ratio: number;
+        prefix_family_count: number;
+      }
+    >;
+    deltas: {
+      candidate_minus_baseline_mean_common_prefix_tokens: number;
+      candidate_minus_baseline_mean_reusable_token_ratio: number;
+      candidate_minus_baseline_total_input_tokens: number;
+    };
+  };
+  layouts: {
+    baseline: {
+      layout_id: string;
+      section_order: string[];
+      raw_prompt_text_included: boolean;
+    };
+    candidate: {
+      layout_id: string;
+      section_order: string[];
+      raw_prompt_text_included: boolean;
+    };
+  };
+  metrics: {
+    prefix_families: Array<Record<string, string>>;
+    per_vertical_memory: Array<Record<string, string>>;
+    section_analysis: Array<Record<string, string>>;
+  };
+  equivalence: {
+    status: string;
+    rows_checked: number;
+    section_content_byte_equivalent: boolean;
+    evidence_order_fixed: boolean;
+    instruction_priority_risk: boolean;
+    requires_inference_validation: boolean;
+  };
+  decision: {
+    scenario_id: string;
+    decision: string;
+    reason: string;
+    requires_gpu_rerun: boolean;
+    requires_engine_validation: boolean;
+    next_required_experiment: string;
+    disallowed_claims: string[];
+  };
+  story: {
+    title: string;
+    story_steps: Array<{
+      id: string;
+      title: string;
+      body: string;
+    }>;
+    headline_metrics: Record<string, string | number | boolean>;
+    apply_behavior: string;
+  };
+  source_artifacts: string[];
+};

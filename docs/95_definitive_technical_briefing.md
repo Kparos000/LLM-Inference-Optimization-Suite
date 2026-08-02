@@ -144,6 +144,17 @@ than zero. It does not run inference, use a GPU, mutate Main_Inference_V1,
 select a champion, or create Optimized_Inference_V1. The reference document is
 `docs/131_core_optimization_observability_framework.md`.
 
+The first core optimization experiment, `coreopt_prefix_layout_static_v1`, has
+now completed as measured static analysis. It compares the authoritative
+`baseline_prompt_layout_v1` runner prompt with
+`prefix_optimized_prompt_layout_v1` across 40,000 rendered workload rows,
+preserves section bytes, keeps total input tokens unchanged, and raises the
+derived mean exact common prefix from 29 to 358 tokens. The decision is
+`MISSING_CONFIGURATION`: no runtime claim is allowed until an acceptance
+threshold is configured and `coreopt_prefix_layout_engine_validation_v1` runs
+with engine metrics. The reference document is
+`docs/132_coreopt_prefix_layout_static_v1.md`.
+
 The measured Baseline_Inference_V1 result is:
 
 - Runtime: 1,900.585 seconds.

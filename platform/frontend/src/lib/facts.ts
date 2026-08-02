@@ -6,6 +6,7 @@ import type {
   MetricCard,
   OptimizationState,
   OptimizationStory,
+  PrefixLayoutStaticExperiment,
   RepairGate
 } from "./types";
 
@@ -415,6 +416,137 @@ export const fallbackOptimizationStory: OptimizationStory = {
       user_action: "Inspect measured repaired artifacts when available.",
       system_response: "Unlock or block core optimization."
     }
+  ]
+};
+
+export const fallbackPrefixLayoutStaticExperiment: PrefixLayoutStaticExperiment = {
+  summary: {
+    scenario_id: "coreopt_prefix_layout_static_v1",
+    parent_run_id: "main_inference_v1",
+    optimization_id: "prompt_prefix_layout_optimization",
+    result_type: "measured_static_analysis",
+    status: "completed_static_analysis",
+    workload_rows_scanned: 40000,
+    inference_executed: false,
+    cache_hits_measured: false,
+    latency_claimed: false,
+    layout_summaries: {
+      baseline_prompt_layout_v1: {
+        prompt_count: 40000,
+        mean_input_tokens: 822.333875,
+        median_input_tokens: 904,
+        p95_input_tokens: 1208,
+        p99_input_tokens: 1519,
+        mean_longest_exact_common_prefix_tokens: 29,
+        mean_reusable_token_ratio: 0.041903,
+        prefix_family_count: 4
+      },
+      prefix_optimized_prompt_layout_v1: {
+        prompt_count: 40000,
+        mean_input_tokens: 822.333875,
+        median_input_tokens: 904,
+        p95_input_tokens: 1208,
+        p99_input_tokens: 1519,
+        mean_longest_exact_common_prefix_tokens: 358,
+        mean_reusable_token_ratio: 0.517288,
+        prefix_family_count: 4
+      }
+    },
+    deltas: {
+      candidate_minus_baseline_mean_common_prefix_tokens: 329,
+      candidate_minus_baseline_mean_reusable_token_ratio: 0.475385,
+      candidate_minus_baseline_total_input_tokens: 0
+    }
+  },
+  layouts: {
+    baseline: {
+      layout_id: "baseline_prompt_layout_v1",
+      section_order: [
+        "system",
+        "memory_mode",
+        "retrieved_evidence",
+        "user_question",
+        "output_contract"
+      ],
+      raw_prompt_text_included: false
+    },
+    candidate: {
+      layout_id: "prefix_optimized_prompt_layout_v1",
+      section_order: [
+        "system",
+        "memory_mode",
+        "output_contract",
+        "retrieved_evidence",
+        "user_question"
+      ],
+      raw_prompt_text_included: false
+    }
+  },
+  metrics: {
+    prefix_families: [],
+    per_vertical_memory: [],
+    section_analysis: []
+  },
+  equivalence: {
+    status: "PASS",
+    rows_checked: 40000,
+    section_content_byte_equivalent: true,
+    evidence_order_fixed: true,
+    instruction_priority_risk: true,
+    requires_inference_validation: true
+  },
+  decision: {
+    scenario_id: "coreopt_prefix_layout_static_v1",
+    decision: "MISSING_CONFIGURATION",
+    reason:
+      "Static analysis completed and the candidate increases reusable leading prefix potential, but no explicit acceptance threshold is configured.",
+    requires_gpu_rerun: true,
+    requires_engine_validation: true,
+    next_required_experiment: "coreopt_prefix_layout_engine_validation_v1",
+    disallowed_claims: [
+      "TTFT improvement",
+      "latency improvement",
+      "cache-hit improvement",
+      "cost improvement",
+      "deployability improvement"
+    ]
+  },
+  story: {
+    title: "Static Prompt Prefix Layout Optimization",
+    story_steps: [
+      {
+        id: "problem",
+        title: "Problem",
+        body:
+          "The authoritative runner prompt placed a long stable output contract after request-specific context and question content."
+      },
+      {
+        id: "mechanism",
+        title: "Mechanism",
+        body:
+          "The candidate moves stable reusable instructions before dynamic evidence and question sections so future prefix caching can reuse a longer exact leading token sequence."
+      },
+      {
+        id: "decision",
+        title: "Decision",
+        body:
+          "The result is plan-only until an engineer configures an acceptance threshold and runs engine validation."
+      }
+    ],
+    headline_metrics: {
+      baseline_mean_reusable_token_ratio: 0.041903,
+      candidate_mean_reusable_token_ratio: 0.517288,
+      delta_reusable_token_ratio: 0.475385,
+      equivalence_status: "PASS",
+      requires_engine_validation: true
+    },
+    apply_behavior:
+      "No inference is executed; clicking apply can only reveal the engine-validation plan."
+  },
+  source_artifacts: [
+    "experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_prefix_summary.json",
+    "experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_equivalence_report.json",
+    "experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_decision.json"
   ]
 };
 

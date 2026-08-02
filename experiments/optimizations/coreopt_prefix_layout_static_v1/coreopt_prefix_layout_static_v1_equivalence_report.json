@@ -1,0 +1,24 @@
+{
+  "all_sections_present": true,
+  "citation_aliases_preserved": true,
+  "evidence_content_byte_equivalent": true,
+  "evidence_order_fixed": true,
+  "forbidden_gold_leakage_detected": false,
+  "instruction_priority_risk": true,
+  "max_output_settings_unchanged": true,
+  "memory_instruction_unchanged": true,
+  "model_chat_roles_valid": true,
+  "notes": [
+    "Candidate changes only section order and preserves section bytes.",
+    "Because instruction order changes, quality and safety must be validated by inference before deployment claims."
+  ],
+  "requires_inference_validation": true,
+  "rows_checked": 40000,
+  "safety_instruction_unchanged": true,
+  "scenario_id": "coreopt_prefix_layout_static_v1",
+  "schema_instruction_unchanged": true,
+  "section_content_byte_equivalent": true,
+  "section_mismatch_count": 0,
+  "section_order_mismatch_count": 0,
+  "status": "PASS"
+}

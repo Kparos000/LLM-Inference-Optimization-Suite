@@ -74,7 +74,9 @@ than simply increasing concurrency.
    current one-A100, model3/model6, vLLM/SGLang/API-provider project state.
 4. Measured optimization scenarios: saved scenarios only. Main_Inference_V1 and
    Deployability_Repair_Validation_V1 are measured; one-factor core candidates
-   are planned; Optimized_Inference_V1 is missing/not created.
+   are planned unless a measured static or runtime artifact exists.
+   `coreopt_prefix_layout_static_v1` is now measured static analysis;
+   Optimized_Inference_V1 is missing/not created.
 
 ## Output Artifacts
 
@@ -109,15 +111,17 @@ The instrumentation layer for those gaps is now implemented in
 `configs/core_optimization_observability.yaml`, an event schema, adapter
 coverage, missing-instrumentation reports, UI observability cards, and
 scenario-level readiness fields. The one-factor scenarios remain planned and
-no optimization result is claimed.
+no runtime optimization result is claimed. The first static one-factor
+scenario is now complete as `coreopt_prefix_layout_static_v1`; see
+`docs/132_coreopt_prefix_layout_static_v1.md`.
 
 ## Recommended First Core Task
 
-Start with `coreopt_prefix_layout_static_v1`. It is CPU-only, isolates one
-changed factor, protects the evaluator and gold data, and teaches why prefix
-caching begins with stable prompt layout. The first live GPU follow-up is
-`coreopt_scheduler_batch_vllm_v1`, but it should run only after the static
-layout audit and after the required queue/batch telemetry fields are available.
+Review `coreopt_prefix_layout_static_v1`, configure the missing acceptance
+threshold, and then choose the next controlled one-factor experiment. The first
+live GPU follow-up for prompt layout is
+`coreopt_prefix_layout_engine_validation_v1`; scheduler/batch tuning remains a
+separate vLLM experiment that should wait for queue/batch telemetry fields.
 
 ## Current State
 

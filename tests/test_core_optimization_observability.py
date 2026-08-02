@@ -125,6 +125,9 @@ def test_saved_event_schema_artifact_is_planning_only() -> None:
 
     assert payload["status"] == "EVENT_SCHEMA_READY_PLANNING_ONLY"
     assert "prefix_cache_hit" in payload["event_types"]
+    assert "prompt_layout_rendered" in payload["event_types"]
+    assert "prefix_family_assigned" in payload["event_types"]
+    assert "static_metric_computed" in payload["event_types"]
     assert payload["example_event"]["measurement_type"] == "estimated"
 
 
@@ -147,7 +150,7 @@ def test_adapters_parse_existing_artifacts_without_live_engine_or_mutation() -> 
     assert "active_batch_size" in missing_fields
 
 
-def test_scenario_registry_keeps_one_factor_scenarios_planned() -> None:
+def test_scenario_registry_keeps_unrun_one_factor_scenarios_planned() -> None:
     registry = build_updated_scenario_registry()
     scenarios = {
         str(item["scenario_id"]): item for item in cast(list[dict[str, Any]], registry["scenarios"])
@@ -156,7 +159,11 @@ def test_scenario_registry_keeps_one_factor_scenarios_planned() -> None:
     assert registry["status"] == "SCENARIO_REGISTRY_PLANNED_WITH_OBSERVABILITY"
     assert registry["champion_selected"] is False
     for scenario_id in SCENARIO_PLAN_PATHS:
-        assert scenarios[scenario_id]["result_type"] == "planned"
+        if scenario_id == "coreopt_prefix_layout_static_v1":
+            assert scenarios[scenario_id]["result_type"] == "measured_static_analysis"
+            assert scenarios[scenario_id]["decision"] == "MISSING_CONFIGURATION"
+        else:
+            assert scenarios[scenario_id]["result_type"] == "planned"
         assert scenarios[scenario_id]["instrumentation_readiness"] in READINESS_STATES
     assert scenarios["optimized_inference_v1"]["result_type"] == "missing_not_created"
     assert scenarios["optimized_inference_v1"]["artifact_paths"] == []
@@ -175,6 +182,13 @@ def test_generated_yaml_registry_matches_scenario_and_has_no_measured_optimizati
     assert observability["does_not_execute_inference"] is True
     assert observability["does_not_create_optimized_inference_v1"] is True
     assert len(observability["optimizations"]) == 15
+    scenarios = {
+        str(item["scenario_id"]): item for item in cast(list[dict[str, Any]], scenario["scenarios"])
+    }
+    assert scenarios["coreopt_prefix_layout_static_v1"]["result_type"] == (
+        "measured_static_analysis"
+    )
+    assert scenarios["coreopt_prefix_layout_static_v1"]["inference_executed"] is False
     assert scenario["observability_framework"]["optimized_inference_v1_created"] is False
 
 

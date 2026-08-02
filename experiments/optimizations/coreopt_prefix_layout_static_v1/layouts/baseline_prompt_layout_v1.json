@@ -1,0 +1,54 @@
+{
+  "layout_id": "baseline_prompt_layout_v1",
+  "raw_prompt_text_included": false,
+  "scenario_id": "coreopt_prefix_layout_static_v1",
+  "section_order": [
+    "system",
+    "memory_mode",
+    "retrieved_evidence",
+    "user_question",
+    "output_contract"
+  ],
+  "sections": [
+    {
+      "content_source": "authoritative_runner_prompt_section",
+      "position": 1,
+      "role": "stable",
+      "sample_char_count": 68,
+      "section_id": "system",
+      "sha256": "e399f4cd0f3bfa6d51adf2da5667c252ab811f0a1fca5b8e33cd3d5df046ddd7"
+    },
+    {
+      "content_source": "authoritative_runner_prompt_section",
+      "position": 2,
+      "role": "stable",
+      "sample_char_count": 27,
+      "section_id": "memory_mode",
+      "sha256": "8bcec2da60f70ecbc101d0edf6cebd68b7b44e1b487432fd095af2e64b06cb4e"
+    },
+    {
+      "content_source": "authoritative_runner_prompt_section",
+      "position": 3,
+      "role": "dynamic",
+      "sample_char_count": 55,
+      "section_id": "retrieved_evidence",
+      "sha256": "b105bd22ab628c6c9e62eb9861a58e83dde05a706e7bb6c5c8c1fb3e640e7f37"
+    },
+    {
+      "content_source": "authoritative_runner_prompt_section",
+      "position": 4,
+      "role": "dynamic",
+      "sample_char_count": 141,
+      "section_id": "user_question",
+      "sha256": "16c41af3636a2a48fd13dda9e96cb7a1464d4c80883d49f0ec9e4ecc633aa391"
+    },
+    {
+      "content_source": "authoritative_runner_prompt_section",
+      "position": 5,
+      "role": "stable",
+      "sample_char_count": 1768,
+      "section_id": "output_contract",
+      "sha256": "76eba914515f83e42cfa6a1d1d582247b23b84c542f0de9316bd0735a05c49f3"
+    }
+  ]
+}

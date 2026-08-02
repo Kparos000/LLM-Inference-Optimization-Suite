@@ -32,8 +32,9 @@ Paid GPU will not be used until the local harness, CI/CD, metrics, workload load
 - The promoted benchmark contains 10,000 prompts, 10,000 gold/eval rows, and 4,740 KB records across Airline, Healthcare Admin, Retail, Finance, and Research AI.
 - Platform Foundation V1 is implemented under `platform/`. It provides a read-only FastAPI backend and Next.js frontend for replaying saved Main_Inference_V1 artifacts, exploring the dataset/preparation workflow, and planning optimizations without running GPUs.
 - The Optimization Lab now uses a two-track architecture: mandatory deployability repairs first, then core inference optimization planning only after targeted repair validation. The repair sample is `SAMPLE_VALIDATED`; full deployability still waits for measured `Optimized_Inference_V1` artifacts. See `docs/128_inference_optimization_two_track_architecture.md` and `docs/129_deployability_repair_validation_v1.md`.
-- Core optimization planning is now audited separately from deployability repair. The generated taxonomy distinguishes engine-native baseline capabilities, engineer-applied core optimizations, applicable one-factor candidates, and measured/planned scenarios. No core optimization experiment has run yet, and `Optimized_Inference_V1` is still missing.
+- Core optimization planning is now audited separately from deployability repair. The generated taxonomy distinguishes engine-native baseline capabilities, engineer-applied core optimizations, applicable one-factor candidates, and measured/planned scenarios. The first core optimization experiment is complete as CPU-only static analysis; `Optimized_Inference_V1` is still missing.
 - Core optimization observability is implemented as a planning/instrumentation layer. It adds `configs/core_optimization_observability.yaml`, unified event schemas, adapter coverage, static prefix-opportunity analysis, instrumentation readiness reports, and UI observability cards. It does not run inference, use a GPU, mutate Main_Inference_V1, or create `Optimized_Inference_V1`.
+- `coreopt_prefix_layout_static_v1` is the first measured static core optimization scenario. It compares `baseline_prompt_layout_v1` with `prefix_optimized_prompt_layout_v1` across 40,000 rendered workload rows, improves derived exact leading-prefix opportunity, preserves section bytes, and returns `MISSING_CONFIGURATION` until an acceptance threshold and engine validation are approved. See `docs/132_coreopt_prefix_layout_static_v1.md`.
 - Public dataset EDA is available under `data/generated/dataset_10000/`; Finance-specific assets are mirrored under `data/generated/finance/`.
 - Vertical context builders, normalized corpora, canonical retrieval keys, local Qdrant collections, BM25, hybrid reranking, and deterministic compression are implemented.
 - All five verticals pass the promoted retrieval SLOs in `data/generated/context_engineering/retrieval_source_of_truth_manifest.json`.
@@ -164,6 +165,11 @@ artifacts.
   `coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json`. It lets
   the Optimization Lab teach the required evidence chain before any future
   optimization claim.
+- The first static core optimization experiment writes
+  `experiments/optimizations/coreopt_prefix_layout_static_v1/`. It scans 40,000
+  authoritative rendered workload rows, keeps total input tokens unchanged,
+  raises mean exact common prefix from 29 to 358 derived tokens, and remains
+  plan-only until `coreopt_prefix_layout_engine_validation_v1`.
 - The authoritative current-state explanation is [docs/95_definitive_technical_briefing.md](docs/95_definitive_technical_briefing.md).
 
 ## Documentation
@@ -307,6 +313,7 @@ artifacts.
 - [Deployability repair validation V1](docs/129_deployability_repair_validation_v1.md)
 - [Core optimization planning baseline audit](docs/130_core_optimization_planning_baseline_capability_audit.md)
 - [Core optimization observability framework](docs/131_core_optimization_observability_framework.md)
+- [Coreopt prefix layout static V1](docs/132_coreopt_prefix_layout_static_v1.md)
 - [Block controlled final simulation summary](docs/summaries/blockControlledFinalSimulation_summary.md)
 - [Block Phase 2 optimization diagnosis summary](docs/summaries/blockPhase2_optimization_diagnosis_summary.md)
 - [Block Phase 2 targeted baseline repairs summary](docs/summaries/blockPhase2_targeted_baseline_repairs_summary.md)

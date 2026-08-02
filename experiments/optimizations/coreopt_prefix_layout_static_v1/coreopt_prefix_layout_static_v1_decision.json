@@ -1,0 +1,32 @@
+{
+  "acceptance_threshold_configured": false,
+  "decision": "MISSING_CONFIGURATION",
+  "disallowed_claims": [
+    "TTFT improvement",
+    "latency improvement",
+    "cache-hit improvement",
+    "cost improvement",
+    "deployability improvement"
+  ],
+  "equivalence_status": "PASS",
+  "inference_executed": false,
+  "instruction_priority_risk": true,
+  "missing_config_fields": [
+    "minimum_reusable_token_ratio_delta_for_engine_validation"
+  ],
+  "next_required_experiment": "coreopt_prefix_layout_engine_validation_v1",
+  "observed_static_delta": {
+    "candidate_minus_baseline_mean_common_prefix_tokens": 329,
+    "candidate_minus_baseline_mean_reusable_token_ratio": 0.475385,
+    "candidate_minus_baseline_total_input_tokens": 0
+  },
+  "proposed_config_field": {
+    "name": "minimum_reusable_token_ratio_delta_for_engine_validation",
+    "purpose": "Minimum derived static prefix-reuse improvement required before engine validation.",
+    "recommended_owner_action": "Set by engineer before accepting this candidate for live engine validation."
+  },
+  "reason": "Static analysis completed and the candidate increases reusable leading prefix potential, but no explicit acceptance threshold is configured.",
+  "requires_engine_validation": true,
+  "requires_gpu_rerun": true,
+  "scenario_id": "coreopt_prefix_layout_static_v1"
+}

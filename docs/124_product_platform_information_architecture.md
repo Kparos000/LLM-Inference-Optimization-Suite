@@ -96,6 +96,10 @@ Current repository sources:
 - `experiments/main/main_inference_v1/processed/core_optimization_observability_readiness.json`
 - `experiments/main/main_inference_v1/processed/core_optimization_ui_observability_contract.json`
 - `experiments/main/main_inference_v1/processed/coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json`
+- `experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_prefix_summary.json`
+- `experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_equivalence_report.json`
+- `experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_decision.json`
+- `experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_ui_story.json`
 
 Known missing product sources:
 
@@ -114,6 +118,13 @@ New observability endpoints:
 - `GET /api/optimizations/observability/event-schema`
 - `GET /api/optimizations/observability/missing-instrumentation`
 - `GET /api/optimizations/observability/cards`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1/summary`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1/layouts`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1/prefix-metrics`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1/equivalence`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1/decision`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1/story`
 
 ## Frontend Information Architecture
 
@@ -772,11 +783,11 @@ Existing artifacts:
 
 Missing artifacts:
 
-- `main_inference_v1_ui_diagnosis.json`
-- `main_inference_v1_ui_optimization_options.json`
-- Main_Inference-specific diagnosis wrapper.
-- negative-rule filtering wired into UI option generation.
 - saved optimized result map.
+- measured engine-validation result for
+  `coreopt_prefix_layout_engine_validation_v1`.
+- configured static acceptance threshold for
+  `minimum_reusable_token_ratio_delta_for_engine_validation`.
 
 Visualizations:
 
@@ -784,6 +795,9 @@ Visualizations:
 - Recommendation rank list.
 - Applicability/exclusion cards.
 - Risk badges for quality, cost, latency, and hardware.
+- Static prefix-layout panel with baseline/candidate section order.
+- Prefix-family and reusable-token ratio charts.
+- Equivalence and claims-not-allowed guardrail panel.
 
 Interactions:
 
@@ -793,11 +807,15 @@ Interactions:
 - Apply one optimization.
 - Apply all compatible optimizations as a controlled plan.
 - Toggle planned-only, implemented-only, safe-to-replay.
+- Inspect `coreopt_prefix_layout_static_v1`.
+- Compare baseline and candidate prompt section order.
+- Open the missing-threshold decision before engine validation.
 
 APIs required:
 
 - `GET /api/experiments/{run_id}/diagnosis`
 - `GET /api/experiments/{run_id}/slo/{slo_id}/optimization-options`
+- `GET /api/optimizations/coreopt-prefix-layout-static-v1`
 - `POST /api/replay/apply`
 - `POST /api/replay/apply-all`
 
@@ -806,6 +824,9 @@ UI components:
 - Diagnosis graph.
 - Filtered dropdown.
 - Optimization cards.
+- Static experiment panel.
+- Layout comparison strip.
+- Derived prefix metric cards.
 - Apply button.
 - Apply-all planner.
 - Exclusion drawer.

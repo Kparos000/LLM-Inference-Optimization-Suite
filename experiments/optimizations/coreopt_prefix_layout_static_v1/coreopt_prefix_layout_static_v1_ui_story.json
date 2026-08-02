@@ -1,0 +1,42 @@
+{
+  "apply_behavior": "No inference is executed; clicking apply can only reveal the engine-validation plan.",
+  "headline_metrics": {
+    "baseline_mean_reusable_token_ratio": 0.041903,
+    "candidate_mean_reusable_token_ratio": 0.517288,
+    "delta_reusable_token_ratio": 0.475385,
+    "equivalence_status": "PASS",
+    "requires_engine_validation": true
+  },
+  "result_type": "measured_static_analysis",
+  "scenario_id": "coreopt_prefix_layout_static_v1",
+  "status": "MISSING_CONFIGURATION",
+  "story_steps": [
+    {
+      "body": "The authoritative runner prompt placed a long stable output contract after request-specific context and question content.",
+      "id": "problem",
+      "title": "Problem"
+    },
+    {
+      "body": "The candidate moves stable reusable instructions before dynamic evidence and question sections so future prefix caching can reuse a longer exact leading token sequence.",
+      "id": "mechanism",
+      "title": "Mechanism"
+    },
+    {
+      "body": "The experiment tokenizes both layouts, assigns prefix families, and reports derived static prefix-reuse metrics without executing inference.",
+      "id": "instrumentation",
+      "title": "Instrumentation"
+    },
+    {
+      "body": "Mean common prefix tokens changed from 29 to 358.",
+      "id": "result",
+      "title": "Static Result"
+    },
+    {
+      "body": "Static analysis completed and the candidate increases reusable leading prefix potential, but no explicit acceptance threshold is configured.",
+      "id": "decision",
+      "title": "Decision"
+    }
+  ],
+  "title": "Static Prompt Prefix Layout Optimization",
+  "valid_user_action": "review_plan_only"
+}

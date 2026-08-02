@@ -11,6 +11,8 @@
     "prefix_cache_hit",
     "prefix_cache_lookup",
     "prefix_cache_miss",
+    "prefix_family_assigned",
+    "prompt_layout_rendered",
     "quality_evaluation",
     "request_arrived",
     "request_completed",
@@ -19,6 +21,7 @@
     "request_scheduled",
     "run_completed",
     "run_started",
+    "static_metric_computed",
     "telemetry_sample"
   ],
   "example_event": {
@@ -498,6 +501,102 @@
         "title": "PrefixCacheMissPayload",
         "type": "object"
       },
+      "PrefixFamilyAssignedPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "layout_id": {
+            "title": "Layout Id",
+            "type": "string"
+          },
+          "payload_type": {
+            "const": "prefix_family_assigned",
+            "default": "prefix_family_assigned",
+            "title": "Payload Type",
+            "type": "string"
+          },
+          "prefix_family_id": {
+            "title": "Prefix Family Id",
+            "type": "string"
+          },
+          "prefix_hash": {
+            "title": "Prefix Hash",
+            "type": "string"
+          },
+          "prompt_id": {
+            "title": "Prompt Id",
+            "type": "string"
+          },
+          "reusable_prefix_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reusable Prefix Tokens"
+          }
+        },
+        "required": [
+          "prompt_id",
+          "layout_id",
+          "prefix_family_id",
+          "prefix_hash"
+        ],
+        "title": "PrefixFamilyAssignedPayload",
+        "type": "object"
+      },
+      "PromptLayoutRenderedPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Input Tokens"
+          },
+          "layout_id": {
+            "title": "Layout Id",
+            "type": "string"
+          },
+          "memory_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Memory Mode"
+          },
+          "payload_type": {
+            "const": "prompt_layout_rendered",
+            "default": "prompt_layout_rendered",
+            "title": "Payload Type",
+            "type": "string"
+          },
+          "prompt_id": {
+            "title": "Prompt Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt_id",
+          "layout_id"
+        ],
+        "title": "PromptLayoutRenderedPayload",
+        "type": "object"
+      },
       "QualityEvaluationPayload": {
         "additionalProperties": false,
         "properties": {
@@ -860,6 +959,48 @@
         "title": "RunStartedPayload",
         "type": "object"
       },
+      "StaticMetricComputedPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "layout_id": {
+            "title": "Layout Id",
+            "type": "string"
+          },
+          "metric_name": {
+            "title": "Metric Name",
+            "type": "string"
+          },
+          "payload_type": {
+            "const": "static_metric_computed",
+            "default": "static_metric_computed",
+            "title": "Payload Type",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric_name",
+          "layout_id",
+          "value"
+        ],
+        "title": "StaticMetricComputedPayload",
+        "type": "object"
+      },
       "TelemetrySamplePayload": {
         "additionalProperties": false,
         "properties": {
@@ -970,6 +1111,9 @@
           "telemetry_sample",
           "quality_evaluation",
           "optimization_decision",
+          "prompt_layout_rendered",
+          "prefix_family_assigned",
+          "static_metric_computed",
           "run_completed"
         ],
         "title": "Event Type",
@@ -1024,6 +1168,8 @@
             "prefix_cache_hit": "#/$defs/PrefixCacheHitPayload",
             "prefix_cache_lookup": "#/$defs/PrefixCacheLookupPayload",
             "prefix_cache_miss": "#/$defs/PrefixCacheMissPayload",
+            "prefix_family_assigned": "#/$defs/PrefixFamilyAssignedPayload",
+            "prompt_layout_rendered": "#/$defs/PromptLayoutRenderedPayload",
             "quality_evaluation": "#/$defs/QualityEvaluationPayload",
             "request_arrived": "#/$defs/RequestArrivedPayload",
             "request_completed": "#/$defs/RequestCompletedPayload",
@@ -1032,6 +1178,7 @@
             "request_scheduled": "#/$defs/RequestScheduledPayload",
             "run_completed": "#/$defs/RunCompletedPayload",
             "run_started": "#/$defs/RunStartedPayload",
+            "static_metric_computed": "#/$defs/StaticMetricComputedPayload",
             "telemetry_sample": "#/$defs/TelemetrySamplePayload"
           },
           "propertyName": "payload_type"
@@ -1093,6 +1240,15 @@
           },
           {
             "$ref": "#/$defs/OptimizationDecisionPayload"
+          },
+          {
+            "$ref": "#/$defs/PromptLayoutRenderedPayload"
+          },
+          {
+            "$ref": "#/$defs/PrefixFamilyAssignedPayload"
+          },
+          {
+            "$ref": "#/$defs/StaticMetricComputedPayload"
           },
           {
             "$ref": "#/$defs/RunCompletedPayload"

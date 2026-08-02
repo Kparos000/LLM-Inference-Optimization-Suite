@@ -127,6 +127,25 @@ def test_fastapi_exposes_core_observability_contracts() -> None:
     assert event_schema.json()["data"]["status"] == "EVENT_SCHEMA_READY_PLANNING_ONLY"
 
 
+def test_fastapi_exposes_static_prefix_layout_experiment() -> None:
+    module = _load_backend_module()
+    client = TestClient(module.app)
+
+    response = client.get("/api/optimizations/coreopt-prefix-layout-static-v1")
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["result_type"] == "planned"
+    assert body["data"]["summary"]["result_type"] == "measured_static_analysis"
+    assert body["data"]["summary"]["workload_rows_scanned"] == 40000
+    assert body["data"]["equivalence"]["status"] == "PASS"
+    assert body["data"]["decision"]["decision"] == "MISSING_CONFIGURATION"
+
+    metrics = client.get("/api/optimizations/coreopt-prefix-layout-static-v1/prefix-metrics")
+    assert metrics.status_code == 200
+    assert metrics.json()["data"]["prefix_families"]
+
+
 def test_fastapi_allows_frontend_origin_for_api_fetches() -> None:
     module = _load_backend_module()
     client = TestClient(module.app)

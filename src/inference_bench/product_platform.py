@@ -26,6 +26,7 @@ JsonDict = dict[str, Any]
 MAIN_ROOT = Path("experiments/main/main_inference_v1")
 MAIN_PROCESSED = MAIN_ROOT / "processed"
 MAIN_RAW = MAIN_ROOT / "raw"
+COREOPT_PREFIX_LAYOUT_ROOT = Path("experiments/optimizations/coreopt_prefix_layout_static_v1")
 DATASET_ROOT = Path("data/generated/dataset_10000")
 CONTEXT_ROOT = Path("data/generated/context_engineering")
 SCALEUP_ROOT = Path("data/scaleup_2000_full")
@@ -171,6 +172,12 @@ def _artifact_map() -> dict[str, list[str]]:
             _display_path(MAIN_PROCESSED / "core_optimization_ui_observability_contract.json"),
             _display_path(
                 MAIN_PROCESSED / "coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json"
+            ),
+            _display_path(
+                COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_prefix_summary.json"
+            ),
+            _display_path(
+                COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_decision.json"
             ),
             "configs/optimization_catalog.yaml",
             "configs/optimization_negative_rules.yaml",
@@ -1966,6 +1973,78 @@ class ProductPlatformData:
             "readiness_summary": readiness.get("summary", {}),
             "prefix_summary": prefix.get("summary", {}),
             "source_artifacts": contract.get("source_artifacts", []),
+        }
+
+    def coreopt_prefix_layout_static_summary(self) -> JsonDict:
+        return _read_json(
+            COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_prefix_summary.json"
+        )
+
+    def coreopt_prefix_layout_static_layouts(self) -> JsonDict:
+        return {
+            "baseline": _read_json(
+                COREOPT_PREFIX_LAYOUT_ROOT / "layouts/baseline_prompt_layout_v1.json"
+            ),
+            "candidate": _read_json(
+                COREOPT_PREFIX_LAYOUT_ROOT / "layouts/prefix_optimized_prompt_layout_v1.json"
+            ),
+        }
+
+    def coreopt_prefix_layout_static_prefix_metrics(self) -> JsonDict:
+        return {
+            "summary": self.coreopt_prefix_layout_static_summary(),
+            "prefix_families": _read_csv(
+                COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_prefix_families.csv"
+            ),
+            "per_vertical_memory": _read_csv(
+                COREOPT_PREFIX_LAYOUT_ROOT
+                / "coreopt_prefix_layout_static_v1_per_vertical_memory.csv"
+            ),
+            "section_analysis": _read_csv(
+                COREOPT_PREFIX_LAYOUT_ROOT
+                / "coreopt_prefix_layout_static_v1_prompt_section_analysis.csv"
+            ),
+            "plotting_dataset": _read_json(
+                COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_plotting_dataset.json"
+            ),
+        }
+
+    def coreopt_prefix_layout_static_equivalence(self) -> JsonDict:
+        return _read_json(
+            COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_equivalence_report.json"
+        )
+
+    def coreopt_prefix_layout_static_decision(self) -> JsonDict:
+        return _read_json(
+            COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_decision.json"
+        )
+
+    def coreopt_prefix_layout_static_story(self) -> JsonDict:
+        return _read_json(
+            COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_ui_story.json"
+        )
+
+    def coreopt_prefix_layout_static_experiment(self) -> JsonDict:
+        return {
+            "summary": self.coreopt_prefix_layout_static_summary(),
+            "layouts": self.coreopt_prefix_layout_static_layouts(),
+            "metrics": self.coreopt_prefix_layout_static_prefix_metrics(),
+            "equivalence": self.coreopt_prefix_layout_static_equivalence(),
+            "decision": self.coreopt_prefix_layout_static_decision(),
+            "story": self.coreopt_prefix_layout_static_story(),
+            "source_artifacts": [
+                _display_path(
+                    COREOPT_PREFIX_LAYOUT_ROOT
+                    / "coreopt_prefix_layout_static_v1_prefix_summary.json"
+                ),
+                _display_path(
+                    COREOPT_PREFIX_LAYOUT_ROOT
+                    / "coreopt_prefix_layout_static_v1_equivalence_report.json"
+                ),
+                _display_path(
+                    COREOPT_PREFIX_LAYOUT_ROOT / "coreopt_prefix_layout_static_v1_decision.json"
+                ),
+            ],
         }
 
     def mandatory_repairs(self) -> JsonDict:

@@ -130,6 +130,9 @@ EVENT_TYPES = {
     "telemetry_sample",
     "quality_evaluation",
     "optimization_decision",
+    "prompt_layout_rendered",
+    "prefix_family_assigned",
+    "static_metric_computed",
     "run_completed",
 }
 
@@ -1036,6 +1039,31 @@ class OptimizationDecisionPayload(_BasePayload):
     reason: str
 
 
+class PromptLayoutRenderedPayload(_BasePayload):
+    payload_type: Literal["prompt_layout_rendered"] = "prompt_layout_rendered"
+    prompt_id: str
+    layout_id: str
+    memory_mode: str | None = None
+    input_tokens: int | None = None
+
+
+class PrefixFamilyAssignedPayload(_BasePayload):
+    payload_type: Literal["prefix_family_assigned"] = "prefix_family_assigned"
+    prompt_id: str
+    layout_id: str
+    prefix_family_id: str
+    prefix_hash: str
+    reusable_prefix_tokens: int | None = None
+
+
+class StaticMetricComputedPayload(_BasePayload):
+    payload_type: Literal["static_metric_computed"] = "static_metric_computed"
+    metric_name: str
+    layout_id: str
+    value: float
+    unit: str | None = None
+
+
 class RunCompletedPayload(_BasePayload):
     payload_type: Literal["run_completed"] = "run_completed"
     status: str
@@ -1063,6 +1091,9 @@ ObservabilityPayload = Annotated[
     | TelemetrySamplePayload
     | QualityEvaluationPayload
     | OptimizationDecisionPayload
+    | PromptLayoutRenderedPayload
+    | PrefixFamilyAssignedPayload
+    | StaticMetricComputedPayload
     | RunCompletedPayload,
     Field(discriminator="payload_type"),
 ]
@@ -1111,6 +1142,9 @@ class ObservabilityEvent(BaseModel):
         "telemetry_sample",
         "quality_evaluation",
         "optimization_decision",
+        "prompt_layout_rendered",
+        "prefix_family_assigned",
+        "static_metric_computed",
         "run_completed",
     ]
     payload: ObservabilityPayload

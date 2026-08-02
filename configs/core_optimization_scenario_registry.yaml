@@ -7,6 +7,7 @@ scenario_types:
 - candidate_bundle
 - champion_full_run
 - educational_future
+- one_factor_static
 scenarios:
 - scenario_id: main_inference_v1
   scenario_type: engine_baseline
@@ -35,21 +36,56 @@ scenarios:
   - experiments/repairs/deployability_repair_validation_v1/processed/deployability_repair_validation_v1_validation_gate_report.json
   ui_replay_available: true
   conclusion_available: true
-- scenario_id: coreopt_prefix_layout_static_v1
-  scenario_type: one_factor
-  result_type: planned
+- optimization_id: prompt_prefix_layout_optimization
+  scenario_id: coreopt_prefix_layout_static_v1
+  parent_run_id: main_inference_v1
+  scenario_type: one_factor_static
   lineage:
     parent_run_id: main_inference_v1
-  changed_factor: rendered_prompt_prefix_layout
+  changed_factor: rendered_prompt_section_order
   held_constants:
-  - dataset
-  - evaluator
-  - gold_records
-  - repairs
-  artifact_paths: []
-  ui_replay_available: false
-  conclusion_available: false
+  - workload
+  - prompt_ids
+  - gold_contract
+  - knowledge_base_context
+  - retrieval_order
+  - evidence_aliases
+  - memory_semantics
+  - tokenizer_model
+  - generation_contract
+  - safety_and_escalation_rules
+  - evaluator_semantics
+  - output_token_limits
+  - model_metadata
+  - engine_metadata
+  artifact_root: experiments/optimizations/coreopt_prefix_layout_static_v1
+  artifact_paths:
+    manifest: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_manifest.json
+    baseline_layout: experiments/optimizations/coreopt_prefix_layout_static_v1/layouts/baseline_prompt_layout_v1.json
+    candidate_layout: experiments/optimizations/coreopt_prefix_layout_static_v1/layouts/prefix_optimized_prompt_layout_v1.json
+    held_constants: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_held_constants.json
+    tokenizer_report: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_tokenizer_report.json
+    prefix_summary: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_prefix_summary.json
+    prefix_summary_csv: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_prefix_summary.csv
+    prefix_families: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_prefix_families.csv
+    per_vertical_memory: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_per_vertical_memory.csv
+    prompt_section_analysis: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_prompt_section_analysis.csv
+    equivalence_report: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_equivalence_report.json
+    decision: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_decision.json
+    plotting_dataset: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_plotting_dataset.json
+    ui_story: experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_ui_story.json
+    readme: experiments/optimizations/coreopt_prefix_layout_static_v1/README.md
   instrumentation_readiness: ready_derivable
+  execution_status: completed_static_analysis
+  result_type: measured_static_analysis
+  decision: MISSING_CONFIGURATION
+  next_required_experiment: coreopt_prefix_layout_engine_validation_v1
+  ui_replay_available: true
+  champion_selected: false
+  source: static_analysis
+  inference_executed: false
+  cache_hits_measured: false
+  latency_claimed: false
   required_fields:
   - rendered_prompt_hash
   - tokenized_prefix_hash

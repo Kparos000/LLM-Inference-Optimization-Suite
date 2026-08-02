@@ -1,6 +1,6 @@
 # Project State
 
-Status as of August 1, 2026.
+Status as of August 2, 2026.
 
 ## Current Decision
 
@@ -48,6 +48,7 @@ DEPLOYABILITY_REPAIR_SAMPLE_VALIDATED
 CORE_OPTIMIZATION_ELIGIBLE
 CORE_OPTIMIZATION_PLANNING_AUDIT_COMPLETE
 CORE_OPTIMIZATION_OBSERVABILITY_READY
+COREOPT_PREFIX_LAYOUT_STATIC_V1_COMPLETE_MISSING_THRESHOLD
 OPTIMIZED_INFERENCE_V1_PENDING_MEASURED_ARTIFACTS
 ```
 
@@ -93,6 +94,18 @@ cards, and a CPU-only static prefix-opportunity analysis. It does not run
 inference, use a GPU, mutate Main_Inference_V1, select a champion, or create
 `Optimized_Inference_V1`. The reference is
 `docs/131_core_optimization_observability_framework.md`.
+
+`coreopt_prefix_layout_static_v1` is now complete as the first measured static
+core optimization scenario. It compares the authoritative
+`baseline_prompt_layout_v1` runner rendering with
+`prefix_optimized_prompt_layout_v1` across 40,000 rendered workload rows under
+`experiments/optimizations/coreopt_prefix_layout_static_v1/`. Section content
+equivalence passed and total input tokens stayed unchanged; the derived mean
+exact common prefix increased from 29 to 358 tokens. The decision remains
+`MISSING_CONFIGURATION` because no acceptance threshold exists yet, and
+`coreopt_prefix_layout_engine_validation_v1` is required before any TTFT,
+cache-hit, latency, cost, or deployability claim. The reference is
+`docs/132_coreopt_prefix_layout_static_v1.md`.
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
 telemetry, and bounded mm4 workflow.

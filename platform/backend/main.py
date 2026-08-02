@@ -260,6 +260,83 @@ def optimization_observability_cards() -> PlatformResponse:
     return _response(platform_data().core_observability_cards(), result_type="planned")
 
 
+@app.get(
+    "/api/optimizations/coreopt-prefix-layout-static-v1/summary",
+    response_model=PlatformResponse,
+)
+def coreopt_prefix_layout_static_summary() -> PlatformResponse:
+    return _response(
+        platform_data().coreopt_prefix_layout_static_summary(),
+        result_type="planned",
+    )
+
+
+@app.get(
+    "/api/optimizations/coreopt-prefix-layout-static-v1/layouts",
+    response_model=PlatformResponse,
+)
+def coreopt_prefix_layout_static_layouts() -> PlatformResponse:
+    return _response(
+        platform_data().coreopt_prefix_layout_static_layouts(),
+        result_type="planned",
+    )
+
+
+@app.get(
+    "/api/optimizations/coreopt-prefix-layout-static-v1/prefix-metrics",
+    response_model=PlatformResponse,
+)
+def coreopt_prefix_layout_static_prefix_metrics() -> PlatformResponse:
+    return _response(
+        platform_data().coreopt_prefix_layout_static_prefix_metrics(),
+        result_type="planned",
+    )
+
+
+@app.get(
+    "/api/optimizations/coreopt-prefix-layout-static-v1/equivalence",
+    response_model=PlatformResponse,
+)
+def coreopt_prefix_layout_static_equivalence() -> PlatformResponse:
+    return _response(
+        platform_data().coreopt_prefix_layout_static_equivalence(),
+        result_type="planned",
+    )
+
+
+@app.get(
+    "/api/optimizations/coreopt-prefix-layout-static-v1/decision",
+    response_model=PlatformResponse,
+)
+def coreopt_prefix_layout_static_decision() -> PlatformResponse:
+    return _response(
+        platform_data().coreopt_prefix_layout_static_decision(),
+        result_type="planned",
+    )
+
+
+@app.get(
+    "/api/optimizations/coreopt-prefix-layout-static-v1/story",
+    response_model=PlatformResponse,
+)
+def coreopt_prefix_layout_static_story() -> PlatformResponse:
+    return _response(
+        platform_data().coreopt_prefix_layout_static_story(),
+        result_type="planned",
+    )
+
+
+@app.get(
+    "/api/optimizations/coreopt-prefix-layout-static-v1",
+    response_model=PlatformResponse,
+)
+def coreopt_prefix_layout_static_experiment() -> PlatformResponse:
+    return _response(
+        platform_data().coreopt_prefix_layout_static_experiment(),
+        result_type="planned",
+    )
+
+
 @app.post("/api/optimizations/recipe/validate", response_model=RecipeValidationResponse)
 def validate_recipe(request: RecipeValidationRequest) -> RecipeValidationResponse:
     payload = platform_data().validate_recipe(request)

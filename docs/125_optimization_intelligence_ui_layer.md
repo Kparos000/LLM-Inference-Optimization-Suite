@@ -38,9 +38,21 @@ Core optimization observability is now grounded by
 - `experiments/main/main_inference_v1/processed/core_optimization_event_schema.json`
 - `experiments/main/main_inference_v1/processed/core_optimization_ui_observability_contract.json`
 - `experiments/main/main_inference_v1/processed/coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json`
+- `experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_prefix_summary.json`
+- `experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_equivalence_report.json`
+- `experiments/optimizations/coreopt_prefix_layout_static_v1/coreopt_prefix_layout_static_v1_decision.json`
 
 This layer answers what must be instrumented before the platform can claim an
 optimization worked. It does not apply a strategy or create optimized results.
+
+The first concrete core optimization panel is now
+`coreopt_prefix_layout_static_v1`. It is a measured static-analysis replay:
+40,000 authoritative rendered workload rows are compared under the baseline
+and prefix-optimized prompt layouts. The UI can show the problem, mechanism,
+section order, prefix-family metrics, equivalence checks, and decision. It must
+also show that the decision is `MISSING_CONFIGURATION` and that no TTFT,
+latency, cache-hit, cost, or deployability claim is allowed until engine
+validation runs.
 
 ## Purpose
 
@@ -126,6 +138,8 @@ Click failed SLO
    rules still block invalid strategies
 -> observability cards explain problem, mechanism, instrumentation, one-factor
    experiment, result, and decision requirements
+-> coreopt_prefix_layout_static_v1 shows the first measured static analysis
+   result and the missing acceptance-threshold blocker
 -> saved optimized artifacts can be replayed later when they exist
 ```
 

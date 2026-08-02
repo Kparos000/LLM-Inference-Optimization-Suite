@@ -26,6 +26,7 @@ import {
   fallbackDeployabilityRepairs,
   fallbackExperimentStage,
   fallbackOptimizationStory,
+  fallbackPrefixLayoutStaticExperiment,
   fallbackRepairGate,
   headlineMetrics,
   replayFallback,
@@ -39,6 +40,7 @@ import type {
   DeployabilityRepair,
   ExperimentStage,
   OptimizationStory,
+  PrefixLayoutStaticExperiment,
   RepairGate
 } from "@/lib/types";
 import { MissionShell } from "./MissionShell";
@@ -739,6 +741,10 @@ function OptimizationPage({ sources }: { sources: string[] }) {
       source_artifacts: []
     }
   );
+  const prefixLayoutExperiment = useApiData<PrefixLayoutStaticExperiment>(
+    "/api/optimizations/coreopt-prefix-layout-static-v1",
+    fallbackPrefixLayoutStaticExperiment
+  );
   const repairs = repairsPayload.repairs.length ? repairsPayload.repairs : fallbackDeployabilityRepairs;
   const core = corePayload.states.length ? corePayload.states : fallbackCoreOptimizationStates;
   const selectedCount = session.selectedMandatoryRepairs.length + session.selectedCoreOptimizations.length;
@@ -761,6 +767,10 @@ function OptimizationPage({ sources }: { sources: string[] }) {
           : 0
     }
   ];
+  const baselineLayout = prefixLayoutExperiment.summary.layout_summaries.baseline_prompt_layout_v1;
+  const candidateLayout =
+    prefixLayoutExperiment.summary.layout_summaries.prefix_optimized_prompt_layout_v1;
+  const prefixDelta = prefixLayoutExperiment.summary.deltas;
 
   return (
     <>
@@ -932,6 +942,147 @@ function OptimizationPage({ sources }: { sources: string[] }) {
               ) : null}
             </div>
           ))}
+        </div>
+      </Panel>
+      <Panel>
+        <SectionTitle icon={<Split size={22} />} title="First static core optimization">
+          This CPU-only experiment tests whether prompt layout can create a longer exact reusable
+          prefix before any GPU rerun. It compares two rendered layouts over saved workload rows
+          and makes no latency, cache-hit, or cost claim.
+        </SectionTitle>
+        <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              <MetricCard
+                metric={{
+                  label: "Rows scanned",
+                  value: prefixLayoutExperiment.summary.workload_rows_scanned.toLocaleString(),
+                  tone: "neutral",
+                  detail: "Authoritative prompt-plus-metadata workload rows across memory modes."
+                }}
+              />
+              <MetricCard
+                metric={{
+                  label: "Common prefix delta",
+                  value: `+${prefixDelta.candidate_minus_baseline_mean_common_prefix_tokens}`,
+                  tone: "pass",
+                  detail: "Derived static tokens, candidate minus baseline."
+                }}
+              />
+              <MetricCard
+                metric={{
+                  label: "Decision",
+                  value: prefixLayoutExperiment.decision.decision.replaceAll("_", " "),
+                  tone: "warn",
+                  detail: "A threshold and engine validation are still required."
+                }}
+              />
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {[
+                {
+                  label: "Baseline layout",
+                  layout: prefixLayoutExperiment.layouts.baseline,
+                  metrics: baselineLayout
+                },
+                {
+                  label: "Prefix optimized candidate",
+                  layout: prefixLayoutExperiment.layouts.candidate,
+                  metrics: candidateLayout
+                }
+              ].map((item) => (
+                <div key={item.layout.layout_id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-white">{item.label}</p>
+                      <p className="mt-1 font-mono text-xs text-slate-500">{item.layout.layout_id}</p>
+                    </div>
+                    <StatusBadge tone={item.layout.raw_prompt_text_included ? "warn" : "pass"}>
+                      no raw prompts
+                    </StatusBadge>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {item.layout.section_order.map((section, index) => (
+                      <span
+                        key={`${item.layout.layout_id}-${section}`}
+                        className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300"
+                      >
+                        {index + 1}. {section.replaceAll("_", " ")}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-5 space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>reusable token ratio</span>
+                        <span>{(item.metrics.mean_reusable_token_ratio * 100).toFixed(2)}%</span>
+                      </div>
+                      <div className="mt-2 h-2 rounded-full bg-white/10">
+                        <div
+                          className="h-2 rounded-full bg-signal-cyan"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(0, item.metrics.mean_reusable_token_ratio * 100)
+                            )}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm leading-6 text-slate-400">
+                      Mean input tokens stayed {item.metrics.mean_input_tokens.toFixed(2)}.
+                      Mean exact common prefix tokens:{" "}
+                      {item.metrics.mean_longest_exact_common_prefix_tokens.toFixed(0)}.
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-2xl border border-signal-amber/30 bg-signal-amber/10 p-4 text-sm leading-6 text-signal-amber">
+              {prefixLayoutExperiment.decision.reason} Next required experiment:{" "}
+              {prefixLayoutExperiment.decision.next_required_experiment.replaceAll("_", " ")}.
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-semibold text-white">Equivalence checks</p>
+                <StatusBadge tone={prefixLayoutExperiment.equivalence.status === "PASS" ? "pass" : "fail"}>
+                  {prefixLayoutExperiment.equivalence.status}
+                </StatusBadge>
+              </div>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-400">
+                <p>Rows checked: {prefixLayoutExperiment.equivalence.rows_checked.toLocaleString()}</p>
+                <p>
+                  Section bytes equivalent:{" "}
+                  {prefixLayoutExperiment.equivalence.section_content_byte_equivalent ? "yes" : "no"}
+                </p>
+                <p>
+                  Evidence order fixed:{" "}
+                  {prefixLayoutExperiment.equivalence.evidence_order_fixed ? "yes" : "no"}
+                </p>
+                <p>
+                  Instruction priority risk:{" "}
+                  {prefixLayoutExperiment.equivalence.instruction_priority_risk ? "yes" : "no"}
+                </p>
+                <p>
+                  Requires inference validation:{" "}
+                  {prefixLayoutExperiment.equivalence.requires_inference_validation ? "yes" : "no"}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="font-semibold text-white">Story replay</p>
+              <div className="mt-4 space-y-3">
+                {prefixLayoutExperiment.story.story_steps.map((step) => (
+                  <div key={step.id} className="rounded-xl border border-white/10 bg-black/10 p-3">
+                    <p className="text-sm font-semibold text-white">{step.title}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{step.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </Panel>
       <SourceList sources={sources} />

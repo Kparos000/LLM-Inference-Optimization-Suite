@@ -134,6 +134,13 @@ Endpoints:
 | `GET /api/optimizations/observability/event-schema` | Unified optimization event schema |
 | `GET /api/optimizations/observability/missing-instrumentation` | Missing counters that must not render as zero |
 | `GET /api/optimizations/observability/cards` | Frontend card contract for Optimization Lab |
+| `GET /api/optimizations/coreopt-prefix-layout-static-v1` | Full read-only static prefix-layout experiment payload |
+| `GET /api/optimizations/coreopt-prefix-layout-static-v1/summary` | Static prefix summary and layout deltas |
+| `GET /api/optimizations/coreopt-prefix-layout-static-v1/layouts` | Baseline and candidate section-order contracts |
+| `GET /api/optimizations/coreopt-prefix-layout-static-v1/prefix-metrics` | Prefix families, per-vertical/memory metrics, and section analysis |
+| `GET /api/optimizations/coreopt-prefix-layout-static-v1/equivalence` | Section/evidence equivalence and instruction-priority risk |
+| `GET /api/optimizations/coreopt-prefix-layout-static-v1/decision` | Missing-threshold decision and next required engine validation |
+| `GET /api/optimizations/coreopt-prefix-layout-static-v1/story` | UI story steps for the static optimization panel |
 | `POST /api/optimizations/recipe/validate` | Plan-only recipe validation |
 | `GET /api/scenarios` | Measured/planned scenario registry |
 | `GET /api/comparison/availability` | Before/after availability contract |
