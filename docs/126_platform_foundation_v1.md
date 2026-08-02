@@ -23,6 +23,9 @@ The product currently supports:
 - a measured Main_Inference replay using saved progress and telemetry events;
 - a two-track Optimization Lab separating mandatory deployability repairs from
   core inference-engineering strategies;
+- core optimization observability cards that explain problem, mechanism,
+  required instrumentation, planned one-factor experiment, result evidence, and
+  decision criteria;
 - a targeted repair gate that now marks deployability repair implementation as
   `SAMPLE_VALIDATED` and unlocks core optimization planning;
 - visible disabled states for negative-rule-blocked strategies;
@@ -124,6 +127,13 @@ Endpoints:
 | `GET /api/optimizations/core-applicability` | Stage-gated core optimization applicability |
 | `GET /api/optimizations/experiment-stage` | Current optimization stage sequence |
 | `GET /api/optimizations/story` | Two-track optimization story contract |
+| `GET /api/optimizations/observability/registry` | Core optimization observability registry |
+| `GET /api/optimizations/observability/readiness` | Instrumentation readiness by optimization |
+| `GET /api/optimizations/observability/inventory` | Current Main_Inference observability inventory |
+| `GET /api/optimizations/observability/prefix-opportunity` | Static exact-prefix opportunity analysis |
+| `GET /api/optimizations/observability/event-schema` | Unified optimization event schema |
+| `GET /api/optimizations/observability/missing-instrumentation` | Missing counters that must not render as zero |
+| `GET /api/optimizations/observability/cards` | Frontend card contract for Optimization Lab |
 | `POST /api/optimizations/recipe/validate` | Plan-only recipe validation |
 | `GET /api/scenarios` | Measured/planned scenario registry |
 | `GET /api/comparison/availability` | Before/after availability contract |

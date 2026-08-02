@@ -1,0 +1,119 @@
+{
+  "candidate_layout_structure": [
+    "system instruction",
+    "generation contract",
+    "evidence schema/citation rules",
+    "memory mode and route labels",
+    "context records",
+    "request-specific question"
+  ],
+  "distribution_by_memory_mode": [
+    {
+      "mean_reusable_token_ratio_estimated": 0.07598,
+      "memory_mode": "mm2_hybrid_top5",
+      "request_count": 10000
+    }
+  ],
+  "distribution_by_vertical": [
+    {
+      "mean_reusable_token_ratio_estimated": 0.086896,
+      "request_count": 2000,
+      "vertical": "airline"
+    },
+    {
+      "mean_reusable_token_ratio_estimated": 0.077957,
+      "request_count": 2000,
+      "vertical": "finance"
+    },
+    {
+      "mean_reusable_token_ratio_estimated": 0.092951,
+      "request_count": 2000,
+      "vertical": "healthcare_admin"
+    },
+    {
+      "mean_reusable_token_ratio_estimated": 0.055905,
+      "request_count": 2000,
+      "vertical": "research_ai"
+    },
+    {
+      "mean_reusable_token_ratio_estimated": 0.066193,
+      "request_count": 2000,
+      "vertical": "retail"
+    }
+  ],
+  "historical_cache_reuse_claimed": false,
+  "inference_executed": false,
+  "input_length_buckets": {
+    "1024_2047": 25,
+    "128_255": 257,
+    "256_511": 8481,
+    "512_1023": 1237
+  },
+  "measurement_plan": [
+    "Freeze baseline prompt layout and candidate layout.",
+    "Hash rendered prompts and tokenized prefixes.",
+    "Confirm gold IDs are not leaked into prompts beyond allowed context IDs.",
+    "Run one-factor latency experiment only after deployability repairs stay protected.",
+    "Measure actual engine prefix cache hits before claiming cache reuse."
+  ],
+  "missing_memory_mode_artifacts": [
+    "mm4_bounded_agentic"
+  ],
+  "optimization_applied": false,
+  "prefix_families": [
+    {
+      "exact_shared_prefix_token_count": 28,
+      "example_prompt_id": "airline_scaleup_2000_0001",
+      "memory_mode": "mm2_hybrid_top5",
+      "prefix_family_id": "prefix_family_b797a07febd8",
+      "request_count": 10000,
+      "tokenized_prefix_hash": "b797a07febd89b65c7c9489fb71c03a4299bcb046305485a4350285669b6ce42",
+      "vertical_example": "airline"
+    }
+  ],
+  "related_rendered_workload_artifacts": [
+    "data/workloads/final_10000/mm0_no_context.jsonl",
+    "data/workloads/final_10000/mm1_dense_top5.jsonl",
+    "data/workloads/final_10000/mm2_hybrid_top5.jsonl",
+    "data/workloads/final_10000/mm3_compressed_hybrid_top5.jsonl",
+    "data/workloads/final_10000/prompt_plus_metadata/mm0_no_context.jsonl",
+    "data/workloads/final_10000/prompt_plus_metadata/mm1_dense_top5.jsonl",
+    "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl",
+    "data/workloads/final_10000/prompt_plus_metadata/mm3_compressed_hybrid_top5.jsonl"
+  ],
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "scenario_id": "coreopt_prefix_layout_static_v1",
+  "semantic_similarity_counted": false,
+  "source_artifacts": [
+    "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl"
+  ],
+  "source_hashes": {
+    "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl": "911a16a40f7d61cc736b3799c949d9ac353d121a0900e5989d70b2846727b34e"
+  },
+  "stable_sections": {
+    "common_evidence_schema_tokens": "derived from context-header scaffolding",
+    "common_generation_contract_tokens": "derived from shared instruction text",
+    "common_system_prompt_tokens": "derived from leading system message",
+    "common_tool_definition_tokens": "none in current rendered workload"
+  },
+  "status": "PREFIX_OPPORTUNITY_ANALYZED_PLANNING_ONLY",
+  "summary": {
+    "largest_prefix_family_request_count": 10000,
+    "longest_exact_common_prefix_by_source": {
+      "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl": 29
+    },
+    "mean_reusable_token_ratio_estimated": 0.07598,
+    "p50_reusable_token_ratio_estimated": 0.079096,
+    "p95_reusable_token_ratio_estimated": 0.101449,
+    "prefix_family_count": 1,
+    "rows_scanned": 10000
+  },
+  "tokenizer": {
+    "hash": "efbae55869539850",
+    "label": "planning estimate tokenizer, not engine historical tokenizer",
+    "name": "repo_regex_tokenizer_v1",
+    "version": "1"
+  },
+  "version": 1
+}

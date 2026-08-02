@@ -5,6 +5,7 @@ from typer.testing import CliRunner
 from inference_bench.calibration_manifest import load_runpod_calibration_profiles
 from inference_bench.cli import app
 from inference_bench.config import load_project_config
+from inference_bench.core_optimization_observability import load_observability_registry
 from inference_bench.gpu_price_registry import load_gpu_price_registry
 from inference_bench.load_profiles import load_sequence_buckets, load_traffic_profiles
 from inference_bench.optimization_negative_rules import load_optimization_negative_rules
@@ -34,6 +35,7 @@ def test_validate_config_cli_covers_production_config_files() -> None:
         "RunPod calibration profiles loaded: 3",
         "Core optimization taxonomy loaded: 15 core optimizations",
         "Core optimization scenario registry loaded: 8 scenarios",
+        "Core optimization observability registry loaded: 15 entries",
         "Result track schema join keys loaded: 12",
     ]
     for expected in expected_lines:
@@ -51,6 +53,7 @@ def test_direct_config_loaders_cover_all_production_registries() -> None:
     slo_profiles = load_slo_profiles()
     gpu_prices = load_gpu_price_registry()
     calibration_profiles = load_runpod_calibration_profiles()
+    core_observability = load_observability_registry()
 
     assert "model2_3b" in project.model_aliases
     assert project.resolve_model_key("model2_1_5b") == "qwen2_5_1_5b_instruct"
@@ -85,6 +88,8 @@ def test_direct_config_loaders_cover_all_production_registries() -> None:
         "H100_SXM_CALIBRATION",
         "L40S_CALIBRATION",
     }
+    assert core_observability["status"] == "OBSERVABILITY_REGISTRY_READY_PLANNING_ONLY"
+    assert len(core_observability["optimizations"]) == 15
 
 
 def test_result_track_schema_smoke_row_is_validated_by_config_gate() -> None:

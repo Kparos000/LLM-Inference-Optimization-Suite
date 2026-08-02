@@ -1,0 +1,2127 @@
+{
+  "deployability_repairs_excluded": [
+    "enable_bounded_citation_repair",
+    "enable_escalation_path",
+    "improve_evidence_formatting",
+    "prompt_contract_repair",
+    "repair_retrieval",
+    "use_mm4_agentic_repair"
+  ],
+  "does_not_create_optimized_inference_v1": true,
+  "does_not_execute_inference": true,
+  "does_not_mutate_main_inference_v1": true,
+  "measurement_semantics": {
+    "derived": "Calculated from measured fields without inventing missing counters.",
+    "engine_reported": "Reported directly by a serving engine metrics endpoint or log.",
+    "estimated": "Planning estimate from static analysis or formulas; not measured telemetry.",
+    "measured": "Captured from saved run, engine, evaluator, or telemetry artifacts.",
+    "unavailable": "Not captured and not derivable from current artifacts."
+  },
+  "measurement_types": [
+    "derived",
+    "engine_reported",
+    "estimated",
+    "measured",
+    "unavailable"
+  ],
+  "metric_envelopes": {
+    "cost": {
+      "description": "GPU/API/total cost and normalized economics.",
+      "fields": [
+        "gpu_cost_usd",
+        "api_cost_usd",
+        "total_cost_usd",
+        "cost_per_request_usd",
+        "cost_per_1000_requests_usd",
+        "cost_per_successful_request_usd",
+        "tokens_per_gpu_dollar",
+        "tokens_per_api_dollar"
+      ]
+    },
+    "performance": {
+      "description": "Latency, queueing, throughput, and batch efficiency metrics.",
+      "fields": [
+        "ttft_ms",
+        "queue_wait_ms",
+        "prefill_latency_ms",
+        "tpot_ms",
+        "itl_ms",
+        "e2e_latency_ms",
+        "requests_per_second",
+        "tokens_per_second",
+        "successful_requests_per_second",
+        "batch_level_throughput"
+      ]
+    },
+    "quality_safety_protection": {
+      "description": "Protected answer-quality and safety gates.",
+      "fields": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_id_presence",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate",
+        "escalation_correctness",
+        "insufficient_evidence_correctness",
+        "mm4_bound_compliance"
+      ]
+    },
+    "request_lifecycle": {
+      "description": "Nullable per-request timing events; runtimes emit only what they expose.",
+      "fields": [
+        "request_id",
+        "prompt_id",
+        "config_id",
+        "arrival_time",
+        "queue_enter_time",
+        "scheduling_time",
+        "prefill_start",
+        "prefill_end",
+        "first_token_time",
+        "decode_start",
+        "decode_end",
+        "completion_time",
+        "failure_retry_status",
+        "input_tokens",
+        "output_tokens",
+        "total_tokens"
+      ]
+    },
+    "resources": {
+      "description": "GPU/CPU/RAM/power/process resource telemetry.",
+      "fields": [
+        "gpu_utilization_percent",
+        "vram_used_mb",
+        "vram_available_mb",
+        "power_draw_w",
+        "temperature_c",
+        "cpu_utilization_percent",
+        "ram_usage_gb",
+        "model_memory_mb",
+        "kv_cache_memory_mb",
+        "telemetry_timestamp",
+        "active_engine_process"
+      ]
+    },
+    "run_identity": {
+      "description": "Stable run and scenario identity fields.",
+      "fields": [
+        "run_id",
+        "parent_run_id",
+        "scenario_id",
+        "optimization_id",
+        "changed_factor",
+        "held_constants",
+        "model",
+        "engine",
+        "backend",
+        "memory_mode",
+        "concurrency",
+        "hardware",
+        "precision",
+        "git_commit",
+        "config_hash",
+        "workload_hash",
+        "start_time",
+        "end_time",
+        "status"
+      ]
+    }
+  },
+  "optimization_domains": [
+    "cache_offloading",
+    "disaggregation",
+    "distributed_serving",
+    "kernel_compiler",
+    "kv_cache",
+    "model_compression",
+    "model_selection",
+    "parallelism",
+    "prefill_decode_balance",
+    "prefix_cache",
+    "prompt_workload",
+    "quantization",
+    "routing",
+    "scheduler_batching",
+    "speculative_decoding"
+  ],
+  "optimizations": [
+    {
+      "acceptance_evidence": [
+        "route improves latency/cost while protected metrics pass"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical",
+        "per_route",
+        "per_complexity_class"
+      ],
+      "derivation_method": "Historical route comparisons can inform planning but not route decisions.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 1,
+      "display_name": "Cache-aware/workload-aware routing",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "vertical",
+        "prompt length aggregates",
+        "route comparison CSVs"
+      ],
+      "experiment_type": "planned_policy_simulation_then_measured_rerun",
+      "external_profiler_requirements": [],
+      "hypothesis": "Cache-aware/workload-aware routing can improve ttft, throughput, cache_hit_rate only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "requires_runner_instrumentation",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Improve cache locality and reduce mixed-length interference.",
+      "missing_instrumentation": [
+        "routing decision trace",
+        "cache-affinity key",
+        "queue-depth input"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "routing",
+      "optimization_id": "cache_workload_aware_routing",
+      "optional_instrumentation": [
+        "policy simulation trace"
+      ],
+      "primary_metrics": [
+        "routing_decision",
+        "cache_affinity_key",
+        "route_level_latency"
+      ],
+      "problem_statement": "Requests are not yet routed by cache affinity or workload shape.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "routing harms quality or creates unfair route drift"
+      ],
+      "required_instrumentation": [
+        "routing_decision",
+        "selected_route_model_engine",
+        "decision_reason",
+        "prompt_length_bucket",
+        "vertical",
+        "complexity_class",
+        "expected_status",
+        "cache_affinity_key",
+        "session_affinity",
+        "queue_depth",
+        "estimated_cost",
+        "predicted_latency",
+        "fallback_escalation_route",
+        "routing_success_failure",
+        "route_level_quality",
+        "route_level_latency",
+        "route_level_cost"
+      ],
+      "sampling_frequency": "per request routing decision",
+      "secondary_metrics": [
+        "route_level_cost",
+        "route_level_quality"
+      ],
+      "temporal_resolution": "per request and route aggregate",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "routing_map",
+          "cache_affinity_clusters",
+          "route_cost_latency_quality"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "long-prompt TTFT improves without short-request regression"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical",
+        "per_prompt_length_bucket",
+        "per_prefix_family"
+      ],
+      "derivation_method": "Length-bucket opportunity can be estimated; chunk events cannot.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 1,
+      "display_name": "Chunked-prefill tuning",
+      "engine_specific_fields": {
+        "sglang": {
+          "chunked_prefill_enabled": "startup flag plus chunk counters"
+        },
+        "vllm": {
+          "chunked_prefill_enabled": "startup flag plus engine iteration metrics"
+        }
+      },
+      "existing_instrumentation": [
+        "input token aggregate by config",
+        "TTFT aggregate by config"
+      ],
+      "experiment_type": "gpu_one_factor_engine_config",
+      "external_profiler_requirements": [],
+      "hypothesis": "If long prefills are chunked appropriately, long-request TTFT improves while decode continues for shorter requests.",
+      "instrumentation_readiness_state": "requires_engine_metrics",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Interleave long-prefill requests with decode work.",
+      "missing_instrumentation": [
+        "chunk counters",
+        "iteration composition",
+        "short/long co-residency"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "prefill_decode_balance",
+      "optimization_id": "chunked_prefill_tuning",
+      "optional_instrumentation": [
+        "engine debug traces"
+      ],
+      "primary_metrics": [
+        "ttft_by_input_length_bucket",
+        "chunk_count",
+        "decode_interference"
+      ],
+      "problem_statement": "Long context can increase TTFT and interfere with decode work if prefill is not balanced.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "decode interference increases",
+        "tail latency worsens"
+      ],
+      "required_instrumentation": [
+        "chunked_prefill_enabled",
+        "configured_chunk_size",
+        "actual_chunk_count",
+        "tokens_per_chunk",
+        "maximum_partial_prefills",
+        "long_prompt_threshold",
+        "prefill_token_budget",
+        "prefill_queue_delay_ms",
+        "short_request_bypass_behavior",
+        "decode_interference",
+        "ttft_by_input_length_bucket",
+        "tpot_by_input_length_bucket",
+        "e2e_by_input_length_bucket",
+        "head_of_line_blocking_indicators",
+        "short_long_request_co_residency",
+        "engine_iteration_composition"
+      ],
+      "sampling_frequency": "per request and per engine iteration",
+      "secondary_metrics": [
+        "tpot_by_input_length_bucket",
+        "e2e_latency_by_input_length_bucket"
+      ],
+      "temporal_resolution": "request length bucket and scheduler iteration",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "long_prompt_chunks",
+          "concurrent_decode_work",
+          "ttft_by_length_bucket"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "capacity improves without quality/cost regression"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "No distributed serving layer exists in current artifacts.",
+      "device_requirements": [
+        "multi_worker"
+      ],
+      "difficulty_tier": 4,
+      "display_name": "Distributed capacity and serving architecture",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "single run matrix route labels"
+      ],
+      "experiment_type": "future_distributed_architecture",
+      "external_profiler_requirements": [],
+      "hypothesis": "Distributed capacity and serving architecture can improve throughput, availability, cost_per_request only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "future_architecture",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Increase capacity through routing, admission, and worker placement.",
+      "missing_instrumentation": [
+        "replicas",
+        "autoscaler",
+        "traffic router"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "distributed_serving",
+      "optimization_id": "distributed_capacity_serving_architecture",
+      "optional_instrumentation": [
+        "load balancer logs",
+        "autoscaler events"
+      ],
+      "primary_metrics": [
+        "replica_count",
+        "queue_depth",
+        "scale_events"
+      ],
+      "problem_statement": "Scale serving across workers, queues, and admission control.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "complexity or cost outweighs SLO benefit"
+      ],
+      "required_instrumentation": [
+        "replica_count",
+        "queue_depth",
+        "routing_decisions",
+        "scale_events",
+        "cache_locality",
+        "failover",
+        "cross_region_latency",
+        "cost"
+      ],
+      "sampling_frequency": "per route and per scale event",
+      "secondary_metrics": [
+        "cache_locality",
+        "failover",
+        "cross_region_latency",
+        "cost"
+      ],
+      "temporal_resolution": "future distributed serving run",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "replica_map",
+          "queue_depth",
+          "scale_event_timeline"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "higher useful KV capacity",
+        "no OOM/preemption regression"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical",
+        "per_request",
+        "per_engine_iteration",
+        "per_concurrency_level"
+      ],
+      "derivation_method": "Formula estimates may be produced from tokens and model config only.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 1,
+      "display_name": "KV-cache capacity/allocation tuning",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "VRAM telemetry",
+        "input/output token aggregates"
+      ],
+      "experiment_type": "gpu_one_factor_runtime_config",
+      "external_profiler_requirements": [],
+      "hypothesis": "If KV allocation pressure is visible, memory settings can reduce eviction and OOM risk.",
+      "instrumentation_readiness_state": "requires_engine_metrics",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Improve sequence capacity while avoiding OOM and eviction pressure.",
+      "missing_instrumentation": [
+        "KV block counts",
+        "allocation failures",
+        "eviction reasons"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "kv_cache",
+      "optimization_id": "kv_cache_capacity_allocation_tuning",
+      "optional_instrumentation": [
+        "engine block-manager counters"
+      ],
+      "primary_metrics": [
+        "kv_blocks_used",
+        "kv_blocks_free",
+        "cache_occupancy_percent"
+      ],
+      "problem_statement": "VRAM was sampled, but KV block occupancy and eviction pressure were not measured.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "evictions or OOMs increase",
+        "quality gates regress"
+      ],
+      "required_instrumentation": [
+        "total_kv_blocks",
+        "used_kv_blocks",
+        "free_kv_blocks",
+        "cache_occupancy_percent",
+        "kv_bytes_per_token",
+        "estimated_kv_bytes_per_request",
+        "cache_allocation_failures",
+        "eviction_count",
+        "eviction_reason",
+        "preemption_count",
+        "recomputation_count",
+        "oom_count",
+        "maximum_concurrent_sequences",
+        "maximum_sequence_length",
+        "gpu_memory_utilization_setting",
+        "block_or_page_size",
+        "watermark",
+        "cache_retention_eviction_policy",
+        "session_or_tenant_partition"
+      ],
+      "sampling_frequency": "engine interval plus run summary",
+      "secondary_metrics": [
+        "vram_used_mb",
+        "oom_count",
+        "preemption_count"
+      ],
+      "temporal_resolution": "per interval, per config, and per length bucket",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "kv_block_map",
+          "occupancy",
+          "eviction_preemption_events"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "serves larger contexts without unacceptable latency"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "Current run has no hierarchical cache layer.",
+      "device_requirements": [
+        "future"
+      ],
+      "difficulty_tier": 3,
+      "display_name": "KV-cache offloading / hierarchical caching",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "VRAM telemetry"
+      ],
+      "experiment_type": "future_cache_architecture",
+      "external_profiler_requirements": [],
+      "hypothesis": "KV-cache offloading / hierarchical caching can improve vram, sequence_capacity, cost only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "future_architecture",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Trade memory capacity against transfer overhead.",
+      "missing_instrumentation": [
+        "offload tier metrics"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "cache_offloading",
+      "optimization_id": "kv_cache_offloading_hierarchical_cache",
+      "optional_instrumentation": [
+        "host memory bandwidth",
+        "remote cache latency"
+      ],
+      "primary_metrics": [
+        "offload_bytes",
+        "transfer_latency",
+        "cache_hit_rate"
+      ],
+      "problem_statement": "Move KV state across GPU/CPU/storage tiers when memory is constrained.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "transfer overhead defeats benefit"
+      ],
+      "required_instrumentation": [
+        "offload_bytes",
+        "transfer_latency_ms",
+        "tier_hit_rate",
+        "vram_saved_mb"
+      ],
+      "sampling_frequency": "per cache movement event",
+      "secondary_metrics": [
+        "vram_saved",
+        "ttft_ms",
+        "e2e_latency_ms"
+      ],
+      "temporal_resolution": "future architecture",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "cache_tiers",
+          "transfer_path",
+          "vram_saved"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "kernel bottleneck reduced with end-to-end benefit"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "Kernel behavior requires external profiling.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 3,
+      "display_name": "Manual kernel/compiler optimization",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "none"
+      ],
+      "experiment_type": "future_profiler_guided_optimization",
+      "external_profiler_requirements": [
+        "PyTorch profiler optional",
+        "Nsight Systems",
+        "Nsight Compute"
+      ],
+      "hypothesis": "Manual kernel/compiler optimization can improve tpot, throughput, latency only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "requires_external_profiler",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Reduce kernel latency or CPU overhead.",
+      "missing_instrumentation": [
+        "profiler traces"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "kernel_compiler",
+      "optimization_id": "manual_kernel_compiler_optimization",
+      "optional_instrumentation": [
+        "Nsight Systems",
+        "Nsight Compute",
+        "PyTorch profiler"
+      ],
+      "primary_metrics": [
+        "kernel_duration",
+        "launch_count",
+        "occupancy"
+      ],
+      "problem_statement": "Change attention kernels, compiler settings, or runtime compilation path.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "microbenchmark gain does not improve serving SLOs"
+      ],
+      "required_instrumentation": [
+        "kernel_duration",
+        "launch_count",
+        "cpu_gaps",
+        "occupancy",
+        "memory_bandwidth",
+        "profiler_trace_paths"
+      ],
+      "sampling_frequency": "profiler trace",
+      "secondary_metrics": [
+        "cpu_gaps",
+        "memory_bandwidth",
+        "profiler_trace_paths"
+      ],
+      "temporal_resolution": "kernel/event timeline",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "kernel_timeline",
+          "occupancy",
+          "cpu_gap_view"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "smaller/faster model with acceptable quality"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "No model compression is present in current artifacts.",
+      "device_requirements": [
+        "a100_sxm_80gb",
+        "smaller_gpu_future"
+      ],
+      "difficulty_tier": 3,
+      "display_name": "Model compression",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "model registry"
+      ],
+      "experiment_type": "future_model_artifact",
+      "external_profiler_requirements": [],
+      "hypothesis": "Model compression can improve vram, cost, throughput only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "future_architecture",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Reduce model size while preserving useful behavior.",
+      "missing_instrumentation": [
+        "compressed model artifact"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "model_compression",
+      "optimization_id": "model_compression",
+      "optional_instrumentation": [
+        "distillation report"
+      ],
+      "primary_metrics": [
+        "model_size",
+        "quality_regression",
+        "latency_change"
+      ],
+      "problem_statement": "Use distillation, pruning, or compressed checkpoints.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "quality loss exceeds budget"
+      ],
+      "required_instrumentation": [
+        "compressed_model_id",
+        "compression_method",
+        "quality_regression"
+      ],
+      "sampling_frequency": "per model artifact",
+      "secondary_metrics": [
+        "training_or_distillation_cost",
+        "vram"
+      ],
+      "temporal_resolution": "future training/evaluation run",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "model_size_delta",
+          "quality_tradeoff"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "better deployability or lower cost at protected quality"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical",
+        "per_route",
+        "per_complexity_class"
+      ],
+      "derivation_method": "Aggregate model comparison can plan a policy but cannot prove routing.",
+      "device_requirements": [
+        "a100_sxm_80gb",
+        "provider_managed"
+      ],
+      "difficulty_tier": 2,
+      "display_name": "Model selection and routing",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "model comparison CSV",
+        "API versus self-hosted comparison CSV"
+      ],
+      "experiment_type": "planned_policy_simulation_then_measured_rerun",
+      "external_profiler_requirements": [],
+      "hypothesis": "Model selection and routing can improve cost, quality, latency only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "requires_runner_instrumentation",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Match model capacity/cost to task difficulty.",
+      "missing_instrumentation": [
+        "per-request router decision",
+        "policy thresholds"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "model_selection",
+      "optimization_id": "model_selection_routing",
+      "optional_instrumentation": [
+        "confidence threshold",
+        "fallback trace"
+      ],
+      "primary_metrics": [
+        "selected_model",
+        "decision_reason",
+        "route_level_quality"
+      ],
+      "problem_statement": "The platform has measured model/route differences but no per-request selection policy.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "route quality regression",
+        "cost increase without quality gain"
+      ],
+      "required_instrumentation": [
+        "routing_decision",
+        "selected_route_model_engine",
+        "decision_reason",
+        "prompt_length_bucket",
+        "vertical",
+        "complexity_class",
+        "expected_status",
+        "estimated_cost",
+        "predicted_latency",
+        "fallback_escalation_route",
+        "routing_success_failure",
+        "route_level_quality",
+        "route_level_latency",
+        "route_level_cost"
+      ],
+      "sampling_frequency": "per request routing decision",
+      "secondary_metrics": [
+        "route_level_latency",
+        "route_level_cost"
+      ],
+      "temporal_resolution": "per request and route aggregate",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "model_route_tree",
+          "quality_cost_latency_tradeoff"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "larger model or throughput improvement justifies overhead"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "Single-GPU data cannot prove multi-GPU parallelism.",
+      "device_requirements": [
+        "multi_gpu"
+      ],
+      "difficulty_tier": 3,
+      "display_name": "Multi-GPU parallelism",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "single A100 telemetry only"
+      ],
+      "experiment_type": "future_hardware_architecture",
+      "external_profiler_requirements": [
+        "distributed trace optional",
+        "NCCL/network telemetry optional"
+      ],
+      "hypothesis": "Multi-GPU parallelism can improve throughput, vram_headroom, latency only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "unsupported_current_runtime",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Increase capacity or throughput with tensor/pipeline/data parallelism.",
+      "missing_instrumentation": [
+        "multi-GPU run",
+        "NCCL metrics"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "parallelism",
+      "optimization_id": "multi_gpu_parallelism",
+      "optional_instrumentation": [
+        "NCCL trace"
+      ],
+      "primary_metrics": [
+        "per_gpu_utilization",
+        "communication_time",
+        "imbalance"
+      ],
+      "problem_statement": "Shard model or work across multiple GPUs.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "communication overhead dominates"
+      ],
+      "required_instrumentation": [
+        "communication_time",
+        "all_reduce_all_to_all_time",
+        "per_gpu_utilization",
+        "imbalance",
+        "nvlink_nccl_metrics"
+      ],
+      "sampling_frequency": "per GPU interval and collective operation",
+      "secondary_metrics": [
+        "all_reduce_time",
+        "nvlink_nccl_metrics",
+        "throughput"
+      ],
+      "temporal_resolution": "future multi-GPU run",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "per_gpu_heatmap",
+          "communication_bar"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "tail latency/throughput improves under mixed prompt lengths"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "Current single-node serving cannot derive disaggregation metrics.",
+      "device_requirements": [
+        "multi_gpu_or_multi_worker"
+      ],
+      "difficulty_tier": 4,
+      "display_name": "Prefill/decode disaggregation",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "none"
+      ],
+      "experiment_type": "future_disaggregated_serving",
+      "external_profiler_requirements": [
+        "distributed trace optional",
+        "NCCL/network telemetry optional"
+      ],
+      "hypothesis": "Prefill/decode disaggregation can improve ttft, throughput, tail_latency only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "future_architecture",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Specialize infrastructure for long-input and decode-heavy work.",
+      "missing_instrumentation": [
+        "separate prefill/decode workers"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "disaggregation",
+      "optimization_id": "prefill_decode_disaggregation",
+      "optional_instrumentation": [
+        "network topology",
+        "worker logs"
+      ],
+      "primary_metrics": [
+        "prefill_queue",
+        "decode_queue",
+        "kv_transfer_time"
+      ],
+      "problem_statement": "Separate prefill and decode workers or stages.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "transfer overhead or failures dominate"
+      ],
+      "required_instrumentation": [
+        "prefill_queue",
+        "decode_queue",
+        "kv_transfer_time",
+        "transfer_bytes",
+        "prefill_decode_worker_utilization",
+        "transfer_failures"
+      ],
+      "sampling_frequency": "per request and per transfer",
+      "secondary_metrics": [
+        "transfer_bytes",
+        "worker_utilization",
+        "transfer_failures"
+      ],
+      "temporal_resolution": "future distributed run",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "prefill_decode_queues",
+          "kv_transfer_flow"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "non-zero measured hits",
+        "TTFT improves for hits",
+        "quality gates pass"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical",
+        "per_prompt_length_bucket",
+        "per_prefix_family"
+      ],
+      "derivation_method": "No derivation for hit/miss; exact prefix opportunity is only a precursor.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 1,
+      "display_name": "Prefix-cache verification and tuning",
+      "engine_specific_fields": {
+        "sglang": {
+          "cache_hit_count": "requires wrapper instrumentation if not logged",
+          "radixattention_cache_metrics": "requires runtime logs or metrics"
+        },
+        "vllm": {
+          "cache_blocks": "requires engine metrics",
+          "cache_hit_count": "requires engine metrics endpoint or wrapper",
+          "cache_lookup_count": "requires engine metrics endpoint or wrapper"
+        }
+      },
+      "existing_instrumentation": [
+        "rendered prompts",
+        "TTFT aggregates"
+      ],
+      "experiment_type": "gpu_one_factor_engine_flag",
+      "external_profiler_requirements": [],
+      "hypothesis": "If exact prefix families exist and engine cache hits are recorded, TTFT and prefill work should improve for hit requests.",
+      "instrumentation_readiness_state": "requires_engine_metrics",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Reuse KV for exact matching prefixes across requests.",
+      "missing_instrumentation": [
+        "cache hit/miss counters",
+        "cache occupancy",
+        "hit/miss TTFT split"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "prefix_cache",
+      "optimization_id": "prefix_cache_verification_tuning",
+      "optional_instrumentation": [
+        "startup log cache flag",
+        "metrics endpoint scrape"
+      ],
+      "primary_metrics": [
+        "cache_hit_rate",
+        "hit_token_count",
+        "ttft_ms_for_hits"
+      ],
+      "problem_statement": "The run cannot prove whether cross-request prefix caching was active or useful.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "no hits",
+        "eviction overhead",
+        "quality/safety regression"
+      ],
+      "required_instrumentation": [
+        "cache_lookup_count",
+        "cache_hit_count",
+        "cache_miss_count",
+        "cache_hit_rate",
+        "hit_token_count",
+        "miss_token_count",
+        "reused_token_ratio",
+        "cache_lookup_latency_ms",
+        "ttft_ms_for_hits",
+        "ttft_ms_for_misses",
+        "prefill_latency_ms_for_hits",
+        "prefill_latency_ms_for_misses",
+        "cache_occupancy",
+        "cache_blocks_used",
+        "cache_blocks_free",
+        "cache_blocks_total",
+        "eviction_count",
+        "insertion_count",
+        "cache_invalidation_count",
+        "cache_salt_or_tenant_partition",
+        "engine_configuration_proving_cache_state"
+      ],
+      "sampling_frequency": "per request plus engine metrics scrape",
+      "secondary_metrics": [
+        "cache_lookup_latency_ms",
+        "cache_occupancy",
+        "prefill_latency_ms"
+      ],
+      "temporal_resolution": "per request and per engine interval",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "hit_miss_flow",
+          "reused_tokens",
+          "hit_miss_ttft_comparison"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "larger exact leading prefix",
+        "quality/safety unchanged after rerun"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical",
+        "per_prompt_length_bucket",
+        "per_prefix_family"
+      ],
+      "derivation_method": "Deterministic static token analysis over rendered workload messages.",
+      "device_requirements": [
+        "CPU for static prefix audit",
+        "GPU/API only for later measured latency rerun"
+      ],
+      "difficulty_tier": 1,
+      "display_name": "Prompt and prefix-layout optimization",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "rendered messages",
+        "input token aggregates",
+        "workload hashes"
+      ],
+      "experiment_type": "cpu_static_audit_then_one_factor_latency_rerun",
+      "external_profiler_requirements": [],
+      "hypothesis": "If stable prompt sections move earlier and remain token-identical, prefix reuse opportunity increases without changing answer semantics.",
+      "instrumentation_readiness_state": "ready_derivable",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Increase token-identical leading prefix length for cacheability.",
+      "missing_instrumentation": [
+        "engine cache-hit telemetry"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "prompt_workload",
+      "optimization_id": "prompt_prefix_layout_optimization",
+      "optional_instrumentation": [
+        "engine_cache_hit_count",
+        "prefix_cache_lookup_latency_ms"
+      ],
+      "primary_metrics": [
+        "exact_shared_prefix_token_count",
+        "reusable_token_ratio",
+        "prefix_family_count",
+        "ttft_ms"
+      ],
+      "problem_statement": "Rendered prompts may not put stable instructions and schemas into the longest possible exact leading prefix.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "prefix families fragment",
+        "contract or evidence changes"
+      ],
+      "required_instrumentation": [
+        "rendered_prompt_hash",
+        "tokenized_prefix_hash",
+        "exact_shared_prefix_token_count",
+        "total_input_token_count",
+        "reusable_token_ratio",
+        "prefix_family_id",
+        "requests_per_prefix_family",
+        "longest_exact_common_prefix",
+        "common_system_prompt_tokens",
+        "common_generation_contract_tokens",
+        "common_evidence_schema_tokens",
+        "common_tool_definition_tokens",
+        "variable_suffix_token_count",
+        "prefix_entropy"
+      ],
+      "sampling_frequency": "once per workload artifact",
+      "secondary_metrics": [
+        "input_tokens",
+        "prefill_latency_ms",
+        "tokens_per_second"
+      ],
+      "temporal_resolution": "static per prompt and aggregate per family",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "token_ribbon",
+          "stable_prefix_vs_variable_suffix",
+          "prefix_family_histogram"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "cost/latency improves while quality and safety pass"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "No quantization result can be derived from unquantized baseline.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 2,
+      "display_name": "Quantization",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "A100 VRAM telemetry",
+        "quality/cost aggregates"
+      ],
+      "experiment_type": "future_gpu_model_variant",
+      "external_profiler_requirements": [],
+      "hypothesis": "Quantization can improve vram, throughput, cost only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "requires_runner_instrumentation",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Lower weight memory and sometimes increase throughput.",
+      "missing_instrumentation": [
+        "quantized checkpoint",
+        "precision metadata",
+        "quality regression run"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "precision_format",
+          "weight_format",
+          "calibration_dataset"
+        ],
+        "model6_gated": [
+          "provider_hidden_precision",
+          "provider_route_cost"
+        ]
+      },
+      "optimization_domain": "quantization",
+      "optimization_id": "quantization",
+      "optional_instrumentation": [
+        "quantization calibration report"
+      ],
+      "primary_metrics": [
+        "precision_format",
+        "model_weight_vram_mb",
+        "tpot_ms"
+      ],
+      "problem_statement": "Lower precision could reduce cost or memory, but quality failed and quantization is blocked.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "quality/safety regress",
+        "kernel unsupported"
+      ],
+      "required_instrumentation": [
+        "precision_format",
+        "quantization_method",
+        "checkpoint_model_id",
+        "weight_format",
+        "activation_format",
+        "kv_cache_format",
+        "group_size",
+        "calibration_method_dataset",
+        "excluded_layers",
+        "model_file_size",
+        "load_time_ms",
+        "model_weight_vram_mb",
+        "total_vram_mb",
+        "kv_cache_capacity",
+        "ttft_ms",
+        "tpot_ms",
+        "e2e_latency_ms",
+        "throughput",
+        "power",
+        "cost",
+        "json_validity",
+        "contract_validity",
+        "evidence_match",
+        "groundedness",
+        "safety",
+        "long_context_quality",
+        "numerical_quality_regression"
+      ],
+      "sampling_frequency": "per run and per request aggregate",
+      "secondary_metrics": [
+        "e2e_latency_ms",
+        "throughput",
+        "power",
+        "quality_regression"
+      ],
+      "temporal_resolution": "per config and quality evaluation",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "precision_ladder",
+          "model_memory_footprint",
+          "speed_quality_tradeoff"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "higher throughput without tail latency or quality regression"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical",
+        "per_request",
+        "per_engine_iteration",
+        "per_concurrency_level"
+      ],
+      "derivation_method": "Configured concurrency is available but is not active batch size.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 1,
+      "display_name": "Scheduler and batch tuning",
+      "engine_specific_fields": {
+        "sglang": {
+          "batch_waiting_delay": "runtime config and observed queue timing",
+          "running_waiting_requests": "requires scheduler logs"
+        },
+        "vllm": {
+          "active_batch_size": "requires scheduler/iteration telemetry",
+          "max_num_batched_tokens": "startup/runtime config field",
+          "max_num_seqs": "startup/runtime config field"
+        }
+      },
+      "existing_instrumentation": [
+        "configured concurrency",
+        "aggregate latency",
+        "aggregate throughput"
+      ],
+      "experiment_type": "gpu_one_factor_runtime_config",
+      "external_profiler_requirements": [],
+      "hypothesis": "If queueing and batch budgets are tuned from observed scheduler metrics, throughput can improve without tail-latency regression.",
+      "instrumentation_readiness_state": "requires_runner_instrumentation",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Balance queueing, prefill, decode, and batch composition.",
+      "missing_instrumentation": [
+        "actual active batch size",
+        "queue wait",
+        "engine iteration counters"
+      ],
+      "model_specific_fields": {
+        "model3_7b": [
+          "tokenizer_name",
+          "model_id"
+        ],
+        "model6_gated": [
+          "api_provider_route"
+        ]
+      },
+      "optimization_domain": "scheduler_batching",
+      "optimization_id": "scheduler_batch_tuning",
+      "optional_instrumentation": [
+        "engine metrics endpoint",
+        "scheduler debug logs"
+      ],
+      "primary_metrics": [
+        "queue_wait_ms",
+        "active_batch_size",
+        "token_budget_utilization"
+      ],
+      "problem_statement": "Configured concurrency does not prove actual batch composition or scheduler efficiency.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "p95/p99 latency regression",
+        "OOM",
+        "preemption spikes"
+      ],
+      "required_instrumentation": [
+        "request_arrival_time",
+        "queue_wait_ms",
+        "waiting_request_count",
+        "running_request_count",
+        "active_batch_size",
+        "batch_composition",
+        "scheduled_tokens",
+        "maximum_token_budget",
+        "prefill_tokens_per_iteration",
+        "decode_tokens_per_iteration",
+        "maximum_running_sequences",
+        "maximum_batched_tokens",
+        "admission_decision",
+        "preemption_count",
+        "preemption_reason",
+        "recomputation_count",
+        "scheduling_policy",
+        "priority_class",
+        "batch_waiting_delay_ms",
+        "iteration_duration_ms",
+        "gpu_busy_idle_interval"
+      ],
+      "sampling_frequency": "per request and per engine iteration",
+      "secondary_metrics": [
+        "ttft_ms",
+        "e2e_latency_ms",
+        "tokens_per_second"
+      ],
+      "temporal_resolution": "request lifecycle and scheduler iteration",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "queue_animation",
+          "active_batch",
+          "token_budget_utilization"
+        ]
+      }
+    },
+    {
+      "acceptance_evidence": [
+        "high acceptance rate and TPOT improvement with protected quality"
+      ],
+      "aggregation_levels": [
+        "per_run",
+        "per_config",
+        "per_engine",
+        "per_memory_mode",
+        "per_vertical"
+      ],
+      "derivation_method": "Speculation acceptance cannot exist without a speculative run.",
+      "device_requirements": [
+        "a100_sxm_80gb"
+      ],
+      "difficulty_tier": 2,
+      "display_name": "Speculative decoding",
+      "engine_specific_fields": {
+        "api_provider_route": {
+          "api_cost_usd": "available_from_cost_report",
+          "gpu_utilization_percent": "not_applicable_provider_managed",
+          "kv_blocks_used": "unavailable_provider_hidden",
+          "prefix_cache_hit_count": "unavailable_provider_hidden",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "sglang": {
+          "active_batch_size": "requires_wrapper_or_scheduler_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "radixattention_cache_metrics": "requires_runtime_logs_or_metrics",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        },
+        "vllm": {
+          "active_batch_size": "requires_wrapper_or_engine_iteration_logs",
+          "chunked_prefill_state": "startup_flag_missing",
+          "gpu_utilization_percent": "available_from_saved_gpu_telemetry",
+          "kv_blocks_used": "requires_engine_metrics",
+          "prefix_cache_hit_count": "requires_engine_metrics_or_wrapper",
+          "speculative_acceptance_rate": "unavailable_without_speculative_run",
+          "ttft_ms": "available_from_existing_eval_aggregates"
+        }
+      },
+      "existing_instrumentation": [
+        "none"
+      ],
+      "experiment_type": "future_gpu_engine_config",
+      "external_profiler_requirements": [],
+      "hypothesis": "Speculative decoding can improve tpot, throughput, e2e_latency only if its mechanism is instrumented and protected quality gates pass.",
+      "instrumentation_readiness_state": "unsupported_current_runtime",
+      "instrumentation_readiness_state_does_not_unblock_optimization": true,
+      "mechanism": "Reduce target-model decode work when draft tokens are accepted.",
+      "missing_instrumentation": [
+        "draft model",
+        "accept/reject telemetry",
+        "verification latency"
+      ],
+      "model_specific_fields": {
+        "draft_model": "must be explicitly selected before experiment",
+        "target_model": "model3_7b"
+      },
+      "optimization_domain": "speculative_decoding",
+      "optimization_id": "speculative_decoding",
+      "optional_instrumentation": [
+        "engine speculation counters"
+      ],
+      "primary_metrics": [
+        "acceptance_rate",
+        "accepted_tokens_per_target_pass",
+        "tpot_ms"
+      ],
+      "problem_statement": "Decode speed may improve with a draft model, but no speculation support or telemetry exists.",
+      "protected_quality_safety_metrics": [
+        "json_validity",
+        "contract_validity",
+        "format_validity",
+        "evidence_match",
+        "groundedness",
+        "safety_findings",
+        "truncation",
+        "completion_failure_rate"
+      ],
+      "rejection_evidence": [
+        "low acceptance rate",
+        "extra VRAM/cost outweighs gains"
+      ],
+      "required_instrumentation": [
+        "target_model",
+        "draft_model",
+        "speculation_method",
+        "drafted_tokens",
+        "accepted_tokens",
+        "rejected_tokens",
+        "acceptance_rate",
+        "accepted_tokens_per_target_pass",
+        "draft_latency_ms",
+        "target_verification_latency_ms",
+        "speculation_depth",
+        "draft_token_count",
+        "additional_vram_mb",
+        "draft_model_memory_mb",
+        "tpot_itl_change",
+        "throughput_change",
+        "concurrency_effect",
+        "quality_safety_protections",
+        "automatic_disable_reason"
+      ],
+      "sampling_frequency": "per decode verification step",
+      "secondary_metrics": [
+        "additional_vram",
+        "draft_latency",
+        "throughput"
+      ],
+      "temporal_resolution": "per request and token verification step",
+      "ui_visualization_contract": {
+        "measurement_labels_required": true,
+        "state_labels": [
+          "instrumented",
+          "partially_instrumented",
+          "instrumentation_missing",
+          "planned",
+          "measured",
+          "unavailable",
+          "future"
+        ],
+        "visualizations": [
+          "draft_tokens",
+          "accepted_rejected_tokens",
+          "acceptance_rate"
+        ]
+      }
+    }
+  ],
+  "readiness_states": [
+    "future_architecture",
+    "ready_derivable",
+    "ready_existing",
+    "requires_engine_metrics",
+    "requires_external_profiler",
+    "requires_runner_instrumentation",
+    "unsupported_current_runtime"
+  ],
+  "status": "OBSERVABILITY_REGISTRY_READY_PLANNING_ONLY",
+  "version": 1
+}

@@ -87,10 +87,15 @@ Current repository sources:
 - `experiments/main/main_inference_v1/processed/main_inference_v1_ui_optimization_story.json`
 - `configs/core_optimization_taxonomy.yaml`
 - `configs/core_optimization_scenario_registry.yaml`
+- `configs/core_optimization_observability.yaml`
 - `experiments/main/main_inference_v1/processed/main_inference_v1_engine_baseline_capability_report.json`
 - `experiments/main/main_inference_v1/processed/core_optimization_applicability_matrix.json`
 - `experiments/main/main_inference_v1/processed/core_optimization_one_factor_experiment_plan.json`
 - `experiments/main/main_inference_v1/processed/core_optimization_ui_contract.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_observability_registry.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_observability_readiness.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_ui_observability_contract.json`
+- `experiments/main/main_inference_v1/processed/coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json`
 
 Known missing product sources:
 
@@ -99,6 +104,16 @@ Known missing product sources:
   artifacts.
 - UI-ready JSON bundles such as `main_inference_v1_ui_summary.json`.
 - A saved before/after replay bundle for optimized inference.
+
+New observability endpoints:
+
+- `GET /api/optimizations/observability/registry`
+- `GET /api/optimizations/observability/readiness`
+- `GET /api/optimizations/observability/inventory`
+- `GET /api/optimizations/observability/prefix-opportunity`
+- `GET /api/optimizations/observability/event-schema`
+- `GET /api/optimizations/observability/missing-instrumentation`
+- `GET /api/optimizations/observability/cards`
 
 ## Frontend Information Architecture
 

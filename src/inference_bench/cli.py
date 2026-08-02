@@ -144,6 +144,10 @@ def validate_config(
         str,
         typer.Option(help="Path to the core optimization scenario registry YAML config."),
     ] = "configs/core_optimization_scenario_registry.yaml",
+    core_optimization_observability_path: Annotated[
+        str,
+        typer.Option(help="Path to the core optimization observability YAML config."),
+    ] = "configs/core_optimization_observability.yaml",
 ) -> None:
     """Validate benchmark configuration files."""
 
@@ -168,6 +172,10 @@ def validate_config(
         core_optimization_scenario_registry_path,
         "Core optimization scenario registry",
     )
+    core_observability = _load_yaml_mapping(
+        core_optimization_observability_path,
+        "Core optimization observability registry",
+    )
     layers = core_taxonomy.get("layers", {})
     if not isinstance(layers, dict):
         raise typer.BadParameter("Core optimization taxonomy layers must be a mapping")
@@ -177,6 +185,19 @@ def validate_config(
     scenarios = core_scenario_registry.get("scenarios", [])
     if not isinstance(scenarios, list) or not scenarios:
         raise typer.BadParameter("Core optimization scenario registry has no scenarios")
+    observability_entries = core_observability.get("optimizations", [])
+    if not isinstance(observability_entries, list) or not observability_entries:
+        raise typer.BadParameter("Core optimization observability registry has no optimizations")
+    core_ids = {str(item["optimization_id"]) for item in core_optimizations}
+    observability_ids = {str(item.get("optimization_id")) for item in observability_entries}
+    if observability_ids != core_ids:
+        missing = sorted(core_ids - observability_ids)
+        extra = sorted(observability_ids - core_ids)
+        msg = (
+            "Core optimization observability registry does not match taxonomy; "
+            f"missing={missing}, extra={extra}"
+        )
+        raise typer.BadParameter(msg)
     result_track_errors = validate_result_track_row(
         {
             "run_id": "config-validation",
@@ -225,6 +246,9 @@ def validate_config(
         f"Core optimization taxonomy loaded: {len(core_optimizations)} core optimizations"
     )
     console.print(f"Core optimization scenario registry loaded: {len(scenarios)} scenarios")
+    console.print(
+        f"Core optimization observability registry loaded: {len(observability_entries)} entries"
+    )
     console.print(f"Result track schema join keys loaded: {len(RESULT_TRACK_JOIN_KEYS)}")
     console.print(f"Workloads loaded: {len(project_config.workloads)}")
     console.print(f"Experiments loaded: {len(project_config.experiments)}")

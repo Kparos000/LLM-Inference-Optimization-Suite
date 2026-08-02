@@ -166,8 +166,15 @@ def _artifact_map() -> dict[str, list[str]]:
             _display_path(MAIN_PROCESSED / "main_inference_v1_ui_diagnosis.json"),
             _display_path(MAIN_PROCESSED / "main_inference_v1_ui_optimization_options.json"),
             _display_path(MAIN_PROCESSED / "main_inference_v1_ui_apply_plan.json"),
+            _display_path(MAIN_PROCESSED / "core_optimization_observability_registry.json"),
+            _display_path(MAIN_PROCESSED / "core_optimization_observability_readiness.json"),
+            _display_path(MAIN_PROCESSED / "core_optimization_ui_observability_contract.json"),
+            _display_path(
+                MAIN_PROCESSED / "coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json"
+            ),
             "configs/optimization_catalog.yaml",
             "configs/optimization_negative_rules.yaml",
+            "configs/core_optimization_observability.yaml",
         ],
         "optimized_inference": ["experiments/optimized/optimized_inference_v1/"],
         "comparison": [
@@ -1927,6 +1934,39 @@ class ProductPlatformData:
 
     def optimization_story_v2(self) -> JsonDict:
         return _read_json(MAIN_PROCESSED / "main_inference_v1_ui_optimization_story.json")
+
+    def core_observability_registry(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "core_optimization_observability_registry.json")
+
+    def core_observability_readiness(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "core_optimization_observability_readiness.json")
+
+    def main_observability_inventory(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "main_inference_v1_observability_inventory.json")
+
+    def prefix_opportunity_analysis(self) -> JsonDict:
+        return _read_json(
+            MAIN_PROCESSED / "coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json"
+        )
+
+    def core_observability_event_schema(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "core_optimization_event_schema.json")
+
+    def core_observability_missing_instrumentation(self) -> JsonDict:
+        return _read_json(MAIN_PROCESSED / "core_optimization_missing_instrumentation.json")
+
+    def core_observability_cards(self) -> JsonDict:
+        contract = _read_json(MAIN_PROCESSED / "core_optimization_ui_observability_contract.json")
+        readiness = self.core_observability_readiness()
+        prefix = self.prefix_opportunity_analysis()
+        return {
+            "result_type": "planned",
+            "semantics": contract.get("semantics", {}),
+            "cards": contract.get("optimization_cards", []),
+            "readiness_summary": readiness.get("summary", {}),
+            "prefix_summary": prefix.get("summary", {}),
+            "source_artifacts": contract.get("source_artifacts", []),
+        }
 
     def mandatory_repairs(self) -> JsonDict:
         apply_plan = _read_json(MAIN_PROCESSED / "main_inference_v1_ui_apply_plan.json")

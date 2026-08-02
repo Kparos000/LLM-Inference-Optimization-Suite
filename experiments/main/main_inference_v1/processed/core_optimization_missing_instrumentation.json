@@ -1,0 +1,307 @@
+{
+  "missing_field_count": 33,
+  "missing_is_not_zero": true,
+  "result_type": "planned",
+  "rows": [
+    {
+      "display_name": "Cache-aware/workload-aware routing",
+      "field_name": "routing decision trace",
+      "measurement_type": "unavailable",
+      "optimization_domain": "routing",
+      "optimization_id": "cache_workload_aware_routing",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Cache-aware/workload-aware routing",
+      "field_name": "cache-affinity key",
+      "measurement_type": "unavailable",
+      "optimization_domain": "routing",
+      "optimization_id": "cache_workload_aware_routing",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Cache-aware/workload-aware routing",
+      "field_name": "queue-depth input",
+      "measurement_type": "unavailable",
+      "optimization_domain": "routing",
+      "optimization_id": "cache_workload_aware_routing",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Chunked-prefill tuning",
+      "field_name": "chunk counters",
+      "measurement_type": "unavailable",
+      "optimization_domain": "prefill_decode_balance",
+      "optimization_id": "chunked_prefill_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Chunked-prefill tuning",
+      "field_name": "iteration composition",
+      "measurement_type": "unavailable",
+      "optimization_domain": "prefill_decode_balance",
+      "optimization_id": "chunked_prefill_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Chunked-prefill tuning",
+      "field_name": "short/long co-residency",
+      "measurement_type": "unavailable",
+      "optimization_domain": "prefill_decode_balance",
+      "optimization_id": "chunked_prefill_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Distributed capacity and serving architecture",
+      "field_name": "replicas",
+      "measurement_type": "unavailable",
+      "optimization_domain": "distributed_serving",
+      "optimization_id": "distributed_capacity_serving_architecture",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Distributed capacity and serving architecture",
+      "field_name": "autoscaler",
+      "measurement_type": "unavailable",
+      "optimization_domain": "distributed_serving",
+      "optimization_id": "distributed_capacity_serving_architecture",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Distributed capacity and serving architecture",
+      "field_name": "traffic router",
+      "measurement_type": "unavailable",
+      "optimization_domain": "distributed_serving",
+      "optimization_id": "distributed_capacity_serving_architecture",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "KV-cache capacity/allocation tuning",
+      "field_name": "KV block counts",
+      "measurement_type": "unavailable",
+      "optimization_domain": "kv_cache",
+      "optimization_id": "kv_cache_capacity_allocation_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "KV-cache capacity/allocation tuning",
+      "field_name": "allocation failures",
+      "measurement_type": "unavailable",
+      "optimization_domain": "kv_cache",
+      "optimization_id": "kv_cache_capacity_allocation_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "KV-cache capacity/allocation tuning",
+      "field_name": "eviction reasons",
+      "measurement_type": "unavailable",
+      "optimization_domain": "kv_cache",
+      "optimization_id": "kv_cache_capacity_allocation_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "KV-cache offloading / hierarchical caching",
+      "field_name": "offload tier metrics",
+      "measurement_type": "unavailable",
+      "optimization_domain": "cache_offloading",
+      "optimization_id": "kv_cache_offloading_hierarchical_cache",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Manual kernel/compiler optimization",
+      "field_name": "profiler traces",
+      "measurement_type": "unavailable",
+      "optimization_domain": "kernel_compiler",
+      "optimization_id": "manual_kernel_compiler_optimization",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Model compression",
+      "field_name": "compressed model artifact",
+      "measurement_type": "unavailable",
+      "optimization_domain": "model_compression",
+      "optimization_id": "model_compression",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Model selection and routing",
+      "field_name": "per-request router decision",
+      "measurement_type": "unavailable",
+      "optimization_domain": "model_selection",
+      "optimization_id": "model_selection_routing",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Model selection and routing",
+      "field_name": "policy thresholds",
+      "measurement_type": "unavailable",
+      "optimization_domain": "model_selection",
+      "optimization_id": "model_selection_routing",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Multi-GPU parallelism",
+      "field_name": "multi-GPU run",
+      "measurement_type": "unavailable",
+      "optimization_domain": "parallelism",
+      "optimization_id": "multi_gpu_parallelism",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Multi-GPU parallelism",
+      "field_name": "NCCL metrics",
+      "measurement_type": "unavailable",
+      "optimization_domain": "parallelism",
+      "optimization_id": "multi_gpu_parallelism",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Prefill/decode disaggregation",
+      "field_name": "separate prefill/decode workers",
+      "measurement_type": "unavailable",
+      "optimization_domain": "disaggregation",
+      "optimization_id": "prefill_decode_disaggregation",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Prefix-cache verification and tuning",
+      "field_name": "cache hit/miss counters",
+      "measurement_type": "unavailable",
+      "optimization_domain": "prefix_cache",
+      "optimization_id": "prefix_cache_verification_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Prefix-cache verification and tuning",
+      "field_name": "cache occupancy",
+      "measurement_type": "unavailable",
+      "optimization_domain": "prefix_cache",
+      "optimization_id": "prefix_cache_verification_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Prefix-cache verification and tuning",
+      "field_name": "hit/miss TTFT split",
+      "measurement_type": "unavailable",
+      "optimization_domain": "prefix_cache",
+      "optimization_id": "prefix_cache_verification_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Prompt and prefix-layout optimization",
+      "field_name": "engine cache-hit telemetry",
+      "measurement_type": "unavailable",
+      "optimization_domain": "prompt_workload",
+      "optimization_id": "prompt_prefix_layout_optimization",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Quantization",
+      "field_name": "quantized checkpoint",
+      "measurement_type": "unavailable",
+      "optimization_domain": "quantization",
+      "optimization_id": "quantization",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Quantization",
+      "field_name": "precision metadata",
+      "measurement_type": "unavailable",
+      "optimization_domain": "quantization",
+      "optimization_id": "quantization",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Quantization",
+      "field_name": "quality regression run",
+      "measurement_type": "unavailable",
+      "optimization_domain": "quantization",
+      "optimization_id": "quantization",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Scheduler and batch tuning",
+      "field_name": "actual active batch size",
+      "measurement_type": "unavailable",
+      "optimization_domain": "scheduler_batching",
+      "optimization_id": "scheduler_batch_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Scheduler and batch tuning",
+      "field_name": "queue wait",
+      "measurement_type": "unavailable",
+      "optimization_domain": "scheduler_batching",
+      "optimization_id": "scheduler_batch_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Scheduler and batch tuning",
+      "field_name": "engine iteration counters",
+      "measurement_type": "unavailable",
+      "optimization_domain": "scheduler_batching",
+      "optimization_id": "scheduler_batch_tuning",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Speculative decoding",
+      "field_name": "draft model",
+      "measurement_type": "unavailable",
+      "optimization_domain": "speculative_decoding",
+      "optimization_id": "speculative_decoding",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Speculative decoding",
+      "field_name": "accept/reject telemetry",
+      "measurement_type": "unavailable",
+      "optimization_domain": "speculative_decoding",
+      "optimization_id": "speculative_decoding",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    },
+    {
+      "display_name": "Speculative decoding",
+      "field_name": "verification latency",
+      "measurement_type": "unavailable",
+      "optimization_domain": "speculative_decoding",
+      "optimization_id": "speculative_decoding",
+      "reason": "Field is not captured in saved Main_Inference_V1 artifacts.",
+      "required_before_measured_claim": true
+    }
+  ],
+  "run_id": "main_inference_v1",
+  "status": "MISSING_INSTRUMENTATION_REPORTED",
+  "version": 1
+}

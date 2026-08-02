@@ -47,6 +47,7 @@ OPTIMIZATION_TWO_TRACK_ARCHITECTURE_READY
 DEPLOYABILITY_REPAIR_SAMPLE_VALIDATED
 CORE_OPTIMIZATION_ELIGIBLE
 CORE_OPTIMIZATION_PLANNING_AUDIT_COMPLETE
+CORE_OPTIMIZATION_OBSERVABILITY_READY
 OPTIMIZED_INFERENCE_V1_PENDING_MEASURED_ARTIFACTS
 ```
 
@@ -84,6 +85,14 @@ separates engine-native vLLM/SGLang baseline capabilities from engineer-applied
 core optimizations, marks unsupported cache/kernel states as unknown, and
 plans one-factor experiments without running inference or creating
 `Optimized_Inference_V1`.
+
+Core Optimization Observability Framework is now implemented. It adds
+`configs/core_optimization_observability.yaml`, a unified event schema,
+adapter-coverage reports, instrumentation-readiness reports, UI observability
+cards, and a CPU-only static prefix-opportunity analysis. It does not run
+inference, use a GPU, mutate Main_Inference_V1, select a champion, or create
+`Optimized_Inference_V1`. The reference is
+`docs/131_core_optimization_observability_framework.md`.
 
 Blocks A1 through A6 validated the RTX 3070 vLLM/SGLang serving paths, GPU
 telemetry, and bounded mm4 workflow.

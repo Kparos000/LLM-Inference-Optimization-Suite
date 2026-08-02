@@ -110,10 +110,13 @@ def test_scenario_registry_marks_planned_results_as_unmeasured() -> None:
     )
     scenarios = {item["scenario_id"]: item for item in registry["scenarios"]}
 
-    assert registry["status"] == "SCENARIO_REGISTRY_PLANNED"
+    assert registry["status"] == "SCENARIO_REGISTRY_PLANNED_WITH_OBSERVABILITY"
     assert scenarios["main_inference_v1"]["result_type"] == "measured"
     assert scenarios["deployability_repair_validation_v1"]["result_type"] == "measured"
     assert scenarios["coreopt_scheduler_batch_vllm_v1"]["result_type"] == "planned"
+    assert scenarios["coreopt_scheduler_batch_vllm_v1"]["instrumentation_readiness"] == (
+        "requires_runner_instrumentation"
+    )
     assert scenarios["optimized_inference_v1"]["result_type"] == "missing_not_created"
     assert scenarios["optimized_inference_v1"]["artifact_paths"] == []
 

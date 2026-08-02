@@ -1,5 +1,5 @@
 version: 1
-status: SCENARIO_REGISTRY_PLANNED
+status: SCENARIO_REGISTRY_PLANNED_WITH_OBSERVABILITY
 scenario_types:
 - engine_baseline
 - repair_validation
@@ -49,6 +49,37 @@ scenarios:
   artifact_paths: []
   ui_replay_available: false
   conclusion_available: false
+  instrumentation_readiness: ready_derivable
+  required_fields:
+  - rendered_prompt_hash
+  - tokenized_prefix_hash
+  - exact_shared_prefix_token_count
+  - total_input_token_count
+  - reusable_token_ratio
+  - prefix_family_id
+  - requests_per_prefix_family
+  - longest_exact_common_prefix
+  - common_system_prompt_tokens
+  - common_generation_contract_tokens
+  - common_evidence_schema_tokens
+  - common_tool_definition_tokens
+  - variable_suffix_token_count
+  - prefix_entropy
+  currently_available_fields:
+  - rendered messages
+  - input token aggregates
+  - workload hashes
+  missing_fields:
+  - engine cache-hit telemetry
+  implementation_blockers:
+  - No live blocker for static audit; GPU needed only for measured latency rerun.
+  promotion_criteria:
+  - instrumentation fields are captured or explicitly marked unavailable
+  - one-factor changed variable is frozen
+  - protected quality and safety gates are evaluated
+  - no missing telemetry is rendered as zero
+  - human approval is recorded before champion selection
+  ui_replay_readiness: true
 - scenario_id: coreopt_scheduler_batch_vllm_v1
   scenario_type: one_factor
   result_type: planned
@@ -63,6 +94,46 @@ scenarios:
   artifact_paths: []
   ui_replay_available: false
   conclusion_available: false
+  instrumentation_readiness: requires_runner_instrumentation
+  required_fields:
+  - request_arrival_time
+  - queue_wait_ms
+  - waiting_request_count
+  - running_request_count
+  - active_batch_size
+  - batch_composition
+  - scheduled_tokens
+  - maximum_token_budget
+  - prefill_tokens_per_iteration
+  - decode_tokens_per_iteration
+  - maximum_running_sequences
+  - maximum_batched_tokens
+  - admission_decision
+  - preemption_count
+  - preemption_reason
+  - recomputation_count
+  - scheduling_policy
+  - priority_class
+  - batch_waiting_delay_ms
+  - iteration_duration_ms
+  - gpu_busy_idle_interval
+  currently_available_fields:
+  - configured concurrency
+  - aggregate latency
+  - aggregate throughput
+  missing_fields:
+  - actual active batch size
+  - engine iteration counters
+  - queue wait
+  implementation_blockers:
+  - Add request lifecycle and decision logging to the runner/wrapper.
+  promotion_criteria:
+  - instrumentation fields are captured or explicitly marked unavailable
+  - one-factor changed variable is frozen
+  - protected quality and safety gates are evaluated
+  - no missing telemetry is rendered as zero
+  - human approval is recorded before champion selection
+  ui_replay_readiness: false
 - scenario_id: coreopt_prefix_cache_vllm_v1
   scenario_type: one_factor
   result_type: planned
@@ -77,6 +148,45 @@ scenarios:
   artifact_paths: []
   ui_replay_available: false
   conclusion_available: false
+  instrumentation_readiness: requires_engine_metrics
+  required_fields:
+  - cache_lookup_count
+  - cache_hit_count
+  - cache_miss_count
+  - cache_hit_rate
+  - hit_token_count
+  - miss_token_count
+  - reused_token_ratio
+  - cache_lookup_latency_ms
+  - ttft_ms_for_hits
+  - ttft_ms_for_misses
+  - prefill_latency_ms_for_hits
+  - prefill_latency_ms_for_misses
+  - cache_occupancy
+  - cache_blocks_used
+  - cache_blocks_free
+  - cache_blocks_total
+  - eviction_count
+  - insertion_count
+  - cache_invalidation_count
+  - cache_salt_or_tenant_partition
+  - engine_configuration_proving_cache_state
+  currently_available_fields:
+  - rendered prompts
+  - TTFT aggregates
+  missing_fields:
+  - cache hit/miss counters
+  - cache occupancy
+  - hit/miss TTFT split
+  implementation_blockers:
+  - Capture serving-engine metrics endpoint or logs during the one-factor run.
+  promotion_criteria:
+  - instrumentation fields are captured or explicitly marked unavailable
+  - one-factor changed variable is frozen
+  - protected quality and safety gates are evaluated
+  - no missing telemetry is rendered as zero
+  - human approval is recorded before champion selection
+  ui_replay_readiness: false
 - scenario_id: coreopt_chunked_prefill_sglang_v1
   scenario_type: one_factor
   result_type: planned
@@ -91,6 +201,40 @@ scenarios:
   artifact_paths: []
   ui_replay_available: false
   conclusion_available: false
+  instrumentation_readiness: requires_engine_metrics
+  required_fields:
+  - chunked_prefill_enabled
+  - configured_chunk_size
+  - actual_chunk_count
+  - tokens_per_chunk
+  - maximum_partial_prefills
+  - long_prompt_threshold
+  - prefill_token_budget
+  - prefill_queue_delay_ms
+  - short_request_bypass_behavior
+  - decode_interference
+  - ttft_by_input_length_bucket
+  - tpot_by_input_length_bucket
+  - e2e_by_input_length_bucket
+  - head_of_line_blocking_indicators
+  - short_long_request_co_residency
+  - engine_iteration_composition
+  currently_available_fields:
+  - input token aggregate by config
+  - TTFT aggregate by config
+  missing_fields:
+  - chunk counters
+  - iteration composition
+  - short/long co-residency
+  implementation_blockers:
+  - Capture serving-engine metrics endpoint or logs during the one-factor run.
+  promotion_criteria:
+  - instrumentation fields are captured or explicitly marked unavailable
+  - one-factor changed variable is frozen
+  - protected quality and safety gates are evaluated
+  - no missing telemetry is rendered as zero
+  - human approval is recorded before champion selection
+  ui_replay_readiness: false
 - scenario_id: optimized_inference_v1
   scenario_type: champion_full_run
   result_type: missing_not_created
@@ -115,3 +259,7 @@ scenarios:
   ui_replay_available: false
   conclusion_available: false
 champion_selected: false
+observability_framework:
+  configured: true
+  optimized_inference_v1_created: false
+  champion_selected: false

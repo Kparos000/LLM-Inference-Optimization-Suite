@@ -1,0 +1,1107 @@
+{
+  "endpoints": [
+    "/api/optimizations/observability/registry",
+    "/api/optimizations/observability/readiness",
+    "/api/optimizations/observability/inventory",
+    "/api/optimizations/observability/prefix-opportunity",
+    "/api/optimizations/observability/event-schema",
+    "/api/optimizations/observability/missing-instrumentation",
+    "/api/optimizations/observability/cards"
+  ],
+  "measurement_label_rules": {
+    "never_render_missing_as_zero": true,
+    "show_derived_when_formula_based": true,
+    "show_estimated_for_static_prefix_planning": true,
+    "show_measured_only_from_saved_artifacts": true
+  },
+  "no_inference_executed": true,
+  "optimization_cards": [
+    {
+      "difficulty_tier": 1,
+      "display_name": "Cache-aware/workload-aware routing",
+      "domain": "routing",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "planned_policy_simulation_then_measured_rerun",
+      "instrumentation_state": "requires_runner_instrumentation",
+      "mechanism": "Improve cache locality and reduce mixed-length interference.",
+      "missing_instrumentation": [
+        "routing decision trace",
+        "cache-affinity key",
+        "queue-depth input"
+      ],
+      "optimization_domain": "routing",
+      "optimization_id": "cache_workload_aware_routing",
+      "primary_metrics": [
+        "routing_decision",
+        "cache_affinity_key",
+        "route_level_latency"
+      ],
+      "problem": "Requests are not yet routed by cache affinity or workload shape.",
+      "required_instrumentation": [
+        "routing_decision",
+        "selected_route_model_engine",
+        "decision_reason",
+        "prompt_length_bucket",
+        "vertical",
+        "complexity_class",
+        "expected_status",
+        "cache_affinity_key",
+        "session_affinity",
+        "queue_depth",
+        "estimated_cost",
+        "predicted_latency",
+        "fallback_escalation_route",
+        "routing_success_failure",
+        "route_level_quality",
+        "route_level_latency",
+        "route_level_cost"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_runner_instrumentation",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "routing_decision",
+          "selected_route_model_engine",
+          "decision_reason",
+          "prompt_length_bucket",
+          "vertical",
+          "complexity_class"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Improve cache locality and reduce mixed-length interference.",
+        "one_factor_experiment": "planned_policy_simulation_then_measured_rerun",
+        "problem": "Requests are not yet routed by cache affinity or workload shape."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "routing architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Cache-aware/workload-aware routing can improve ttft, throughput, cache_hit_rate only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "routing architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 1,
+      "display_name": "Chunked-prefill tuning",
+      "domain": "prefill_decode_balance",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "gpu_one_factor_engine_config",
+      "instrumentation_state": "requires_engine_metrics",
+      "mechanism": "Interleave long-prefill requests with decode work.",
+      "missing_instrumentation": [
+        "chunk counters",
+        "iteration composition",
+        "short/long co-residency"
+      ],
+      "optimization_domain": "prefill_decode_balance",
+      "optimization_id": "chunked_prefill_tuning",
+      "primary_metrics": [
+        "ttft_by_input_length_bucket",
+        "chunk_count",
+        "decode_interference"
+      ],
+      "problem": "Long context can increase TTFT and interfere with decode work if prefill is not balanced.",
+      "required_instrumentation": [
+        "chunked_prefill_enabled",
+        "configured_chunk_size",
+        "actual_chunk_count",
+        "tokens_per_chunk",
+        "maximum_partial_prefills",
+        "long_prompt_threshold",
+        "prefill_token_budget",
+        "prefill_queue_delay_ms",
+        "short_request_bypass_behavior",
+        "decode_interference",
+        "ttft_by_input_length_bucket",
+        "tpot_by_input_length_bucket",
+        "e2e_by_input_length_bucket",
+        "head_of_line_blocking_indicators",
+        "short_long_request_co_residency",
+        "engine_iteration_composition"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_engine_metrics",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "chunked_prefill_enabled",
+          "configured_chunk_size",
+          "actual_chunk_count",
+          "tokens_per_chunk",
+          "maximum_partial_prefills",
+          "long_prompt_threshold"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Interleave long-prefill requests with decode work.",
+        "one_factor_experiment": "gpu_one_factor_engine_config",
+        "problem": "Long context can increase TTFT and interfere with decode work if prefill is not balanced."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "long/short request tradeoff",
+        "hero": "long prompt chunks",
+        "live_experiment": "concurrent decode work",
+        "workload_grounded": "TTFT by input-length bucket"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "If long prefills are chunked appropriately, long-request TTFT improves while decode continues for shorter requests.",
+        "final_result_visualization": "long/short request tradeoff",
+        "hero_visualization": "long prompt chunks",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "concurrent decode work",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "TTFT by input-length bucket"
+      }
+    },
+    {
+      "difficulty_tier": 4,
+      "display_name": "Distributed capacity and serving architecture",
+      "domain": "distributed_serving",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_distributed_architecture",
+      "instrumentation_state": "future_architecture",
+      "mechanism": "Increase capacity through routing, admission, and worker placement.",
+      "missing_instrumentation": [
+        "replicas",
+        "autoscaler",
+        "traffic router"
+      ],
+      "optimization_domain": "distributed_serving",
+      "optimization_id": "distributed_capacity_serving_architecture",
+      "primary_metrics": [
+        "replica_count",
+        "queue_depth",
+        "scale_events"
+      ],
+      "problem": "Scale serving across workers, queues, and admission control.",
+      "required_instrumentation": [
+        "replica_count",
+        "queue_depth",
+        "routing_decisions",
+        "scale_events",
+        "cache_locality",
+        "failover",
+        "cross_region_latency",
+        "cost"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "future_architecture",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "replica_count",
+          "queue_depth",
+          "routing_decisions",
+          "scale_events",
+          "cache_locality",
+          "failover"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Increase capacity through routing, admission, and worker placement.",
+        "one_factor_experiment": "future_distributed_architecture",
+        "problem": "Scale serving across workers, queues, and admission control."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "distributed_serving architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Distributed capacity and serving architecture can improve throughput, availability, cost_per_request only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "distributed_serving architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 1,
+      "display_name": "KV-cache capacity/allocation tuning",
+      "domain": "kv_cache",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "gpu_one_factor_runtime_config",
+      "instrumentation_state": "requires_engine_metrics",
+      "mechanism": "Improve sequence capacity while avoiding OOM and eviction pressure.",
+      "missing_instrumentation": [
+        "KV block counts",
+        "allocation failures",
+        "eviction reasons"
+      ],
+      "optimization_domain": "kv_cache",
+      "optimization_id": "kv_cache_capacity_allocation_tuning",
+      "primary_metrics": [
+        "kv_blocks_used",
+        "kv_blocks_free",
+        "cache_occupancy_percent"
+      ],
+      "problem": "VRAM was sampled, but KV block occupancy and eviction pressure were not measured.",
+      "required_instrumentation": [
+        "total_kv_blocks",
+        "used_kv_blocks",
+        "free_kv_blocks",
+        "cache_occupancy_percent",
+        "kv_bytes_per_token",
+        "estimated_kv_bytes_per_request",
+        "cache_allocation_failures",
+        "eviction_count",
+        "eviction_reason",
+        "preemption_count",
+        "recomputation_count",
+        "oom_count",
+        "maximum_concurrent_sequences",
+        "maximum_sequence_length",
+        "gpu_memory_utilization_setting",
+        "block_or_page_size",
+        "watermark",
+        "cache_retention_eviction_policy",
+        "session_or_tenant_partition"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_engine_metrics",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "total_kv_blocks",
+          "used_kv_blocks",
+          "free_kv_blocks",
+          "cache_occupancy_percent",
+          "kv_bytes_per_token",
+          "estimated_kv_bytes_per_request"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Improve sequence capacity while avoiding OOM and eviction pressure.",
+        "one_factor_experiment": "gpu_one_factor_runtime_config",
+        "problem": "VRAM was sampled, but KV block occupancy and eviction pressure were not measured."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "memory-pressure and latency decision",
+        "hero": "KV block allocation map",
+        "live_experiment": "eviction/preemption events",
+        "workload_grounded": "occupancy and length buckets"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "If KV allocation pressure is visible, memory settings can reduce eviction and OOM risk.",
+        "final_result_visualization": "memory-pressure and latency decision",
+        "hero_visualization": "KV block allocation map",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "eviction/preemption events",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "occupancy and length buckets"
+      }
+    },
+    {
+      "difficulty_tier": 3,
+      "display_name": "KV-cache offloading / hierarchical caching",
+      "domain": "cache_offloading",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_cache_architecture",
+      "instrumentation_state": "future_architecture",
+      "mechanism": "Trade memory capacity against transfer overhead.",
+      "missing_instrumentation": [
+        "offload tier metrics"
+      ],
+      "optimization_domain": "cache_offloading",
+      "optimization_id": "kv_cache_offloading_hierarchical_cache",
+      "primary_metrics": [
+        "offload_bytes",
+        "transfer_latency",
+        "cache_hit_rate"
+      ],
+      "problem": "Move KV state across GPU/CPU/storage tiers when memory is constrained.",
+      "required_instrumentation": [
+        "offload_bytes",
+        "transfer_latency_ms",
+        "tier_hit_rate",
+        "vram_saved_mb"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "future_architecture",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "offload_bytes",
+          "transfer_latency_ms",
+          "tier_hit_rate",
+          "vram_saved_mb"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Trade memory capacity against transfer overhead.",
+        "one_factor_experiment": "future_cache_architecture",
+        "problem": "Move KV state across GPU/CPU/storage tiers when memory is constrained."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "cache_offloading architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "KV-cache offloading / hierarchical caching can improve vram, sequence_capacity, cost only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "cache_offloading architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 3,
+      "display_name": "Manual kernel/compiler optimization",
+      "domain": "kernel_compiler",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_profiler_guided_optimization",
+      "instrumentation_state": "requires_external_profiler",
+      "mechanism": "Reduce kernel latency or CPU overhead.",
+      "missing_instrumentation": [
+        "profiler traces"
+      ],
+      "optimization_domain": "kernel_compiler",
+      "optimization_id": "manual_kernel_compiler_optimization",
+      "primary_metrics": [
+        "kernel_duration",
+        "launch_count",
+        "occupancy"
+      ],
+      "problem": "Change attention kernels, compiler settings, or runtime compilation path.",
+      "required_instrumentation": [
+        "kernel_duration",
+        "launch_count",
+        "cpu_gaps",
+        "occupancy",
+        "memory_bandwidth",
+        "profiler_trace_paths"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_external_profiler",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "kernel_duration",
+          "launch_count",
+          "cpu_gaps",
+          "occupancy",
+          "memory_bandwidth",
+          "profiler_trace_paths"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Reduce kernel latency or CPU overhead.",
+        "one_factor_experiment": "future_profiler_guided_optimization",
+        "problem": "Change attention kernels, compiler settings, or runtime compilation path."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "kernel_compiler architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Manual kernel/compiler optimization can improve tpot, throughput, latency only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "kernel_compiler architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 3,
+      "display_name": "Model compression",
+      "domain": "model_compression",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_model_artifact",
+      "instrumentation_state": "future_architecture",
+      "mechanism": "Reduce model size while preserving useful behavior.",
+      "missing_instrumentation": [
+        "compressed model artifact"
+      ],
+      "optimization_domain": "model_compression",
+      "optimization_id": "model_compression",
+      "primary_metrics": [
+        "model_size",
+        "quality_regression",
+        "latency_change"
+      ],
+      "problem": "Use distillation, pruning, or compressed checkpoints.",
+      "required_instrumentation": [
+        "compressed_model_id",
+        "compression_method",
+        "quality_regression"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "future_architecture",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "compressed_model_id",
+          "compression_method",
+          "quality_regression"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Reduce model size while preserving useful behavior.",
+        "one_factor_experiment": "future_model_artifact",
+        "problem": "Use distillation, pruning, or compressed checkpoints."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "model_compression architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Model compression can improve vram, cost, throughput only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "model_compression architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 2,
+      "display_name": "Model selection and routing",
+      "domain": "model_selection",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "planned_policy_simulation_then_measured_rerun",
+      "instrumentation_state": "requires_runner_instrumentation",
+      "mechanism": "Match model capacity/cost to task difficulty.",
+      "missing_instrumentation": [
+        "per-request router decision",
+        "policy thresholds"
+      ],
+      "optimization_domain": "model_selection",
+      "optimization_id": "model_selection_routing",
+      "primary_metrics": [
+        "selected_model",
+        "decision_reason",
+        "route_level_quality"
+      ],
+      "problem": "The platform has measured model/route differences but no per-request selection policy.",
+      "required_instrumentation": [
+        "routing_decision",
+        "selected_route_model_engine",
+        "decision_reason",
+        "prompt_length_bucket",
+        "vertical",
+        "complexity_class",
+        "expected_status",
+        "estimated_cost",
+        "predicted_latency",
+        "fallback_escalation_route",
+        "routing_success_failure",
+        "route_level_quality",
+        "route_level_latency",
+        "route_level_cost"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_runner_instrumentation",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "routing_decision",
+          "selected_route_model_engine",
+          "decision_reason",
+          "prompt_length_bucket",
+          "vertical",
+          "complexity_class"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Match model capacity/cost to task difficulty.",
+        "one_factor_experiment": "planned_policy_simulation_then_measured_rerun",
+        "problem": "The platform has measured model/route differences but no per-request selection policy."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "model_selection architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Model selection and routing can improve cost, quality, latency only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "model_selection architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 3,
+      "display_name": "Multi-GPU parallelism",
+      "domain": "parallelism",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_hardware_architecture",
+      "instrumentation_state": "unsupported_current_runtime",
+      "mechanism": "Increase capacity or throughput with tensor/pipeline/data parallelism.",
+      "missing_instrumentation": [
+        "multi-GPU run",
+        "NCCL metrics"
+      ],
+      "optimization_domain": "parallelism",
+      "optimization_id": "multi_gpu_parallelism",
+      "primary_metrics": [
+        "per_gpu_utilization",
+        "communication_time",
+        "imbalance"
+      ],
+      "problem": "Shard model or work across multiple GPUs.",
+      "required_instrumentation": [
+        "communication_time",
+        "all_reduce_all_to_all_time",
+        "per_gpu_utilization",
+        "imbalance",
+        "nvlink_nccl_metrics"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "unsupported_current_runtime",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "communication_time",
+          "all_reduce_all_to_all_time",
+          "per_gpu_utilization",
+          "imbalance",
+          "nvlink_nccl_metrics"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Increase capacity or throughput with tensor/pipeline/data parallelism.",
+        "one_factor_experiment": "future_hardware_architecture",
+        "problem": "Shard model or work across multiple GPUs."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "parallelism architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Multi-GPU parallelism can improve throughput, vram_headroom, latency only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "parallelism architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 4,
+      "display_name": "Prefill/decode disaggregation",
+      "domain": "disaggregation",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_disaggregated_serving",
+      "instrumentation_state": "future_architecture",
+      "mechanism": "Specialize infrastructure for long-input and decode-heavy work.",
+      "missing_instrumentation": [
+        "separate prefill/decode workers"
+      ],
+      "optimization_domain": "disaggregation",
+      "optimization_id": "prefill_decode_disaggregation",
+      "primary_metrics": [
+        "prefill_queue",
+        "decode_queue",
+        "kv_transfer_time"
+      ],
+      "problem": "Separate prefill and decode workers or stages.",
+      "required_instrumentation": [
+        "prefill_queue",
+        "decode_queue",
+        "kv_transfer_time",
+        "transfer_bytes",
+        "prefill_decode_worker_utilization",
+        "transfer_failures"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "future_architecture",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "prefill_queue",
+          "decode_queue",
+          "kv_transfer_time",
+          "transfer_bytes",
+          "prefill_decode_worker_utilization",
+          "transfer_failures"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Specialize infrastructure for long-input and decode-heavy work.",
+        "one_factor_experiment": "future_disaggregated_serving",
+        "problem": "Separate prefill and decode workers or stages."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "protected SLO decision",
+        "hero": "disaggregation architecture diagram",
+        "live_experiment": "planned event timeline",
+        "workload_grounded": "workload applicability map"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Prefill/decode disaggregation can improve ttft, throughput, tail_latency only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "protected SLO decision",
+        "hero_visualization": "disaggregation architecture diagram",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "planned event timeline",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "workload applicability map"
+      }
+    },
+    {
+      "difficulty_tier": 1,
+      "display_name": "Prefix-cache verification and tuning",
+      "domain": "prefix_cache",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "gpu_one_factor_engine_flag",
+      "instrumentation_state": "requires_engine_metrics",
+      "mechanism": "Reuse KV for exact matching prefixes across requests.",
+      "missing_instrumentation": [
+        "cache hit/miss counters",
+        "cache occupancy",
+        "hit/miss TTFT split"
+      ],
+      "optimization_domain": "prefix_cache",
+      "optimization_id": "prefix_cache_verification_tuning",
+      "primary_metrics": [
+        "cache_hit_rate",
+        "hit_token_count",
+        "ttft_ms_for_hits"
+      ],
+      "problem": "The run cannot prove whether cross-request prefix caching was active or useful.",
+      "required_instrumentation": [
+        "cache_lookup_count",
+        "cache_hit_count",
+        "cache_miss_count",
+        "cache_hit_rate",
+        "hit_token_count",
+        "miss_token_count",
+        "reused_token_ratio",
+        "cache_lookup_latency_ms",
+        "ttft_ms_for_hits",
+        "ttft_ms_for_misses",
+        "prefill_latency_ms_for_hits",
+        "prefill_latency_ms_for_misses",
+        "cache_occupancy",
+        "cache_blocks_used",
+        "cache_blocks_free",
+        "cache_blocks_total",
+        "eviction_count",
+        "insertion_count",
+        "cache_invalidation_count",
+        "cache_salt_or_tenant_partition",
+        "engine_configuration_proving_cache_state"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_engine_metrics",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "cache_lookup_count",
+          "cache_hit_count",
+          "cache_miss_count",
+          "cache_hit_rate",
+          "hit_token_count",
+          "miss_token_count"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Reuse KV for exact matching prefixes across requests.",
+        "one_factor_experiment": "gpu_one_factor_engine_flag",
+        "problem": "The run cannot prove whether cross-request prefix caching was active or useful."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "cache occupancy and latency delta",
+        "hero": "hit/miss flow",
+        "live_experiment": "hit/miss TTFT comparison",
+        "workload_grounded": "reused-token histogram"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "If exact prefix families exist and engine cache hits are recorded, TTFT and prefill work should improve for hit requests.",
+        "final_result_visualization": "cache occupancy and latency delta",
+        "hero_visualization": "hit/miss flow",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "hit/miss TTFT comparison",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "reused-token histogram"
+      }
+    },
+    {
+      "difficulty_tier": 1,
+      "display_name": "Prompt and prefix-layout optimization",
+      "domain": "prompt_workload",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "cpu_static_audit_then_one_factor_latency_rerun",
+      "instrumentation_state": "ready_derivable",
+      "mechanism": "Increase token-identical leading prefix length for cacheability.",
+      "missing_instrumentation": [
+        "engine cache-hit telemetry"
+      ],
+      "optimization_domain": "prompt_workload",
+      "optimization_id": "prompt_prefix_layout_optimization",
+      "primary_metrics": [
+        "exact_shared_prefix_token_count",
+        "reusable_token_ratio",
+        "prefix_family_count",
+        "ttft_ms"
+      ],
+      "problem": "Rendered prompts may not put stable instructions and schemas into the longest possible exact leading prefix.",
+      "required_instrumentation": [
+        "rendered_prompt_hash",
+        "tokenized_prefix_hash",
+        "exact_shared_prefix_token_count",
+        "total_input_token_count",
+        "reusable_token_ratio",
+        "prefix_family_id",
+        "requests_per_prefix_family",
+        "longest_exact_common_prefix",
+        "common_system_prompt_tokens",
+        "common_generation_contract_tokens",
+        "common_evidence_schema_tokens",
+        "common_tool_definition_tokens",
+        "variable_suffix_token_count",
+        "prefix_entropy"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "ready_derivable",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "rendered_prompt_hash",
+          "tokenized_prefix_hash",
+          "exact_shared_prefix_token_count",
+          "total_input_token_count",
+          "reusable_token_ratio",
+          "prefix_family_id"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Increase token-identical leading prefix length for cacheability.",
+        "one_factor_experiment": "cpu_static_audit_then_one_factor_latency_rerun",
+        "problem": "Rendered prompts may not put stable instructions and schemas into the longest possible exact leading prefix."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "TTFT/quality deltas after rerun",
+        "hero": "token ribbon",
+        "live_experiment": "prefix family size and reusable-token percent",
+        "workload_grounded": "stable prefix versus variable suffix"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "If stable prompt sections move earlier and remain token-identical, prefix reuse opportunity increases without changing answer semantics.",
+        "final_result_visualization": "TTFT/quality deltas after rerun",
+        "hero_visualization": "token ribbon",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "prefix family size and reusable-token percent",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "stable prefix versus variable suffix"
+      }
+    },
+    {
+      "difficulty_tier": 2,
+      "display_name": "Quantization",
+      "domain": "quantization",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_gpu_model_variant",
+      "instrumentation_state": "requires_runner_instrumentation",
+      "mechanism": "Lower weight memory and sometimes increase throughput.",
+      "missing_instrumentation": [
+        "quantized checkpoint",
+        "precision metadata",
+        "quality regression run"
+      ],
+      "optimization_domain": "quantization",
+      "optimization_id": "quantization",
+      "primary_metrics": [
+        "precision_format",
+        "model_weight_vram_mb",
+        "tpot_ms"
+      ],
+      "problem": "Lower precision could reduce cost or memory, but quality failed and quantization is blocked.",
+      "required_instrumentation": [
+        "precision_format",
+        "quantization_method",
+        "checkpoint_model_id",
+        "weight_format",
+        "activation_format",
+        "kv_cache_format",
+        "group_size",
+        "calibration_method_dataset",
+        "excluded_layers",
+        "model_file_size",
+        "load_time_ms",
+        "model_weight_vram_mb",
+        "total_vram_mb",
+        "kv_cache_capacity",
+        "ttft_ms",
+        "tpot_ms",
+        "e2e_latency_ms",
+        "throughput",
+        "power",
+        "cost",
+        "json_validity",
+        "contract_validity",
+        "evidence_match",
+        "groundedness",
+        "safety",
+        "long_context_quality",
+        "numerical_quality_regression"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_runner_instrumentation",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "precision_format",
+          "quantization_method",
+          "checkpoint_model_id",
+          "weight_format",
+          "activation_format",
+          "kv_cache_format"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Lower weight memory and sometimes increase throughput.",
+        "one_factor_experiment": "future_gpu_model_variant",
+        "problem": "Lower precision could reduce cost or memory, but quality failed and quantization is blocked."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "regression gate",
+        "hero": "precision ladder",
+        "live_experiment": "speed/quality tradeoff",
+        "workload_grounded": "model memory footprint"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Quantization can improve vram, throughput, cost only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "regression gate",
+        "hero_visualization": "precision ladder",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "speed/quality tradeoff",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "model memory footprint"
+      }
+    },
+    {
+      "difficulty_tier": 1,
+      "display_name": "Scheduler and batch tuning",
+      "domain": "scheduler_batching",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "gpu_one_factor_runtime_config",
+      "instrumentation_state": "requires_runner_instrumentation",
+      "mechanism": "Balance queueing, prefill, decode, and batch composition.",
+      "missing_instrumentation": [
+        "actual active batch size",
+        "queue wait",
+        "engine iteration counters"
+      ],
+      "optimization_domain": "scheduler_batching",
+      "optimization_id": "scheduler_batch_tuning",
+      "primary_metrics": [
+        "queue_wait_ms",
+        "active_batch_size",
+        "token_budget_utilization"
+      ],
+      "problem": "Configured concurrency does not prove actual batch composition or scheduler efficiency.",
+      "required_instrumentation": [
+        "request_arrival_time",
+        "queue_wait_ms",
+        "waiting_request_count",
+        "running_request_count",
+        "active_batch_size",
+        "batch_composition",
+        "scheduled_tokens",
+        "maximum_token_budget",
+        "prefill_tokens_per_iteration",
+        "decode_tokens_per_iteration",
+        "maximum_running_sequences",
+        "maximum_batched_tokens",
+        "admission_decision",
+        "preemption_count",
+        "preemption_reason",
+        "recomputation_count",
+        "scheduling_policy",
+        "priority_class",
+        "batch_waiting_delay_ms",
+        "iteration_duration_ms",
+        "gpu_busy_idle_interval"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "requires_runner_instrumentation",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "request_arrival_time",
+          "queue_wait_ms",
+          "waiting_request_count",
+          "running_request_count",
+          "active_batch_size",
+          "batch_composition"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Balance queueing, prefill, decode, and batch composition.",
+        "one_factor_experiment": "gpu_one_factor_runtime_config",
+        "problem": "Configured concurrency does not prove actual batch composition or scheduler efficiency."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "throughput and tail-latency decision",
+        "hero": "queue animation",
+        "live_experiment": "active batch and token-budget utilization",
+        "workload_grounded": "waiting/running requests"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "If queueing and batch budgets are tuned from observed scheduler metrics, throughput can improve without tail-latency regression.",
+        "final_result_visualization": "throughput and tail-latency decision",
+        "hero_visualization": "queue animation",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "active batch and token-budget utilization",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "waiting/running requests"
+      }
+    },
+    {
+      "difficulty_tier": 2,
+      "display_name": "Speculative decoding",
+      "domain": "speculative_decoding",
+      "empty_state": "Instrumentation contract exists, but no measured optimization result is available yet.",
+      "experiment": "future_gpu_engine_config",
+      "instrumentation_state": "unsupported_current_runtime",
+      "mechanism": "Reduce target-model decode work when draft tokens are accepted.",
+      "missing_instrumentation": [
+        "draft model",
+        "accept/reject telemetry",
+        "verification latency"
+      ],
+      "optimization_domain": "speculative_decoding",
+      "optimization_id": "speculative_decoding",
+      "primary_metrics": [
+        "acceptance_rate",
+        "accepted_tokens_per_target_pass",
+        "tpot_ms"
+      ],
+      "problem": "Decode speed may improve with a draft model, but no speculation support or telemetry exists.",
+      "required_instrumentation": [
+        "target_model",
+        "draft_model",
+        "speculation_method",
+        "drafted_tokens",
+        "accepted_tokens",
+        "rejected_tokens",
+        "acceptance_rate",
+        "accepted_tokens_per_target_pass",
+        "draft_latency_ms",
+        "target_verification_latency_ms",
+        "speculation_depth",
+        "draft_token_count",
+        "additional_vram_mb",
+        "draft_model_memory_mb",
+        "tpot_itl_change",
+        "throughput_change",
+        "concurrency_effect",
+        "quality_safety_protections",
+        "automatic_disable_reason"
+      ],
+      "source_label": "repo artifact or planned instrumentation contract",
+      "state": "unsupported_current_runtime",
+      "story_flow": {
+        "engineering_decision": "pending",
+        "instrumentation": [
+          "target_model",
+          "draft_model",
+          "speculation_method",
+          "drafted_tokens",
+          "accepted_tokens",
+          "rejected_tokens"
+        ],
+        "measured_result": "not available until scenario is run",
+        "mechanism": "Reduce target-model decode work when draft tokens are accepted.",
+        "one_factor_experiment": "future_gpu_engine_config",
+        "problem": "Decode speed may improve with a draft model, but no speculation support or telemetry exists."
+      },
+      "visualization": {
+        "empty_state": "Do not show values until captured or explicitly estimated.",
+        "final_result": "acceptance-rate and TPOT decision",
+        "hero": "draft token stream",
+        "live_experiment": "accepted versus rejected tokens",
+        "workload_grounded": "draft/target model pair"
+      },
+      "visualizations": {
+        "empty_unavailable_state": "Do not show values until captured or explicitly estimated.",
+        "explanation_copy": "Speculative decoding can improve tpot, throughput, e2e_latency only if its mechanism is instrumented and protected quality gates pass.",
+        "final_result_visualization": "acceptance-rate and TPOT decision",
+        "hero_visualization": "draft token stream",
+        "interaction_behavior": "click card -> inspect problem/mechanism/instrumentation/experiment",
+        "live_experiment_visualization": "accepted versus rejected tokens",
+        "measured_derived_estimated_distinction": true,
+        "source_label": "repo artifact or planned instrumentation contract",
+        "workload_grounded_visualization": "draft/target model pair"
+      }
+    }
+  ],
+  "prefix_opportunity_snapshot": {
+    "mean_reusable_token_ratio_estimated": 0.07598,
+    "measurement_type": "estimated",
+    "prefix_family_count": 1,
+    "rows_scanned": 10000
+  },
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "state_labels": [
+    "instrumented",
+    "partially_instrumented",
+    "instrumentation_missing",
+    "planned",
+    "measured",
+    "unavailable",
+    "future"
+  ],
+  "status": "UI_OBSERVABILITY_CONTRACT_READY_PLANNING_ONLY",
+  "version": 1
+}

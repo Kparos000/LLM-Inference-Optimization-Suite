@@ -29,6 +29,19 @@ generated planning artifacts:
 These files keep engine-native baseline behavior, planned one-factor
 experiments, and missing optimized results in separate UI states.
 
+Core optimization observability is now grounded by
+`docs/131_core_optimization_observability_framework.md` and:
+
+- `configs/core_optimization_observability.yaml`
+- `experiments/main/main_inference_v1/processed/core_optimization_observability_registry.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_observability_readiness.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_event_schema.json`
+- `experiments/main/main_inference_v1/processed/core_optimization_ui_observability_contract.json`
+- `experiments/main/main_inference_v1/processed/coreopt_prefix_layout_static_v1_prefix_opportunity_analysis.json`
+
+This layer answers what must be instrumented before the platform can claim an
+optimization worked. It does not apply a strategy or create optimized results.
+
 ## Purpose
 
 The final platform needs more than a static benchmark dashboard. When a user
@@ -111,6 +124,8 @@ Click failed SLO
 -> targeted repair gate is SAMPLE_VALIDATED after deterministic sample validation
 -> core optimization catalog becomes eligible for planning, while negative
    rules still block invalid strategies
+-> observability cards explain problem, mechanism, instrumentation, one-factor
+   experiment, result, and decision requirements
 -> saved optimized artifacts can be replayed later when they exist
 ```
 

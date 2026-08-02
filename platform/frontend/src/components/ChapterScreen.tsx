@@ -35,6 +35,7 @@ import { useExperimentSession } from "@/lib/session";
 import type {
   ChapterId,
   CoreOptimizationState,
+  CoreObservabilityCards,
   DeployabilityRepair,
   ExperimentStage,
   OptimizationStory,
@@ -723,6 +724,21 @@ function OptimizationPage({ sources }: { sources: string[] }) {
     "/api/optimizations/story",
     fallbackOptimizationStory
   );
+  const observability = useApiData<CoreObservabilityCards>(
+    "/api/optimizations/observability/cards",
+    {
+      result_type: "planned",
+      semantics: {
+        no_inference_executed: true,
+        no_optimized_inference_created: true,
+        missing_telemetry_is_not_zero: true
+      },
+      cards: [],
+      readiness_summary: {},
+      prefix_summary: {},
+      source_artifacts: []
+    }
+  );
   const repairs = repairsPayload.repairs.length ? repairsPayload.repairs : fallbackDeployabilityRepairs;
   const core = corePayload.states.length ? corePayload.states : fallbackCoreOptimizationStates;
   const selectedCount = session.selectedMandatoryRepairs.length + session.selectedCoreOptimizations.length;
@@ -730,6 +746,21 @@ function OptimizationPage({ sources }: { sources: string[] }) {
     .filter((item) => item.state === "required_for_failed_deployability_slo")
     .map((item) => item.repair_id);
   const coreLocked = !repairGate.core_optimization_eligible;
+  const observabilitySummaryItems = [
+    { label: "optimizations", value: observability.cards.length },
+    { label: "ready derivable", value: observability.readiness_summary.ready_derivable ?? 0 },
+    {
+      label: "needs engine metrics",
+      value: observability.readiness_summary.requires_instrumentation_or_engine_metrics ?? 0
+    },
+    {
+      label: "prefix rows",
+      value:
+        typeof observability.prefix_summary.rows_scanned === "number"
+          ? observability.prefix_summary.rows_scanned
+          : 0
+    }
+  ];
 
   return (
     <>
@@ -846,6 +877,59 @@ function OptimizationPage({ sources }: { sources: string[] }) {
               <p className="mt-1 truncate font-mono text-xs text-slate-500">
                 observed {String(check.observed)}
               </p>
+            </div>
+          ))}
+        </div>
+      </Panel>
+      <Panel>
+        <SectionTitle icon={<Activity size={22} />} title="Core optimization observability">
+          Every future optimization must prove the chain from problem to mechanism to
+          instrumentation to one-factor result. Missing engine counters stay unavailable, not zero.
+        </SectionTitle>
+        <div className="mb-5 grid gap-3 md:grid-cols-4">
+          {observabilitySummaryItems.map((item) => (
+            <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
+              <p className="mt-2 text-2xl font-semibold text-white">{String(item.value)}</p>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-4 xl:grid-cols-3">
+          {observability.cards.slice(0, 6).map((card) => (
+            <div key={card.optimization_id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-white">{card.display_name}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">
+                    {card.optimization_domain.replaceAll("_", " ")}
+                  </p>
+                </div>
+                <StatusBadge
+                  tone={
+                    card.instrumentation_state === "ready_derivable" ||
+                    card.instrumentation_state === "ready_existing"
+                      ? "pass"
+                      : card.instrumentation_state.includes("future")
+                        ? "neutral"
+                        : "warn"
+                  }
+                >
+                  {card.instrumentation_state.replaceAll("_", " ")}
+                </StatusBadge>
+              </div>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-400">
+                <p><span className="text-slate-200">Problem:</span> {card.problem}</p>
+                <p><span className="text-slate-200">Mechanism:</span> {card.mechanism}</p>
+                <p><span className="text-slate-200">Instrumentation:</span> {card.required_instrumentation.slice(0, 3).join(", ")}</p>
+                <p><span className="text-slate-200">Experiment:</span> {card.experiment}</p>
+                <p><span className="text-slate-200">Result:</span> {card.visualization.final_result}</p>
+                <p><span className="text-slate-200">Decision:</span> keep only if protected SLOs do not regress.</p>
+              </div>
+              {card.missing_instrumentation.length ? (
+                <p className="mt-4 text-xs text-signal-amber">
+                  missing {card.missing_instrumentation.slice(0, 3).join(", ")}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>

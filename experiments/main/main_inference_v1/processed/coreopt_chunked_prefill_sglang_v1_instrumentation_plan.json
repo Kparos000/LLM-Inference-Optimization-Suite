@@ -1,0 +1,48 @@
+{
+  "currently_available_fields": [
+    "input token aggregate by config",
+    "TTFT aggregate by config"
+  ],
+  "does_not_change_scenario_result_type": true,
+  "implementation_blockers": [
+    "Capture serving-engine metrics endpoint or logs during the one-factor run."
+  ],
+  "instrumentation_readiness": "requires_engine_metrics",
+  "missing_fields": [
+    "chunk counters",
+    "iteration composition",
+    "short/long co-residency"
+  ],
+  "optimization_id": "chunked_prefill_tuning",
+  "promotion_criteria": [
+    "instrumentation fields are captured or explicitly marked unavailable",
+    "one-factor changed variable is frozen",
+    "protected quality and safety gates are evaluated",
+    "no missing telemetry is rendered as zero",
+    "human approval is recorded before champion selection"
+  ],
+  "required_fields": [
+    "chunked_prefill_enabled",
+    "configured_chunk_size",
+    "actual_chunk_count",
+    "tokens_per_chunk",
+    "maximum_partial_prefills",
+    "long_prompt_threshold",
+    "prefill_token_budget",
+    "prefill_queue_delay_ms",
+    "short_request_bypass_behavior",
+    "decode_interference",
+    "ttft_by_input_length_bucket",
+    "tpot_by_input_length_bucket",
+    "e2e_by_input_length_bucket",
+    "head_of_line_blocking_indicators",
+    "short_long_request_co_residency",
+    "engine_iteration_composition"
+  ],
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "scenario_id": "coreopt_chunked_prefill_sglang_v1",
+  "status": "INSTRUMENTATION_PLAN_READY_NO_EXPERIMENT_RUN",
+  "ui_replay_readiness": false,
+  "version": 1
+}

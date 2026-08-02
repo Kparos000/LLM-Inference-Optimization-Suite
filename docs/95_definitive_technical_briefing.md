@@ -132,6 +132,18 @@ missing, and ranks one-factor candidate experiments. It does not run inference,
 mutate `Main_Inference_V1`, or create `Optimized_Inference_V1`. The reference
 document is `docs/130_core_optimization_planning_baseline_capability_audit.md`.
 
+Core Optimization Observability Framework is implemented as the evidence layer
+that must precede any measured core optimization claim. It writes
+`configs/core_optimization_observability.yaml`, event-schema, adapter-coverage,
+instrumentation-readiness, missing-instrumentation, UI-card, and static
+prefix-opportunity artifacts under
+`experiments/main/main_inference_v1/processed/`. The framework covers all 15
+core optimization IDs, excludes deployability repairs, labels static prefix
+analysis as an estimate, and keeps missing engine counters unavailable rather
+than zero. It does not run inference, use a GPU, mutate Main_Inference_V1,
+select a champion, or create Optimized_Inference_V1. The reference document is
+`docs/131_core_optimization_observability_framework.md`.
+
 The measured Baseline_Inference_V1 result is:
 
 - Runtime: 1,900.585 seconds.

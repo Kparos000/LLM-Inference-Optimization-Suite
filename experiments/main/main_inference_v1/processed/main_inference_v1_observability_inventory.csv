@@ -1,0 +1,19 @@
+metric_or_instrumentation_field,currently_captured,derivable,missing,source_artifact,temporal_resolution,engine_support,model_support,code_changes_required,external_profiling_required,safe_for_public_ui,measurement_type
+run_id,True,False,False,experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json,run,all routes,all measured models,False,False,True,measured
+config_id,True,False,False,experiments/main/main_inference_v1/processed/main_inference_v1_api_vs_self_hosted_comparison.csv,per config aggregate,"vLLM, SGLang, API provider route","model3_7b, model6_gated",False,False,True,measured
+ttft_ms,True,False,False,experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json,aggregate and per config aggregate,"vLLM, SGLang, API provider route","model3_7b, model6_gated",False,False,True,measured
+tpot_ms,True,False,False,experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json,aggregate and per config aggregate,"vLLM, SGLang, API provider route","model3_7b, model6_gated",False,False,True,measured
+e2e_latency_ms,True,False,False,experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json,aggregate and per config aggregate,"vLLM, SGLang, API provider route","model3_7b, model6_gated",False,False,True,measured
+tokens_per_second,True,False,False,experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json,aggregate and per config aggregate,"vLLM, SGLang, API provider route","model3_7b, model6_gated",False,False,True,measured
+input_output_tokens,True,True,False,experiments/main/main_inference_v1/processed/main_inference_v1_engine_comparison.csv,per config aggregate,all measured routes,all measured models,False,False,True,measured
+gpu_utilization_percent,True,False,False,experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl,telemetry sample interval,self-hosted GPU only,model3_7b,False,False,True,measured
+vram_power_temperature,True,False,False,experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl,telemetry sample interval,self-hosted GPU only,model3_7b,False,False,True,measured
+quality_safety_metrics,True,False,False,experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json,aggregate and per config aggregate,all measured routes,all measured models,False,False,True,measured
+cost_metrics,True,True,False,experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json,run aggregate,all measured routes,all measured models,False,False,True,measured
+exact_prefix_reuse_opportunity,False,True,False,data/workloads/final_10000,static per prompt and per prefix family,all routes as planning estimate,tokenizer-dependent planning estimate,False,False,True,estimated
+queue_wait_ms,False,False,True,not captured,unavailable,requires vLLM/SGLang/API wrapper instrumentation,all measured models after instrumentation,True,False,True,unavailable
+active_batch_size,False,False,True,not captured,unavailable,requires engine iteration or wrapper instrumentation,self-hosted GPU models,True,False,True,unavailable
+prefix_cache_hit_miss,False,False,True,not captured,unavailable,requires vLLM/SGLang engine metrics,self-hosted GPU models,True,False,True,unavailable
+kv_cache_blocks,False,False,True,not captured,unavailable,requires vLLM/SGLang engine metrics,self-hosted GPU models,True,False,True,unavailable
+speculative_acceptance_rate,False,False,True,not captured,unavailable,requires speculative decoding run,future target/draft model pair,True,False,True,unavailable
+kernel_profiler_trace,False,False,True,not captured,unavailable,requires external profiler,self-hosted GPU models,True,True,False,unavailable

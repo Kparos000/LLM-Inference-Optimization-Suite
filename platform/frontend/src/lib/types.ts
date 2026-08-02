@@ -163,3 +163,34 @@ export type OptimizationStory = {
     system_response: string;
   }>;
 };
+
+export type CoreObservabilityCard = {
+  optimization_id: string;
+  display_name: string;
+  optimization_domain: string;
+  difficulty_tier: string;
+  instrumentation_state: string;
+  problem: string;
+  mechanism: string;
+  experiment: string;
+  required_instrumentation: string[];
+  missing_instrumentation: string[];
+  primary_metrics: string[];
+  visualization: {
+    hero: string;
+    workload_grounded: string;
+    live_experiment: string;
+    final_result: string;
+    empty_state: string;
+  };
+  source_label: string;
+};
+
+export type CoreObservabilityCards = {
+  result_type: "planned";
+  semantics: Record<string, string | boolean>;
+  cards: CoreObservabilityCard[];
+  readiness_summary: Record<string, number>;
+  prefix_summary: Record<string, number | string | Record<string, number>>;
+  source_artifacts: string[];
+};

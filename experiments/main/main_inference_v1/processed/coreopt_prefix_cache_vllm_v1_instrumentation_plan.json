@@ -1,0 +1,53 @@
+{
+  "currently_available_fields": [
+    "rendered prompts",
+    "TTFT aggregates"
+  ],
+  "does_not_change_scenario_result_type": true,
+  "implementation_blockers": [
+    "Capture serving-engine metrics endpoint or logs during the one-factor run."
+  ],
+  "instrumentation_readiness": "requires_engine_metrics",
+  "missing_fields": [
+    "cache hit/miss counters",
+    "cache occupancy",
+    "hit/miss TTFT split"
+  ],
+  "optimization_id": "prefix_cache_verification_tuning",
+  "promotion_criteria": [
+    "instrumentation fields are captured or explicitly marked unavailable",
+    "one-factor changed variable is frozen",
+    "protected quality and safety gates are evaluated",
+    "no missing telemetry is rendered as zero",
+    "human approval is recorded before champion selection"
+  ],
+  "required_fields": [
+    "cache_lookup_count",
+    "cache_hit_count",
+    "cache_miss_count",
+    "cache_hit_rate",
+    "hit_token_count",
+    "miss_token_count",
+    "reused_token_ratio",
+    "cache_lookup_latency_ms",
+    "ttft_ms_for_hits",
+    "ttft_ms_for_misses",
+    "prefill_latency_ms_for_hits",
+    "prefill_latency_ms_for_misses",
+    "cache_occupancy",
+    "cache_blocks_used",
+    "cache_blocks_free",
+    "cache_blocks_total",
+    "eviction_count",
+    "insertion_count",
+    "cache_invalidation_count",
+    "cache_salt_or_tenant_partition",
+    "engine_configuration_proving_cache_state"
+  ],
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "scenario_id": "coreopt_prefix_cache_vllm_v1",
+  "status": "INSTRUMENTATION_PLAN_READY_NO_EXPERIMENT_RUN",
+  "ui_replay_readiness": false,
+  "version": 1
+}

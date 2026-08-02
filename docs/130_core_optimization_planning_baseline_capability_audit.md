@@ -102,6 +102,15 @@ counts, prefill/decode split timing, chunk counts, quantization metadata,
 speculative acceptance, and engine version/startup flags. Until those fields
 exist, the UI must show these states as planned or unknown, not measured.
 
+## Observability Follow-On
+
+The instrumentation layer for those gaps is now implemented in
+`docs/131_core_optimization_observability_framework.md`. It adds
+`configs/core_optimization_observability.yaml`, an event schema, adapter
+coverage, missing-instrumentation reports, UI observability cards, and
+scenario-level readiness fields. The one-factor scenarios remain planned and
+no optimization result is claimed.
+
 ## Recommended First Core Task
 
 Start with `coreopt_prefix_layout_static_v1`. It is CPU-only, isolates one

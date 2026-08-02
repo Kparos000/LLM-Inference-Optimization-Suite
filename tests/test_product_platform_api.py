@@ -105,6 +105,28 @@ def test_fastapi_health_and_results_are_read_only() -> None:
     assert repair_gate.json()["data"]["gate_status"] == "SAMPLE_VALIDATED"
 
 
+def test_fastapi_exposes_core_observability_contracts() -> None:
+    module = _load_backend_module()
+    client = TestClient(module.app)
+
+    cards = client.get("/api/optimizations/observability/cards")
+    assert cards.status_code == 200
+    card_payload = cards.json()
+    assert card_payload["result_type"] == "planned"
+    assert len(card_payload["data"]["cards"]) == 15
+    assert card_payload["data"]["prefix_summary"]["rows_scanned"] == 10000
+
+    readiness = client.get("/api/optimizations/observability/readiness")
+    assert readiness.status_code == 200
+    readiness_payload = readiness.json()["data"]
+    assert readiness_payload["summary"]["optimization_count"] == 15
+    assert readiness_payload["no_optimization_marked_measured"] is True
+
+    event_schema = client.get("/api/optimizations/observability/event-schema")
+    assert event_schema.status_code == 200
+    assert event_schema.json()["data"]["status"] == "EVENT_SCHEMA_READY_PLANNING_ONLY"
+
+
 def test_fastapi_allows_frontend_origin_for_api_fetches() -> None:
     module = _load_backend_module()
     client = TestClient(module.app)

@@ -1,0 +1,603 @@
+{
+  "adapters": [
+    {
+      "adapter_id": "main_inference_manifest",
+      "adapter_name": "Main_Inference_V1 manifest adapter",
+      "field_statuses": [
+        {
+          "field_name": "run_id",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "config_id",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "git_commit",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "model_alias",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "model_id",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "memory_mode",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "runtime",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "engine",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "backend_type",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "hardware",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "provider",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "concurrency",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "traffic_profile",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "prompt_count",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "dataset_workload_hash",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "config_hash",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "status",
+          "measurement_type": "measured",
+          "note": "Captured in the saved run manifest.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json",
+          "support_state": "captured"
+        }
+      ],
+      "live_engine_required": false,
+      "mutates_artifacts": false,
+      "parsed_source_artifacts": [
+        "experiments/main/main_inference_v1/raw/main_inference_v1_manifest.json"
+      ]
+    },
+    {
+      "adapter_id": "main_inference_progress_log",
+      "adapter_name": "Progress log adapter",
+      "field_statuses": [
+        {
+          "field_name": "completed_requests",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "failure_count",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "elapsed_seconds",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "estimated_remaining_seconds",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "current_config_id",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "runtime",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "engine",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "memory_mode",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "concurrency",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "vertical",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "approximate_cost_so_far_usd",
+          "measurement_type": "measured",
+          "note": "Captured at progress-checkpoint cadence, not per request.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "request_arrival_time",
+          "measurement_type": "unavailable",
+          "note": "Progress log does not expose per-request lifecycle events.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "queue_enter_time",
+          "measurement_type": "unavailable",
+          "note": "Progress log does not expose per-request lifecycle events.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "prefill_start",
+          "measurement_type": "unavailable",
+          "note": "Progress log does not expose per-request lifecycle events.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "decode_end",
+          "measurement_type": "unavailable",
+          "note": "Progress log does not expose per-request lifecycle events.",
+          "source_artifact": "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl",
+          "support_state": "missing"
+        }
+      ],
+      "live_engine_required": false,
+      "mutates_artifacts": false,
+      "parsed_source_artifacts": [
+        "experiments/main/main_inference_v1/logs/main_inference_v1_progress.jsonl"
+      ]
+    },
+    {
+      "adapter_id": "main_inference_gpu_telemetry",
+      "adapter_name": "GPU telemetry adapter",
+      "field_statuses": [
+        {
+          "field_name": "gpu_utilization_percent",
+          "measurement_type": "measured",
+          "note": "Captured for self-hosted GPU phases; API route is provider-managed.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "vram_used_mb",
+          "measurement_type": "measured",
+          "note": "Captured for self-hosted GPU phases; API route is provider-managed.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "vram_total_mb",
+          "measurement_type": "measured",
+          "note": "Captured for self-hosted GPU phases; API route is provider-managed.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "power_draw_w",
+          "measurement_type": "measured",
+          "note": "Captured for self-hosted GPU phases; API route is provider-managed.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "temperature_c",
+          "measurement_type": "measured",
+          "note": "Captured for self-hosted GPU phases; API route is provider-managed.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "active_engine_process",
+          "measurement_type": "measured",
+          "note": "Captured for self-hosted GPU phases; API route is provider-managed.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "telemetry_timestamp",
+          "measurement_type": "measured",
+          "note": "Captured for self-hosted GPU phases; API route is provider-managed.",
+          "source_artifact": "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl",
+          "support_state": "captured"
+        }
+      ],
+      "live_engine_required": false,
+      "mutates_artifacts": false,
+      "parsed_source_artifacts": [
+        "experiments/main/main_inference_v1/raw/main_inference_v1_gpu_telemetry.jsonl"
+      ]
+    },
+    {
+      "adapter_id": "main_inference_eval_report",
+      "adapter_name": "Evaluation report adapter",
+      "field_statuses": [
+        {
+          "field_name": "ttft_ms",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "tpot_ms",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "e2e_latency_ms",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "tokens_per_second",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "json_validity",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "contract_validity",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "format_validity",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "evidence_match",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "groundedness",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "safety_findings",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "truncation",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "input_tokens",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "output_tokens",
+          "measurement_type": "measured",
+          "note": "Available as aggregate or per-config aggregate evaluation output.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "queue_wait_ms",
+          "measurement_type": "unavailable",
+          "note": "Not present in saved evaluation report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "prefill_latency_ms",
+          "measurement_type": "unavailable",
+          "note": "Not present in saved evaluation report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "active_batch_size",
+          "measurement_type": "unavailable",
+          "note": "Not present in saved evaluation report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json",
+          "support_state": "missing"
+        }
+      ],
+      "live_engine_required": false,
+      "mutates_artifacts": false,
+      "parsed_source_artifacts": [
+        "experiments/main/main_inference_v1/processed/main_inference_v1_eval_report.json"
+      ]
+    },
+    {
+      "adapter_id": "main_inference_cost_report",
+      "adapter_name": "Cost report adapter",
+      "field_statuses": [
+        {
+          "field_name": "gpu_cost_usd",
+          "measurement_type": "measured",
+          "note": "Captured in the saved post-run cost report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "api_cost_usd",
+          "measurement_type": "measured",
+          "note": "Captured in the saved post-run cost report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "total_cost_usd",
+          "measurement_type": "measured",
+          "note": "Captured in the saved post-run cost report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "gpu_hourly_price_usd",
+          "measurement_type": "measured",
+          "note": "Captured in the saved post-run cost report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "self_hosted_request_count",
+          "measurement_type": "measured",
+          "note": "Captured in the saved post-run cost report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json",
+          "support_state": "captured"
+        },
+        {
+          "field_name": "api_request_count",
+          "measurement_type": "measured",
+          "note": "Captured in the saved post-run cost report.",
+          "source_artifact": "experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json",
+          "support_state": "captured"
+        }
+      ],
+      "live_engine_required": false,
+      "mutates_artifacts": false,
+      "parsed_source_artifacts": [
+        "experiments/main/main_inference_v1/processed/main_inference_v1_cost_report.json"
+      ]
+    },
+    {
+      "adapter_id": "engine_metrics_unavailable",
+      "adapter_name": "vLLM/SGLang engine metrics adapter",
+      "field_statuses": [
+        {
+          "field_name": "cache_hit_count",
+          "measurement_type": "unavailable",
+          "note": "Adapter interface is defined, but saved engine counters are absent.",
+          "source_artifact": "not captured in Main_Inference_V1",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "cache_miss_count",
+          "measurement_type": "unavailable",
+          "note": "Adapter interface is defined, but saved engine counters are absent.",
+          "source_artifact": "not captured in Main_Inference_V1",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "kv_blocks_used",
+          "measurement_type": "unavailable",
+          "note": "Adapter interface is defined, but saved engine counters are absent.",
+          "source_artifact": "not captured in Main_Inference_V1",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "active_batch_size",
+          "measurement_type": "unavailable",
+          "note": "Adapter interface is defined, but saved engine counters are absent.",
+          "source_artifact": "not captured in Main_Inference_V1",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "chunk_count",
+          "measurement_type": "unavailable",
+          "note": "Adapter interface is defined, but saved engine counters are absent.",
+          "source_artifact": "not captured in Main_Inference_V1",
+          "support_state": "missing"
+        },
+        {
+          "field_name": "speculative_acceptance_rate",
+          "measurement_type": "unavailable",
+          "note": "Adapter interface is defined, but saved engine counters are absent.",
+          "source_artifact": "not captured in Main_Inference_V1",
+          "support_state": "missing"
+        }
+      ],
+      "live_engine_required": false,
+      "mutates_artifacts": false,
+      "parsed_source_artifacts": [
+        "missing vLLM metrics endpoint scrape",
+        "missing SGLang metrics/log scrape"
+      ]
+    },
+    {
+      "adapter_id": "prefix_layout_static_analysis",
+      "adapter_name": "Static prefix-layout adapter",
+      "field_statuses": [
+        {
+          "field_name": "rendered_prompt_hash",
+          "measurement_type": "estimated",
+          "note": "Derived from deterministic prompt text tokenization; not historical engine cache telemetry.",
+          "source_artifact": "data/workloads/final_10000",
+          "support_state": "derivable"
+        },
+        {
+          "field_name": "tokenized_prefix_hash",
+          "measurement_type": "estimated",
+          "note": "Derived from deterministic prompt text tokenization; not historical engine cache telemetry.",
+          "source_artifact": "data/workloads/final_10000",
+          "support_state": "derivable"
+        },
+        {
+          "field_name": "exact_shared_prefix_token_count",
+          "measurement_type": "estimated",
+          "note": "Derived from deterministic prompt text tokenization; not historical engine cache telemetry.",
+          "source_artifact": "data/workloads/final_10000",
+          "support_state": "derivable"
+        },
+        {
+          "field_name": "reusable_token_ratio",
+          "measurement_type": "estimated",
+          "note": "Derived from deterministic prompt text tokenization; not historical engine cache telemetry.",
+          "source_artifact": "data/workloads/final_10000",
+          "support_state": "derivable"
+        },
+        {
+          "field_name": "prefix_family_id",
+          "measurement_type": "estimated",
+          "note": "Derived from deterministic prompt text tokenization; not historical engine cache telemetry.",
+          "source_artifact": "data/workloads/final_10000",
+          "support_state": "derivable"
+        },
+        {
+          "field_name": "variable_suffix_token_count",
+          "measurement_type": "estimated",
+          "note": "Derived from deterministic prompt text tokenization; not historical engine cache telemetry.",
+          "source_artifact": "data/workloads/final_10000",
+          "support_state": "derivable"
+        }
+      ],
+      "live_engine_required": false,
+      "mutates_artifacts": false,
+      "parsed_source_artifacts": [
+        "data/workloads/final_10000/prompt_plus_metadata/mm2_hybrid_top5.jsonl"
+      ]
+    }
+  ],
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "status": "ADAPTER_COVERAGE_REPORTED_NO_LIVE_ENGINE_REQUIRED",
+  "summary": {
+    "adapter_count": 7,
+    "live_engine_required": false,
+    "missing_field_count": 13,
+    "mutates_artifacts": false
+  },
+  "version": 1
+}

@@ -1,0 +1,45 @@
+{
+  "currently_available_fields": [
+    "rendered messages",
+    "input token aggregates",
+    "workload hashes"
+  ],
+  "does_not_change_scenario_result_type": true,
+  "implementation_blockers": [
+    "No live blocker for static audit; GPU needed only for measured latency rerun."
+  ],
+  "instrumentation_readiness": "ready_derivable",
+  "missing_fields": [
+    "engine cache-hit telemetry"
+  ],
+  "optimization_id": "prompt_prefix_layout_optimization",
+  "promotion_criteria": [
+    "instrumentation fields are captured or explicitly marked unavailable",
+    "one-factor changed variable is frozen",
+    "protected quality and safety gates are evaluated",
+    "no missing telemetry is rendered as zero",
+    "human approval is recorded before champion selection"
+  ],
+  "required_fields": [
+    "rendered_prompt_hash",
+    "tokenized_prefix_hash",
+    "exact_shared_prefix_token_count",
+    "total_input_token_count",
+    "reusable_token_ratio",
+    "prefix_family_id",
+    "requests_per_prefix_family",
+    "longest_exact_common_prefix",
+    "common_system_prompt_tokens",
+    "common_generation_contract_tokens",
+    "common_evidence_schema_tokens",
+    "common_tool_definition_tokens",
+    "variable_suffix_token_count",
+    "prefix_entropy"
+  ],
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "scenario_id": "coreopt_prefix_layout_static_v1",
+  "status": "INSTRUMENTATION_PLAN_READY_NO_EXPERIMENT_RUN",
+  "ui_replay_readiness": true,
+  "version": 1
+}

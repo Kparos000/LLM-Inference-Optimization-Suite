@@ -1,0 +1,54 @@
+{
+  "currently_available_fields": [
+    "configured concurrency",
+    "aggregate latency",
+    "aggregate throughput"
+  ],
+  "does_not_change_scenario_result_type": true,
+  "implementation_blockers": [
+    "Add request lifecycle and decision logging to the runner/wrapper."
+  ],
+  "instrumentation_readiness": "requires_runner_instrumentation",
+  "missing_fields": [
+    "actual active batch size",
+    "engine iteration counters",
+    "queue wait"
+  ],
+  "optimization_id": "scheduler_batch_tuning",
+  "promotion_criteria": [
+    "instrumentation fields are captured or explicitly marked unavailable",
+    "one-factor changed variable is frozen",
+    "protected quality and safety gates are evaluated",
+    "no missing telemetry is rendered as zero",
+    "human approval is recorded before champion selection"
+  ],
+  "required_fields": [
+    "request_arrival_time",
+    "queue_wait_ms",
+    "waiting_request_count",
+    "running_request_count",
+    "active_batch_size",
+    "batch_composition",
+    "scheduled_tokens",
+    "maximum_token_budget",
+    "prefill_tokens_per_iteration",
+    "decode_tokens_per_iteration",
+    "maximum_running_sequences",
+    "maximum_batched_tokens",
+    "admission_decision",
+    "preemption_count",
+    "preemption_reason",
+    "recomputation_count",
+    "scheduling_policy",
+    "priority_class",
+    "batch_waiting_delay_ms",
+    "iteration_duration_ms",
+    "gpu_busy_idle_interval"
+  ],
+  "result_type": "planned",
+  "run_id": "main_inference_v1",
+  "scenario_id": "coreopt_scheduler_batch_vllm_v1",
+  "status": "INSTRUMENTATION_PLAN_READY_NO_EXPERIMENT_RUN",
+  "ui_replay_readiness": false,
+  "version": 1
+}

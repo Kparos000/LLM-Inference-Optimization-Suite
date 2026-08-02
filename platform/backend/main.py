@@ -219,6 +219,47 @@ def optimization_story() -> PlatformResponse:
     return _response(platform_data().optimization_story_v2(), result_type="planned")
 
 
+@app.get("/api/optimizations/observability/registry", response_model=PlatformResponse)
+def optimization_observability_registry() -> PlatformResponse:
+    return _response(platform_data().core_observability_registry(), result_type="planned")
+
+
+@app.get("/api/optimizations/observability/readiness", response_model=PlatformResponse)
+def optimization_observability_readiness() -> PlatformResponse:
+    return _response(platform_data().core_observability_readiness(), result_type="planned")
+
+
+@app.get("/api/optimizations/observability/inventory", response_model=PlatformResponse)
+def optimization_observability_inventory() -> PlatformResponse:
+    return _response(platform_data().main_observability_inventory(), result_type="planned")
+
+
+@app.get("/api/optimizations/observability/prefix-opportunity", response_model=PlatformResponse)
+def optimization_prefix_opportunity() -> PlatformResponse:
+    return _response(platform_data().prefix_opportunity_analysis(), result_type="planned")
+
+
+@app.get("/api/optimizations/observability/event-schema", response_model=PlatformResponse)
+def optimization_observability_event_schema() -> PlatformResponse:
+    return _response(platform_data().core_observability_event_schema(), result_type="planned")
+
+
+@app.get(
+    "/api/optimizations/observability/missing-instrumentation",
+    response_model=PlatformResponse,
+)
+def optimization_missing_instrumentation() -> PlatformResponse:
+    return _response(
+        platform_data().core_observability_missing_instrumentation(),
+        result_type="planned",
+    )
+
+
+@app.get("/api/optimizations/observability/cards", response_model=PlatformResponse)
+def optimization_observability_cards() -> PlatformResponse:
+    return _response(platform_data().core_observability_cards(), result_type="planned")
+
+
 @app.post("/api/optimizations/recipe/validate", response_model=RecipeValidationResponse)
 def validate_recipe(request: RecipeValidationRequest) -> RecipeValidationResponse:
     payload = platform_data().validate_recipe(request)
